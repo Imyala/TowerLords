@@ -88,7 +88,7 @@
 
   /* bottom progress bars — blue character XP + gold Fame (Torchlight-style stacked pair) */
   /* bottom-centre progress widget: readable XP + Fame bars (level / next-level progress) */
-  #progressBars{position:absolute;bottom:9px;left:50%;transform:translateX(-50%);width:min(440px,44vw);display:flex;flex-direction:column;gap:5px;pointer-events:none;z-index:5;}
+  #progressBars{position:absolute;bottom:122px;left:50%;transform:translateX(-50%);width:min(440px,44vw);display:flex;flex-direction:column;gap:5px;pointer-events:none;z-index:5;}
   #xpStrip{position:relative;height:21px;border-radius:11px;background:rgba(6,10,20,.78);border:1px solid rgba(86,224,255,.32);overflow:hidden;box-shadow:0 3px 12px rgba(0,0,0,.55);}
   #xpStripFill{position:absolute;inset:0;width:0%;background:linear-gradient(90deg,var(--xp),var(--neon));box-shadow:0 0 16px var(--xp);transition:width .2s ease;border-radius:11px;}
   #fameStrip{position:relative;height:16px;border-radius:9px;background:rgba(6,10,20,.78);border:1px solid rgba(255,206,77,.3);overflow:hidden;box-shadow:0 3px 12px rgba(0,0,0,.55);}
@@ -98,7 +98,7 @@
   #xpCap{font-size:11.5px;color:#eaf2ff;} #fameCap{font-size:10.5px;color:#fff;}
 
   /* player status / buff stack (above the action bar — Torchlight-style icon row) */
-  #buffBar{position:absolute;bottom:128px;left:50%;transform:translateX(-50%);display:flex;gap:7px;
+  #buffBar{position:absolute;bottom:174px;left:50%;transform:translateX(-50%);display:flex;gap:7px;
     justify-content:center;align-items:flex-end;flex-wrap:wrap-reverse;max-width:700px;pointer-events:none;}
   .buff{display:flex;align-items:center;gap:5px;padding:4px 9px 4px 7px;border-radius:8px;
     background:rgba(8,12,22,.85);border:1px solid var(--bc,rgba(255,255,255,.22));
@@ -4079,7 +4079,7 @@ function frame(){
       // chase the player with dt-correct exponential smoothing (frame-rate independent); snap on teleport/floor change
       if(!_G.running){ camFocus.set(p.x,0,p.z); }
       else if(Math.hypot(p.x-camFocus.x,p.z-camFocus.z)>30){ camFocus.set(p.x,0,p.z); }
-      else { const a=1-Math.exp(-dt/0.10); camFocus.x+=(p.x-camFocus.x)*a; camFocus.z+=(p.z-camFocus.z)*a; }
+      else { camFocus.x=p.x; camFocus.z=p.z; }   // rigid follow: the player is already render-interpolated, so extra camera smoothing only added lag that smears the world at high move speed
       const sx=camShake>0?rand(-camShake,camShake):0, sy=camShake>0?rand(-camShake,camShake):0;
       if(camShake>0) camShake=Math.max(0,camShake-dt*4);
       camera.position.set(camFocus.x+sx, 24+sy, camFocus.z+13);   // FIXED offset from the smoothed focus → consistent tilt, no jerk
@@ -4387,7 +4387,6 @@ function renderBuffs(){
   if(G.swiftT>0)            list.push({id:'swift',ic:'💨', nm:'Swift',            t:G.swiftT,  col:'#8effd9'});
   if(G.flowT>0)             list.push({id:'flow', ic:'✦',  nm:'Flow',             t:G.flowT,   col:'#ffce4d'});
   if(G.invuln>0.35)         list.push({id:'guard',ic:'🛡', nm:'Guarded',          t:G.invuln,  col:'#7fd0ff'});
-  if(G.charge>=G.chargeMax) list.push({id:'sig',  ic:'⇧',  nm:'Signature',        col:'#ffe14d', pulse:true});
   if(G.floorMod)            list.push({id:'mod',  ic:G.floorMod.nm.split(' ')[0], nm:G.floorMod.nm.replace(/^\S+\s/,''), col:G.floorMod.col, ds:G.floorMod.ds});
   const sig=list.map(x=>x.id).join(',');
   if(bar._sig!==sig){
