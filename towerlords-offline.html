@@ -4048,6 +4048,11 @@ addEventListener('visibilitychange',()=>{
     if(_G.running && !_G.paused){ update(1/30); netHostBroadcast(); } },1000/30); }
   else if(_bgTimer){ clearInterval(_bgTimer); _bgTimer=null; clock.getDelta(); _acc=0; }
 });
+// ---- render interpolation for sim-driven meshes (enemies, projectiles) — draws them between their last two 60Hz sim states so they glide instead of shaking at high refresh ----
+function lerpSnapPrev(list){ for(const o of list){ const m=o.mesh; if(m){ o._px=m.position.x; o._pz=m.position.z; } } }
+function lerpSnapCurr(list){ for(const o of list){ const m=o.mesh; if(!m)continue; o._cx=m.position.x; o._cz=m.position.z; if(o._px==null){ o._px=o._cx; o._pz=o._cz; } const dx=o._cx-o._px, dz=o._cz-o._pz; if(dx*dx+dz*dz>64){ o._px=o._cx; o._pz=o._cz; } } }   // big jump (spawn offset / huge knockback) → snap, don't slide
+function lerpRestore(list){ for(const o of list){ const m=o.mesh; if(m&&o._cx!=null){ const dx=m.position.x-o._cx, dz=m.position.z-o._cz; if(dx*dx+dz*dz>64){ o._cx=m.position.x; o._cz=m.position.z; } else { m.position.x=o._cx; m.position.z=o._cz; } } } }
+function lerpRender(list,a){ for(const o of list){ const m=o.mesh; if(m&&o._cx!=null){ m.position.x=o._px+(o._cx-o._px)*a; m.position.z=o._pz+(o._cz-o._pz)*a; } } }
 function frame(){
   let raw=clock.getDelta();
   // ---- peer (guest): no local sim; just relay input up and render the host's snapshots ----
@@ -4056,6 +4061,7 @@ function frame(){
   if(_G.running && !_G.paused){
     // restore each player's true sim position before stepping (undo last frame's render interpolation); adopt big external jumps (teleport/floor change) instead of stomping them
     for(const pl of joinedPlayers()){ if(pl.player&&pl._cx!=null){ const dx=pl.player.position.x-pl._cx, dz=pl.player.position.z-pl._cz; if(dx*dx+dz*dz>64){ pl._cx=pl.player.position.x; pl._cz=pl.player.position.z; } else { pl.player.position.x=pl._cx; pl.player.position.z=pl._cz; } } }
+    lerpRestore(G.enemies); lerpRestore(G.projectiles); lerpRestore(G.eProjectiles);   // un-interpolate sim meshes to their true logical positions before stepping
     let st=raw; if((G.hitstop||0)>0){ const cut=Math.min(G.hitstop,st); G.hitstop-=cut; st-=cut*0.88; }   // hitstop ~freezes sim time
     _acc+=Math.min(st,0.25); let steps=0;
     while(_acc>=SIM_DT && steps<6){ update(SIM_DT); _acc-=SIM_DT; steps++; }
@@ -4064,7 +4070,8 @@ function frame(){
   } else _acc=0;
   // render interpolation: draw each player between its last two sim states → smooth motion at any refresh rate (kills the high-speed jerk)
   { const alpha=(_G.running&&!_G.paused)?Math.min(1,Math.max(0,_acc/SIM_DT)):1;
-    for(const pl of joinedPlayers()){ if(pl.player&&pl._cx!=null){ pl.player.position.x=pl._px+(pl._cx-pl._px)*alpha; pl.player.position.z=pl._pz+(pl._cz-pl._pz)*alpha; } } }
+    for(const pl of joinedPlayers()){ if(pl.player&&pl._cx!=null){ pl.player.position.x=pl._px+(pl._cx-pl._px)*alpha; pl.player.position.z=pl._pz+(pl._cz-pl._pz)*alpha; } }
+    lerpRender(G.enemies,alpha); lerpRender(G.projectiles,alpha); lerpRender(G.eProjectiles,alpha); }
   const dt=Math.min(0.05, raw);
   pollMenuInput();   // co-op menu navigation runs even while the game is paused
   pollLobbyJoins();  // controllers can claim slots in the co-op lobby (pre-game)
@@ -4114,7 +4121,9 @@ function update(dt){
     if(pl.player){ pl._cx=pl.player.position.x; pl._cz=pl.player.position.z; }   // …and after, so frame() can interpolate between them
   }
   // 2) shared world pass (enemies, projectiles, spawning, decals) — runs once
+  lerpSnapPrev(G.enemies); lerpSnapPrev(G.projectiles); lerpSnapPrev(G.eProjectiles);   // remember pre-step positions for render interpolation
   updateWorld(dt);
+  lerpSnapCurr(G.enemies); lerpSnapCurr(G.projectiles); lerpSnapCurr(G.eProjectiles);   // …and post-step, so frame() can glide between them
   // 3) co-op revives, then restore P1 context (keydown-driven actions read the active player)
   updateRevives(dt);
   _G.cur=0; if(_G.players[0]) aimPoint.copy(_G.players[0].aim);
