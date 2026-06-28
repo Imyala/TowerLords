@@ -1034,6 +1034,27 @@ const WEAPON_ARCHETYPES = {
   cannon: {nm:'Cannon',  ic:'🔨', style:'Heavy shell — huge slow hit, roots you while firing.',
            names:['Maul','Cannon','Hammer','Bombard','Mortar'],
            shots:1, spread:0,    speed:34, size:0.72, life:0.42, dmgMult:2.4,  asMult:0.52, pierce:1, moveMult:0.45},
+  spear:  {nm:'Spear',   ic:'🔱', style:'Lance thrust — one bolt that skewers a whole line.',
+           names:['Spear','Lance','Pike','Glaive','Halberd'],
+           shots:1, spread:0,    speed:64, size:0.40, life:0.50, dmgMult:1.15, asMult:0.95, pierce:6, moveMult:1},
+  chakram:{nm:'Chakram', ic:'🪃', style:'Thrown ring — flies out, curves back, hits coming AND going.',
+           names:['Chakram','Discus','Ring','Boomerang','Cyclone'],
+           shots:1, spread:0,    speed:42, size:0.50, life:1.5,  dmgMult:1.05, asMult:0.8,  pierce:0, moveMult:1, boomerang:{out:0.45}},
+  prism:  {nm:'Prism',   ic:'🔮', style:'Twin weaving bolts that snake through the air.',
+           names:['Prism','Crystal','Lens','Refractor','Beam'],
+           shots:2, spread:0,    speed:48, size:0.32, life:0.55, dmgMult:0.72, asMult:1.05, pierce:1, moveMult:1, wave:{amp:2.2, freq:17}},
+  scatter:{nm:'Scattergun',ic:'💥',style:'Point-blank cone of seven pellets.',
+           names:['Scattergun','Blunderbuss','Boomstick','Spreader','Flak'],
+           shots:7, spread:0.20, speed:46, size:0.24, life:0.18, dmgMult:0.30, asMult:0.7,  pierce:0, moveMult:0.85},
+  railgun:{nm:'Railgun',  ic:'⚡', style:'Hyper-velocity rail — skewers everything, but slow to fire.',
+           names:['Railgun','Lancer','Driver','Coilgun','Needle'],
+           shots:1, spread:0,    speed:98, size:0.42, life:0.55, dmgMult:2.0,  asMult:0.5,  pierce:10, moveMult:0.7},
+  seeker: {nm:'Seekers',  ic:'🛰', style:'Three homing motes that curve into whatever you aim near.',
+           names:['Seekers','Swarm','Hornets','Trackers','Wisps'],
+           shots:3, spread:0.45, speed:40, size:0.30, life:1.1,  dmgMult:0.50, asMult:0.95, pierce:0, moveMult:1, homing:3.4},
+  ricochet:{nm:'Ricochet',ic:'🔵', style:'Bouncing bolt that caroms off walls.',
+           names:['Ricochet','Caromer','Skipper','Rebounder','Pinball'],
+           shots:1, spread:0,    speed:56, size:0.34, life:1.3,  dmgMult:1.0,  asMult:1.1,  pierce:0, moveMult:1, bounce:4},
 };
 const WARCH_KEYS=Object.keys(WEAPON_ARCHETYPES);
 // fallback when no weapon is equipped — the original single bolt
@@ -1278,6 +1299,16 @@ const SKILLS = {
   gMeteor: {nm:'Meteor',      ic:'☄', mana:26, cd:1.4, cast:castMeteor},
   gFrost:  {nm:'Frost Nova',  ic:'❄', mana:18, cd:0.9, cast:castFrost},
   gBarrage:{nm:'Barrage',     ic:'🎇', mana:18, cd:0.8, cast:castBarrage},
+  // --- RPG-style additions ---
+  gHeal:   {nm:'Mend',        ic:'🩹', mana:22, cd:6.0, cast:castHeal},
+  gShield: {nm:'Aegis',       ic:'⛨', mana:20, cd:8.0, cast:castShield},
+  gVortex: {nm:'Singularity', ic:'🌌', mana:24, cd:7.0, cast:castVortex},
+  gStorm:  {nm:'Thunderstorm',ic:'⛈', mana:22, cd:5.0, cast:castStorm},
+  gFlame:  {nm:'Flame Cone',  ic:'🔥', mana:16, cd:3.0, cast:castFlame},
+  gQuake:  {nm:'Earthquake',  ic:'🌋', mana:24, cd:6.0, cast:castQuake},
+  gLance:  {nm:'Ice Lance',   ic:'🧊', mana:12, cd:1.5, cast:castLance},
+  gSlow:   {nm:'Time Warp',   ic:'⏳', mana:22, cd:12.0,cast:castSlow},
+  gBlades: {nm:'Bladestorm',  ic:'🌀', mana:20, cd:6.0, cast:castBlades},
 };
 const SKILL_IDS=Object.keys(SKILLS);
 const SLOT_KEYS=['1','2','3','4','5','6','7','8','9']; const SLOT_LABEL=['1','2','3','4','5','6','7','8','9'];   // 9-skill bar (Torchlight-style)
@@ -2467,9 +2498,9 @@ function scaleLvl(floor){ return Math.max(floor, basePowerLvl()); }   // enemies
 function spawnEnemy(floor,home,forceType,forceElite){
   const t=forceType||pickEType(floor);
   const lvl=scaleLvl(floor);                            // stat scaling tracks the player, not just the floor
-  const hpScale=1+lvl*0.62, dmgScale=1+lvl*0.34;   // tankier + hit harder with depth — fights are a real threat, not a speedrun
+  const hpScale=1+lvl*0.92, dmgScale=1+lvl*0.50;   // tankier + hit harder with depth — fights are a real threat, not a speedrun
   const e={ etype:t.id, type:t.ranged?'ranged':'melee', shape:t.shape, color:t.color,
-    hp:t.hp*hpScale, speed:t.spd+Math.min(lvl*0.08,5), dmg:(t.dmg+lvl*0.95)*dmgScale,
+    hp:t.hp*hpScale*1.15, speed:t.spd+Math.min(lvl*0.08,5), dmg:(t.dmg+lvl*1.2)*dmgScale,
     r:t.r, scale:t.scale, xp:t.xp, range:t.ranged||0, dash:!!t.dash, kite:!!t.kite, lob:!!t.lob,
     bomb:!!t.bomb, split:!!t.split, heal:!!t.heal, sniper:!!t.sniper, gunner:!!t.gunner, bspd:t.bspd||0,
     shootCd:rand(.8,2.2), atkCd:rand(.2,.8), windup:0, dashCd:rand(2,4), hitFlash:0, elite:false,
@@ -2710,14 +2741,23 @@ function basicAttack(){
   for(let i=0;i<shots;i++){
     const ang=baseAng+(shots>1?(i-(shots-1)/2)*spread:0), dx=Math.sin(ang), dz=Math.cos(ang);
     const crit=Math.random()<G.S.crit, dmg=G.S.dmgBase*w.dmgMult*(crit?G.S.critMult:1)*fervorMult()*flowMult()*condMult();
-    fireBolt(p.x+dx,p.z+dz,dx,dz,dmg,crit,G.S.pierce+w.pierce,w.size,w.speed,G.S.element,w.life);
+    const o={}; if(w.wave)o.wave=w.wave; if(w.boomerang)o.boomerang=w.boomerang; if(w.homing)o.homing=w.homing; if(w.accel)o.accel=w.accel; if(w.bounce)o.bounce=w.bounce;
+    fireBolt(p.x+dx,p.z+dz,dx,dz,dmg,crit,G.S.pierce+w.pierce,w.size,w.speed,G.S.element,w.life,o);
   }
 }
-function fireBolt(x,z,dx,dz,dmg,crit,pierce,size,spd,element,life){
-  element=element||'phys';
+function fireBolt(x,z,dx,dz,dmg,crit,pierce,size,spd,element,life,o){
+  element=element||'phys'; o=o||{};
   const m=new THREE.Mesh(new THREE.SphereGeometry(size,8,8),boltMat(element)); m.position.set(x,1.1,z); scene.add(m);
-  G.projectiles.push({mesh:m,vx:dx*spd,vz:dz*spd,dmg,life:life||1.2,crit,pierce:pierce||0,hit:null,element,owner:_G.cur});
+  const b={mesh:m,vx:dx*spd,vz:dz*spd,dmg,life:life||1.2,crit,pierce:pierce||0,hit:null,element,owner:_G.cur};
+  // RotMG-style shot behaviours (opt-in; plain bolts are untouched)
+  if(o.wave){ b.wave={amp:o.wave.amp||2, freq:o.wave.freq||14, t:0, hx:dx, hz:dz, spd, ox:x, oz:z}; }   // sine-weaving bolt
+  if(o.boomerang){ b.boom={out:o.boomerang.out||0.4, spd, t:0}; b.pierce=Math.max(b.pierce,99); }       // flies out, returns, hits both ways
+  if(o.homing){ b.homing=o.homing; }                                                                     // turn rate (rad/s) toward nearest foe
+  if(o.accel) b.accel=o.accel;                                                                            // +/− speed per second
+  if(o.bounce) b.bounce=o.bounce;                                                                         // wall bounces left
+  G.projectiles.push(b);
 }
+function nearestEnemyTo(x,z,maxD){ let best=null,bd=maxD?maxD*maxD:1e9; for(const e of G.enemies){ if(e.dead)continue; const dx=e.mesh.position.x-x,dz=e.mesh.position.z-z,d2=dx*dx+dz*dz; if(d2<bd){bd=d2;best=e;} } return best; }
 function spendMana(c){ if(G.mana<c) return false; G.mana-=c; return true; }
 function useSlot(i){
   const slot=G.slots[i]; if(!slot) return; const sk=SKILLS[slot.skillId];
@@ -2840,6 +2880,32 @@ function castFrost(pwr){ const p=G.player.position, R=areaR(6.5); ringFx(p.x,p.z
 function castBarrage(pwr){ const p=G.player.position, base=Math.atan2(aimPoint.x-p.x,aimPoint.z-p.z);
   for(let i=0;i<6;i++){ const t=i*0.05; G.timed.push({t, fn:()=>{ const a=base+rand(-0.08,0.08), dx=Math.sin(a), dz=Math.cos(a), crit=Math.random()<G.S.crit;
     fireBolt(p.x+dx,p.z+dz,dx,dz,skillDmg(0.5,pwr)*(crit?G.S.critMult:1),crit,G.S.pierce,0.32,54,G.S.element); }}); } }
+// ---- additional RPG-style skills ----
+function castHeal(pwr){ const p=G.player.position; const h=Math.min(G.maxhp*(0.24+0.05*((pwr||1)-1)), G.maxhp-G.hp); G.hp+=h; G.run.healSelf+=h;
+  ringFx(p.x,p.z,areaR(4),0x6dff8c); ringFx(p.x,p.z,areaR(2.5),0xbfffd0); floatText(p.x,p.z,'+'+Math.round(h),'heal',2.9); }
+function castShield(pwr){ const p=G.player.position; G.invuln=Math.max(G.invuln, 1.5+0.5*((pwr||1)-1)+0.5); ringFx(p.x,p.z,areaR(3.6),0x56e0ff); ringFx(p.x,p.z,areaR(2.6),0xffce4d); floatText(p.x,p.z,'⛨ SHIELD','heal',2.9); }
+function castVortex(pwr){ const tx=aimPoint.x, tz=aimPoint.z, R=areaR(8.5); ringFx(tx,tz,R,0xb06bff);
+  for(const e of G.enemies){ const dx=tx-e.mesh.position.x, dz=tz-e.mesh.position.z, d=Math.hypot(dx,dz); if(d<R+e.r && d>0.1){ const pull=Math.min(d-0.5, 4.5); e.mesh.position.x+=dx/d*pull; e.mesh.position.z+=dz/d*pull; } }
+  G.timed.push({t:0.16, fn:()=>{ ringFx(tx,tz,areaR(5),0xb06bff); burst(tx,tz,0xb06bff); hitRadius(tx,tz,areaR(5),skillDmg(2.3,pwr),200); shakeCam(.5); G.hitstop=Math.max(G.hitstop||0,.05); }}); }
+function castStorm(pwr){ const p=G.player.position;
+  const targets=[...G.enemies].filter(e=>!e.dead&&Math.hypot(e.mesh.position.x-p.x,e.mesh.position.z-p.z)<17)
+    .sort((a,b)=>(Math.hypot(a.mesh.position.x-p.x,a.mesh.position.z-p.z))-(Math.hypot(b.mesh.position.x-p.x,b.mesh.position.z-p.z))).slice(0,6);
+  if(!targets.length){ ringFx(aimPoint.x,aimPoint.z,3,0xffe14d); hitRadius(aimPoint.x,aimPoint.z,areaR(4),skillDmg(1.5,pwr),120,'light'); return; }
+  targets.forEach((e,i)=>G.timed.push({t:i*0.07, fn:()=>{ if(e.dead)return; ringFx(e.mesh.position.x,e.mesh.position.z,2.2,0xffe14d); burst(e.mesh.position.x,e.mesh.position.z,0xffe14d);
+    const crit=Math.random()<G.S.crit; hurtEnemy(e,skillDmg(1.5,pwr)*(crit?G.S.critMult:1),crit,'light'); }})); }
+function castFlame(pwr){ const p=G.player.position, base=Math.atan2(aimPoint.x-p.x,aimPoint.z-p.z), n=7;
+  for(let i=0;i<n;i++){ const ang=base+(i-(n-1)/2)*0.15, dx=Math.sin(ang), dz=Math.cos(ang), crit=Math.random()<G.S.crit;
+    fireBolt(p.x+dx,p.z+dz,dx,dz,skillDmg(0.5,pwr)*(crit?G.S.critMult:1),crit,(G.S.pierce||0)+1,0.42,40,'fire',0.5); } shakeCam(.25); }
+function castQuake(pwr){ const p=G.player.position, R=areaR(9);
+  const tel=new THREE.Mesh(new THREE.RingGeometry(R-0.5,R,40), new THREE.MeshBasicMaterial({color:0xffae3d,transparent:true,opacity:.45,side:THREE.DoubleSide})); tel.rotation.x=-Math.PI/2; tel.position.set(p.x,.1,p.z); scene.add(tel); G.decals.push({mesh:tel,hold:0.5,life:0.5});
+  G.timed.push({t:0.5, fn:()=>{ const c=G.player.position; ringFx(c.x,c.z,R,0xffae3d); burst(c.x,c.z,0xffae3d); hitRadius(c.x,c.z,R,skillDmg(2.9,pwr),320);
+    for(const e of G.enemies){ if(Math.hypot(e.mesh.position.x-c.x,e.mesh.position.z-c.z)<R+e.r) e.chill=Math.max(e.chill||0,1.8); } shakeCam(1.0); G.hitstop=Math.max(G.hitstop||0,.08); }}); }
+function castLance(pwr){ const p=G.player.position, a=Math.atan2(aimPoint.x-p.x,aimPoint.z-p.z), dx=Math.sin(a), dz=Math.cos(a), crit=Math.random()<G.S.crit;
+  fireBolt(p.x+dx,p.z+dz,dx,dz,skillDmg(1.9,pwr)*(crit?G.S.critMult:1),crit,(G.S.pierce||0)+6,0.42,82,'cold',0.6); }
+function castSlow(pwr){ const p=G.player.position, R=areaR(13); ringFx(p.x,p.z,R,0x67c4ff);
+  for(const e of G.enemies){ if(Math.hypot(e.mesh.position.x-p.x,e.mesh.position.z-p.z)<R+e.r) e.chill=Math.max(e.chill||0,4); }
+  floatText(p.x,p.z,'⏳ TIME WARP','cold',3); }
+function castBlades(pwr){ for(let i=0;i<5;i++){ G.timed.push({t:i*0.16, fn:()=>{ const c=G.player.position; ringFx(c.x,c.z,areaR(4.2),0xff9a3d); hitRadius(c.x,c.z,areaR(4.2),skillDmg(0.7,pwr),80); }}); } }
 
 function hitRadius(x,z,R,dmg,knock,element){ element=element||G.S.element;
   for(const e of G.enemies){ const d=Math.hypot(e.mesh.position.x-x,e.mesh.position.z-z); if(d<R+e.r){ hurtEnemy(e,dmg,false,element); if(knock){ const dx=(e.mesh.position.x-x)/(d||1),dz=(e.mesh.position.z-z)/(d||1); e.kx=dx*knock*0.02; e.kz=dz*knock*0.02; } } }
@@ -4425,10 +4491,25 @@ function updateWorld(dt){
   G.timed=G.timed.filter(t=>!t.done);
 
   // player projectiles
-  for(const b of G.projectiles){ b.mesh.position.x+=b.vx*dt; b.mesh.position.z+=b.vz*dt; b.life-=dt;
+  for(const b of G.projectiles){ b.life-=dt;
+    // --- per-bolt movement behaviours (RotMG-style); plain bolts just fly straight ---
+    if(b.accel){ const f=1+b.accel*dt; b.vx*=f; b.vz*=f; }
+    if(b.homing){ const tgt=nearestEnemyTo(b.mesh.position.x,b.mesh.position.z,22);
+      if(tgt){ const want=Math.atan2(tgt.mesh.position.x-b.mesh.position.x,tgt.mesh.position.z-b.mesh.position.z); let cur=Math.atan2(b.vx,b.vz); let d=want-cur; while(d>Math.PI)d-=6.2832; while(d<-Math.PI)d+=6.2832; cur+=clamp(d,-b.homing*dt,b.homing*dt); const sp=Math.hypot(b.vx,b.vz); b.vx=Math.sin(cur)*sp; b.vz=Math.cos(cur)*sp; } }
+    if(b.boom){ b.boom.t+=dt;
+      if(b.boom.t>b.boom.out){ const pl=_G.players[b.owner]||_G.players[0], pp=pl&&pl.player?pl.player.position:b.mesh.position;   // returning leg → home to its owner
+        const a=Math.atan2(pp.x-b.mesh.position.x,pp.z-b.mesh.position.z); b.vx=Math.sin(a)*b.boom.spd; b.vz=Math.cos(a)*b.boom.spd;
+        if(b.hit&&b.boom.t<b.boom.out+0.05) b.hit.clear&&b.hit.clear();   // let it re-hit on the way back
+        if(Math.hypot(pp.x-b.mesh.position.x,pp.z-b.mesh.position.z)<1.3){ b.dead=true; continue; } } }
+    if(b.wave){ b.wave.t+=dt; const dist=b.wave.spd*b.wave.t, px=-b.wave.hz, pz=b.wave.hx, off=Math.sin(b.wave.t*b.wave.freq)*b.wave.amp;
+      b.mesh.position.x=b.wave.ox+b.wave.hx*dist+px*off; b.mesh.position.z=b.wave.oz+b.wave.hz*dist+pz*off; }
+    else { b.mesh.position.x+=b.vx*dt; b.mesh.position.z+=b.vz*dt; }
     if(b.life<=0){ b.dead=true; continue; }
-    if(!inAny(b.mesh.position.x,b.mesh.position.z,0)){ b.dead=true; continue; }
-    if(projBlocked(b.mesh.position.x,b.mesh.position.z)){ b.dead=true; continue; }   // blocked by tall cover
+    if(!inAny(b.mesh.position.x,b.mesh.position.z,0) || projBlocked(b.mesh.position.x,b.mesh.position.z)){
+      if(b.bounce>0 && !b.boom){ b.bounce--;   // reflect off the blocking axis instead of dying
+        if(!inAny(b.mesh.position.x-b.vx*dt,b.mesh.position.z,0)) b.vx=-b.vx; else b.vz=-b.vz;
+        b.mesh.position.x+=b.vx*dt*1.1; b.mesh.position.z+=b.vz*dt*1.1; }
+      else { b.dead=true; continue; } }
     for(const e of G.enemies){ if(b.hit&&b.hit.has(e))continue; const d=Math.hypot(e.mesh.position.x-b.mesh.position.x,e.mesh.position.z-b.mesh.position.z);
       if(d<e.r+.4){ hurtEnemy(e,b.dmg,b.crit,b.element,b.src,b.owner); (b.hit||(b.hit=new Set())).add(e); if(b.pierce>0)b.pierce--; else {b.dead=true;break;} } }
     if(!b.dead && G.goblin){ const d=Math.hypot(G.goblin.mesh.position.x-b.mesh.position.x,G.goblin.mesh.position.z-b.mesh.position.z); if(d<1.4){ hurtGoblin(b.dmg,b.crit,b.element); if(b.pierce>0)b.pierce--; else b.dead=true; } }
