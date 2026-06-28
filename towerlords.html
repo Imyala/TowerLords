@@ -1342,8 +1342,22 @@ const FLOOR_MODS=[
   {id:'warded',   nm:'🛡 Warded',    ds:'Enemies +28% resist · richer drops',col:'#9d7bff', eres:0.28, loot:1.3, rare:true},
   {id:'teeming',  nm:'🐝 Teeming',   ds:'+60% more foes · +35% XP',         col:'#6dff8c', count:1.6, xpm:1.35},
 ];
-function lootMult(){ return fortuneMult() * (G.floorMod?.loot||1); }
-function goldMult(){ return fortuneMult() * (G.floorMod?.gold||1) * (1+((G.S&&G.S.goldBonus)||0)/100); }
+// ---- GREED: push deeper without banking → richer loot/gold, but it's all carried (lost on death). Bank to cash it in. ----
+const GREED_STEP=0.16, GREED_MAX=2.6;   // +0.16 per floor since last bank, up to ×2.6
+function greedMult(){ return clamp(G.greed||1, 1, GREED_MAX); }
+function lootMult(){ return fortuneMult() * (G.floorMod?.loot||1) * greedMult(); }
+function goldMult(){ return fortuneMult() * (G.floorMod?.gold||1) * greedMult() * (1+((G.S&&G.S.goldBonus)||0)/100); }
+// banking carried loot "cashes in" the greed you've built — a fame payout scaled by how far you pushed — then resets the stakes
+function bankCashIn(n){
+  if(!((G.greed||1)>1.02) || !n || n<=0){ G.greed=1; return; }
+  const bonus=Math.round((G.greed-1)*(60+G.floor*7));
+  if(bonus>0){ META.fame+=bonus; saveMeta();
+    const p=G.player&&G.player.position; if(p) floatText(p.x,p.z,'+'+bonus.toLocaleString()+' ✦ secured','goldtxt',3);
+    banner('💰 HAUL SECURED','greed ×'+G.greed.toFixed(1)+' banked · +'+bonus.toLocaleString()+' fame');
+    if(sfx.gold)sfx.gold(); log('💰 Haul secured — greed cashed in for +'+bonus.toLocaleString()+' fame.');
+  }
+  G.greed=1;
+}
 function affixLine(af){ return `${af.val<0?'':'+'}${af.val}${af.pct?'%':''} ${af.name}`; }
 // affix line with an optional delta vs the equipped item in the same slot (▲ better / ▼ worse / new)
 function affixLineCmp(af, eqMap){
@@ -1834,7 +1848,7 @@ function makePlayer(idx){ return {
   hp:1, maxhp:1, mana:1, maxmana:1,
   S:{}, alloc:{}, slots:[null,null,null], cd:{},
   equip:{weapon:null,helm:null,chest:null,gloves:null,boots:null,ring:null}, invCap:invCapBase(),
-  inv:[], stash:[], stashStrikes:0, selGem:null,
+  inv:[], stash:[], stashStrikes:0, selGem:null, greed:1,   // greed = risk/reward multiplier; climbs each floor since your last bank
   run:{kills:0,assists:0,healSelf:0,healOthers:0,xp:0,floorTime:0,totalTime:0,floorsCleared:0,boons:[]},
   pet:null, pets:[], petMesh:null, petMagnet:0, petErrand:null,
   belt:[null,null,null], charge:0, chargeMax:100, sigSlot:null, sigCd:0, swiftT:0, perfectT:0, dashRewarded:false,
@@ -1848,7 +1862,7 @@ function makePlayer(idx){ return {
 // fields that belong to a player (everything else stays shared on _G)
 const PF = new Set(['id','name','input','cam','viewport','color','joined','player','gold','level','xp','xpNeed','xpMode',
   'attrPts','skillPts','attr','hp','maxhp','mana','maxmana','S','alloc','slots','cd','equip','invCap','inv','stash',
-  'stashStrikes','selGem','run','pet','pets','petMesh','petMagnet','petErrand','belt','charge','chargeMax','sigSlot','sigCd',
+  'stashStrikes','selGem','greed','run','pet','pets','petMesh','petMagnet','petErrand','belt','charge','chargeMax','sigSlot','sigCd',
   'swiftT','perfectT','dashRewarded','dashCd','dashCdMax','dashT','dashDir','flowT','attackCd','invuln','dead',
   'fervor','fervorT','nearStash','nearVendor','nearPortal','nearScore','_ph','_sh','aim','in','downed','downT','reviveT']);
 const _G = {
@@ -2164,7 +2178,7 @@ $('openCodexBtn').onclick=()=>togglePanel('codexPanel');
 $('openSettingsBtn').onclick=()=>togglePanel('settingsPanel');
 $('muteInd').onclick=(e)=>{ e.stopPropagation(); toggleMute(); };
 document.querySelectorAll('.closeX').forEach(x=>x.onclick=()=>{ $(x.dataset.close).classList.add('hidden'); syncPause(); refreshMenuState(); });
-$('depositAll').onclick=()=>{ if(G.inv?.length){ const n=stashPushMany(G.inv); G.inv=G.inv.slice(n); G.stashStrikes=0; log(n?('Deposited '+n+' item(s)'+(G.inv.length?' — stash full, '+G.inv.length+' left in bag':'')):'Stash full — buy a stash row.'); renderStash();} };
+$('depositAll').onclick=()=>{ if(G.inv?.length){ const n=stashPushMany(G.inv); G.inv=G.inv.slice(n); G.stashStrikes=0; bankCashIn(n); log(n?('Deposited '+n+' item(s)'+(G.inv.length?' — stash full, '+G.inv.length+' left in bag':'')):'Stash full — buy a stash row.'); renderStash();} };
 $('retrieveAll').onclick=()=>{ if(G.stash?.length){G.inv.push(...G.stash);G.stash=[];G.stashStrikes=0;log('Stash retrieved.');renderStash();} };
 $('respec').onclick=respec;
 
@@ -3902,7 +3916,7 @@ function renderChar(){
 function renderStash(){
   const inv=$('invList'), st=$('stashList');
   const row=(it,from)=>{ const d=document.createElement('div'); d.className='islot'; d.style.color='var(--'+it.rarity.css+')'; d.textContent=`${it.slotIc||''} ${it.name} · ${it.value}g`;
-    d.onclick=()=>{ if(from==='inv'){ if(stashPush(it)) G.inv=G.inv.filter(x=>x!==it); } else {G.stash=G.stash.filter(x=>x!==it);G.inv.push(it);} G.stashStrikes=0; renderStash(); }; return d; };
+    d.onclick=()=>{ if(from==='inv'){ if(stashPush(it)){ G.inv=G.inv.filter(x=>x!==it); bankCashIn(1); } } else {G.stash=G.stash.filter(x=>x!==it);G.inv.push(it);} G.stashStrikes=0; renderStash(); }; return d; };
   inv.innerHTML=''; st.innerHTML='';
   if(!G.inv.length) inv.innerHTML='<div class="islot empty">empty</div>'; else G.inv.forEach(it=>inv.appendChild(row(it,'inv')));
   if(!G.stash.length) st.innerHTML='<div class="islot empty">empty</div>'; else G.stash.forEach(it=>st.appendChild(row(it,'stash')));
@@ -4065,7 +4079,7 @@ function showItemDetail(it, ctx){ ctx=ctx||{}; const dp=$('itemDetail'); if(!dp)
     else if(a==='unbindsig') unbindSig();
     else if(a==='unbindflask') unbindFlask(ctx.idx);
     else if(a==='selgem'){ G.selGem=(G.selGem===it)?null:it; renderInv(); }
-    else if(a==='stash'){ if(stashPush(it)){ G.inv=G.inv.filter(x=>x!==it); G.stashStrikes=0; } renderInv(); }
+    else if(a==='stash'){ if(stashPush(it)){ G.inv=G.inv.filter(x=>x!==it); G.stashStrikes=0; bankCashIn(1); } renderInv(); }
     else if(a==='takeback'){ if(G.inv.length>=G.invCap){ log('🎒 Bag full — make room first.'); return; } G.stash=G.stash.filter(x=>x!==it); G.inv.push(it); renderInv(); }
     else if(a==='hatch'){ if((G.pets?G.pets.length:0)<PET_YARD_CAP){ G.inv=G.inv.filter(x=>x!==it); hatchPet(it); renderInv(); } else log('🥚 Pet yard full.'); }
     else if(a==='usepot'){ G.inv=G.inv.filter(x=>x!==it); applyStatPot(it); renderInv(); }
@@ -4092,7 +4106,7 @@ function sortedBag(){
 }
 function stashAllGear(){ const keep=[]; let n=0;
   for(const it of G.inv){ if(it.slotKey && !it.isGem && !stashFull()){ G.stash.push(it); n++; } else keep.push(it); }
-  G.inv=keep; if(n){ G.stashStrikes=0; log('⇩ Stashed '+n+' gear item(s) — survives death.'); } else log('No loose gear to stash.');
+  G.inv=keep; if(n){ G.stashStrikes=0; bankCashIn(n); log('⇩ Stashed '+n+' gear item(s) — survives death.'); } else log('No loose gear to stash.');
   renderInv();
 }
 function renderInv(){
@@ -4210,6 +4224,8 @@ function ascend(){ bountyAscendCheck(); const prevNg=ngLevel(G.floor); G.floor++
   if(G.floor===100) log('👑 Floor 100 — the Tower\'s peak. Push on into New Game+!');
   if(ng>prevNg){ unlockFeat('ng'); banner('NEW GAME +'+ng, 'the Tower resets — deadlier & richer'); log('☠ NEW GAME +'+ng+' — enemies far stronger, loot far richer.'); }
   G.run.floorsCleared++; G.run.floorTime=0; sfx.dash();
+  const pg=G.greed||1; G.greed=Math.min(GREED_MAX,pg+GREED_STEP);   // pushing deeper without banking raises the stakes
+  if(pg<2 && G.greed>=2 && G.inv.length) banner('💰 GREED ×'+G.greed.toFixed(1),'rich haul at risk — bank it at a safe zone');
   $('stashPanel').classList.add('hidden'); syncPause(); log('Ascending to Floor '+G.floor+'…'); generateFloor(); G.hp=Math.min(G.maxhp,G.hp+G.maxhp*0.12); }
 
 // ============================================================ DEATH
@@ -4229,6 +4245,7 @@ function die(){ if(G.dead)return;
   G.dead=true; G.running=false; PANELS.forEach(p=>$(p).classList.add('hidden'));
   G.stashStrikes++;
   const carried=G.inv.length; G.inv=[];
+  const greedLost = (G.greed>1.05 && carried>0) ? G.greed : 0; G.greed=1;   // dying forfeits the unbanked greed haul
   // fame is a skill rating now — earn a meaningful chunk per run (scales with depth, kills, level)
   const fameEarned=Math.max(50, Math.floor(G.floor*160 + G.run.kills*6 + G.level*40)); META.fame+=fameEarned; saveMeta();
   const secondDeath = G.stashStrikes>=2;
@@ -4248,7 +4265,8 @@ function die(){ if(G.dead)return;
     if(secondDeath) G.stashStrikes=0;   // consequence applied — counter resets
     const surv = (!secondDeath && G.stash.length>0) ? `<span style="color:var(--gold)">Stash survived (1st death).</span><br>` : '';
     const warn = G.hardcore ? `<span style="color:var(--hp);opacity:.85">HARDCORE: a second death is permanent.</span>` : '';
-    $('deathStats').innerHTML=`Reached <b>Floor ${G.floor}</b> · Level <b>${G.level}</b><br>Lost <b>${carried}</b> carried item(s).<br>${msg}${surv}${warn}`;
+    const gforfeit = greedLost ? `<span style="color:var(--hp)">Forfeited a ×${greedLost.toFixed(1)} greed haul.</span><br>` : '';
+    $('deathStats').innerHTML=`Reached <b>Floor ${G.floor}</b> · Level <b>${G.level}</b><br>Lost <b>${carried}</b> carried item(s).<br>${gforfeit}${msg}${surv}${warn}`;
     $('reviveBtn').textContent='🏛 RETURN TO SANCTUARY';
   }
   recordDeath(deathRec);
@@ -4346,7 +4364,7 @@ function enterPractice(){
   G.floor=1; G.gold=0; G.level=1; G.xp=0; G.xpNeed=20; G.attrPts=0; G.skillPts=0;
   G.attr={str:5,dex:5,int:5,vit:5,will:5}; G.alloc={}; G.slots=[makeSkillGem(1,'gNova'),makeSkillGem(1,'gFrost'),makeSkillGem(1,'gChain'),null,null,null,null,null,null]; G.cd={};
   G.equip={weapon:null,helm:null,chest:null,gloves:null,boots:null,ring:null};
-  G.inv=[]; G.stash=[]; G.stashStrikes=0; G.dead=false; G.running=true; G.paused=false; G.fervor=0; G.hitstop=0;
+  G.inv=[]; G.stash=[]; G.stashStrikes=0; G.dead=false; G.running=true; G.paused=false; G.fervor=0; G.hitstop=0; G.greed=1;
   G.dashCd=0; G.dashT=0; G.flowT=0; G.permadead=false; G.selGem=null;
   G.belt=[makeFlask(1,'life'),makeFlask(1,'mana'),makeFlask(1,'swift'),null,null]; G.charge=100; G.sigSlot=makeSkillGem(1,'gMeteor'); G.sigCd=0; G.swiftT=0; G.petErrand=null;
   G.floorMod=null; G.bounty=null;
@@ -4494,7 +4512,7 @@ function initPlayerChar(){
   G.gold=0; G.level=1; G.xp=0; G.xpNeed=20; G.attrPts=0; G.skillPts=3;
   G.attr={str:5,dex:5,int:5,vit:5,will:5}; G.alloc={}; G.slots=[makeSkillGem(1,'gNova'),null,null,null,null,null,null,null,null]; G.cd={};
   G.equip={weapon:null,helm:null,chest:null,gloves:null,boots:null,ring:null};
-  G.inv=[];G.stash=[];G.stashStrikes=0; G.dead=false; G.downed=false; G.downT=0; G.fervor=0; G.selGem=null;
+  G.inv=[];G.stash=[];G.stashStrikes=0; G.dead=false; G.downed=false; G.downT=0; G.fervor=0; G.selGem=null; G.greed=1;
   G.dashCd=0; G.dashT=0; G.flowT=0;
   G.belt=[makeFlask(1,'life'), makeFlask(1,'mana'), null, null, null]; G.charge=0; G.sigSlot=null; G.sigCd=0; G.swiftT=0; G.petErrand=null;
   if(G.petMesh){ scene.remove(G.petMesh); G.petMesh=null; } G.pet=null; G.pets=[]; G.petMagnet=0;
@@ -5102,9 +5120,14 @@ function renderBuffs(){
   if(G.invuln>0.35)         list.push({id:'guard',ic:'🛡', nm:'Guarded',          t:G.invuln,  col:'#7fd0ff', pulse:G.invuln>1.1});
   if(G.S.manaShield && G.mana>0)
                             list.push({id:'mshd', ic:'🔷', nm:'Mana Shield',      frac:clamp(G.mana/G.maxmana,0,1), val:Math.round(G.mana/G.maxmana*100)+'%', col:'#56b8ff'});
+  // --- greed: unbanked haul at risk (climbs each floor since your last bank) ---
+  { const gr=greedMult(), risk=(G.inv?G.inv.length:0);
+    if(gr>1.05 || risk>0){ const gt=gr>=2.2?2:gr>=1.6?1:0; const gcol=gt===2?'#ff5470':gt===1?'#ffce4d':'#8effd9';
+      list.push({id:'greed', ic:'💰', nm:'Greed ×'+gr.toFixed(1)+(risk?' · '+risk+' at risk':''), col:gcol, pulse:gr>=2.3, _tier:gt,
+        ds:'Loot drops & gold scale with greed, but everything carried is lost on death. Bank at a safe zone to cash it in.'}); } }
   // --- environmental ---
   if(G.floorMod)            list.push({id:'mod',  ic:G.floorMod.nm.split(' ')[0], nm:G.floorMod.nm.replace(/^\S+\s/,''), col:G.floorMod.col, ds:G.floorMod.ds});
-  const sig=list.map(x=>x.id).join(',');
+  const sig=list.map(x=>x.id+(x._tier!=null?x._tier:'')).join(',');
   if(bar._sig!==sig){
     bar._sig=sig;
     bar.innerHTML=list.map(x=>`<div class="buff" data-bid="${x.id}" style="--bc:${x.col}"${x.ds?' title="'+x.ds.replace(/"/g,'')+'"':''}><span class="bic">${x.ic}</span><span class="bnm">${x.nm}</span>${(x.t!=null||x.val!=null)?'<span class="bt"></span>':''}${(x.t!=null||x.frac!=null)?'<span class="bbar"></span>':''}</div>`).join('');
@@ -5115,7 +5138,7 @@ function renderBuffs(){
     seen[x.id]=1;
     // value label (seconds for timers, custom for gauges)
     const ts=el.querySelector('.bt'); if(ts) ts.textContent = x.t!=null ? x.t.toFixed(1)+'s' : (x.val||'');
-    if(x.id==='ramp'){ const nm=el.querySelector('.bnm'); if(nm) nm.textContent='Rampage ×'+(1+st); }
+    if(x.id==='ramp'||x.id==='greed'){ const nm=el.querySelector('.bnm'); if(nm) nm.textContent=x.nm; }
     // draining bar: timers track their own peak so the bar reads as remaining/total
     let frac=x.frac;
     if(x.t!=null){ const pk=Math.max(mxc[x.id]||0, x.t); mxc[x.id]=pk; frac=pk>0?x.t/pk:0; }
