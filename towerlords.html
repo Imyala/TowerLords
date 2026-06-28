@@ -271,6 +271,16 @@
   #treeHead{display:flex;align-items:center;gap:16px;padding:12px 18px;border-bottom:1px solid rgba(255,255,255,.1);}
   #treeHead h3{padding:0;} #treeHead .sp{font-size:13px;} #treeHead .sp b{color:var(--gold);font-size:18px;}
   #treeHead .treeHint{font-size:10.5px;opacity:.5;letter-spacing:.3px;}
+  /* quick-build bar: one-click "build me toward [role]" for newcomers facing the big tree */
+  #quickBuild{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:10px 18px;border-bottom:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.02);}
+  #quickBuild:empty{display:none;}
+  #quickBuild .qbLbl{font-size:10.5px;letter-spacing:2px;text-transform:uppercase;opacity:.6;margin-right:2px;}
+  .qbBtn{cursor:pointer;pointer-events:auto;display:flex;align-items:center;gap:6px;padding:6px 11px;border-radius:8px;
+    border:1px solid color-mix(in srgb,var(--qc,#56e0ff) 45%,transparent);background:color-mix(in srgb,var(--qc,#56e0ff) 9%,rgba(8,12,22,.6));
+    color:#eaf0ff;font-size:12px;font-weight:bold;transition:.13s;}
+  .qbBtn:hover{background:color-mix(in srgb,var(--qc,#56e0ff) 24%,rgba(8,12,22,.6));box-shadow:0 0 14px color-mix(in srgb,var(--qc,#56e0ff) 40%,transparent);transform:translateY(-1px);}
+  .qbBtn .qbi{font-size:14px;} .qbBtn small{font-size:9px;opacity:.6;letter-spacing:1px;text-transform:uppercase;font-weight:normal;}
+  .qbBtn.dim{opacity:.35;pointer-events:none;filter:grayscale(.5);}
   #respec{cursor:pointer;font-size:11px;letter-spacing:1px;padding:7px 14px;border-radius:7px;pointer-events:auto;
     border:1px solid var(--hp);color:var(--hp);background:rgba(255,77,109,.07);font-weight:bold;}
   #respec:hover{background:var(--hp);color:#1a0408;}
@@ -859,6 +869,7 @@
       <div class="treeHint">left-click +1 · right-click −1 · deeper tiers need points in that spec</div>
       <div class="closeX" data-close="treePanel" style="position:static;margin-left:auto;">✕ <span style="font-size:11px;opacity:.6">(T)</span></div>
     </div>
+    <div id="quickBuild"></div>
     <div id="treeBody">
       <div id="treeCols"></div>
       <div id="treeTip"></div>
@@ -3874,7 +3885,7 @@ function doFloorShift(){
   shakeCam(1.0); G.hitstop=Math.max(G.hitstop||0,.12);
 }
 function spendAttr(k){ if(G.attrPts<=0)return; G.attrPts--; G.attr[k]++; recompute(); renderChar(); updatePips(); }
-function updatePips(){ $('pipChar').classList.toggle('on',G.attrPts>0); $('pipTree').classList.toggle('on',G.skillPts>0); $('spNum').textContent=G.skillPts; $('ptsNum').textContent=G.attrPts; }
+function updatePips(){ $('pipChar').classList.toggle('on',G.attrPts>0); $('pipTree').classList.toggle('on',G.skillPts>0); $('spNum').textContent=G.skillPts; $('ptsNum').textContent=G.attrPts; renderQuickBuild(); }
 
 // ============================================================ SKILL TREE UI
 function investTalent(id){
@@ -3889,6 +3900,29 @@ function investTalent(id){
     banner('✦ SKILL LEARNED', sk.ic+' '+sk.nm); log('✦ Learned '+sk.nm+' — bind it on your 1–9 bar (Inventory).'); sfx.evolve&&sfx.evolve(); refreshItemPanels(); } }
   recompute(); refreshSpec(t.spec); updatePips();
   log('✦ '+t.nm+' '+(rank+1)+'/'+t.max);
+}
+// ---- one-click "recommended build": pour all available points down a chosen spec (newcomer-friendly) ----
+function autoBuild(si){
+  const spec=SPECS[si]; if(!spec) return;
+  if(G.skillPts<=0){ log('No skill points to spend — level up to earn more.'); return; }
+  let spent=0, grantedSkill=false;
+  while(G.skillPts>0){
+    let pick=null;
+    for(const tier of spec.tiers){ for(const t of tier){ if(talentReason(t)===null){ pick=t; break; } } if(pick) break; }   // lowest unmaxed, gate-legal node
+    if(!pick) break;
+    const rank=G.alloc[pick.id]||0; G.alloc[pick.id]=rank+1; G.skillPts--; spent++;
+    if(pick.grantSkill && rank===0){ const sk=SKILLS[pick.grantSkill]; if(sk){ const gem=makeSkillGem(G.floor||1,pick.grantSkill); G.inv.push(gem); autoBind(gem); grantedSkill=true; } }
+  }
+  recompute(); refreshSpec(spec); updatePips(); if(grantedSkill) refreshItemPanels();
+  if(spent>0){ banner('⚡ '+spec.nm.toUpperCase(),'+'+spent+' point'+(spent===1?'':'s')+' · '+spec.sub+' build'); log('⚡ Spent '+spent+' point'+(spent===1?'':'s')+' toward '+spec.nm+' ('+spec.sub+'). Refine any node by hand.'); if(sfx.evolve)sfx.evolve(); }
+  else log('Nothing more to allocate in '+spec.nm+' right now.');
+}
+function renderQuickBuild(){
+  const w=$('quickBuild'); if(!w) return;
+  const dim = G.skillPts<=0;
+  w.innerHTML='<span class="qbLbl">⚡ Quick build</span>'+SPECS.map((s,i)=>
+    `<button class="qbBtn${dim?' dim':''}" data-si="${i}" style="--qc:${s.col}" title="Pour all your points toward a ${s.sub} build down the ${s.nm} tree — refine by hand after"><span class="qbi">${s.ic}</span>${s.nm}<small>${s.sub}</small></button>`).join('');
+  w.querySelectorAll('.qbBtn').forEach(b=>b.onclick=()=>autoBuild(+b.dataset.si));
 }
 function removeTalent(id){   // right-click to refund a point, if nothing still depends on it
   const t=TALENTMAP[id]; if(!t) return; const rank=G.alloc[id]||0; if(rank<=0) return;
@@ -3944,6 +3978,7 @@ function specInner(spec){
 function refreshSpec(spec){ const el=$('spec-'+spec.kw); if(el) el.innerHTML=specInner(spec); }
 function renderTree(){
   const sp=$('spNum'); if(sp) sp.textContent=G.skillPts;
+  renderQuickBuild();
   const cont=$('treeCols'); if(!cont) return;
   if(!cont._built){   // build all 2600 cells once; from then on only touched columns refresh
     cont.innerHTML=SPECS.map(s=>`<div class="spec" id="spec-${s.kw}" style="--sc:${s.col}">${specInner(s)}</div>`).join('');
