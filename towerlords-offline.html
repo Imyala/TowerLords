@@ -1338,8 +1338,8 @@ function makeSkillGem(floor, idForce){ const id=idForce||pick(SKILL_IDS), sk=SKI
     value:60+tier*40+floor*3, desc:`Active skill · bind to 1–9 bar${tier>1?` · +${(tier-1)*15}% power`:''}`}; }
 // ---- user settings (persist across sessions) ----
 const SETTINGS_KEY='towerlords_settings_v1';
-const SETTINGS={ bigNumbers:true, moveMode:'keyboard', tips:true };   // moveMode: 'keyboard' | 'mouse' · tips: contextual coaching
-function loadSettings(){ try{ const s=localStorage.getItem(SETTINGS_KEY); if(s){ const o=JSON.parse(s); if(typeof o.bigNumbers==='boolean')SETTINGS.bigNumbers=o.bigNumbers; if(o.moveMode==='keyboard'||o.moveMode==='mouse')SETTINGS.moveMode=o.moveMode; if(typeof o.tips==='boolean')SETTINGS.tips=o.tips; } }catch(e){} }
+const SETTINGS={ bigNumbers:true, moveMode:'keyboard', tips:true, autoSalvage:true };   // autoSalvage: grey/common drops auto-sell for gold instead of flooding the bag
+function loadSettings(){ try{ const s=localStorage.getItem(SETTINGS_KEY); if(s){ const o=JSON.parse(s); if(typeof o.bigNumbers==='boolean')SETTINGS.bigNumbers=o.bigNumbers; if(o.moveMode==='keyboard'||o.moveMode==='mouse')SETTINGS.moveMode=o.moveMode; if(typeof o.tips==='boolean')SETTINGS.tips=o.tips; if(typeof o.autoSalvage==='boolean')SETTINGS.autoSalvage=o.autoSalvage; } }catch(e){} }
 function saveSettings(){ try{ localStorage.setItem(SETTINGS_KEY, JSON.stringify(SETTINGS)); }catch(e){} }
 // ---- death log (persist last 40 runs) ----
 const DEATHLOG_KEY='towerlords_deathlog_v1';
@@ -1940,7 +1940,7 @@ function makePlayer(idx){ return {
   pet:null, pets:[], petMesh:null, petMagnet:0, petErrand:null,
   belt:[null,null,null], charge:0, chargeMax:100, sigSlot:null, sigCd:0, swiftT:0, perfectT:0, dashRewarded:false,
   dashCd:0, dashCdMax:0.5, dashT:0, dashDir:{x:0,z:1}, flowT:0,
-  attackCd:0, invuln:0, dead:false, fervor:0, fervorT:0,
+  attackCd:0, invuln:0, dead:false, fervor:0, fervorT:0, rootT:0,
   nearStash:false, nearVendor:false, nearPortal:false, nearScore:false, _ph:false, _sh:false,
   aim:new THREE.Vector3(),
   in:{mx:0,mz:0,ax:0,az:1,hasAim:false,atk:false,prev:{}},   // per-frame input snapshot (filled by input source)
@@ -1950,7 +1950,7 @@ function makePlayer(idx){ return {
 const PF = new Set(['id','name','input','cam','viewport','color','joined','player','gold','level','xp','xpNeed','xpMode',
   'attrPts','skillPts','attr','hp','maxhp','mana','maxmana','S','alloc','slots','cd','equip','invCap','inv','stash',
   'stashStrikes','selGem','greed','run','pet','pets','petMesh','petMagnet','petErrand','belt','charge','chargeMax','sigSlot','sigCd',
-  'swiftT','perfectT','dashRewarded','dashCd','dashCdMax','dashT','dashDir','flowT','attackCd','invuln','dead',
+  'swiftT','perfectT','dashRewarded','dashCd','dashCdMax','dashT','dashDir','flowT','attackCd','invuln','dead','rootT',
   'fervor','fervorT','nearStash','nearVendor','nearPortal','nearScore','_ph','_sh','aim','in','downed','downT','reviveT']);
 const _G = {
   running:false, paused:false, floor:1, maxFloor:100, seed:0,
@@ -2844,7 +2844,10 @@ function partyLevel(){ let m=1; for(const p of _G.players){ if(p.joined && p.pla
 // Item/equipment attribute bonuses are deliberately excluded so gear is your EDGE over the curve, not part of it.
 function basePowerLvl(){ let best=1; for(const pl of joinedPlayers()){ const A=pl.attr; if(!A)continue;
   const s=(A.str||0)+(A.dex||0)+(A.int||0)+(A.vit||0)+(A.will||0); best=Math.max(best, Math.round((s-25)/5)+1); } return best; }
-function scaleLvl(floor){ return Math.max(floor, basePowerLvl()); }   // enemies track base stats (floor as a safety floor), not gear-inflated level
+function scaleLvl(floor){ return Math.max(floor, basePowerLvl()); }   // enemies track floor & attribute level; gear power is handled via the bigHit floors on elites/bosses
+// the strongest player's representative BIG hit (a ~3-coef skill, crit-weighted) — the unit tough foes are balanced against, so burst can't trivialise them
+function playerBigHit(){ let best=0; for(const pl of joinedPlayers()){ const S=pl.S; if(!S||!S.dmgBase)continue;
+    const critF=1+(S.crit||0)*((S.critMult||1.5)-1); best=Math.max(best, S.dmgBase*3.0*(S.skillMult||1)*critF); } return best||12; }
 // ---- elite/champion affixes: bolt-on modifiers that give a single mob a unique behaviour + colour, so packs vary every run ----
 const ELITE_AFFIXES=[
   {id:'volatile', nm:'Volatile',    col:0xff7a3d, apply:e=>{ e.volatile=true; }},        // explodes on death
@@ -2890,6 +2893,7 @@ function spawnEnemy(floor,home,forceType,forceElite){
   else if(floor>=3 && Math.random()<0.06*_ae.champMul){ applyAffixes(e,1); e.champion=true; e.hp*=1.4; e.dmg*=1.15; e.xp*=1.7; }   // occasional "champion" normal — run-to-run variety
   // New Game+ scaling
   const ng=ngMult(); e.hp*=ng*_ae.ehp; e.dmg*=ng*_ae.edmg; e.maxhp=e.hp;   // ascension piles on enemy HP/damage
+  { const fl=playerBigHit()*(e.elite?4.5:0.28); if(e.hp<fl){ e.hp=e.maxhp=fl; } }   // foes firm up with your gear: elites survive several big hits, trash a few basics — never trivial one-taps
   // floor-modifier effects
   const mod=G.floorMod; if(mod){ if(mod.espd)e.speed*=mod.espd; if(mod.edmg)e.dmg*=mod.edmg; if(mod.ehp){e.hp*=mod.ehp;} if(mod.xpm)e.xp*=mod.xpm; }
   const rb=Math.min(0.1+floor*0.004,0.35);
@@ -3053,7 +3057,8 @@ function spawnBoss(floor,room){
   const idx=((Math.floor(floor/5)-1)%BOSSES.length + BOSSES.length)%BOSSES.length;   // milestone → boss, cycling
   const lvl=scaleLvl(floor);   // boss also rubber-bands to the party level
   const _ae=ascEff();
-  const def=BOSSES[idx], hp=(1100+lvl*120)*ng*def.hpMult*_ae.bossHp;
+  const BOSS_HITS=40;   // a guardian must endure ~40 of your biggest hits — a real DPS check, never a burst-down
+  const def=BOSSES[idx], hp=Math.max((1100+lvl*120)*ng*def.hpMult*_ae.bossHp, playerBigHit()*BOSS_HITS*def.hpMult*_ae.bossHp);
   const e={type:'boss',boss:true,bossDef:def,hp,maxhp:hp,speed:3.4*def.spdMult,dmg:(38+lvl*2.6)*ng*_ae.bossDmg,r:2.6,scale:def.scale,xp:90*ng,
     hitFlash:0,color:def.color,keep:def.keep||0,name:def.nm,
     moveCd:def.moves.map(m=>rand(m.cd[0]*0.5,m.cd[1])),   // stagger the first cast of each move
@@ -3160,7 +3165,9 @@ function updatePillarTraps(dt){
 // ============================================================ COMBAT
 function basicAttack(){
   const w=G.S.wpn, p=G.player.position, baseAng=Math.atan2(aimPoint.x-p.x, aimPoint.z-p.z);
-  const shots=w.shots+G.S.proj, spread=w.spread; sfx.shootW(w.imp);
+  const shots=w.shots+G.S.proj;
+  const spread=shots>1?Math.max(w.spread,0.085):w.spread;   // extra/zero-spread shots get a minimum fan so they don't overlap into one bolt
+  sfx.shootW(w.imp);
   for(let i=0;i<shots;i++){
     const ang=baseAng+(shots>1?(i-(shots-1)/2)*spread:0), dx=Math.sin(ang), dz=Math.cos(ang);
     const crit=Math.random()<G.S.crit, dmg=G.S.dmgBase*w.dmgMult*(crit?G.S.critMult:1)*fervorMult()*flowMult()*condMult();
@@ -3547,6 +3554,8 @@ function hurtGoblin(dmg,crit,element){
     scene.remove(g.mesh); G.goblin=null; }
 }
 function spawnPickup(x,z,kind,val){ const m=new THREE.Mesh(new THREE.OctahedronGeometry(.42,0),M.xp); m.position.set(x,.6,z); scene.add(m); G.pickups.push({mesh:m,kind,val,x,z}); }
+// grey/common gear with no special role — the trash that floods the bag; auto-salvaged to gold when the option is on
+function isJunk(it){ return !!(it && it.slotKey && !it.isGem && !it.isSkillGem && !it.isFlask && !it.isPet && !it.isPot && !it.unique && RARITY.indexOf(it.rarity)===0); }
 function dropLoot(x,z,uniqueChance,owner,themeKey){
   let item; const r=Math.random();
   if(r < 0.004 + G.floor*0.0006) item=makePot(G.floor);          // ULTRA-rare permanent stat potion
@@ -4511,6 +4520,8 @@ function renderSettings(){
       <div class="tog${SETTINGS.bigNumbers?' on':''}" id="togBig"><div class="knob"></div></div></div>
     <div class="setRow"><div class="lbl">Coaching tips<small>One-time hints that explain each system as you meet it</small></div>
       <div class="tog${SETTINGS.tips?' on':''}" id="togTips"><div class="knob"></div></div></div>
+    <div class="setRow"><div class="lbl">Auto-salvage junk<small>Grey/common drops auto-sell for gold instead of filling your bag</small></div>
+      <div class="tog${SETTINGS.autoSalvage?' on':''}" id="togSalv"><div class="knob"></div></div></div>
     <div style="margin:16px 16px 6px;font-size:11px;opacity:.6;letter-spacing:1px;text-transform:uppercase">Movement</div>
     <div style="display:flex;gap:8px;margin:0 16px 14px;">
       <div class="segBtn${mm==='keyboard'?' sel':''}" data-mm="keyboard">⌨ Keyboard<small>WASD to move · cursor to aim · L-click attack</small></div>
@@ -4520,6 +4531,8 @@ function renderSettings(){
     if(G.player){ const p=G.player.position; floatText(p.x,p.z, SETTINGS.bigNumbers?'1234':'1234', 'crit', 2.6); } };
   $('togTips').onclick=()=>{ SETTINGS.tips=!SETTINGS.tips; saveSettings(); renderSettings();
     if(!SETTINGS.tips) dismissCoach(); else log('💡 Coaching tips on — hints will appear as you meet new systems.'); };
+  $('togSalv').onclick=()=>{ SETTINGS.autoSalvage=!SETTINGS.autoSalvage; saveSettings(); renderSettings();
+    log(SETTINGS.autoSalvage?'♻ Auto-salvage on — grey drops become gold.':'Auto-salvage off — all drops go to your bag.'); };
   b.querySelectorAll('[data-mm]').forEach(el=>el.onclick=()=>{ SETTINGS.moveMode=el.dataset.mm; saveSettings(); renderSettings();
     log(SETTINGS.moveMode==='mouse'?'🖱 Mouse-move: hold left-click to move, right-click to attack.':'⌨ Keyboard: WASD to move, left-click to attack.'); });
 }
@@ -5057,7 +5070,7 @@ function updatePlayerStep(dt){
   if(!G.inTown){ G.run.totalTime+=dt; G.run.floorTime+=dt; }
   G.invuln=Math.max(0,G.invuln-dt); G.attackCd=Math.max(0,G.attackCd-dt);
   for(const k in G.cd) G.cd[k]=Math.max(0,G.cd[k]-dt);
-  G.sigCd=Math.max(0,(G.sigCd||0)-dt); if(G.swiftT>0)G.swiftT-=dt; if(G.perfectT>0)G.perfectT-=dt;
+  G.sigCd=Math.max(0,(G.sigCd||0)-dt); if(G.swiftT>0)G.swiftT-=dt; if(G.perfectT>0)G.perfectT-=dt; if(G.rootT>0)G.rootT-=dt;
   for(const fl of G.belt){ if(fl&&fl.cd>0) fl.cd-=dt; }
   if(G.hp<G.maxhp){ const h=Math.min(G.S.lifeRegen*dt,G.maxhp-G.hp); G.hp+=h; G.run.healSelf+=h; }
   G.mana=Math.min(G.maxmana,G.mana+G.S.manaRegen*dt);
@@ -5076,13 +5089,14 @@ function updatePlayerStep(dt){
       if(ad>0.7){ mx=ax/ad; mz=az/ad; }   // click-to-move (kbm only)
     }
     if(mx||mz){ const l=Math.hypot(mx,mz); mx/=l; mz/=l;
-      const rooted=(pObj.in.atk && !anyPanelOpen() && G.S.wpn.moveMult<1) ? G.S.wpn.moveMult : 1;   // heavy weapons slow you while firing
+      const rooted=((pObj.in.atk||G.rootT>0) && !anyPanelOpen() && G.S.wpn.moveMult<1) ? G.S.wpn.moveMult : 1;   // heavy weapons slow you for the whole firing cycle
       const spd=G.S.move*(G.swiftT>0?1.4:1)*rooted; moveEntity(p, p.x+mx*spd*dt, p.z+mz*spd*dt, 0.7); }
   }
   p.y=1;
   const pmk=G.player.userData.marker; if(pmk) pmk.material.color.setHex(G.flowT>0?0xffce4d:(pObj.color||0x56e0ff));
   // attack (held)
-  if(pObj.in.atk && !anyPanelOpen() && G.attackCd<=0){ basicAttack(); G.attackCd=Math.max(0.05, 0.36/G.S.wpn.asMult/G.S.asFactor/fervorAS()); }
+  if(pObj.in.atk && !anyPanelOpen() && G.attackCd<=0){ basicAttack(); G.attackCd=Math.max(0.05, 0.36/G.S.wpn.asMult/G.S.asFactor/fervorAS());
+    if(G.S.wpn.moveMult<1) G.rootT=Math.max(G.rootT||0, G.attackCd*0.92); }   // heavy weapons root you for the firing cycle, even on a single tap
   // gamepad action edges (keyboard P1 fires these from the keydown handler instead)
   if(pObj.input && pObj.input.pollActions && !G.paused){ const inp=pObj.in;
     if(padEdge(inp,'dash')) doDash();
@@ -5112,6 +5126,8 @@ function updatePlayerPickups(dt){
       else if(pk.item.isPot){ pk.dead=true; applyStatPot(pk.item); }
       else if(pk.item.isPet){ if((G.pets?G.pets.length:0)<PET_YARD_CAP){ pk.dead=true; hatchPet(pk.item); }
         else if(G.inv.length<G.invCap){ pk.dead=true; G.inv.push(pk.item); log('🥚 Pet yard full — egg stored in your bag.'); } }
+      else if(SETTINGS.autoSalvage && isJunk(pk.item)){ pk.dead=true; const g=pk.item.value||0; G.gold+=g; flashGold(); sfx.gold();
+        floatText(pk.mesh.position.x,pk.mesh.position.z,'♻ +'+g+'g','goldtxt',1.8); }   // auto-salvage grey junk → gold, no bag clutter
       else if(G.inv.length<G.invCap){ pk.dead=true; sfx.gold(); floatText(pk.mesh.position.x,pk.mesh.position.z,pk.item.name,pk.item.rarity.css==='legend'||pk.item.rarity.css==='epic'||pk.item.unique||pk.item.isSkillGem?'crit':'goldtxt',2);
         G.inv.push(pk.item); if(pk.item.isSkillGem && G.slots.includes(null)) autoBind(pk.item); if(pk.item.isFlask && G.belt.includes(null)) autoBeltFlask(pk.item);
         log('🎁 '+pk.item.name+(pk.item.isPet?' — open Pet (P) to fuse':pk.item.isSkillGem?' — bound / bind in Inventory (I)':' — press I')); refreshItemPanels(); }
@@ -5163,11 +5179,14 @@ function updateWorld(dt){
       b.mesh.position.x=b.wave.ox+b.wave.hx*dist+px*off; b.mesh.position.z=b.wave.oz+b.wave.hz*dist+pz*off; }
     else { b.mesh.position.x+=b.vx*dt; b.mesh.position.z+=b.vz*dt; }
     if(b.life<=0){ b.dead=true; continue; }
-    if(!inAny(b.mesh.position.x,b.mesh.position.z,0) || projBlocked(b.mesh.position.x,b.mesh.position.z)){
-      if(b.bounce>0 && !b.boom){ b.bounce--;   // reflect off the blocking axis instead of dying
-        if(!inAny(b.mesh.position.x-b.vx*dt,b.mesh.position.z,0)) b.vx=-b.vx; else b.vz=-b.vz;
-        b.mesh.position.x+=b.vx*dt*1.1; b.mesh.position.z+=b.vz*dt*1.1; }
-      else { b.dead=true; continue; } }
+    { const bm=b.mesh.position, blk=(x,z)=>!inAny(x,z,0)||projBlocked(x,z);
+      if(blk(bm.x,bm.z)){
+        if(b.bounce>0 && !b.boom){ b.bounce--;   // reflect off the blocking wall axis (undo the x-step → if that clears it, the wall is vertical → flip vx)
+          if(!blk(bm.x-b.vx*dt, bm.z)) b.vx=-b.vx; else b.vz=-b.vz;
+          bm.x+=b.vx*dt*1.2; bm.z+=b.vz*dt*1.2;
+          if(blk(bm.x,bm.z)){ bm.x-=b.vx*dt*1.2; bm.z-=b.vz*dt*1.2; }   // still stuck → step back rather than burrow deeper
+          burst(bm.x,bm.z,(ELEMENTS[b.element]&&ELEMENTS[b.element].col)||0x9fd4ff,3,0.6); }
+        else { b.dead=true; continue; } } }
     for(const e of G.enemies){ if(b.hit&&b.hit.has(e))continue; const d=Math.hypot(e.mesh.position.x-b.mesh.position.x,e.mesh.position.z-b.mesh.position.z);
       if(d<e.r+.4){ hurtEnemy(e,b.dmg,b.crit,b.element,b.src,b.owner); if(b.forceAil&&!e.dead) applyAilment(e,b.forceAil,b.dmg);
         if(b.imp){ const im=b.imp, ex=e.mesh.position.x, ez=e.mesh.position.z;   // per-weapon impact: cannons thump, daggers tick
