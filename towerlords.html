@@ -1110,11 +1110,14 @@ function makeItem(floor, slotKey, rarityForce, uniqueChance){
   const sockets = smax<=0?0:randi(Math.max(0,smax-1),smax);
   const mag=affixes.reduce((s,af)=>s+af.val,0);
   const value=Math.round((rar.mult*(6+floor*1.5)+mag)*rand(.85,1.15));
-  // weapons roll an archetype (attack style); its name pool replaces the slot's
-  let arch=null, nmPool=slot.names;
-  if(slot.k==='weapon'){ arch=pick(WARCH_KEYS); nmPool=WEAPON_ARCHETYPES[arch].names; }
-  const name=`${rar.nm==='Common'?'':rar.nm+' '}${pick(nmPool)}`;
-  return {slotKey:slot.k, slotIc:slot.ic, slotNm:slot.nm, rarity:rar, affixes, sockets, socketed:[], value, floor, name, arch};
+  // weapons roll an archetype (attack style); its name pool replaces the slot's; some roll an innate element
+  let arch=null, nmPool=slot.names, element=null;
+  if(slot.k==='weapon'){ arch=pick(WARCH_KEYS); nmPool=WEAPON_ARCHETYPES[arch].names;
+    if(Math.random()<0.42) element=pick(['fire','cold','light']);   // ~40% of weapons come elementally charged (Flaming Railgun, Frozen Chakram, …)
+  }
+  const elePre = element?{fire:'Flaming ',cold:'Frozen ',light:'Shocking '}[element]:'';
+  const name=`${rar.nm==='Common'?'':rar.nm+' '}${elePre}${pick(nmPool)}`;
+  return {slotKey:slot.k, slotIc:slot.ic, slotNm:slot.nm, rarity:rar, affixes, sockets, socketed:[], value, floor, name, arch, element};
 }
 
 // ---------------- elements / ailments ----------------
@@ -1151,6 +1154,11 @@ const UNIQUES = [
   {slotKey:'gloves', name:'Manyfold Grip', sockets:1, desc:'Split your fire wide.', affixes:[{key:'proj',name:'extra projectile',pct:false,val:2},{key:'asPct',name:'attack speed',pct:true,val:10}]},
   {slotKey:'ring', name:'Glass Cannon', sockets:0, desc:'Immense power, fragile life.', affixes:[{key:'dmgPct',name:'damage',pct:true,val:40},{key:'critMultPct',name:'crit multiplier',pct:true,val:30},{key:'lifePct',name:'maximum life',pct:true,val:-25}]},
   {slotKey:'boots', name:'Phasestep', sockets:1, special:'dashCdr', desc:'Dash recharges far faster.', affixes:[{key:'movePct',name:'move speed',pct:true,val:20}]},
+  {slotKey:'weapon', arch:'railgun', name:'Sunlance', element:'fire', sockets:1, special:'igniteBoost', desc:'A rail of pure flame that skewers all — +100% ignite.', affixes:[{key:'dmgPct',name:'damage',pct:true,val:26},{key:'critMultPct',name:'crit multiplier',pct:true,val:24}]},
+  {slotKey:'weapon', arch:'chakram', name:'Frostbite', element:'cold', sockets:1, desc:'A returning ring of ice that chills all it passes.', affixes:[{key:'dmgPct',name:'damage',pct:true,val:20},{key:'asPct',name:'attack speed',pct:true,val:10}]},
+  {slotKey:'weapon', arch:'seeker', name:'Tempest Swarm', element:'light', sockets:1, special:'alwaysShock', desc:'Homing motes that always shock.', affixes:[{key:'dmgPct',name:'damage',pct:true,val:18},{key:'crit',name:'crit chance',pct:true,val:8}]},
+  {slotKey:'weapon', arch:'spear', name:'Worldpiercer', sockets:2, desc:'A lance that runs an entire room through.', affixes:[{key:'dmgPct',name:'damage',pct:true,val:24},{key:'pierce',name:'pierce',pct:false,val:1,int:false}]},
+  {slotKey:'weapon', arch:'prism', name:'Spectral Weave', element:'cold', sockets:1, desc:'Twin ice-bolts that snake through packs.', affixes:[{key:'skillDmgPct',name:'skill damage',pct:true,val:20},{key:'manaFlat',name:'maximum mana',pct:false,val:24,int:true}]},
 ];
 function makeUnique(floor, u){ u=u||pick(UNIQUES); const slot=SLOTMAP[u.slotKey];
   const affixes=u.affixes.map(a=>({...a, val:a.int?Math.round(a.val*(1+floor*0.04)):a.val}));
@@ -1300,15 +1308,15 @@ const SKILLS = {
   gFrost:  {nm:'Frost Nova',  ic:'❄', mana:18, cd:0.9, cast:castFrost},
   gBarrage:{nm:'Barrage',     ic:'🎇', mana:18, cd:0.8, cast:castBarrage},
   // --- RPG-style additions ---
-  gHeal:   {nm:'Mend',        ic:'🩹', mana:22, cd:6.0, cast:castHeal},
-  gShield: {nm:'Aegis',       ic:'⛨', mana:20, cd:8.0, cast:castShield},
-  gVortex: {nm:'Singularity', ic:'🌌', mana:24, cd:7.0, cast:castVortex},
-  gStorm:  {nm:'Thunderstorm',ic:'⛈', mana:22, cd:5.0, cast:castStorm},
-  gFlame:  {nm:'Flame Cone',  ic:'🔥', mana:16, cd:3.0, cast:castFlame},
-  gQuake:  {nm:'Earthquake',  ic:'🌋', mana:24, cd:6.0, cast:castQuake},
-  gLance:  {nm:'Ice Lance',   ic:'🧊', mana:12, cd:1.5, cast:castLance},
-  gSlow:   {nm:'Time Warp',   ic:'⏳', mana:22, cd:12.0,cast:castSlow},
-  gBlades: {nm:'Bladestorm',  ic:'🌀', mana:20, cd:6.0, cast:castBlades},
+  gHeal:   {nm:'Mend',        ic:'🩹', mana:24, cd:6.5, cast:castHeal},
+  gShield: {nm:'Aegis',       ic:'⛨', mana:24, cd:9.0, cast:castShield},
+  gVortex: {nm:'Singularity', ic:'🌌', mana:26, cd:7.0, cast:castVortex},
+  gStorm:  {nm:'Thunderstorm',ic:'⛈', mana:20, cd:4.5, cast:castStorm},
+  gFlame:  {nm:'Flame Cone',  ic:'🔥', mana:15, cd:2.6, cast:castFlame},
+  gQuake:  {nm:'Earthquake',  ic:'🌋', mana:26, cd:6.5, cast:castQuake},
+  gLance:  {nm:'Ice Lance',   ic:'🧊', mana:13, cd:1.6, cast:castLance},
+  gSlow:   {nm:'Time Warp',   ic:'⏳', mana:24, cd:13.0,cast:castSlow},
+  gBlades: {nm:'Bladestorm',  ic:'🌀', mana:18, cd:5.0, cast:castBlades},
 };
 const SKILL_IDS=Object.keys(SKILLS);
 const SLOT_KEYS=['1','2','3','4','5','6','7','8','9']; const SLOT_LABEL=['1','2','3','4','5','6','7','8','9'];   // 9-skill bar (Torchlight-style)
@@ -1355,6 +1363,31 @@ const SKILL_SYNERGY = {
   'gBlink|gVolley':  {nm:'Shadowshot',       ic:'🌑'},
   'gBlink|gWhirl':   {nm:'Cyclone Step',     ic:'🌀'},
   'gBarrage|gBlink': {nm:'Phantom Barrage',  ic:'🎇'},
+  // --- combos with the RPG skills ---
+  'gFlame|gFrost':   {nm:'Steam Burst',      ic:'♨'},
+  'gFlame|gStorm':   {nm:'Plasma Storm',     ic:'⚡'},
+  'gFlame|gMeteor':  {nm:'Hellfire',         ic:'😈'},
+  'gFlame|gWhirl':   {nm:'Firewhirl',        ic:'🔥'},
+  'gFrost|gStorm':   {nm:'Brittle Storm',    ic:'🌩'},
+  'gMeteor|gStorm':  {nm:'Ion Tempest',      ic:'☢'},
+  'gChain|gStorm':   {nm:'Tempest Surge',    ic:'⚡'},
+  'gMeteor|gVortex': {nm:'Supernova',        ic:'💫'},
+  'gFrost|gVortex':  {nm:'Cryo Singularity', ic:'🥶'},
+  'gSlow|gVortex':   {nm:'Stasis Field',     ic:'🕳'},
+  'gMeteor|gQuake':  {nm:'Volcano',          ic:'🌋'},
+  'gFrost|gQuake':   {nm:'Permafrost',       ic:'🧊'},
+  'gNova|gQuake':    {nm:'Shockwave',        ic:'💥'},
+  'gChain|gLance':   {nm:'Railspike',        ic:'📍'},
+  'gFrost|gLance':   {nm:'Glacial Spear',    ic:'🔱'},
+  'gMeteor|gLance':  {nm:'Magma Spear',      ic:'🌋'},
+  'gBlades|gWhirl':  {nm:'Cyclone Blades',   ic:'🌀'},
+  'gBlades|gFrost':  {nm:'Frostblades',      ic:'❄'},
+  'gBlades|gFlame':  {nm:'Blazing Blades',   ic:'🔥'},
+  'gHeal|gShield':   {nm:'Sanctuary',        ic:'✨'},
+  'gNova|gShield':   {nm:'Aegis Burst',      ic:'⛨'},
+  'gHeal|gNova':     {nm:'Holy Nova',        ic:'🌟'},
+  'gSlow|gStorm':    {nm:'Static Field',     ic:'🌐'},
+  'gChain|gVortex':  {nm:'Magnetar',         ic:'🧲'},
 };
 function synergyFor(idA,idB){ return SKILL_SYNERGY[[idA,idB].sort().join('|')]||null; }
 function skMana(g){ const s=SKILLS[g.skillId]; return s?s.mana:12; }
@@ -2883,7 +2916,7 @@ function castBarrage(pwr){ const p=G.player.position, base=Math.atan2(aimPoint.x
 // ---- additional RPG-style skills ----
 function castHeal(pwr){ const p=G.player.position; const h=Math.min(G.maxhp*(0.24+0.05*((pwr||1)-1)), G.maxhp-G.hp); G.hp+=h; G.run.healSelf+=h;
   ringFx(p.x,p.z,areaR(4),0x6dff8c); ringFx(p.x,p.z,areaR(2.5),0xbfffd0); floatText(p.x,p.z,'+'+Math.round(h),'heal',2.9); }
-function castShield(pwr){ const p=G.player.position; G.invuln=Math.max(G.invuln, 1.5+0.5*((pwr||1)-1)+0.5); ringFx(p.x,p.z,areaR(3.6),0x56e0ff); ringFx(p.x,p.z,areaR(2.6),0xffce4d); floatText(p.x,p.z,'⛨ SHIELD','heal',2.9); }
+function castShield(pwr){ const p=G.player.position; G.invuln=Math.max(G.invuln, 1.3+0.4*((pwr||1)-1)); ringFx(p.x,p.z,areaR(3.6),0x56e0ff); ringFx(p.x,p.z,areaR(2.6),0xffce4d); floatText(p.x,p.z,'⛨ SHIELD','heal',2.9); }
 function castVortex(pwr){ const tx=aimPoint.x, tz=aimPoint.z, R=areaR(8.5); ringFx(tx,tz,R,0xb06bff);
   for(const e of G.enemies){ const dx=tx-e.mesh.position.x, dz=tz-e.mesh.position.z, d=Math.hypot(dx,dz); if(d<R+e.r && d>0.1){ const pull=Math.min(d-0.5, 4.5); e.mesh.position.x+=dx/d*pull; e.mesh.position.z+=dz/d*pull; } }
   G.timed.push({t:0.16, fn:()=>{ ringFx(tx,tz,areaR(5),0xb06bff); burst(tx,tz,0xb06bff); hitRadius(tx,tz,areaR(5),skillDmg(2.3,pwr),200); shakeCam(.5); G.hitstop=Math.max(G.hitstop||0,.05); }}); }
