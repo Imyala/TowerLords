@@ -591,6 +591,23 @@
   .scoreRow{display:flex;justify-content:space-between;align-items:center;padding:7px 2px;border-bottom:1px solid rgba(255,255,255,.07);font-size:13px;}
   .scoreRow span{opacity:.7;} .scoreRow b{color:var(--gold);font-size:15px;}
   #deathScore .scoreRow{font-size:13px;}
+  /* ---- run wrap-up ("THE CLIMB") card on the death screen ---- */
+  #runWrap{width:430px;max-width:92vw;margin:2px auto 18px;}
+  #runWrap:empty{display:none;}
+  .wrapCard{border:1px solid rgba(176,107,255,.3);border-radius:13px;padding:15px 17px 16px;
+    background:linear-gradient(170deg,rgba(20,16,32,.7),rgba(9,8,16,.7));box-shadow:0 0 24px rgba(176,107,255,.1);}
+  .wrapEye{font-size:10.5px;letter-spacing:4px;opacity:.55;text-transform:uppercase;margin-bottom:7px;}
+  .wrapId{font-size:18px;font-weight:bold;letter-spacing:1px;color:#eaf0ff;margin-bottom:3px;}
+  .wrapSub{font-size:11px;opacity:.6;letter-spacing:1px;margin-bottom:13px;}
+  .wrapBoons{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-bottom:14px;}
+  .wrapBoon{display:flex;align-items:center;gap:5px;padding:3px 9px;border-radius:999px;font-size:11px;font-weight:bold;
+    background:rgba(176,107,255,.12);border:1px solid rgba(176,107,255,.4);color:#e6d8ff;}
+  .wrapBoon .wbi{font-size:13px;}
+  .wrapGrid{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+  .wrapStat{display:flex;align-items:center;gap:9px;padding:8px 11px;border-radius:9px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07);}
+  .wrapStat .wsi{font-size:19px;flex:none;}
+  .wrapStat .wsv{font-size:16px;font-weight:bold;color:#fff;line-height:1.1;}
+  .wrapStat .wsl{font-size:9.5px;opacity:.55;letter-spacing:1.5px;text-transform:uppercase;}
   /* run-record two-column layout */
   .scoreCols{display:flex;gap:15px;align-items:flex-start;}
   .scoreColMain{flex:1;min-width:0;} .scoreColSide{width:184px;flex:none;}
@@ -994,6 +1011,7 @@
   <div id="death" class="overlay hidden">
     <h1 style="font-size:46px;">YOU FELL</h1>
     <div id="deathStats"></div>
+    <div id="runWrap"></div>
     <div id="deathScore" style="width:300px;margin:0 auto 22px;"></div>
     <button class="btn" id="reviveBtn">🏛 RETURN TO SANCTUARY</button>
   </div>
@@ -3361,6 +3379,7 @@ function hurtEnemy(e,dmg,crit,element,src,owner){
   if(isPlayerSrc){ if((G.S.exec||0)>0 && e.hp < e.maxhp*0.30) dmg*=(1+G.S.exec/100);          // execute low-HP foes
                    if((G.S.elemDmg||0)>0 && element!=='phys') dmg*=(1+G.S.elemDmg/100); }
   dmg=Math.max(1,dmg); e.hp-=dmg; e.hitFlash=.12; sfx.hit();
+  if(isPlayerSrc) G.run.bigHit=Math.max(G.run.bigHit||0, Math.round(dmg));   // run highlight: biggest single hit
   const pid=(owner!=null?owner:(typeof src==='number'?src:_G.cur));   // attribute damage for soulbound loot
   (e.dmgBy||(e.dmgBy={}))[pid]=(e.dmgBy[pid]||0)+dmg;
   if((src||'player')==='player') addCharge(0.5);
@@ -4325,6 +4344,7 @@ function ascend(){ bountyAscendCheck(); const prevNg=ngLevel(G.floor); G.floor++
   if(ng>prevNg){ unlockFeat('ng'); banner('NEW GAME +'+ng, 'the Tower resets — deadlier & richer'); log('☠ NEW GAME +'+ng+' — enemies far stronger, loot far richer.'); }
   G.run.floorsCleared++; G.run.floorTime=0; sfx.dash();
   const pg=G.greed||1; G.greed=Math.min(GREED_MAX,pg+GREED_STEP);   // pushing deeper without banking raises the stakes
+  G.run.greedPeak=Math.max(G.run.greedPeak||1, G.greed);   // run highlight: highest greed reached
   if(pg<2 && G.greed>=2 && G.inv.length) banner('💰 GREED ×'+G.greed.toFixed(1),'rich haul at risk — bank it at a safe zone');
   $('stashPanel').classList.add('hidden'); syncPause(); log('Ascending to Floor '+G.floor+'…'); generateFloor(); G.hp=Math.min(G.maxhp,G.hp+G.maxhp*0.12); }
 
@@ -4371,6 +4391,7 @@ function die(){ if(G.dead)return;
     $('reviveBtn').textContent='🏛 RETURN TO SANCTUARY';
   }
   recordDeath(deathRec);
+  $('runWrap').innerHTML=runWrapHTML();   // celebratory "the climb" wrap-up — build identity, blessings, highlights
   { const rk=fameRank(META.fame);
     $('deathScore').innerHTML=scoreSummary()
       +`<div class="scoreRow" style="color:var(--gold)"><span>★ Fame earned</span><b>+${fameEarned.toLocaleString()}</b></div>`
@@ -4384,6 +4405,38 @@ function scoreSummary(){ const r=G.run; const row=(l,v)=>`<div class="scoreRow">
   return row('Floors cleared',r.floorsCleared)+row('Kills',r.kills)+row('Pet assists',r.assists)+
     row('Healing — self',Math.round(r.healSelf))+row('Healing — companion',Math.round(r.healOthers))+
     row('XP gained',Math.round(r.xp))+row('Time on floor',fmtTime(r.floorTime))+row('Total run time',fmtTime(r.totalTime)); }
+// ---- run wrap-up: the climb's "story" — your build identity, blessings claimed, and highlights ----
+function buildIdentity(){
+  const S=G.S||{};
+  const elN={phys:'Physical',fire:'Fire',cold:'Frost',light:'Storm'}[S.element]||'Physical';
+  const elIc={phys:'⚔',fire:'🔥',cold:'❄',light:'⚡'}[S.element]||'⚔';
+  const wpn=(S.wpn&&S.wpn.nm)||'Unarmed';
+  const tags=[];
+  if((S.crit||0)>=0.30) tags.push('Crit');
+  if((S.lifesteal||0)>=0.03 || (S.lifeRegen||0)>=5) tags.push('Sustain');
+  if((S.armor||0)>=60 || (G.maxhp||0)>=320) tags.push('Bulwark');
+  if((S.asFactor||1)>=1.35) tags.push('Rapid');
+  if((S.area||0)>=25) tags.push('Wide');
+  const bn=new Set((G.run.boons||[]).map(b=>b.id));   // a signature blessing leads the identity
+  if(bn.has('glasscannon')) tags.unshift('Glass Cannon');
+  else if(bn.has('manabulwark')) tags.unshift('Mana Shield');
+  else if(bn.has('twincast')) tags.unshift('Twin Cast');
+  const tagStr=tags.slice(0,3).join(' · ');
+  return `${elIc} ${elN} ${wpn}${tagStr?' · '+tagStr:''}`;
+}
+function runWrapHTML(){
+  const r=G.run, boons=r.boons||[], asc=(_G.asc||0);
+  const stat=(ic,v,l)=>`<div class="wrapStat"><span class="wsi">${ic}</span><div><div class="wsv">${v}</div><div class="wsl">${l}</div></div></div>`;
+  const boonChips = boons.length ? `<div class="wrapBoons">${boons.map(b=>`<span class="wrapBoon"><span class="wbi">${b.ic}</span>${b.nm}</span>`).join('')}</div>` : '';
+  const cells=[ stat('⛰','Floor '+G.floor+(asc>0?' · ⛧'+asc:''),'Reached'),
+                stat('💥',(r.bigHit||0).toLocaleString(),'Biggest hit'),
+                stat('⚔',(r.kills||0).toLocaleString(),'Kills'),
+                stat('💰','×'+(r.greedPeak||1).toFixed(1),'Peak greed') ];
+  return `<div class="wrapCard"><div class="wrapEye">⛰ The Climb</div>
+    <div class="wrapId">${buildIdentity()}</div>
+    <div class="wrapSub">${boons.length?(boons.length+' blessing'+(boons.length>1?'s':'')+' claimed'):'No blessings claimed'} · ${fmtTime(r.totalTime)} climbed</div>
+    ${boonChips}<div class="wrapGrid">${cells.join('')}</div></div>`;
+}
 function renderSettings(){
   const b=$('settingsBody'); const mm=SETTINGS.moveMode;
   b.innerHTML=`
