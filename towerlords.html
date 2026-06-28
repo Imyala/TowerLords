@@ -3227,6 +3227,12 @@ function perfectDodge(){
   if(!G.dashRewarded){ G.dashRewarded=true; G.hitstop=Math.max(G.hitstop||0,.13); const p=G.player.position;
     floatText(p.x,p.z,'PERFECT DODGE!','big',3.3); ringFx(p.x,p.z,3.4,0xffce4d); burst(p.x,p.z,0xffce4d); sfx.evolve(); unlockFeat('perfect'); }
 }
+// readable "lock-on" tell: a ring that contracts into an enemy as it commits to a strike/shot.
+// Shared language — red = a melee blow is coming, amber = a shot is being aimed — so packs stay legible.
+const ENEMY_AIM=0.34;   // ranged wind-up: enemies now telegraph shots instead of firing instantly
+function aimTell(e,color){ const x=e.mesh.position.x,z=e.mesh.position.z, R=e.r+1.5;
+  const ring=new THREE.Mesh(new THREE.RingGeometry(R-0.2,R,28), new THREE.MeshBasicMaterial({color,transparent:true,opacity:.75,side:THREE.DoubleSide}));
+  ring.rotation.x=-Math.PI/2; ring.position.set(x,.16,z); scene.add(ring); G.decals.push({mesh:ring,shrink:true,t:0,life:ENEMY_AIM}); }
 function telegraphAoE(x,z,R,delay,dmg,color){
   color=color||0xff3b5c;
   const ring=new THREE.Mesh(new THREE.RingGeometry(R-0.55,R,40), new THREE.MeshBasicMaterial({color,transparent:true,opacity:.5,side:THREE.DoubleSide}));
@@ -5100,12 +5106,15 @@ function updateWorld(dt){
     if(e.toxic && e.aggro){ e.toxCd=(e.toxCd==null?0.8:e.toxCd)-dt; if(e.toxCd<=0){ e.toxCd=1.1; telegraphAoE(ex,ez,2.6,0.4,e.dmg*0.55,0x7dff5a); } }   // toxic affix: drops poison pools underfoot
     if(e.arcane && e.aggro){ e.arcCd=(e.arcCd==null?rand(2,4):e.arcCd)-dt; if(e.arcCd<=0){ e.arcCd=rand(3.5,5.5); emit(e,{count:10,ring:true,speed:11,dmg:0.55,aimed:false,mat:'ring'}); } }   // arcane affix: periodic bullet ring
     // body anim + telegraph
-    const b=e.mesh.userData.body; b.rotation.y+=dt*2;
-    b.material.emissiveIntensity = e.hitFlash>0?2 : e.windup>0?1.7 : (e.elite?.6:.28);
-    b.position.y=(e.scale*.95)+Math.sin(performance.now()*0.004+ex)*0.12 + (e.windup>0?0.28:0);
-    b.scale.setScalar(e.windup>0?1.18:1);
+    const b=e.mesh.userData.body; b.rotation.y+=dt*2; const telling=(e.windup>0||e.aimT>0);
+    b.material.emissiveIntensity = e.hitFlash>0?2 : telling?2 : (e.elite?.6:.28);
+    b.position.y=(e.scale*.95)+Math.sin(performance.now()*0.004+ex)*0.12 + (telling?0.28:0);
+    b.scale.setScalar(telling?1.18:1);
     // ranged enemy projectiles — shoot faster, with type-specific patterns (only when awake)
-    if(e.range && !e.boss && e.aggro){ e.shootCd-=dt; if(e.shootCd<=0 && d<e.range+6){ e.shootCd=rand(0.7,1.4); enemyShoot(e,cx,cz,dx,dz,p); } }
+    if(e.range && !e.boss && e.aggro){
+      if(e.aimT>0){ e.aimT-=dt; if(e.aimT<=0){ enemyShoot(e,cx,cz,dx,dz,p); e.shootCd=rand(0.7,1.4); } }   // wind-up elapsed → fire (you had a window to dash)
+      else { e.shootCd-=dt; if(e.shootCd<=0 && d<e.range+6){ e.aimT=ENEMY_AIM; aimTell(e,0xffb13d); } }       // telegraph the shot instead of firing instantly
+    }
     // boss attack kit — each move runs on its own cooldown, so every guardian plays differently
     if(e.boss && e.bossDef){
       if(!e.ph2 && e.hp<e.maxhp*0.55){ e.ph2=true; e.castRate=0.62; e.speed*=1.18; banner(e.name,'⚠ ENRAGED — PHASE II'); shakeCam(1.0); mNova(e); }   // halfway: faster casts, a free nova
@@ -5116,7 +5125,7 @@ function updateWorld(dt){
     // melee wind-up strike → damage the targeted player
     if(!e.boss && !e.range){
       if(e.windup>0){ e.windup-=dt; if(e.windup<=0){ if(d<atkRange+0.7){ withPlayer(tp.id,()=>{ if(G.invuln<=0){ setKiller(enemyName(e)); hurtPlayer(e.dmg); } else if(G.perfectT>0) perfectDodge(); }); if(e.vampiric){ e.hp=Math.min(e.maxhp,e.hp+e.maxhp*0.06); ringFx(cx,cz,e.r+1,0xff3b6b); } } e.atkCd=rand(0.8,1.3); } }
-      else { e.atkCd=Math.max(0,e.atkCd-dt); if(e.atkCd<=0 && d<atkRange+0.4 && e.aggro) e.windup=0.34; }
+      else { e.atkCd=Math.max(0,e.atkCd-dt); if(e.atkCd<=0 && d<atkRange+0.4 && e.aggro){ e.windup=0.34; aimTell(e,0xff4d4d); } }   // red lock-on = a melee blow is coming
     }
     if(e.boss && d<e.r+1.4){ withPlayer(tp.id,()=>{ if(G.invuln<=0){ setKiller('the Floor Guardian'); hurtPlayer(e.dmg*0.6); } }); e.kx=-dx*0.4; e.kz=-dz*0.4; }
   }
