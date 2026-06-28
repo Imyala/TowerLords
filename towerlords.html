@@ -293,6 +293,11 @@
   .talent.rar3 .tbox{width:50px;height:50px;box-shadow:0 0 13px -1px var(--sc);} .talent.rar3 .tic{font-size:23px;}
   .talent.rar4 .tbox{width:54px;height:54px;box-shadow:0 0 17px 0 var(--sc);outline:1px solid color-mix(in srgb,var(--sc) 55%,transparent);outline-offset:2px;} .talent.rar4 .tic{font-size:25px;}
   .talent.rar5 .tbox{width:64px;height:64px;box-shadow:0 0 24px 1px var(--gold);outline:2px solid var(--gold);outline-offset:2px;} .talent.rar5 .tic{font-size:30px;}
+  /* skill-grant nodes: unmistakable diamond-ish badge with a cyan/gold pulse so you can spot learnable skills in the tree */
+  .talent.skillnode .tbox{width:58px;height:58px;border-radius:14px;background:linear-gradient(160deg,rgba(86,224,255,.30),rgba(157,123,255,.22));box-shadow:0 0 20px -1px var(--neon);outline:2px dashed var(--gold);outline-offset:2px;}
+  .talent.skillnode .tic{font-size:28px;}
+  .talent.skillnode .trank{color:var(--gold);border-color:color-mix(in srgb,var(--gold) 60%,transparent);font-weight:bold;}
+  .talent.skillnode.maxed .tbox{outline-style:solid;}
   /* state → border + icon (kept off box-shadow so rarity glow survives) */
   .talent.lock .tbox{border-color:#2c3650;}
   .talent.avail .tbox{border-color:var(--sc);} .talent.avail .tic{filter:none;}
@@ -1575,7 +1580,23 @@ const SPECS=[
   ]},
 ];
 // ---- procedural BRANCHING depth: extend each curated head into a shaped tree (rows widen/narrow, rarer & stronger downward) ----
-const TREE_ROWS=70;
+const TREE_ROWS=30;
+// Active SKILLS scattered through each tree — allocating the node GRANTS that skill gem (the tree is a source of skills, not just stats).
+const TREE_SKILLS={
+  tk:['gQuake','gShield','gWhirl','gBlades'],
+  st:['gWhirl','gVolley','gBarrage','gFlame','gBlades'],
+  mn:['gHeal','gShield','gFrost','gSlow'],
+  wd:['gNova','gFrost','gChain','gMeteor','gStorm','gVortex'],
+  rg:['gBlink','gLance','gVolley','gBarrage'],
+};
+// Unique, hand-authored KEYSTONES per spec (used at the single-node bottlenecks instead of bland stat sums).
+const TREE_KEYSTONES={
+  tk:[{nm:'Juggernaut',ic:'🐗',eff:{lifePct:24,armor:60,asPct:-8}},{nm:'Thornmail',ic:'🌵',eff:{reflectPct:22,armor:40}},{nm:'Last Bastion',ic:'⛰️',eff:{lowHpDmgPct:30,lifePct:10}},{nm:'Bloodforge',ic:'🩸',eff:{lifeOnKill:16,lifePct:8}},{nm:'Aegis Core',ic:'⛨',eff:{armor:40},proc:{on:'hurt',chance:0.18,type:'shield',dur:1.0}}],
+  st:[{nm:'Glass Cannon',ic:'💥',eff:{dmgPct:40,critMultPct:30,lifePct:-22}},{nm:'Executioner',ic:'☠️',eff:{execPct:45,critMultPct:30}},{nm:'Berserker',ic:'😤',eff:{dmgPct:22,asPct:14,lifePct:-8}},{nm:'Bloodlust',ic:'🦇',eff:{lifesteal:6,dmgPct:14}},{nm:'Rampager',ic:'🔥',eff:{fervorRatePct:30},proc:{on:'crit',chance:0.25,type:'fervor',amt:14}}],
+  mn:[{nm:'Phoenix Heart',ic:'🔥',eff:{lifeRegen:9,lifePct:16,lifesteal:4}},{nm:'Transfusion',ic:'🩹',eff:{lifeOnHit:8,lifesteal:4}},{nm:'Sanctuary',ic:'✨',eff:{lifeRegen:4},proc:{on:'hurt',chance:0.2,type:'shield',dur:1.0}},{nm:'Lifebound',ic:'💞',eff:{lifePct:14,lifeOnKill:14}}],
+  wd:[{nm:'Archmage',ic:'👁️',eff:{skillDmgPct:40,manaCostPct:-18}},{nm:'Elementalist',ic:'🌈',eff:{elemDmgPct:35,ailDmgPct:40}},{nm:'Overcharge',ic:'⚡',eff:{skillDmgPct:18},proc:{on:'cast',chance:0.2,type:'nova',amt:1.6,r:8}},{nm:'Channeler',ic:'🌀',eff:{area:22,cdrPct:14,manaRegen:4}}],
+  rg:[{nm:'Phantom',ic:'👻',eff:{movePct:22,asPct:18,crit:6,dashCdrPct:24}},{nm:'Apex Predator',ic:'🐅',eff:{dmgPct:18,critMultPct:28}},{nm:'Windrunner',ic:'🍃',eff:{movePct:16,asPct:8},proc:{on:'dash',chance:0.6,type:'haste',dur:2.5}},{nm:'Shadowdancer',ic:'🌑',eff:{dashCdrPct:24},proc:{on:'dash',chance:0.5,type:'shield',dur:0.9}}],
+};
 function talentRarity(ti, rowLen){ let r=Math.min(4, Math.floor((ti/TREE_ROWS)*5)); if(rowLen===1) r=Math.min(4, r+1); return r; }
 (function extendSpecs(){
   const G_=(base,grow,frac)=>({base,grow,frac:!!frac});
@@ -1631,11 +1652,20 @@ function talentRarity(ti, rowLen){ let r=Math.min(4, Math.floor((ti/TREE_ROWS)*5
   const capEff=(g,ti)=>{ const e={}; for(let i=0;i<4;i++){ const st=g.stats[(ti+i)%g.stats.length]; e[st.k]=(e[st.k]||0)+gv(st,ti); } return e; };
   for(const spec of SPECS){ const g=GEN[spec.kw]; if(!g) continue;
     spec.tiers=[];   // regenerate the whole tree (incl. the wide, varied top band) — curated heads above are superseded
+    const skills=TREE_SKILLS[spec.kw]||[], keys=TREE_KEYSTONES[spec.kw]||[];
+    const skillAt={}; skills.forEach((sid,i)=>{ let ti=3+i*4; while(ti<TREE_ROWS-2 && (ti%g.key===0 || skillAt[ti])) ti++; if(ti<TREE_ROWS-2) skillAt[ti]=sid; });   // scatter skills, dodging keystone rows
+    let keyIdx=0;
     while(spec.tiers.length < TREE_ROWS){
       const ti=spec.tiers.length;
       if(ti===TREE_ROWS-1){ spec.tiers.push([{nm:g.capNm,ic:g.capIc,max:1,rar:5,eff:capEff(g,ti),note:'The pinnacle of the '+spec.nm+' path.'}]); break; }
+      if(ti>0 && ti%g.key===0 && keys.length){   // unique hand-authored keystone at each bottleneck
+        const k=keys[keyIdx++ % keys.length]; const node={nm:k.nm,ic:k.ic,max:k.max||1,rar:4,eff:k.eff,note:'Keystone — '+effDesc(k.eff)};
+        if(k.proc) node.procs=[k.proc];
+        spec.tiers.push([node]); continue;
+      }
       const w=rowWidth(g,ti), rar=talentRarity(ti,w);
       const row=[]; for(let si=0;si<w;si++) row.push(genTalent(g,ti,si,rar,w));
+      if(skillAt[ti]){ const sid=skillAt[ti], sk=SKILLS[sid]; if(sk) row[0]={ nm:'Learn: '+sk.nm, ic:sk.ic, max:1, rar:5, grantSkill:sid, eff:{}, note:'✦ Grants the '+sk.nm+' skill gem — bind it on your 1–9 bar.' }; }
       spec.tiers.push(row);
     }
   }
@@ -3390,11 +3420,14 @@ function investTalent(id){
   const reason=talentReason(t);
   if(reason){ log('🔒 '+t.nm+' — '+reason); return; }
   G.alloc[id]=rank+1; G.skillPts--;
+  if(t.grantSkill && rank===0){ const sk=SKILLS[t.grantSkill]; if(sk){ const gem=makeSkillGem(G.floor||1, t.grantSkill); G.inv.push(gem); autoBind(gem);
+    banner('✦ SKILL LEARNED', sk.ic+' '+sk.nm); log('✦ Learned '+sk.nm+' — bind it on your 1–9 bar (Inventory).'); sfx.evolve&&sfx.evolve(); refreshItemPanels(); } }
   recompute(); refreshSpec(t.spec); updatePips();
   log('✦ '+t.nm+' '+(rank+1)+'/'+t.max);
 }
 function removeTalent(id){   // right-click to refund a point, if nothing still depends on it
   const t=TALENTMAP[id]; if(!t) return; const rank=G.alloc[id]||0; if(rank<=0) return;
+  if(t.grantSkill){ log('Learned skills are permanent — the point can’t be refunded.'); return; }   // no invest/refund gem farming
   G.alloc[id]=rank-1;
   let bad=null;
   for(const tid in G.alloc){ if((G.alloc[tid]||0)>0){ const tt=TALENTMAP[tid];
@@ -3407,8 +3440,9 @@ function removeTalent(id){   // right-click to refund a point, if nothing still 
 function talentTip(id){
   const t=TALENTMAP[id], rank=G.alloc[id]||0, reason=talentReason(t);
   let h=`<div class="tt-n" style="color:${t.spec.col}">${t.ic} ${t.nm}</div>`+
-    `<div class="tt-rk">${t.spec.nm} · ${t.spec.sub} · Rank ${rank}/${t.max}</div>`;
-  if(t.eff){ h+=`<div class="tt-d">Per rank: <b>${effDesc(t.eff)}</b></div>`;
+    `<div class="tt-rk">${t.spec.nm} · ${t.spec.sub} · ${t.grantSkill?'Skill':'Rank '+rank+'/'+t.max}</div>`;
+  if(t.grantSkill){ const sk=SKILLS[t.grantSkill]; if(sk) h+=`<div class="tt-d" style="color:#ffd479">✦ Grants active skill: <b>${sk.ic} ${sk.nm}</b> (${sk.mana} mana)</div>`; }
+  if(t.eff && Object.keys(t.eff).length){ h+=`<div class="tt-d">Per rank: <b>${effDesc(t.eff)}</b></div>`;
     if(rank>0) h+=`<div class="tt-d" style="color:#9dffb4">Current: <b>${effDesc(scaleEff(t.eff,rank))}</b></div>`; }
   if(t.procs) for(const pr of t.procs) h+=`<div class="tt-d" style="color:#c7b6ff">✦ ${procLine(pr)}${t.max>1?' <span style="opacity:.55">(per rank)</span>':''}</div>`;
   if(t.note) h+=`<div class="tt-d" style="opacity:.65;font-style:italic;margin-top:4px">${t.note}</div>`;
@@ -3425,7 +3459,8 @@ function talentCell(t){
   if(rank>=t.max) cls+=' maxed'; else if(rank>0) cls+=' part';
   if(reason===null) cls+=' avail'; else if(rank===0) cls+=' lock';
   if(t.req) cls+=' hasreq'+((G.alloc[t.req]||0)>=TALENTMAP[t.req].max?' reqok':'');
-  return `<div class="${cls}" data-tid="${t.id}"><div class="tbox"><span class="tic">${t.ic}</span></div><div class="trank">${rank}/${t.max}</div></div>`;
+  if(t.grantSkill) cls+=' skillnode';
+  return `<div class="${cls}" data-tid="${t.id}"><div class="tbox"><span class="tic">${t.ic}</span></div><div class="trank">${t.grantSkill?(rank>0?'✓':'learn'):rank+'/'+t.max}</div></div>`;
 }
 // No connector lines — rows unlock by spending points (tier gate). The first locked row shows the requirement.
 function specInner(spec){
