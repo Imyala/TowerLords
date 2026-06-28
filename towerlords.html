@@ -234,6 +234,7 @@
   .attr .ainfo{flex:1;min-width:0;} .attr .an{font-size:14px;font-weight:bold;} .attr .ad{font-size:10px;opacity:.55;margin-top:1px;}
   .attr .av{font-size:22px;font-weight:bold;color:var(--ac,#fff);min-width:34px;text-align:right;font-variant-numeric:tabular-nums;
     text-shadow:0 0 12px color-mix(in srgb,var(--ac,transparent) 50%,transparent);}
+  .attr .av .avItem{font-size:13px;color:var(--gold);font-weight:bold;text-shadow:0 0 8px rgba(255,206,77,.5);}
   .plus{pointer-events:auto;cursor:pointer;width:27px;height:27px;flex:none;border-radius:7px;border:1px solid var(--neon);
     color:var(--neon);background:rgba(86,224,255,.08);font-size:17px;line-height:25px;text-align:center;font-weight:bold;transition:.1s;}
   .plus:hover{background:var(--neon);color:#04111a;box-shadow:0 0 12px rgba(86,224,255,.5);}
@@ -1054,7 +1055,13 @@ const AFFIXES = [
   {key:'lifeOnHit',   name:'life on hit',     pct:false, min:1,  max:5, int:true},
   {key:'lifesteal',   name:'lifesteal',       pct:true,  min:2,  max:6},
   {key:'area',        name:'skill area',      pct:true,  min:6,  max:16},
+  {key:'str',         name:'strength',        pct:false, min:3,  max:8,  int:true, attr:true},
+  {key:'dex',         name:'dexterity',       pct:false, min:3,  max:8,  int:true, attr:true},
+  {key:'int',         name:'intelligence',    pct:false, min:3,  max:8,  int:true, attr:true},
+  {key:'vit',         name:'vitality',        pct:false, min:3,  max:8,  int:true, attr:true},
+  {key:'will',        name:'willpower',       pct:false, min:3,  max:8,  int:true, attr:true},
 ];
+const ATTR_KEYS=['str','dex','int','vit','will'];
 const SPECIAL_AFFIX = [
   {key:'proj',   name:'extra projectile', pct:false, min:1, max:1, int:true},
   {key:'pierce', name:'pierce',           pct:false, min:1, max:1, int:true},
@@ -1281,17 +1288,42 @@ const FLASK_KEYS=['q','e','r','z','x']; const FLASK_LABEL=['Q','E','R','Z','X'];
 // any other pair becomes a generic hybrid that fires BOTH skills plus a bonus. The fused gem CONSUMES its two
 // sources (the originals are gone for good), REMEMBERS every skill baked into it, costs more mana, and costs
 // fame to make — fame & mana both escalate with how many fuses are already inside the inputs.
+// Warframe-style combos: combining the right pair yields a named, distinct result that's stronger than either
+// source. Elemental pairs borrow Warframe's combined-damage names (Magnetic, Radiation, Viral, Blast, Corrosive…).
 const SKILL_SYNERGY = {
-  'gChain|gFrost':   {nm:'Superconductor', ic:'🌩'},
-  'gFrost|gMeteor':  {nm:'Cometfall',      ic:'☄'},
-  'gChain|gVolley':  {nm:'Storm Volley',   ic:'⚡'},
-  'gMeteor|gNova':   {nm:'Cataclysm',      ic:'🌋'},
-  'gFrost|gNova':    {nm:'Glacial Burst',  ic:'💠'},
-  'gBarrage|gChain': {nm:'Tesla Barrage',  ic:'🎇'},
-  'gMeteor|gVolley': {nm:'Starfall',       ic:'🌠'},
-  'gFrost|gWhirl':   {nm:'Blizzard',       ic:'🌨'},
-  'gNova|gWhirl':    {nm:'Maelstrom',      ic:'🌪'},
-  'gBlink|gNova':    {nm:'Voidstep',       ic:'🌌'},
+  // --- elemental cores (lightning=Chain, fire=Meteor, cold=Frost) ---
+  'gChain|gFrost':   {nm:'Magnetic Storm',  ic:'🧲'},   // electric + cold
+  'gChain|gMeteor':  {nm:'Radiation Surge',  ic:'☢'},   // electric + fire
+  'gChain|gNova':    {nm:'Overload',         ic:'⚡'},
+  'gFrost|gMeteor':  {nm:'Thermal Shock',    ic:'🌡'},   // fire + cold
+  'gFrost|gNova':    {nm:'Glacial Burst',    ic:'💠'},
+  'gMeteor|gNova':   {nm:'Cataclysm',        ic:'🌋'},
+  // --- lightning combos ---
+  'gChain|gVolley':  {nm:'Storm Volley',     ic:'⚡'},
+  'gBarrage|gChain': {nm:'Tesla Barrage',    ic:'🎇'},
+  'gChain|gWhirl':   {nm:'Tempest',          ic:'🌀'},
+  'gBlink|gChain':   {nm:'Flash Step',       ic:'⚡'},
+  // --- fire combos ---
+  'gMeteor|gVolley': {nm:'Starfall',         ic:'🌠'},
+  'gBarrage|gMeteor':{nm:'Firestorm',        ic:'🔥'},
+  'gMeteor|gWhirl':  {nm:'Infernal Cyclone', ic:'🔥'},
+  'gBlink|gMeteor':  {nm:'Phoenix Dash',     ic:'🦅'},
+  // --- cold combos ---
+  'gFrost|gWhirl':   {nm:'Blizzard',         ic:'🌨'},
+  'gFrost|gVolley':  {nm:'Frostbite Volley', ic:'🏹'},
+  'gBarrage|gFrost': {nm:'Hailstorm',        ic:'🌨'},
+  'gBlink|gFrost':   {nm:'Frostshift',       ic:'❄'},
+  // --- physical / motion combos ---
+  'gNova|gWhirl':    {nm:'Maelstrom',        ic:'🌪'},
+  'gBlink|gNova':    {nm:'Voidstep',         ic:'🌌'},
+  'gNova|gVolley':   {nm:'Burstshot',        ic:'💥'},
+  'gBarrage|gNova':  {nm:'Detonation',       ic:'💥'},
+  'gVolley|gWhirl':  {nm:'Arrowstorm',       ic:'🏹'},
+  'gBarrage|gVolley':{nm:'Hailfire',         ic:'🎇'},
+  'gBarrage|gWhirl': {nm:'Shrapnel Vortex',  ic:'💢'},
+  'gBlink|gVolley':  {nm:'Shadowshot',       ic:'🌑'},
+  'gBlink|gWhirl':   {nm:'Cyclone Step',     ic:'🌀'},
+  'gBarrage|gBlink': {nm:'Phantom Barrage',  ic:'🎇'},
 };
 function synergyFor(idA,idB){ return SKILL_SYNERGY[[idA,idB].sort().join('|')]||null; }
 function skMana(g){ const s=SKILLS[g.skillId]; return s?s.mana:12; }
@@ -1299,7 +1331,7 @@ function skCd(g){ const s=SKILLS[g.skillId]; return s?s.cd:0.6; }
 function skComponents(g){ return (g.components&&g.components.length)?g.components.slice():[(SKILLS[g.skillId]||{}).nm||'Skill']; }
 function firstWord(s){ return (s||'').split(/[ \-]/)[0]; }
 function fusePriorN(a,b){ return (a.fuseCount||0)+(b.fuseCount||0); }   // total fuses already baked into both inputs
-function fuseFameCost(a,b){ const n=fusePriorN(a,b); return 1500*(n+1)*(n+1); }   // 1.5k → 6k → 13.5k → 24k …
+function fuseFameCost(a,b){ const n=fusePriorN(a,b); return 1000 + 1500*n*(n+1); }   // 1k → 4k → 10k → 19k → 31k … (first fuse cheap, deep fuses bite)
 function previewFuse(a,b){
   const syn=synergyFor(a.skillId,b.skillId), n=fusePriorN(a,b);
   const mana=Math.round((skMana(a)+skMana(b))*(syn?0.85:0.95)*(1+0.06*n));   // always > either source, climbs with depth
@@ -1463,8 +1495,8 @@ const SPECS=[
   {kw:'rg', nm:'Ranger', sub:'Mobility', ic:'🏹', col:'#ffce4d', tiers:[
     [{nm:'Fleetfoot',ic:'👟',max:5,eff:{movePct:5}}],
     [{nm:'Agility',ic:'🏃',max:5,eff:{asPct:5}},{nm:'Reflexes',ic:'👁️',max:3,eff:{crit:3}},{nm:'Vigor',ic:'⚡',max:3,eff:{movePct:5}}],
-    [{nm:'Momentum',ic:'💨',max:3,eff:{movePct:6}},{nm:'Predator',ic:'🐾',max:3,eff:{dmgPct:7}},{nm:'Quickdraw',ic:'🤠',max:3,eff:{asPct:6}}],
-    [{nm:'Evasion',ic:'🌫️',max:3,eff:{movePct:6}},{nm:'Opportunist',ic:'🗡️',max:3,eff:{critMultPct:12}},{nm:'Slipstream',ic:'🌀',max:2,eff:{dashCdrPct:12}}],
+    [{nm:'Momentum',ic:'💨',max:3,eff:{movePct:6}},{nm:'Quickstep',ic:'🥾',max:3,eff:{dashCdrPct:9}},{nm:'Quickdraw',ic:'🤠',max:3,eff:{asPct:6}}],
+    [{nm:'Evasion',ic:'🌫️',max:3,eff:{movePct:6}},{nm:'Opportunist',ic:'🗡️',max:3,eff:{critMultPct:12}},{nm:'Slipstream',ic:'🌀',max:3,eff:{dashCdrPct:14}}],
     [{nm:'Sprint',ic:'⚡',max:3,eff:{asPct:6}},{nm:'Hunter’s Mark',ic:'🎯',max:3,eff:{crit:4}},{nm:'Skirmish',ic:'🤺',max:2,eff:{dmgPct:8}}],
     [{nm:'Windrunner',ic:'🍃',max:3,eff:{movePct:7}},{nm:'Adrenaline',ic:'💉',max:2,eff:{asPct:5},procs:[{on:'dash',chance:0.5,type:'haste',dur:2}]},{nm:'Deadshot',ic:'🎯',max:3,eff:{critMultPct:14}}],
     [{nm:'Ambush',ic:'🥷',max:3,eff:{dmgPct:8}},{nm:'Tumble',ic:'🤸',max:3,eff:{dashCdrPct:10}},{nm:'Bloodhound',ic:'🐕',max:2,eff:{xpPct:8}}],
@@ -1844,7 +1876,9 @@ function updateRevives(dt){
   }
 }
 // reposition the whole party at a point (on floor/town generation)
-function repositionParty(x,z){ joinedPlayers().forEach((p,i)=>{ if(p.player){ const a=i*1.7; let tx=x+Math.cos(a)*i*1.6, tz=z+Math.sin(a)*i*1.6; if(!canStand(tx,tz,0.7)){ tx=x; tz=z; } p.player.position.set(tx,1,tz); } if(p.downed){ p.downed=false; p.downT=0; withPlayer(p.id,()=>{ if(G.hp<=0)G.hp=G.maxhp*0.5; }); } }); }
+function repositionParty(x,z){ joinedPlayers().forEach((p,i)=>{ if(p.player){ const a=i*1.7; let tx=x+Math.cos(a)*i*1.6, tz=z+Math.sin(a)*i*1.6; if(!canStand(tx,tz,0.7)){ tx=x; tz=z; } p.player.position.set(tx,1,tz);
+    p._px=p._cx=tx; p._pz=p._cz=tz;   // reset render-interpolation to the new spot so frame() doesn't fling the player back toward their old (e.g. death) position and strand them off-map
+  } if(p.downed){ p.downed=false; p.downT=0; withPlayer(p.id,()=>{ if(G.hp<=0)G.hp=G.maxhp*0.5; }); } }); }
 
 $('startBtn').onclick=startGame;
 $('modeNormal').onclick=()=>{ G.hardcore=false; $('modeNormal').classList.add('sel'); $('modeHardcore').classList.remove('sel'); };
@@ -2035,17 +2069,21 @@ function recompute(){
   const m={dmgPct:0,asPct:0,crit:0,critMultPct:0,proj:0,pierce:0,area:0,movePct:0,
     lifeFlat:0,lifePct:0,lifeRegen:0,manaFlat:0,manaPct:0,manaRegen:0,armor:0,lifeOnHit:0,lifesteal:0,
     skillDmgPct:0,manaCostPct:0};
+  const attrItem={str:0,dex:0,int:0,vit:0,will:0};   // attribute bonuses from gear/gems — kept SEPARATE from base so we can show "70 (+50)" and scale enemies off base only
+  const addMod=(k,v)=>{ if(attrItem[k]!==undefined) attrItem[k]+=v; else m[k]=(m[k]||0)+v; };
   let talLifeRegen=0, talManaRegen=0;   // regen comes ONLY from skill-tree talents (+ pet abilities below) — never gear or base stats
   for(const id in G.alloc){ const t=TALENTMAP[id], rank=G.alloc[id]||0; if(t&&t.eff&&rank>0) for(const k in t.eff){ m[k]=(m[k]||0)+t.eff[k]*rank; if(k==='lifeRegen')talLifeRegen+=t.eff[k]*rank; else if(k==='manaRegen')talManaRegen+=t.eff[k]*rank; } }
   let elem='phys', ailBonus=0, special={}, igniteMult=1, dashCdr=1;
   for(const sk in G.equip){ const it=G.equip[sk]; if(!it)continue;
-    for(const af of it.affixes) m[af.key]=(m[af.key]||0)+af.val;
+    for(const af of it.affixes) addMod(af.key, af.val);
     if(it.element){ if(sk==='weapon') elem=it.element; else if(elem==='phys') elem=it.element; }
     if(it.special){ special[it.special]=true; }
-    if(it.socketed) for(const g of it.socketed){ if(g.mods) for(const k in g.mods) m[k]=(m[k]||0)+g.mods[k];
+    if(it.socketed) for(const g of it.socketed){ if(g.mods) for(const k in g.mods) addMod(k, g.mods[k]);
       if(g.element){ if(sk==='weapon') elem=g.element; else if(elem==='phys') elem=g.element; }
       ailBonus += (g.ailChance||0); }
   }
+  // effective attributes = base (points) + gear bonuses; all derived stats use these
+  const E={ str:A.str+attrItem.str, dex:A.dex+attrItem.dex, int:A.int+attrItem.int, vit:A.vit+attrItem.vit, will:A.will+attrItem.will };
   if(special.igniteBoost) igniteMult=2;
   if(special.dashCdr) dashCdr=0.6;
   if(G.pet){ const pl=G.pet.level;   // active-pet ability auras (each scales with pet level)
@@ -2057,17 +2095,18 @@ function recompute(){
   G.petMagnet = G.pet ? (7 + (hasAbil(G.pet,'magnet')?petAbilVal('magnet',G.pet.level):0)) : 0;
   // (fame no longer grants any combat power — it's a pure skill rating)
   const S={};
-  S.maxhp = Math.round((60 + A.vit*14 + A.str*2 + m.lifeFlat) * (1+m.lifePct/100));
-  S.maxmana = Math.round((30 + A.int*6 + A.will*4 + m.manaFlat) * (1+m.manaPct/100));
-  S.dmgBase = (6 + A.str*2.2) * (1+m.dmgPct/100);
-  S.skillMult = 1 + (A.int*2.4 + m.skillDmgPct)/100;
-  S.asFactor = Math.max(0.3, 1 + (A.dex*1.2 + m.asPct)/100);
-  S.crit = clamp(0.05 + A.dex*0.004 + m.crit/100, 0, 0.9);
+  S.attrBase=A; S.attrItem=attrItem; S.attrEff=E;   // exposed so the Character screen can show base (+gear)
+  S.maxhp = Math.round((60 + E.vit*14 + E.str*2 + m.lifeFlat) * (1+m.lifePct/100));
+  S.maxmana = Math.round((30 + E.int*6 + E.will*4 + m.manaFlat) * (1+m.manaPct/100));
+  S.dmgBase = (6 + E.str*2.2) * (1+m.dmgPct/100);
+  S.skillMult = 1 + (E.int*2.4 + m.skillDmgPct)/100;
+  S.asFactor = Math.max(0.3, 1 + (E.dex*1.2 + m.asPct)/100);
+  S.crit = clamp(0.05 + E.dex*0.004 + m.crit/100, 0, 0.9);
   S.critMult = 1.5 + m.critMultPct/100;
   S.proj = m.proj; S.pierce = m.pierce; S.area = m.area;
   S.wpn = wpnArch(G.equip.weapon);   // weapon archetype drives basic-attack shape
-  S.move = 15 * (1 + (m.movePct + A.dex*0.2)/100);
-  S.armor = A.vit*0.5 + A.str*0.4 + m.armor;
+  S.move = 15 * (1 + (m.movePct + E.dex*0.2)/100);
+  S.armor = E.vit*0.5 + E.str*0.4 + m.armor;
   S.lifeRegen = talLifeRegen;   // ONLY skill-tree talents + pet heal ability (potions & lifesteal heal separately; gear gives no regen)
   S.manaRegen = talManaRegen;   // ONLY skill-tree talents + pet mana ability (mana crystals & mp potions restore separately; gear gives no regen)
   S.lifeOnHit = m.lifeOnHit; S.lifesteal = m.lifesteal/100;
@@ -2090,7 +2129,7 @@ function recompute(){
   S.goldBonus  = m.goldPct||0;
   S.ailDmg     = (m.ailDmgPct||0)/100;                      // ailment / DoT damage bonus
   S.petDmg     = (m.petDmgPct||0)/100;
-  G.dashCdMax = 0.5 * dashCdr * (1 - clamp((m.dashCdrPct||0)/100, 0, 0.6));
+  G.dashCdMax = 3.0 * dashCdr * (1 - clamp((m.dashCdrPct||0)/100, 0, 0.72));   // long base cooldown — invest in the Ranger (🏹) tree's dash-CDR nodes to bring it back down (up to −72%)
   // aggregate talent procs by trigger, scaling chance by rank
   S.procs={};
   for(const id in G.alloc){ const t=TALENTMAP[id], rank=G.alloc[id]||0; if(rank>0 && t&&t.procs) for(const pr of t.procs){
@@ -2420,13 +2459,17 @@ function pickEType(floor){
 // the strongest joined player's level — enemies rubber-band UP to the party so raw level/stats can't trivialise a zone
 function partyLevel(){ let m=1; for(const p of _G.players){ if(p.joined && p.player && p.level>m) m=p.level; } return m; }
 // enemies scale to max(zone level, party level): a lvl-1 in a lvl-10 zone still faces lvl-10s; a lvl-20 there faces lvl-20s
-function scaleLvl(floor){ return Math.max(floor, partyLevel()); }
+// the player's "base power" = level implied by ALLOCATED base attributes only (start is 5×5=25; +5 pts/level).
+// Item/equipment attribute bonuses are deliberately excluded so gear is your EDGE over the curve, not part of it.
+function basePowerLvl(){ let best=1; for(const pl of joinedPlayers()){ const A=pl.attr; if(!A)continue;
+  const s=(A.str||0)+(A.dex||0)+(A.int||0)+(A.vit||0)+(A.will||0); best=Math.max(best, Math.round((s-25)/5)+1); } return best; }
+function scaleLvl(floor){ return Math.max(floor, basePowerLvl()); }   // enemies track base stats (floor as a safety floor), not gear-inflated level
 function spawnEnemy(floor,home,forceType,forceElite){
   const t=forceType||pickEType(floor);
   const lvl=scaleLvl(floor);                            // stat scaling tracks the player, not just the floor
-  const hpScale=1+lvl*0.40, dmgScale=1+lvl*0.22;   // tankier + hit harder with depth — fights are a real threat, not a speedrun
+  const hpScale=1+lvl*0.62, dmgScale=1+lvl*0.34;   // tankier + hit harder with depth — fights are a real threat, not a speedrun
   const e={ etype:t.id, type:t.ranged?'ranged':'melee', shape:t.shape, color:t.color,
-    hp:t.hp*hpScale, speed:t.spd+Math.min(lvl*0.08,5), dmg:(t.dmg+lvl*0.6)*dmgScale,
+    hp:t.hp*hpScale, speed:t.spd+Math.min(lvl*0.08,5), dmg:(t.dmg+lvl*0.95)*dmgScale,
     r:t.r, scale:t.scale, xp:t.xp, range:t.ranged||0, dash:!!t.dash, kite:!!t.kite, lob:!!t.lob,
     bomb:!!t.bomb, split:!!t.split, heal:!!t.heal, sniper:!!t.sniper, gunner:!!t.gunner, bspd:t.bspd||0,
     shootCd:rand(.8,2.2), atkCd:rand(.2,.8), windup:0, dashCd:rand(2,4), hitFlash:0, elite:false,
@@ -3344,9 +3387,11 @@ function renderChar(){
   }
   // ---- attribute cards ----
   const list=$('attrList'); list.innerHTML='';
-  for(const a of ATTR_INFO){ const row=document.createElement('div'); row.className='attr'; row.style.setProperty('--ac',a.col); row.title=a.nm+' — '+a.ds;
+  const aItem=(G.S&&G.S.attrItem)||{};
+  for(const a of ATTR_INFO){ const row=document.createElement('div'); row.className='attr'; row.style.setProperty('--ac',a.col); row.title=a.nm+' — '+a.ds+' · base from points, (+x) from gear';
+    const itm=aItem[a.k]||0;
     row.innerHTML=`<span class="aic">${ATTR_ICON[a.k]||'◆'}</span><span class="ainfo"><div class="an">${a.nm}</div><div class="ad">${a.ds}</div></span>`+
-      `<span class="av">${G.attr[a.k]}</span><div class="plus ${G.attrPts<=0?'dim':''}" data-a="${a.k}">+</div>`;
+      `<span class="av">${G.attr[a.k]}${itm?` <span class="avItem">(+${itm})</span>`:''}</span><div class="plus ${G.attrPts<=0?'dim':''}" data-a="${a.k}">+</div>`;
     list.appendChild(row); }
   list.querySelectorAll('.plus').forEach(b=>b.onclick=()=>spendAttr(b.dataset.a));
   const pn=$('ptsNum'); if(pn) pn.textContent=G.attrPts;
