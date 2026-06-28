@@ -619,6 +619,31 @@
   .btn{cursor:pointer;border:1px solid var(--neon);color:var(--neon);background:rgba(86,224,255,.06);
     padding:13px 36px;border-radius:10px;font-size:18px;letter-spacing:3px;font-weight:bold;text-transform:uppercase;transition:.15s;}
   .btn:hover{background:var(--neon);color:#04111a;box-shadow:0 0 30px var(--neon);transform:translateY(-2px);}
+  /* ---- boss-reward draft (1-of-3 blessing) ---- */
+  #draftPanel .draft-eyebrow{font-size:13px;letter-spacing:5px;color:var(--gold);opacity:.9;margin-bottom:4px;
+    text-shadow:0 0 18px rgba(255,206,77,.6);animation:draftEye 1.6s ease-in-out infinite;}
+  @keyframes draftEye{0%,100%{opacity:.7;}50%{opacity:1;}}
+  #draftPanel .draft-sub{opacity:.72;font-size:13px;letter-spacing:1.5px;margin:8px 0 26px;max-width:520px;}
+  #draftPanel .draft-foot{opacity:.4;font-size:11px;letter-spacing:2px;margin-top:22px;text-transform:uppercase;}
+  #draftCards{display:flex;gap:18px;justify-content:center;flex-wrap:wrap;max-width:760px;}
+  .draft-card{position:relative;width:212px;min-height:230px;cursor:pointer;border-radius:14px;padding:22px 18px 20px;
+    background:linear-gradient(170deg,rgba(16,20,34,.96),rgba(8,10,20,.96));
+    border:1.5px solid color-mix(in srgb,var(--cc,#56e0ff) 55%,transparent);
+    box-shadow:0 8px 26px rgba(0,0,0,.5),0 0 0 rgba(0,0,0,0);
+    display:flex;flex-direction:column;align-items:center;text-align:center;transition:transform .14s,box-shadow .14s,border-color .14s;
+    animation:draftIn .32s cubic-bezier(.2,.9,.3,1.2) backwards;}
+  .draft-card:nth-child(1){animation-delay:.04s;} .draft-card:nth-child(2){animation-delay:.12s;} .draft-card:nth-child(3){animation-delay:.2s;}
+  @keyframes draftIn{from{opacity:0;transform:translateY(24px) scale(.92);}to{opacity:1;transform:none;}}
+  .draft-card:hover{transform:translateY(-6px);border-color:var(--cc,#56e0ff);
+    box-shadow:0 14px 34px rgba(0,0,0,.6),0 0 30px color-mix(in srgb,var(--cc,#56e0ff) 45%,transparent);}
+  .draft-card .dc-ic{font-size:46px;line-height:1;filter:drop-shadow(0 0 14px color-mix(in srgb,var(--cc,#fff) 70%,transparent));margin-bottom:10px;}
+  .draft-card .dc-nm{font-size:18px;font-weight:bold;letter-spacing:1.5px;color:#fff;margin-bottom:4px;}
+  .draft-card .dc-tag{font-size:9.5px;letter-spacing:2.5px;text-transform:uppercase;color:var(--cc,#56e0ff);opacity:.95;margin-bottom:11px;}
+  .draft-card .dc-ds{font-size:12.5px;line-height:1.5;color:#cdd6ee;}
+  .draft-card .dc-ds b{color:var(--cc,#fff);}
+  .draft-card .dc-pick{margin-top:auto;padding-top:14px;font-size:10px;letter-spacing:3px;color:var(--cc,#56e0ff);opacity:.6;text-transform:uppercase;}
+  .draft-card:hover .dc-pick{opacity:1;}
+  .draft-card.warnly{--cc:#ff6b8a;}
   .menuCol{display:flex;flex-direction:column;align-items:center;gap:14px;}
   .btn.ghost{border-color:rgba(255,255,255,.25);color:var(--ink);background:rgba(255,255,255,.04);font-size:15px;padding:11px 30px;width:280px;}
   .btn.ghost:hover{background:rgba(255,255,255,.12);color:#fff;box-shadow:none;transform:translateY(-2px);}
@@ -950,6 +975,14 @@
     <div id="deathStats"></div>
     <div id="deathScore" style="width:300px;margin:0 auto 22px;"></div>
     <button class="btn" id="reviveBtn">🏛 RETURN TO SANCTUARY</button>
+  </div>
+
+  <div id="draftPanel" class="overlay hidden">
+    <div class="draft-eyebrow">⚔ GUARDIAN SLAIN</div>
+    <h1 style="font-size:40px;letter-spacing:7px;">CLAIM A BLESSING</h1>
+    <div class="draft-sub">The Tower bends to the victor. Choose one — it endures for the rest of this climb.</div>
+    <div id="draftCards"></div>
+    <div class="draft-foot" id="draftFoot"></div>
   </div>
 </div>
 
@@ -1802,7 +1835,7 @@ function makePlayer(idx){ return {
   S:{}, alloc:{}, slots:[null,null,null], cd:{},
   equip:{weapon:null,helm:null,chest:null,gloves:null,boots:null,ring:null}, invCap:invCapBase(),
   inv:[], stash:[], stashStrikes:0, selGem:null,
-  run:{kills:0,assists:0,healSelf:0,healOthers:0,xp:0,floorTime:0,totalTime:0,floorsCleared:0},
+  run:{kills:0,assists:0,healSelf:0,healOthers:0,xp:0,floorTime:0,totalTime:0,floorsCleared:0,boons:[]},
   pet:null, pets:[], petMesh:null, petMagnet:0, petErrand:null,
   belt:[null,null,null], charge:0, chargeMax:100, sigSlot:null, sigCd:0, swiftT:0, perfectT:0, dashRewarded:false,
   dashCd:0, dashCdMax:0.5, dashT:0, dashDir:{x:0,z:1}, flowT:0,
@@ -1856,7 +1889,7 @@ const keys={}; const mouse=new THREE.Vector2(); let mouseDown=false; let mouseR=
 const aimPoint=new THREE.Vector3(); const raycaster=new THREE.Raycaster();
 const groundPlane=new THREE.Plane(new THREE.Vector3(0,1,0),0);
 const PANELS=['charPanel','treePanel','stashPanel','invPanel','vendorPanel','petPanel','scorePanel','codexPanel','settingsPanel'];
-function anyPanelOpen(){ return PANELS.some(p=>!$(p).classList.contains('hidden')); }
+function anyPanelOpen(){ return _G.draftOpen || PANELS.some(p=>!$(p).classList.contains('hidden')); }
 function syncPause(){ G.paused=false; }   // menus never pause gameplay — the world keeps running while you browse (mouse-attack stays suppressed via anyPanelOpen so clicking UI won't fire your weapon)
 
 addEventListener('keydown',e=>{
@@ -2259,6 +2292,12 @@ function recompute(){
     if(it.socketed) for(const g of it.socketed){ if(g.mods) for(const k in g.mods) addMod(k, g.mods[k]);
       if(g.element){ if(sk==='weapon') elem=g.element; else if(elem==='phys') elem=g.element; }
       ailBonus += (g.ailChance||0); }
+  }
+  // boss-reward blessings (run-scoped — persist across gear & skill changes for the whole climb)
+  if(G.run && G.run.boons) for(const b of G.run.boons){
+    if(b.gives) flags[b.gives]=true;
+    if(b.special) special[b.special]=true;
+    if(b.eff) for(const k in b.eff) addMod(k, b.eff[k]);
   }
   // effective attributes = base (points) + gear bonuses; all derived stats use these
   const E={ str:A.str+attrItem.str, dex:A.dex+attrItem.dex, int:A.int+attrItem.int, vit:A.vit+attrItem.vit, will:A.will+attrItem.will };
@@ -3245,6 +3284,58 @@ function checkReactions(e,dmg){
   if(ch && sh){ e.chill=0; e.shock=0; floatText(x,z,'❄ SUPERCONDUCT','cold',e.r+2.7); ringFx(x,z,6,0x9fefff); burst(x,z,0x9fefff); shakeCam(.4);
     for(const o of [...G.enemies]){ const d=Math.hypot(o.mesh.position.x-x,o.mesh.position.z-z); if(d<6){ reactHit(o, dmg*1.5*(o===e?1.5:0.6), 'cold'); if(o!==e&&!o.dead)o.chill=Math.max(o.chill,2); } } return; }
 }
+// ---------------- boss-reward draft: slay a guardian → choose 1 of 3 build-defining blessings ----------------
+// Blessings reuse the existing stat/keystone vocabulary (folded into recompute via G.run.boons) so they
+// persist for the whole climb and stack with gear, skills and each other — authoring a build, not just looting one.
+const BOONS=[
+ {id:'bloodthirst',nm:'Bloodthirst',   ic:'🩸',tag:'Sustain', col:'#ff4d6d',eff:{lifesteal:6,dmgPct:8},          ds:'Heal for <b>6%</b> of all damage dealt. <b>+8%</b> damage.'},
+ {id:'glasscannon',nm:'Glass Cannon',  ic:'💥',tag:'Greed',   col:'#ff6b8a',warn:true,eff:{dmgPct:45,lifePct:-22},ds:'<b>+45%</b> damage — but <b>−22%</b> max life. Live dangerously.'},
+ {id:'executioner',nm:'Executioner',   ic:'☠️',tag:'Offense', col:'#c98bff',eff:{execPct:35},                    ds:'<b>+35%</b> damage to enemies below 30% life.'},
+ {id:'berserk',    nm:'Berserker Heart',ic:'🔥',tag:'Tempo',  col:'#ff9a3d',eff:{fervorRatePct:50,asPct:8},      ds:'Rampage builds <b>50%</b> faster. <b>+8%</b> attack speed.'},
+ {id:'deadeye',    nm:'Deadeye',       ic:'🎯',tag:'Crit',    col:'#ffd24d',eff:{crit:12,critMultPct:40},        ds:'<b>+12%</b> crit chance and <b>+40%</b> crit damage.'},
+ {id:'juggernaut', nm:'Juggernaut',    ic:'🛡️',tag:'Defense', col:'#8aa0c0',eff:{lifePct:26,armor:45,dmgPct:6},  ds:'<b>+26%</b> life, <b>+45</b> armour, <b>+6%</b> damage.'},
+ {id:'overflow',   nm:'Overflow',      ic:'🌀',tag:'Skills',  col:'#56e0ff',eff:{skillDmgPct:28,cdrPct:18},      ds:'<b>+28%</b> skill damage and <b>18%</b> faster cooldowns.'},
+ {id:'swiftblade', nm:'Swiftblade',    ic:'💨',tag:'Speed',   col:'#8effd9',eff:{asPct:24,movePct:13},           ds:'<b>+24%</b> attack speed and <b>+13%</b> move speed.'},
+ {id:'titanreach', nm:'Titan’s Reach', ic:'🔱',tag:'Area',    col:'#67c4ff',eff:{area:32,pierce:2},              ds:'<b>+32%</b> area of effect and <b>+2</b> pierce.'},
+ {id:'multishot',  nm:'Multishot',     ic:'🎇',tag:'Offense', col:'#ffd24d',eff:{proj:1,dmgPct:5},               ds:'Your weapon fires <b>+1</b> extra projectile. <b>+5%</b> damage.'},
+ {id:'vampirelord',nm:'Vampire Lord',  ic:'🦇',tag:'Sustain', col:'#b06bff',eff:{lifesteal:4,lifeOnKill:20,lifePct:8},ds:'<b>4%</b> lifesteal, <b>+20</b> life on kill, <b>+8%</b> life.'},
+ {id:'thornmail',  nm:'Thornmail',     ic:'🌹',tag:'Defense', col:'#ff7a9c',eff:{reflectPct:28,armor:30,lifePct:10},ds:'Return <b>28%</b> of damage taken. <b>+30</b> armour, <b>+10%</b> life.'},
+ {id:'manabulwark',nm:'Mana Bulwark',  ic:'🔷',tag:'Keystone',col:'#56b8ff',gives:'manaShield',eff:{manaPct:30,armor:20},ds:'Damage drains <b>mana before life</b> while mana holds. <b>+30%</b> mana.'},
+ {id:'twincast',   nm:'Twin Cast',     ic:'✨',tag:'Keystone',col:'#a18bff',gives:'doubleCast',eff:{skillDmgPct:8},ds:'Your skills <b>cast twice</b>. <b>+8%</b> skill damage.'},
+ {id:'greed',      nm:'Greed Incarnate',ic:'💰',tag:'Fortune',col:'#ffd24d',eff:{goldPct:70,xpPct:35,dmgPct:5},  ds:'<b>+70%</b> gold and <b>+35%</b> XP. Spoils of the bold.'},
+ {id:'momentum',   nm:'Momentum',      ic:'💉',tag:'Mobility',col:'#8effd9',eff:{dashCdrPct:38,asPct:8},         ds:'<b>38%</b> faster dash recharge. <b>+8%</b> attack speed.'},
+];
+function offerBoonDraft(){
+  if(_G.draftOpen || !_G.running) return;
+  const owned=new Set((G.run.boons||[]).map(b=>b.id));
+  let pool=BOONS.filter(b=>!owned.has(b.id));
+  // shuffle the eligible pool
+  for(let i=pool.length-1;i>0;i--){ const j=randi(0,i); const t=pool[i];pool[i]=pool[j];pool[j]=t; }
+  let picks=pool.slice(0,3);
+  // late climbs can exhaust the unique pool — top up with a stacking generic blessing so there's always a choice
+  let f=0; while(picks.length<3){ picks.push({id:'favor'+(owned.size+f++),nm:'Tower’s Favor',ic:'⭐',tag:'Blessing',col:'#ffce4d',eff:{dmgPct:14,lifePct:10},ds:'<b>+14%</b> damage and <b>+10%</b> maximum life.'}); }
+  const wrap=$('draftCards');
+  wrap.innerHTML=picks.map((b,i)=>`<div class="draft-card${b.warn?' warnly':''}" data-i="${i}" style="--cc:${b.col}">
+      <div class="dc-ic">${b.ic}</div><div class="dc-nm">${b.nm}</div><div class="dc-tag">${b.tag}</div>
+      <div class="dc-ds">${b.ds}</div><div class="dc-pick">▸ Claim</div></div>`).join('');
+  $('draftFoot').textContent='Blessing '+((G.run.boons||[]).length+1)+' · endures for this entire climb';
+  [...wrap.children].forEach((el,i)=>{ el.onclick=()=>pickBoon(picks[i]); });
+  _G.draftOpen=true; $('draftPanel').classList.remove('hidden');
+  if(sfx.evolve)sfx.evolve();
+}
+function pickBoon(b){
+  if(!_G.draftOpen) return;
+  (G.run.boons||(G.run.boons=[])).push(b);
+  recompute();
+  if(G.hp>G.maxhp)G.hp=G.maxhp;
+  _G.draftOpen=false; $('draftPanel').classList.add('hidden');
+  const p=G.player&&G.player.position;
+  if(p){ ringFx(p.x,p.z,4.5,parseInt(b.col.slice(1),16)); ringFx(p.x,p.z,2.8,0xffce4d); floatText(p.x,p.z,b.ic+' '+b.nm.toUpperCase(),'heal',3.2); }
+  banner('✦ '+b.nm.toUpperCase(), b.tag.toUpperCase()+' BLESSING CLAIMED');
+  shakeCam(.7); if(sfx.pot)sfx.pot();
+  log('✦ Blessing claimed — '+b.nm+'.');
+  updateHUD();
+}
 function killEnemy(e){
   if(e.revive && !e.revived){ e.revived=true; e.dead=false; e.hp=e.maxhp*0.45; e.shieldT=1.2; ringFx(e.mesh.position.x,e.mesh.position.z,e.r+2,0xc0303a); floatText(e.mesh.position.x,e.mesh.position.z,'⟳ RISEN','hurt',e.r+2); const bb=e.mesh.userData.body; if(bb)bb.material.color.setHex(0x7a1a22); return; }   // revenant rises once
   if(e.volatile){ const x=e.mesh.position.x,z=e.mesh.position.z; telegraphAoE(x,z,5,0.4,e.dmg*1.8,0xff7a3d); ringFx(x,z,3,0xff7a3d); }   // volatile affix: explodes on death (brief dodge window)
@@ -3270,7 +3361,9 @@ function killEnemy(e){
   }); }
   if(e.affixIds && e.affixIds.length){ const k=e._killer!=null?e._killer:(_G.cur||0); withPlayer(k, ()=> dropLoot(ex,ez, e.elite?0.12:0.03, k, pick(e.affixIds))); }   // affixed foes always drop one themed item
   G.hitstop=Math.max(G.hitstop||0, e.boss?0.3:0.04);
-  if(e.boss){ unlockFeat('firstboss'); log('⚔ GUARDIAN SLAIN! The portal awakens — ascend whenever you are ready.'); G.portal.active=true; G.shiftT=60; G.shiftWarned=false; shakeCam(1.3); }
+  if(e.boss){ unlockFeat('firstboss'); log('⚔ GUARDIAN SLAIN! The portal awakens — ascend whenever you are ready.'); G.portal.active=true; G.shiftT=60; G.shiftWarned=false; shakeCam(1.3);
+    if(!_G.splitscreen && !NET.role){ const cur=(_G.cur!=null?_G.cur:0); setTimeout(()=>{ if(_G.running) withPlayer(cur,()=>offerBoonDraft()); }, 700); }   // boss-reward draft (single-player) — let the death FX land first
+  }
   else if(floorType(G.floor)==='NORMAL' && !e.leftRoom) G.respawns.push({t:15, room:e.room, home:e.home});   // repopulate its room after ~15s
   // clear-gate: putting down the floor's population opens the portal
   if(!e.boss && floorType(G.floor)==='NORMAL' && G.portal && !G.portal.active){
@@ -4258,7 +4351,7 @@ function enterPractice(){
   G.belt=[makeFlask(1,'life'),makeFlask(1,'mana'),makeFlask(1,'swift'),null,null]; G.charge=100; G.sigSlot=makeSkillGem(1,'gMeteor'); G.sigCd=0; G.swiftT=0; G.petErrand=null;
   G.floorMod=null; G.bounty=null;
   if(G.petMesh){ scene.remove(G.petMesh); G.petMesh=null; } G.pet=null; G.pets=[]; G.petMagnet=0;
-  G.run={kills:0,assists:0,healSelf:0,healOthers:0,xp:0,floorTime:0,totalTime:0,floorsCleared:0};
+  G.run={kills:0,assists:0,healSelf:0,healOthers:0,xp:0,floorTime:0,totalTime:0,floorsCleared:0,boons:[]};
   G.practice=true; G.inTown=false; G.hardcore=false; G.seed=randi(0,9999);
   initAudio(); startAmbient();
   recompute(); G.hp=G.maxhp; G.mana=G.maxmana;
@@ -4405,7 +4498,7 @@ function initPlayerChar(){
   G.dashCd=0; G.dashT=0; G.flowT=0;
   G.belt=[makeFlask(1,'life'), makeFlask(1,'mana'), null, null, null]; G.charge=0; G.sigSlot=null; G.sigCd=0; G.swiftT=0; G.petErrand=null;
   if(G.petMesh){ scene.remove(G.petMesh); G.petMesh=null; } G.pet=null; G.pets=[]; G.petMagnet=0;
-  G.run={kills:0,assists:0,healSelf:0,healOthers:0,xp:0,floorTime:0,totalTime:0,floorsCleared:0};
+  G.run={kills:0,assists:0,healSelf:0,healOthers:0,xp:0,floorTime:0,totalTime:0,floorsCleared:0,boons:[]};
   recompute(); G.hp=G.maxhp; G.mana=G.maxmana;
   if(!G.player){ G.player=createPlayer(); tintPlayer(G.player, G.color); }
 }
