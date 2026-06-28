@@ -1322,6 +1322,13 @@ const SKILLS = {
   gLance:  {nm:'Ice Lance',   ic:'🧊', mana:13, cd:1.6, cast:castLance},
   gSlow:   {nm:'Time Warp',   ic:'⏳', mana:24, cd:13.0,cast:castSlow},
   gBlades: {nm:'Bladestorm',  ic:'🌀', mana:18, cd:5.0, cast:castBlades},
+  gPoison: {nm:'Toxic Cloud', ic:'🧪', mana:20, cd:5.0, cast:castPoison},
+  gShock:  {nm:'Static Discharge',ic:'🔆', mana:16, cd:3.0, cast:castShock},
+  gBeam:   {nm:'Arcane Beam', ic:'📡', mana:18, cd:2.2, cast:castBeam},
+  gMortar: {nm:'Mortar',      ic:'🎯', mana:22, cd:5.0, cast:castMortar},
+  gReap:   {nm:'Reaping Scythe',ic:'🌾', mana:14, cd:2.5, cast:castReap},
+  gComet:  {nm:'Comet',       ic:'☄', mana:16, cd:2.2, cast:castComet},
+  gBulwark:{nm:'Stoneskin',   ic:'🪨', mana:18, cd:7.0, cast:castBulwark},
 };
 const SKILL_IDS=Object.keys(SKILLS);
 const SLOT_KEYS=['1','2','3','4','5','6','7','8','9']; const SLOT_LABEL=['1','2','3','4','5','6','7','8','9'];   // 9-skill bar (Torchlight-style)
@@ -1580,22 +1587,43 @@ const SPECS=[
   ]},
 ];
 // ---- procedural BRANCHING depth: extend each curated head into a shaped tree (rows widen/narrow, rarer & stronger downward) ----
-const TREE_ROWS=30;
+const TREE_ROWS=70;
 // Active SKILLS scattered through each tree — allocating the node GRANTS that skill gem (the tree is a source of skills, not just stats).
+// Lists are long so skills appear all the way down a 70-row column, themed per spec.
 const TREE_SKILLS={
-  tk:['gQuake','gShield','gWhirl','gBlades'],
-  st:['gWhirl','gVolley','gBarrage','gFlame','gBlades'],
-  mn:['gHeal','gShield','gFrost','gSlow'],
-  wd:['gNova','gFrost','gChain','gMeteor','gStorm','gVortex'],
-  rg:['gBlink','gLance','gVolley','gBarrage'],
+  tk:['gBulwark','gWhirl','gShield','gQuake','gReap','gShock','gBlades','gMortar','gComet','gSlow'],
+  st:['gWhirl','gVolley','gReap','gFlame','gBarrage','gComet','gBeam','gBlades','gMortar','gShock','gLance'],
+  mn:['gHeal','gShield','gPoison','gFrost','gBulwark','gSlow','gShock','gHeal','gBlades'],
+  wd:['gNova','gFrost','gChain','gBeam','gShock','gMeteor','gStorm','gPoison','gVortex','gComet','gMortar','gSlow'],
+  rg:['gBlink','gLance','gVolley','gReap','gShock','gBarrage','gComet','gBeam','gBlades'],
 };
 // Unique, hand-authored KEYSTONES per spec (used at the single-node bottlenecks instead of bland stat sums).
+// A few are BUILD-DEFINING: `gives` sets a flag the engine reads (blood magic, always-ailment, double-cast, mana shield).
 const TREE_KEYSTONES={
-  tk:[{nm:'Juggernaut',ic:'🐗',eff:{lifePct:24,armor:60,asPct:-8}},{nm:'Thornmail',ic:'🌵',eff:{reflectPct:22,armor:40}},{nm:'Last Bastion',ic:'⛰️',eff:{lowHpDmgPct:30,lifePct:10}},{nm:'Bloodforge',ic:'🩸',eff:{lifeOnKill:16,lifePct:8}},{nm:'Aegis Core',ic:'⛨',eff:{armor:40},proc:{on:'hurt',chance:0.18,type:'shield',dur:1.0}}],
-  st:[{nm:'Glass Cannon',ic:'💥',eff:{dmgPct:40,critMultPct:30,lifePct:-22}},{nm:'Executioner',ic:'☠️',eff:{execPct:45,critMultPct:30}},{nm:'Berserker',ic:'😤',eff:{dmgPct:22,asPct:14,lifePct:-8}},{nm:'Bloodlust',ic:'🦇',eff:{lifesteal:6,dmgPct:14}},{nm:'Rampager',ic:'🔥',eff:{fervorRatePct:30},proc:{on:'crit',chance:0.25,type:'fervor',amt:14}}],
-  mn:[{nm:'Phoenix Heart',ic:'🔥',eff:{lifeRegen:9,lifePct:16,lifesteal:4}},{nm:'Transfusion',ic:'🩹',eff:{lifeOnHit:8,lifesteal:4}},{nm:'Sanctuary',ic:'✨',eff:{lifeRegen:4},proc:{on:'hurt',chance:0.2,type:'shield',dur:1.0}},{nm:'Lifebound',ic:'💞',eff:{lifePct:14,lifeOnKill:14}}],
-  wd:[{nm:'Archmage',ic:'👁️',eff:{skillDmgPct:40,manaCostPct:-18}},{nm:'Elementalist',ic:'🌈',eff:{elemDmgPct:35,ailDmgPct:40}},{nm:'Overcharge',ic:'⚡',eff:{skillDmgPct:18},proc:{on:'cast',chance:0.2,type:'nova',amt:1.6,r:8}},{nm:'Channeler',ic:'🌀',eff:{area:22,cdrPct:14,manaRegen:4}}],
-  rg:[{nm:'Phantom',ic:'👻',eff:{movePct:22,asPct:18,crit:6,dashCdrPct:24}},{nm:'Apex Predator',ic:'🐅',eff:{dmgPct:18,critMultPct:28}},{nm:'Windrunner',ic:'🍃',eff:{movePct:16,asPct:8},proc:{on:'dash',chance:0.6,type:'haste',dur:2.5}},{nm:'Shadowdancer',ic:'🌑',eff:{dashCdrPct:24},proc:{on:'dash',chance:0.5,type:'shield',dur:0.9}}],
+  tk:[{nm:'Juggernaut',ic:'🐗',eff:{lifePct:24,armor:60,asPct:-8}},{nm:'Thornmail',ic:'🌵',eff:{reflectPct:24,armor:40}},
+      {nm:'Mana Bulwark',ic:'🔷',gives:'manaShield',eff:{manaPct:24,armor:20},note:'Damage drains MANA before life (while mana lasts).'},
+      {nm:'Last Bastion',ic:'⛰️',eff:{lowHpDmgPct:30,lifePct:10}},{nm:'Bloodforge',ic:'🩸',eff:{lifeOnKill:16,lifePct:8}},
+      {nm:'Aegis Core',ic:'⛨',eff:{armor:44},proc:{on:'hurt',chance:0.2,type:'shield',dur:1.0}},{nm:'Unstoppable',ic:'🗿',eff:{lifeFlat:80,armor:36}},
+      {nm:'Vengeful Wall',ic:'🛡️',eff:{reflectPct:18,lifePct:10},proc:{on:'hurt',chance:0.14,type:'nova',amt:1.5,r:7}},{nm:'Titanheart',ic:'💎',eff:{lifePct:20,lifeRegen:5}}],
+  st:[{nm:'Glass Cannon',ic:'💥',eff:{dmgPct:42,critMultPct:30,lifePct:-24}},{nm:'Executioner',ic:'☠️',eff:{execPct:48,critMultPct:30}},
+      {nm:'Blood Magic',ic:'🩸',gives:'bloodMagic',eff:{dmgPct:24},note:'Skills cost LIFE instead of mana.'},
+      {nm:'Berserker',ic:'😤',eff:{dmgPct:22,asPct:14,lifePct:-8}},{nm:'Bloodlust',ic:'🦇',eff:{lifesteal:6,dmgPct:14}},
+      {nm:'Rampager',ic:'🔥',eff:{fervorRatePct:30},proc:{on:'crit',chance:0.25,type:'fervor',amt:14}},{nm:'Annihilator',ic:'💢',eff:{dmgPct:26,asPct:8}},
+      {nm:'Headhunter',ic:'🎯',eff:{critMultPct:44,crit:6}},{nm:'Carnage',ic:'⚔️',eff:{dmgPct:16},proc:{on:'crit',chance:0.2,type:'nova',amt:1.5,r:7}}],
+  mn:[{nm:'Phoenix Heart',ic:'🔥',eff:{lifeRegen:9,lifePct:16,lifesteal:4}},{nm:'Transfusion',ic:'🩹',eff:{lifeOnHit:8,lifesteal:4}},
+      {nm:'Sanctuary',ic:'✨',eff:{lifeRegen:4},proc:{on:'hurt',chance:0.22,type:'shield',dur:1.1}},{nm:'Lifebound',ic:'💞',eff:{lifePct:14,lifeOnKill:14}},
+      {nm:'Wellspring',ic:'⛲',eff:{lifeRegen:7,manaRegen:4}},{nm:'Bloodfeast',ic:'🍖',eff:{lifesteal:7,lifeOnKill:10}},
+      {nm:'Guardian Angel',ic:'😇',eff:{lifePct:10},proc:{on:'hurt',chance:0.16,type:'heal',amt:0.12}},{nm:'Immortal',ic:'♾️',eff:{lifePct:22,lifeRegen:6,dmgPct:-10}}],
+  wd:[{nm:'Archmage',ic:'👁️',eff:{skillDmgPct:42,manaCostPct:-18}},{nm:'Elementalist',ic:'🌈',gives:'alwaysAil',eff:{elemDmgPct:30,ailDmgPct:30},note:'Your elemental hits ALWAYS apply their ailment.'},
+      {nm:'Twincast',ic:'🔁',gives:'doubleCast',eff:{skillDmgPct:8,manaCostPct:8},note:'Skills have a 35% chance to fire twice.'},
+      {nm:'Overcharge',ic:'⚡',eff:{skillDmgPct:18},proc:{on:'cast',chance:0.2,type:'nova',amt:1.6,r:8}},{nm:'Channeler',ic:'🌀',eff:{area:24,cdrPct:14,manaRegen:4}},
+      {nm:'Cataclysm',ic:'☄️',eff:{skillDmgPct:26,area:12}},{nm:'Battery',ic:'🔋',eff:{manaPct:20,manaOnKill:16}},
+      {nm:'Stormcaller',ic:'🌩',eff:{skillDmgPct:14},proc:{on:'cast',chance:0.18,type:'shock'}},{nm:'Archon',ic:'🌟',eff:{skillDmgPct:30,area:16,cdrPct:10}}],
+  rg:[{nm:'Phantom',ic:'👻',eff:{movePct:22,asPct:18,crit:6,dashCdrPct:24}},{nm:'Apex Predator',ic:'🐅',eff:{dmgPct:18,critMultPct:28}},
+      {nm:'Windrunner',ic:'🍃',eff:{movePct:16,asPct:8},proc:{on:'dash',chance:0.6,type:'haste',dur:2.5}},
+      {nm:'Shadowdancer',ic:'🌑',eff:{dashCdrPct:26},proc:{on:'dash',chance:0.5,type:'shield',dur:0.9}},
+      {nm:'Deadeye',ic:'🎯',eff:{proj:2,dmgPct:12}},{nm:'Bloodhound',ic:'🐕',eff:{xpPct:16,goldPct:20}},
+      {nm:'Tempest',ic:'🌪️',eff:{asPct:24,movePct:10,lifePct:-10}},{nm:'Trickster',ic:'🃏',eff:{crit:8,dashCdrPct:14},proc:{on:'dash',chance:0.4,type:'nova',amt:1.3,r:6}}],
 };
 function talentRarity(ti, rowLen){ let r=Math.min(4, Math.floor((ti/TREE_ROWS)*5)); if(rowLen===1) r=Math.min(4, r+1); return r; }
 (function extendSpecs(){
@@ -1641,8 +1669,8 @@ function talentRarity(ti, rowLen){ let r=Math.min(4, Math.floor((ti/TREE_ROWS)*5
     const seed=ti*4+si, st=g.stats[seed%g.stats.length];
     const t={ nm:gname(g,ti,si), ic:st.ic, eff:{}, rar };
     t.eff[st.k]=gv(st,ti);
-    if(rar>=2 || rowLen===1){ const s2=g.stats[(seed+2)%g.stats.length]; if(s2.k!==st.k) t.eff[s2.k]=gv(s2,ti); }    // rarer = combines effects
-    if(rar>=3){ const s3=g.stats[(seed+4)%g.stats.length]; if(!(s3.k in t.eff)) t.eff[s3.k]=gv(s3,ti); }
+    if(rar>=2 || rowLen===1 || seed%5===0){ const s2=g.stats[(seed+2)%g.stats.length]; if(s2.k!==st.k) t.eff[s2.k]=gv(s2,ti); }    // most nodes now combine TWO effects so even filler reads distinctly
+    if(rar>=3 || seed%11===0){ const s3=g.stats[(seed+4)%g.stats.length]; if(!(s3.k in t.eff)) t.eff[s3.k]=gv(s3,ti); }
     t.max = rar>=3?2 : rar>=2?3 : [4,5,3,4][seed%4];
     if(rowLen===1) t.max=Math.min(t.max,2);               // keystones: punchy, few ranks
     if((rar>=2 && seed%9===0) || (rar>=3 && seed%5===0)){ const p=g.procTypes[seed%g.procTypes.length]; t.procs=[Object.assign({on:g.procOn[seed%g.procOn.length], chance:+(0.08+rar*0.03).toFixed(2)}, p)]; }
@@ -1653,14 +1681,15 @@ function talentRarity(ti, rowLen){ let r=Math.min(4, Math.floor((ti/TREE_ROWS)*5
   for(const spec of SPECS){ const g=GEN[spec.kw]; if(!g) continue;
     spec.tiers=[];   // regenerate the whole tree (incl. the wide, varied top band) — curated heads above are superseded
     const skills=TREE_SKILLS[spec.kw]||[], keys=TREE_KEYSTONES[spec.kw]||[];
-    const skillAt={}; skills.forEach((sid,i)=>{ let ti=3+i*4; while(ti<TREE_ROWS-2 && (ti%g.key===0 || skillAt[ti])) ti++; if(ti<TREE_ROWS-2) skillAt[ti]=sid; });   // scatter skills, dodging keystone rows
+    const step=Math.max(3, Math.floor((TREE_ROWS-6)/Math.max(1,skills.length)));   // spread skills down the WHOLE column
+    const skillAt={}; skills.forEach((sid,i)=>{ let ti=3+i*step; while(ti<TREE_ROWS-2 && (ti%g.key===0 || skillAt[ti])) ti++; if(ti<TREE_ROWS-2) skillAt[ti]=sid; });
     let keyIdx=0;
     while(spec.tiers.length < TREE_ROWS){
       const ti=spec.tiers.length;
       if(ti===TREE_ROWS-1){ spec.tiers.push([{nm:g.capNm,ic:g.capIc,max:1,rar:5,eff:capEff(g,ti),note:'The pinnacle of the '+spec.nm+' path.'}]); break; }
       if(ti>0 && ti%g.key===0 && keys.length){   // unique hand-authored keystone at each bottleneck
-        const k=keys[keyIdx++ % keys.length]; const node={nm:k.nm,ic:k.ic,max:k.max||1,rar:4,eff:k.eff,note:'Keystone — '+effDesc(k.eff)};
-        if(k.proc) node.procs=[k.proc];
+        const k=keys[keyIdx++ % keys.length]; const node={nm:k.nm,ic:k.ic,max:k.max||1,rar:4,eff:k.eff,note:(k.note?'★ '+k.note:'Keystone — '+effDesc(k.eff))};
+        if(k.proc) node.procs=[k.proc]; if(k.gives) node.gives=k.gives;
         spec.tiers.push([node]); continue;
       }
       const w=rowWidth(g,ti), rar=talentRarity(ti,w);
@@ -2169,7 +2198,8 @@ function recompute(){
   const attrItem={str:0,dex:0,int:0,vit:0,will:0};   // attribute bonuses from gear/gems — kept SEPARATE from base so we can show "70 (+50)" and scale enemies off base only
   const addMod=(k,v)=>{ if(attrItem[k]!==undefined) attrItem[k]+=v; else m[k]=(m[k]||0)+v; };
   let talLifeRegen=0, talManaRegen=0;   // regen comes ONLY from skill-tree talents (+ pet abilities below) — never gear or base stats
-  for(const id in G.alloc){ const t=TALENTMAP[id], rank=G.alloc[id]||0; if(t&&t.eff&&rank>0) for(const k in t.eff){ m[k]=(m[k]||0)+t.eff[k]*rank; if(k==='lifeRegen')talLifeRegen+=t.eff[k]*rank; else if(k==='manaRegen')talManaRegen+=t.eff[k]*rank; } }
+  const flags={};   // build-defining keystone flags (blood magic, always-ailment, double-cast, mana shield)
+  for(const id in G.alloc){ const t=TALENTMAP[id], rank=G.alloc[id]||0; if(rank>0&&t){ if(t.gives) flags[t.gives]=true; if(t.eff) for(const k in t.eff){ m[k]=(m[k]||0)+t.eff[k]*rank; if(k==='lifeRegen')talLifeRegen+=t.eff[k]*rank; else if(k==='manaRegen')talManaRegen+=t.eff[k]*rank; } } }
   let elem='phys', ailBonus=0, special={}, igniteMult=1, dashCdr=1;
   for(const sk in G.equip){ const it=G.equip[sk]; if(!it)continue;
     for(const af of it.affixes) addMod(af.key, af.val);
@@ -2211,6 +2241,8 @@ function recompute(){
   // elements / ailments
   S.element = elem; S.ailment = ELEMENTS[elem].ail;
   S.ailChance = elem==='phys' ? 0 : clamp((special.alwaysShock?100:18) + ailBonus, 0, 100);
+  if(flags.alwaysAil && elem!=='phys') S.ailChance=100;   // Elementalist keystone
+  S.bloodMagic=!!flags.bloodMagic; S.doubleCast=!!flags.doubleCast; S.manaShield=!!flags.manaShield;
   S.igniteMult = igniteMult;
   // ---- extended mechanics (talent-driven) ----
   S.cdr        = clamp((m.cdrPct||0)/100, 0, 0.6);          // skill cooldown reduction
@@ -2829,9 +2861,11 @@ function spendMana(c){ if(G.mana<c) return false; G.mana-=c; return true; }
 function useSlot(i){
   const slot=G.slots[i]; if(!slot) return; const sk=SKILLS[slot.skillId];
   if((G.cd[i]||0)>0) return;
-  const cost=Math.round(sk.mana*G.S.manaCostMult);
-  if(G.mana<cost){ floatText(G.player.position.x,G.player.position.z,'no mana','mana',2.6); return; }
-  G.mana-=cost; G.cd[i]=sk.cd*(1-(G.S.cdr||0)); sk.cast(1+((slot.tier||1)-1)*0.15); sfx.cast(); fireProcs('cast',{});
+  const cost=Math.round(sk.mana*G.S.manaCostMult), p=G.player.position;
+  if(G.S.bloodMagic){ const lc=Math.max(1,Math.round(cost*0.9)); if(G.hp<=lc){ floatText(p.x,p.z,'too weak','hurt',2.6); return; } G.hp-=lc; floatText(p.x,p.z,'-'+lc,'hurt',2.2); }   // Blood Magic: pay life
+  else { if(G.mana<cost){ floatText(p.x,p.z,'no mana','mana',2.6); return; } G.mana-=cost; }
+  G.cd[i]=sk.cd*(1-(G.S.cdr||0)); const pwr=1+((slot.tier||1)-1)*0.15; sk.cast(pwr); sfx.cast(); fireProcs('cast',{});
+  if(G.S.doubleCast && Math.random()<0.35){ G.timed.push({t:0.12, fn:()=>{ if(!G.dead) sk.cast(pwr); }}); }   // Twincast echo
 }
 // ---- belt flasks ----
 function useFlask(i){
@@ -2973,6 +3007,24 @@ function castSlow(pwr){ const p=G.player.position, R=areaR(13); ringFx(p.x,p.z,R
   for(const e of G.enemies){ if(Math.hypot(e.mesh.position.x-p.x,e.mesh.position.z-p.z)<R+e.r) e.chill=Math.max(e.chill||0,4); }
   floatText(p.x,p.z,'⏳ TIME WARP','cold',3); }
 function castBlades(pwr){ for(let i=0;i<5;i++){ G.timed.push({t:i*0.16, fn:()=>{ const c=G.player.position; ringFx(c.x,c.z,areaR(4.2),0xff9a3d); hitRadius(c.x,c.z,areaR(4.2),skillDmg(0.7,pwr),80); }}); } }
+// ---- more skills (scattered through the trees) ----
+function castPoison(pwr){ const tx=aimPoint.x, tz=aimPoint.z, R=areaR(5);
+  const fill=new THREE.Mesh(new THREE.CircleGeometry(R,28), new THREE.MeshBasicMaterial({color:0x7dff5a,transparent:true,opacity:.16,side:THREE.DoubleSide})); fill.rotation.x=-Math.PI/2; fill.position.set(tx,.08,tz); scene.add(fill); G.decals.push({mesh:fill,hold:3,life:3});
+  for(let k=0;k<6;k++) G.timed.push({t:k*0.5, fn:()=>{ ringFx(tx,tz,R,0x7dff5a); for(const e of G.enemies){ if(!e.dead && Math.hypot(e.mesh.position.x-tx,e.mesh.position.z-tz)<R+e.r){ hurtEnemy(e,skillDmg(0.55,pwr),false,'fire'); if(!e.dead) applyAilment(e,'ignite',skillDmg(0.4,pwr)); } } }}); }
+function castShock(pwr){ const p=G.player.position, R=areaR(7); ringFx(p.x,p.z,R,0xffe14d); burst(p.x,p.z,0xffe14d);
+  for(const e of G.enemies){ if(Math.hypot(e.mesh.position.x-p.x,e.mesh.position.z-p.z)<R+e.r){ const dmg=skillDmg(1.5,pwr); hurtEnemy(e,dmg,false,'light'); if(!e.dead) applyAilment(e,'shock',dmg); } } shakeCam(.4); }
+function castBeam(pwr){ const p=G.player.position, a=Math.atan2(aimPoint.x-p.x,aimPoint.z-p.z), dx=Math.sin(a),dz=Math.cos(a), crit=Math.random()<G.S.crit;
+  fireBolt(p.x+dx,p.z+dz,dx,dz,skillDmg(2.2,pwr)*(crit?G.S.critMult:1),crit,(G.S.pierce||0)+12,0.5,100,G.S.element,0.6); }
+function castMortar(pwr){ const tx=aimPoint.x, tz=aimPoint.z, spots=[[0,0],[4,3],[-3,4]];
+  spots.forEach((s,i)=>{ const mx=tx+s[0], mz=tz+s[1], R=areaR(4);
+    const ring=new THREE.Mesh(new THREE.RingGeometry(R-0.3,R,24), new THREE.MeshBasicMaterial({color:0xffae3d,transparent:true,opacity:.5,side:THREE.DoubleSide})); ring.rotation.x=-Math.PI/2; ring.position.set(mx,.1,mz); scene.add(ring); G.decals.push({mesh:ring,hold:0.5+i*0.15,life:0.5+i*0.15});
+    G.timed.push({t:0.5+i*0.15, fn:()=>{ ringFx(mx,mz,R,0xffae3d); burst(mx,mz,0xffae3d); hitRadius(mx,mz,R,skillDmg(1.8,pwr),260); shakeCam(.4); }}); }); }
+function castReap(pwr){ const p=G.player.position, base=Math.atan2(aimPoint.x-p.x,aimPoint.z-p.z), R=areaR(6);
+  ringFx(p.x+Math.sin(base)*2.5,p.z+Math.cos(base)*2.5,3.2,0xff6b6b);
+  for(const e of G.enemies){ const ex=e.mesh.position.x-p.x, ez=e.mesh.position.z-p.z, d=Math.hypot(ex,ez); if(d>R+e.r)continue; let da=Math.atan2(ex,ez)-base; while(da>Math.PI)da-=6.283; while(da<-Math.PI)da+=6.283; if(Math.abs(da)<0.95) hurtEnemy(e,skillDmg(1.6,pwr),Math.random()<G.S.crit,G.S.element); } shakeCam(.4); }
+function castComet(pwr){ const p=G.player.position, a=Math.atan2(aimPoint.x-p.x,aimPoint.z-p.z), dx=Math.sin(a),dz=Math.cos(a), crit=Math.random()<G.S.crit;
+  fireBolt(p.x+dx,p.z+dz,dx,dz,skillDmg(2.0,pwr)*(crit?G.S.critMult:1),crit,(G.S.pierce||0)+2,0.6,46,'fire',0.7,{forceAil:'ignite'}); }
+function castBulwark(pwr){ const p=G.player.position; const h=Math.min(G.maxhp*0.14,G.maxhp-G.hp); if(h>0){G.hp+=h;G.run.healSelf+=h;} G.invuln=Math.max(G.invuln,0.9); ringFx(p.x,p.z,areaR(3.4),0x8aa0c0); floatText(p.x,p.z,'🪨 STONESKIN','heal',2.8); }
 // ---- bespoke fused-skill effects (a synergy that lists `fx` ignores the generic "fire both" cast) ----
 function fxSupernova(P){ const tx=aimPoint.x, tz=aimPoint.z;   // Meteor+Singularity: collapse, then a giant fiery detonation
   for(let k=0;k<3;k++) G.timed.push({t:k*0.13, fn:()=>{ for(const e of G.enemies){ const dx=tx-e.mesh.position.x,dz=tz-e.mesh.position.z,d=Math.hypot(dx,dz); if(d<areaR(12)&&d>0.2){ const pull=Math.min(d-0.3,3.2); e.mesh.position.x+=dx/d*pull; e.mesh.position.z+=dz/d*pull; } } ringFx(tx,tz,areaR(2+k*1.5),0xb06bff); }});
@@ -3143,9 +3195,9 @@ function gainXP(n){
 }
 function doLevelUp(){   // consume one level's worth of banked XP and apply the rewards
   if(G.xp<G.xpNeed) return false;
-  G.xp-=G.xpNeed; G.level++; G.attrPts+=5; G.skillPts+=1; G.xpNeed=Math.floor(G.xpNeed*1.26+12);
+  G.xp-=G.xpNeed; G.level++; G.attrPts+=5; G.skillPts+=2; G.xpNeed=Math.floor(G.xpNeed*1.26+12);   // +2 skill points/level so the deep 70-row trees (and their scattered skills) are reachable
   G.hp=G.maxhp; G.mana=G.maxmana;   // full restore on level — a real reward beat
-  log('⬆ LEVEL '+G.level+'!  +5 attributes (C), +1 skill point (T)');
+  log('⬆ LEVEL '+G.level+'!  +5 attributes (C), +2 skill points (T)');
   levelUpFx(G.level); sfx.level(); return true;
 }
 function spendBankedXP(all){   // collect-mode: level up once, or as many times as the banked XP allows
@@ -3158,7 +3210,7 @@ function banner(t,s,flash){ const b=$('levelBanner'); b.querySelector('.lb-t').t
   const f=$(flash||'levelFlash'); f.classList.remove('go'); void f.offsetWidth; f.classList.add('go'); }
 function levelUpFx(lvl){
   const p=G.player?G.player.position:{x:0,z:0};
-  banner('LEVEL '+lvl,'+5 ATTRIBUTES · +1 SKILL POINT');
+  banner('LEVEL '+lvl,'+5 ATTRIBUTES · +2 SKILL POINTS');
   if(G.player){ floatText(p.x,p.z,'LEVEL '+lvl,'big',3.6); ringFx(p.x,p.z,7,0xffce4d); ringFx(p.x,p.z,4,0x56e0ff); burst(p.x,p.z,0xffce4d); }
   shakeCam(.6); G.hitstop=Math.max(G.hitstop||0,.12);
 }
@@ -4732,7 +4784,9 @@ function updateDecals(dt){
     else if(dc.hold!==undefined){ dc.hold-=dt; if(dc.hold<=0)dc.dead=true; } }
   G.decals=G.decals.filter(dc=>{ if(dc.dead){scene.remove(dc.mesh);return false;} return true; });
 }
-function hurtPlayer(dmg){ if(G.invuln>0)return; bountyFail(); const real=dmg*(1-dr()); G.hp-=real; G.invuln=0.5; shakeCam(.4); sfx.hurt();
+function hurtPlayer(dmg){ if(G.invuln>0)return; bountyFail(); let real=dmg*(1-dr());
+  if(G.S.manaShield && G.mana>0){ const absorb=Math.min(G.mana, real*0.6); G.mana-=absorb; real-=absorb; }   // Mana Bulwark: mana soaks 60% while it lasts
+  G.hp-=real; G.invuln=0.5; shakeCam(.4); sfx.hurt();
   G.fervor=Math.max(0,G.fervor-25); floatText(G.player.position.x,G.player.position.z,'-'+Math.round(real),'hurt',2.6);
   if((G.S.reflect||0)>0){ const p=G.player.position; hitRadius(p.x,p.z,areaR(5), real*G.S.reflect, 60, G.S.element); }   // thorns
   fireProcs('hurt',{});
