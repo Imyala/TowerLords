@@ -2632,6 +2632,23 @@ function partyLevel(){ let m=1; for(const p of _G.players){ if(p.joined && p.pla
 function basePowerLvl(){ let best=1; for(const pl of joinedPlayers()){ const A=pl.attr; if(!A)continue;
   const s=(A.str||0)+(A.dex||0)+(A.int||0)+(A.vit||0)+(A.will||0); best=Math.max(best, Math.round((s-25)/5)+1); } return best; }
 function scaleLvl(floor){ return Math.max(floor, basePowerLvl()); }   // enemies track base stats (floor as a safety floor), not gear-inflated level
+// ---- elite/champion affixes: bolt-on modifiers that give a single mob a unique behaviour + colour, so packs vary every run ----
+const ELITE_AFFIXES=[
+  {id:'volatile', nm:'Volatile',    col:0xff7a3d, apply:e=>{ e.volatile=true; }},        // explodes on death
+  {id:'vampiric', nm:'Vampiric',    col:0xff3b6b, apply:e=>{ e.vampiric=true; }},        // heals when it hits you
+  {id:'teleport', nm:'Teleporting', col:0xb06bff, apply:e=>{ e.blink=true; }},           // blinks onto you
+  {id:'shielded', nm:'Shielded',    col:0x8ad4ff, apply:e=>{ e.shield=true; }},          // periodic damage bubble
+  {id:'frenzied', nm:'Frenzied',    col:0xff3b3b, apply:e=>{ e.enrage=true; e.speed*=1.15; }},
+  {id:'toxic',    nm:'Toxic',       col:0x7dff5a, apply:e=>{ e.toxic=true; }},           // leaves damaging pools
+  {id:'swift',    nm:'Swift',       col:0x8effd9, apply:e=>{ e.speed*=1.4; }},
+  {id:'mending',  nm:'Mending',     col:0x6dff8c, apply:e=>{ e.heal=true; }},            // heals nearby allies
+  {id:'arcane',   nm:'Arcane',      col:0x56e0ff, apply:e=>{ e.arcane=true; }},          // periodically spits a bullet ring
+];
+function applyAffixes(e, n){
+  const pool=ELITE_AFFIXES.slice(), names=[]; let col=null;
+  for(let i=0;i<n && pool.length;i++){ const a=pool.splice(randi(0,pool.length-1),1)[0]; a.apply(e); names.push(a.nm); if(col==null)col=a.col; }
+  if(names.length){ e.affixNames=names; e.affixCol=col; }
+}
 function spawnEnemy(floor,home,forceType,forceElite){
   const t=forceType||pickEType(floor);
   const lvl=scaleLvl(floor);                            // stat scaling tracks the player, not just the floor
@@ -2643,7 +2660,9 @@ function spawnEnemy(floor,home,forceType,forceElite){
     lancer:!!t.lancer, weaver:!!t.weaver, shield:!!t.shield, revive:!!t.revive, blink:!!t.blink, aura:!!t.aura, hexer:!!t.hexer, enrage:!!t.enrage,
     shootCd:rand(.8,2.2), atkCd:rand(.2,.8), windup:0, dashCd:rand(2,4), hitFlash:0, elite:false,
     aggro:false, home:home||{x:0,z:0} };
-  if(forceElite || Math.random()<0.09+floor*0.006){ e.elite=true; e.hp*=3.2; e.dmg*=1.6; e.scale*=1.35; e.r*=1.3; e.xp*=4; e.gold=true; }
+  if(forceElite || Math.random()<0.09+floor*0.006){ e.elite=true; e.hp*=3.2; e.dmg*=1.6; e.scale*=1.35; e.r*=1.3; e.xp*=4; e.gold=true;
+    applyAffixes(e, 1+(floor>=10?1:0)+(floor>=26?1:0)); }   // 1-3 affixes, deeper = more
+  else if(floor>=3 && Math.random()<0.06){ applyAffixes(e,1); e.champion=true; e.hp*=1.4; e.dmg*=1.15; e.xp*=1.7; }   // occasional "champion" normal — run-to-run variety
   // New Game+ scaling
   const ng=ngMult(); e.hp*=ng; e.dmg*=ng; e.maxhp=e.hp;
   // floor-modifier effects
@@ -2653,7 +2672,8 @@ function spawnEnemy(floor,home,forceType,forceElite){
   if(e.elite) for(const k in e.res) e.res[k]=Math.min(0.6,e.res[k]+0.1);
   if(mod?.eres) for(const k in e.res) e.res[k]=Math.min(0.75, e.res[k]+mod.eres);
   e.maxhp=e.hp; e.mesh=makeEnemyMesh(t.shape,e.color,e.scale);
-  if(e.elite){ const ring=new THREE.Mesh(new THREE.TorusGeometry(1.4*e.scale,.12,8,20), new THREE.MeshStandardMaterial({color:0xffce4d,emissive:0xffce4d,emissiveIntensity:1})); ring.rotation.x=Math.PI/2; ring.position.y=1.7*e.scale; e.mesh.add(ring); }
+  if(e.elite||e.champion){ const c=e.affixCol||0xffce4d; const ring=new THREE.Mesh(new THREE.TorusGeometry((e.elite?1.4:1.05)*e.scale,.12,8,20), new THREE.MeshStandardMaterial({color:c,emissive:c,emissiveIntensity:1})); ring.rotation.x=Math.PI/2; ring.position.y=1.7*e.scale; e.mesh.add(ring);
+    if(e.affixCol){ const bb=e.mesh.userData.body; if(bb) bb.material.emissive.setHex(e.affixCol); } }
   let px=e.home.x+rand(-2.5,2.5), pz=e.home.z+rand(-2.5,2.5); if(!inAny(px,pz,0.7)){ px=e.home.x; pz=e.home.z; }
   e.mesh.position.set(px,0,pz); e.room=roomAt(px,pz)||roomAt(e.home.x,e.home.z); e.leftRoom=false; e.wanderT=0; scene.add(e.mesh); G.enemies.push(e);
 }
@@ -2778,6 +2798,10 @@ function mTeleSlam(e){ const tp=nearestPlayerTo(e.mesh.position.x,e.mesh.positio
   telegraphAoE(tp.x,tp.z,6.5,0.7,e.dmg*1.8,0xff3b5c); }
 function mLaserCross(e){   // four rotating beams sweeping the arena
   emit(e,{ count:4, ring:true, waves:20, wDelay:0.06, spin:0.13, speed:20, dmg:0.6, aimed:false, mat:'fan' }); bossSay(e,'✺ LASERS'); }
+function mCrossAoE(e){ const tp=nearestPlayerTo(e.mesh.position.x,e.mesh.position.z).player.position; bossSay(e,'✺ CROSSFIRE');   // a + of telegraphed ground zones on you — step into a gap
+  for(const o of [[0,0],[6.5,0],[-6.5,0],[0,6.5],[0,-6.5]]) telegraphAoE(tp.x+o[0],tp.z+o[1],3.4,0.95,e.dmg*1.5,0xff5a2d); }
+function mPillars(e){ bossSay(e,'✺ ERUPTION'); const n=10+Math.min(10,Math.floor(G.floor/5));   // arena-wide eruptions on a rhythm — keep moving
+  for(let k=0;k<n;k++) G.timed.push({t:k*0.13, fn:()=>{ if(!G.enemies.includes(e))return; const x=rand(-G.bounds/2+4,G.bounds/2-4), z=rand(-G.bounds/2+4,G.bounds/2-4); if(inAny(x,z,1)) telegraphAoE(x,z,3,0.6,e.dmg*1.25,0xffae3d); }}); }
 // ---- boss roster: every milestone (floor 5/10/15/…) draws a guardian with its own kit; cycles & escalates ----
 const BOSSES=[
   {key:'warden',  nm:'THE WARDEN',   shape:'ico',  color:0xff3b5c, scale:3.0, hpMult:1.0,  spdMult:1.15, keep:0,
@@ -2787,7 +2811,7 @@ const BOSSES=[
   {key:'summoner',nm:'THE SUMMONER', shape:'dodec',color:0xb06bff, scale:3.0, hpMult:1.05, spdMult:0.8,  keep:14,
     moves:[{fn:mAdds,cd:[6,8]},{fn:mAimedBurst,cd:[2.4,3.4]},{fn:mWall,cd:[5,6.5]},{fn:mSeekers,cd:[5.5,7]}]},
   {key:'sweeper', nm:'THE SWEEPER',  shape:'box',  color:0x56e0ff, scale:3.1, hpMult:1.15, spdMult:0.85, keep:12,
-    moves:[{fn:mBeamSweep,cd:[4.5,6]},{fn:mCross,cd:[4.5,6]},{fn:mSlam,cd:[5.5,7]},{fn:mWall,cd:[5.5,7]}]},
+    moves:[{fn:mBeamSweep,cd:[4.5,6]},{fn:mCross,cd:[4.5,6]},{fn:mCrossAoE,cd:[5.5,7]},{fn:mWall,cd:[5.5,7]}]},
   {key:'twinfang',nm:'THE TWIN-FANG',shape:'cone', color:0xffe14d, scale:2.9, hpMult:1.05, spdMult:1.5,  keep:0,
     moves:[{fn:mCharge,cd:[3,4]},{fn:mFan,cd:[2.6,3.6]},{fn:mRing,cd:[5,6]},{fn:mSeekers,cd:[5,6.5]}]},
   {key:'overlord',nm:'THE OVERLORD', shape:'ico',  color:0xffffff, scale:3.4, hpMult:1.3,  spdMult:1.1,  keep:8,
@@ -2795,7 +2819,7 @@ const BOSSES=[
   {key:'voidlord',nm:'THE VOID-LORD',shape:'dodec',color:0x9d7bff, scale:3.2, hpMult:1.2,  spdMult:0.9,  keep:10,
     moves:[{fn:mBlackhole,cd:[5,7]},{fn:mRain,cd:[5.5,7]},{fn:mSpiral,cd:[4.5,6]},{fn:mSeekers,cd:[5,6.5]},{fn:mNova,cd:[6,7.5]}]},
   {key:'warlock', nm:'THE WARLOCK',  shape:'oct',  color:0x56e0ff, scale:3.1, hpMult:1.15, spdMult:0.8,  keep:13,
-    moves:[{fn:mMines,cd:[5,6.5]},{fn:mWall,cd:[5,6.5]},{fn:mFlower,cd:[6,7.5]},{fn:mAdds,cd:[8,10]},{fn:mLaserCross,cd:[6.5,8]}]},
+    moves:[{fn:mMines,cd:[5,6.5]},{fn:mPillars,cd:[6,7.5]},{fn:mFlower,cd:[6,7.5]},{fn:mAdds,cd:[8,10]},{fn:mLaserCross,cd:[6.5,8]}]},
   {key:'reaper',  nm:'THE REAPER',   shape:'cone', color:0xff3b5c, scale:3.0, hpMult:1.1,  spdMult:1.4,  keep:0,
     moves:[{fn:mTeleSlam,cd:[3.5,5]},{fn:mFan,cd:[3,4]},{fn:mCross,cd:[4.5,6]},{fn:mCharge,cd:[4,5.5]},{fn:mSeekers,cd:[5.5,7]}]},
 ];
@@ -3023,6 +3047,7 @@ function telegraphAoE(x,z,R,delay,dmg,color){
   const ring=new THREE.Mesh(new THREE.RingGeometry(R-0.55,R,40), new THREE.MeshBasicMaterial({color,transparent:true,opacity:.5,side:THREE.DoubleSide}));
   ring.rotation.x=-Math.PI/2; ring.position.set(x,.12,z); scene.add(ring); G.decals.push({mesh:ring,hold:delay,life:delay});
   const fill=new THREE.Mesh(new THREE.CircleGeometry(R,32), new THREE.MeshBasicMaterial({color,transparent:true,opacity:.14,side:THREE.DoubleSide})); fill.rotation.x=-Math.PI/2; fill.position.set(x,.1,z); scene.add(fill); G.decals.push({mesh:fill,hold:delay,life:delay});
+  const ind=new THREE.Mesh(new THREE.CircleGeometry(R,32), new THREE.MeshBasicMaterial({color,transparent:true,opacity:.32,side:THREE.DoubleSide})); ind.rotation.x=-Math.PI/2; ind.position.set(x,.11,z); scene.add(ind); G.decals.push({mesh:ind,shrink:true,t:0,life:delay});   // contracts to a point at detonation → readable countdown
   G.timed.push({t:delay, fn:()=>{ ringFx(x,z,R,color); burst(x,z,color); shakeCam(.6);
     for(const pl of livePlayers()){ const pp=pl.player.position; if(Math.hypot(pp.x-x,pp.z-z)<R){ withPlayer(pl.id,()=>{ if(G.invuln<=0){ setKiller('a ground blast'); hurtPlayer(dmg); } else if(G.perfectT>0) perfectDodge(); }); } } }});
 }
@@ -3181,6 +3206,7 @@ function checkReactions(e,dmg){
 }
 function killEnemy(e){
   if(e.revive && !e.revived){ e.revived=true; e.dead=false; e.hp=e.maxhp*0.45; e.shieldT=1.2; ringFx(e.mesh.position.x,e.mesh.position.z,e.r+2,0xc0303a); floatText(e.mesh.position.x,e.mesh.position.z,'⟳ RISEN','hurt',e.r+2); const bb=e.mesh.userData.body; if(bb)bb.material.color.setHex(0x7a1a22); return; }   // revenant rises once
+  if(e.volatile){ const x=e.mesh.position.x,z=e.mesh.position.z; telegraphAoE(x,z,5,0.4,e.dmg*1.8,0xff7a3d); ringFx(x,z,3,0xff7a3d); }   // volatile affix: explodes on death (brief dodge window)
   if((G.S.lifeOnKill||0)>0){ const h=Math.min(G.S.lifeOnKill,G.maxhp-G.hp); if(h>0){ G.hp+=h; G.run.healSelf+=h; } }
   if((G.S.manaOnKill||0)>0) G.mana=Math.min(G.maxmana, G.mana+G.S.manaOnKill);
   fireProcs('kill',{e,pos:e.mesh.position});
@@ -4789,6 +4815,8 @@ function updateWorld(dt){
     if(e.blink && e.aggro){ e.blinkCd=(e.blinkCd==null?rand(2.5,4):e.blinkCd)-dt; if(e.blinkCd<=0 && d>5.5){ e.blinkCd=rand(3.5,5.5); const tx=p.x-dx*2.6, tz=p.z-dz*2.6; if(canStand(tx,tz,e.r*0.55)){ ringFx(ex,ez,1.8,0xb06bff); e.mesh.position.set(tx,0,tz); ringFx(tx,tz,1.8,0xb06bff); } } }   // phantom: teleport onto the player
     if(e.aura && e.aggro){ e.auraCd=(e.auraCd==null?rand(2,3.5):e.auraCd)-dt; if(e.auraCd<=0){ e.auraCd=rand(5,7); let n=0; for(const o of G.enemies){ if(o===e||o.dead)continue; if(Math.hypot(o.mesh.position.x-ex,o.mesh.position.z-ez)<12){ o.hasteT=4; if(o.hp<o.maxhp)o.hp=Math.min(o.maxhp,o.hp+o.maxhp*0.08); n++; } } if(n){ ringFx(ex,ez,12,0xffce4d); floatText(ex,ez,'✦ rally','goldtxt',e.r+1.6); } } }   // shaman: haste + heal nearby allies
     if(e.enrage && !e._enraged && e.hp>0 && e.hp<e.maxhp*0.4){ e._enraged=true; e.speed*=1.45; e.dmg*=1.45; ringFx(ex,ez,e.r+2.6,0xff3b3b); floatText(ex,ez,'⚠ ENRAGE','hurt',e.r+2); const bb=e.mesh.userData.body; if(bb)bb.material.color.setHex(0xff2020); }   // berserker: faster & deadlier when wounded
+    if(e.toxic && e.aggro){ e.toxCd=(e.toxCd==null?0.8:e.toxCd)-dt; if(e.toxCd<=0){ e.toxCd=1.1; telegraphAoE(ex,ez,2.6,0.4,e.dmg*0.55,0x7dff5a); } }   // toxic affix: drops poison pools underfoot
+    if(e.arcane && e.aggro){ e.arcCd=(e.arcCd==null?rand(2,4):e.arcCd)-dt; if(e.arcCd<=0){ e.arcCd=rand(3.5,5.5); emit(e,{count:10,ring:true,speed:11,dmg:0.55,aimed:false,mat:'ring'}); } }   // arcane affix: periodic bullet ring
     // body anim + telegraph
     const b=e.mesh.userData.body; b.rotation.y+=dt*2;
     b.material.emissiveIntensity = e.hitFlash>0?2 : e.windup>0?1.7 : (e.elite?.6:.28);
@@ -4805,7 +4833,7 @@ function updateWorld(dt){
         if(e.moveCd[mi]<=0 && d<38){ e.moveCd[mi]=rand(mv[mi].cd[0],mv[mi].cd[1])*cr; mv[mi].fn(e); } } }
     // melee wind-up strike → damage the targeted player
     if(!e.boss && !e.range){
-      if(e.windup>0){ e.windup-=dt; if(e.windup<=0){ if(d<atkRange+0.7){ withPlayer(tp.id,()=>{ if(G.invuln<=0){ setKiller(enemyName(e)); hurtPlayer(e.dmg); } else if(G.perfectT>0) perfectDodge(); }); } e.atkCd=rand(0.8,1.3); } }
+      if(e.windup>0){ e.windup-=dt; if(e.windup<=0){ if(d<atkRange+0.7){ withPlayer(tp.id,()=>{ if(G.invuln<=0){ setKiller(enemyName(e)); hurtPlayer(e.dmg); } else if(G.perfectT>0) perfectDodge(); }); if(e.vampiric){ e.hp=Math.min(e.maxhp,e.hp+e.maxhp*0.06); ringFx(cx,cz,e.r+1,0xff3b6b); } } e.atkCd=rand(0.8,1.3); } }
       else { e.atkCd=Math.max(0,e.atkCd-dt); if(e.atkCd<=0 && d<atkRange+0.4 && e.aggro) e.windup=0.34; }
     }
     if(e.boss && d<e.r+1.4){ withPlayer(tp.id,()=>{ if(G.invuln<=0){ setKiller('the Floor Guardian'); hurtPlayer(e.dmg*0.6); } }); e.kx=-dx*0.4; e.kz=-dz*0.4; }
@@ -4873,6 +4901,7 @@ function updateDecals(dt){
   for(const dc of G.decals){ if(dc.ring){ dc.t+=dt; const s=1+dc.t/dc.life*dc.R; dc.mesh.scale.set(s,s,s); dc.mesh.material.opacity=Math.max(0,.9*(1-dc.t/dc.life)); if(dc.t>=dc.life)dc.dead=true; }
     else if(dc.part){ dc.mesh.position.x+=dc.vx*dt; dc.vy-=12*dt; dc.mesh.position.y+=dc.vy*dt; dc.mesh.position.z+=dc.vz*dt; dc.life-=dt; if(dc.mesh.position.y<0.1||dc.life<=0)dc.dead=true; }
     else if(dc.fade){ dc.t+=dt; dc.mesh.material.opacity=Math.max(0,.9*(1-dc.t/dc.life)); if(dc.t>=dc.life)dc.dead=true; }
+    else if(dc.shrink){ dc.t+=dt; const f=Math.max(0,1-dc.t/dc.life); dc.mesh.scale.set(f,1,f); if(dc.t>=dc.life)dc.dead=true; }   // telegraph countdown indicator
     else if(dc.hold!==undefined){ dc.hold-=dt; if(dc.hold<=0)dc.dead=true; } }
   G.decals=G.decals.filter(dc=>{ if(dc.dead){scene.remove(dc.mesh);return false;} return true; });
 }
