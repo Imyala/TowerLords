@@ -11,6 +11,9 @@
     --str:#ff6b6b; --dex:#6dff8c; --int:#56e0ff; --vit:#ff9a3d; --will:#b06bff;
   }
   *{box-sizing:border-box;margin:0;padding:0;}
+  /* never let a double-click / click-drag in the UI select & highlight text (this is a game, not a document) */
+  html,body,#app{user-select:none;-webkit-user-select:none;-moz-user-select:none;-ms-user-select:none;-webkit-touch-callout:none;}
+  input,textarea{user-select:text;-webkit-user-select:text;-moz-user-select:text;}   /* …except real text fields (co-op invite codes) so you can still copy them */
   html,body{height:100%;overflow:hidden;background:#04050a;color:var(--ink);
     font-family:"Trebuchet MS","Segoe UI",system-ui,sans-serif;}
   #app{position:relative;width:100vw;height:100vh;}
