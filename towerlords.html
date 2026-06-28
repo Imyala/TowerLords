@@ -1334,9 +1334,9 @@ const SKILL_SYNERGY = {
   'gChain|gFrost':   {nm:'Magnetic Storm',  ic:'🧲'},   // electric + cold
   'gChain|gMeteor':  {nm:'Radiation Surge',  ic:'☢'},   // electric + fire
   'gChain|gNova':    {nm:'Overload',         ic:'⚡'},
-  'gFrost|gMeteor':  {nm:'Thermal Shock',    ic:'🌡'},   // fire + cold
+  'gFrost|gMeteor':  {nm:'Thermal Shock',    ic:'🌡', fx:fxThermalShock},   // fire + cold
   'gFrost|gNova':    {nm:'Glacial Burst',    ic:'💠'},
-  'gMeteor|gNova':   {nm:'Cataclysm',        ic:'🌋'},
+  'gMeteor|gNova':   {nm:'Cataclysm',        ic:'🌋', fx:fxCataclysm},
   // --- lightning combos ---
   'gChain|gVolley':  {nm:'Storm Volley',     ic:'⚡'},
   'gBarrage|gChain': {nm:'Tesla Barrage',    ic:'🎇'},
@@ -1371,9 +1371,9 @@ const SKILL_SYNERGY = {
   'gFrost|gStorm':   {nm:'Brittle Storm',    ic:'🌩'},
   'gMeteor|gStorm':  {nm:'Ion Tempest',      ic:'☢'},
   'gChain|gStorm':   {nm:'Tempest Surge',    ic:'⚡'},
-  'gMeteor|gVortex': {nm:'Supernova',        ic:'💫'},
+  'gMeteor|gVortex': {nm:'Supernova',        ic:'💫', fx:fxSupernova},
   'gFrost|gVortex':  {nm:'Cryo Singularity', ic:'🥶'},
-  'gSlow|gVortex':   {nm:'Stasis Field',     ic:'🕳'},
+  'gSlow|gVortex':   {nm:'Stasis Field',     ic:'🕳', fx:fxStasis},
   'gMeteor|gQuake':  {nm:'Volcano',          ic:'🌋'},
   'gFrost|gQuake':   {nm:'Permafrost',       ic:'🧊'},
   'gNova|gQuake':    {nm:'Shockwave',        ic:'💥'},
@@ -1385,9 +1385,9 @@ const SKILL_SYNERGY = {
   'gBlades|gFlame':  {nm:'Blazing Blades',   ic:'🔥'},
   'gHeal|gShield':   {nm:'Sanctuary',        ic:'✨'},
   'gNova|gShield':   {nm:'Aegis Burst',      ic:'⛨'},
-  'gHeal|gNova':     {nm:'Holy Nova',        ic:'🌟'},
+  'gHeal|gNova':     {nm:'Holy Nova',        ic:'🌟', fx:fxHolyNova},
   'gSlow|gStorm':    {nm:'Static Field',     ic:'🌐'},
-  'gChain|gVortex':  {nm:'Magnetar',         ic:'🧲'},
+  'gChain|gVortex':  {nm:'Magnetar',         ic:'🧲', fx:fxMagnetar},
 };
 function synergyFor(idA,idB){ return SKILL_SYNERGY[[idA,idB].sort().join('|')]||null; }
 function skMana(g){ const s=SKILLS[g.skillId]; return s?s.mana:12; }
@@ -1409,10 +1409,13 @@ function doFuse(a,b){
   const pv=previewFuse(a,b);
   if(META.fame<pv.fame){ log(`Not enough fame to fuse — need ${pv.fame.toLocaleString()} (you have ${Math.floor(META.fame).toLocaleString()}).`); sfx.deny&&sfx.deny(); return false; }
   const idA=a.skillId, idB=b.skillId, syn=pv.syn, power=syn?1.35:1.12;
+  const rec=synergyFor(idA,idB);   // some synergies have a bespoke `fx` that replaces the generic cast
   const id='gFz'+(++_fuseSeq);
   SKILLS[id]={ nm:pv.name, ic:pv.ic, mana:pv.mana, cd:Math.max(0.3,(skCd(a)+skCd(b))/2), fused:true, cast:(pwr)=>{
-    const P=(pwr||1)*power, sa=SKILLS[idA], sb=SKILLS[idB];
-    if(sa)sa.cast(P); if(sb)sb.cast(P*0.9);                                   // fire BOTH source skills…
+    const P=(pwr||1)*power;
+    if(rec && rec.fx){ rec.fx(P); return; }                                  // unique synergy effect (Supernova, Magnetar, …)
+    const sa=SKILLS[idA], sb=SKILLS[idB];
+    if(sa)sa.cast(P); if(sb)sb.cast(P*0.9);                                   // otherwise fire BOTH source skills…
     const p=G.player.position;                                               // …plus a bonus burst (bigger for synergies)
     hitRadius(p.x,p.z,areaR(syn?7:5), skillDmg(syn?1.6:0.9,P), syn?360:240, G.S.element);
     ringFx(p.x,p.z,areaR(syn?7:5), syn?0xffce4d:0x9d7bff);
@@ -2531,9 +2534,9 @@ function scaleLvl(floor){ return Math.max(floor, basePowerLvl()); }   // enemies
 function spawnEnemy(floor,home,forceType,forceElite){
   const t=forceType||pickEType(floor);
   const lvl=scaleLvl(floor);                            // stat scaling tracks the player, not just the floor
-  const hpScale=1+lvl*0.92, dmgScale=1+lvl*0.50;   // tankier + hit harder with depth — fights are a real threat, not a speedrun
+  const hpScale=1+lvl*1.0, dmgScale=1+lvl*0.40;   // tanky (longer fights) but per-hit damage is less swingy — a real threat, not a one-shot
   const e={ etype:t.id, type:t.ranged?'ranged':'melee', shape:t.shape, color:t.color,
-    hp:t.hp*hpScale*1.15, speed:t.spd+Math.min(lvl*0.08,5), dmg:(t.dmg+lvl*1.2)*dmgScale,
+    hp:t.hp*hpScale*1.2, speed:t.spd+Math.min(lvl*0.08,5), dmg:(t.dmg+lvl*0.95)*dmgScale,
     r:t.r, scale:t.scale, xp:t.xp, range:t.ranged||0, dash:!!t.dash, kite:!!t.kite, lob:!!t.lob,
     bomb:!!t.bomb, split:!!t.split, heal:!!t.heal, sniper:!!t.sniper, gunner:!!t.gunner, bspd:t.bspd||0,
     shootCd:rand(.8,2.2), atkCd:rand(.2,.8), windup:0, dashCd:rand(2,4), hitFlash:0, elite:false,
@@ -2788,6 +2791,7 @@ function fireBolt(x,z,dx,dz,dmg,crit,pierce,size,spd,element,life,o){
   if(o.homing){ b.homing=o.homing; }                                                                     // turn rate (rad/s) toward nearest foe
   if(o.accel) b.accel=o.accel;                                                                            // +/− speed per second
   if(o.bounce) b.bounce=o.bounce;                                                                         // wall bounces left
+  if(o.forceAil) b.forceAil=o.forceAil;                                                                   // guaranteed ailment on hit (skill bolts) → enables elemental reactions
   G.projectiles.push(b);
 }
 function nearestEnemyTo(x,z,maxD){ let best=null,bd=maxD?maxD*maxD:1e9; for(const e of G.enemies){ if(e.dead)continue; const dx=e.mesh.position.x-x,dz=e.mesh.position.z-z,d2=dx*dx+dz*dz; if(d2<bd){bd=d2;best=e;} } return best; }
@@ -2925,20 +2929,38 @@ function castStorm(pwr){ const p=G.player.position;
     .sort((a,b)=>(Math.hypot(a.mesh.position.x-p.x,a.mesh.position.z-p.z))-(Math.hypot(b.mesh.position.x-p.x,b.mesh.position.z-p.z))).slice(0,6);
   if(!targets.length){ ringFx(aimPoint.x,aimPoint.z,3,0xffe14d); hitRadius(aimPoint.x,aimPoint.z,areaR(4),skillDmg(1.5,pwr),120,'light'); return; }
   targets.forEach((e,i)=>G.timed.push({t:i*0.07, fn:()=>{ if(e.dead)return; ringFx(e.mesh.position.x,e.mesh.position.z,2.2,0xffe14d); burst(e.mesh.position.x,e.mesh.position.z,0xffe14d);
-    const crit=Math.random()<G.S.crit; hurtEnemy(e,skillDmg(1.5,pwr)*(crit?G.S.critMult:1),crit,'light'); }})); }
+    const crit=Math.random()<G.S.crit, dmg=skillDmg(1.5,pwr)*(crit?G.S.critMult:1); hurtEnemy(e,dmg,crit,'light'); if(!e.dead) applyAilment(e,'shock',dmg); }})); }   // Thunderstorm always shocks → sets up Overload / Superconduct
 function castFlame(pwr){ const p=G.player.position, base=Math.atan2(aimPoint.x-p.x,aimPoint.z-p.z), n=7;
   for(let i=0;i<n;i++){ const ang=base+(i-(n-1)/2)*0.15, dx=Math.sin(ang), dz=Math.cos(ang), crit=Math.random()<G.S.crit;
-    fireBolt(p.x+dx,p.z+dz,dx,dz,skillDmg(0.5,pwr)*(crit?G.S.critMult:1),crit,(G.S.pierce||0)+1,0.42,40,'fire',0.5); } shakeCam(.25); }
+    fireBolt(p.x+dx,p.z+dz,dx,dz,skillDmg(0.5,pwr)*(crit?G.S.critMult:1),crit,(G.S.pierce||0)+1,0.42,40,'fire',0.5,{forceAil:'ignite'}); } shakeCam(.25); }   // cone always ignites
 function castQuake(pwr){ const p=G.player.position, R=areaR(9);
   const tel=new THREE.Mesh(new THREE.RingGeometry(R-0.5,R,40), new THREE.MeshBasicMaterial({color:0xffae3d,transparent:true,opacity:.45,side:THREE.DoubleSide})); tel.rotation.x=-Math.PI/2; tel.position.set(p.x,.1,p.z); scene.add(tel); G.decals.push({mesh:tel,hold:0.5,life:0.5});
   G.timed.push({t:0.5, fn:()=>{ const c=G.player.position; ringFx(c.x,c.z,R,0xffae3d); burst(c.x,c.z,0xffae3d); hitRadius(c.x,c.z,R,skillDmg(2.9,pwr),320);
     for(const e of G.enemies){ if(Math.hypot(e.mesh.position.x-c.x,e.mesh.position.z-c.z)<R+e.r) e.chill=Math.max(e.chill||0,1.8); } shakeCam(1.0); G.hitstop=Math.max(G.hitstop||0,.08); }}); }
 function castLance(pwr){ const p=G.player.position, a=Math.atan2(aimPoint.x-p.x,aimPoint.z-p.z), dx=Math.sin(a), dz=Math.cos(a), crit=Math.random()<G.S.crit;
-  fireBolt(p.x+dx,p.z+dz,dx,dz,skillDmg(1.9,pwr)*(crit?G.S.critMult:1),crit,(G.S.pierce||0)+6,0.42,82,'cold',0.6); }
+  fireBolt(p.x+dx,p.z+dz,dx,dz,skillDmg(1.9,pwr)*(crit?G.S.critMult:1),crit,(G.S.pierce||0)+6,0.42,82,'cold',0.6,{forceAil:'chill'}); }   // always chills
 function castSlow(pwr){ const p=G.player.position, R=areaR(13); ringFx(p.x,p.z,R,0x67c4ff);
   for(const e of G.enemies){ if(Math.hypot(e.mesh.position.x-p.x,e.mesh.position.z-p.z)<R+e.r) e.chill=Math.max(e.chill||0,4); }
   floatText(p.x,p.z,'⏳ TIME WARP','cold',3); }
 function castBlades(pwr){ for(let i=0;i<5;i++){ G.timed.push({t:i*0.16, fn:()=>{ const c=G.player.position; ringFx(c.x,c.z,areaR(4.2),0xff9a3d); hitRadius(c.x,c.z,areaR(4.2),skillDmg(0.7,pwr),80); }}); } }
+// ---- bespoke fused-skill effects (a synergy that lists `fx` ignores the generic "fire both" cast) ----
+function fxSupernova(P){ const tx=aimPoint.x, tz=aimPoint.z;   // Meteor+Singularity: collapse, then a giant fiery detonation
+  for(let k=0;k<3;k++) G.timed.push({t:k*0.13, fn:()=>{ for(const e of G.enemies){ const dx=tx-e.mesh.position.x,dz=tz-e.mesh.position.z,d=Math.hypot(dx,dz); if(d<areaR(12)&&d>0.2){ const pull=Math.min(d-0.3,3.2); e.mesh.position.x+=dx/d*pull; e.mesh.position.z+=dz/d*pull; } } ringFx(tx,tz,areaR(2+k*1.5),0xb06bff); }});
+  G.timed.push({t:0.45, fn:()=>{ ringFx(tx,tz,areaR(9),0xff7a3d); ringFx(tx,tz,areaR(5),0xffce4d); burst(tx,tz,0xff7a3d); hitRadius(tx,tz,areaR(9),skillDmg(4.4,P),440,'fire'); for(const e of G.enemies){ if(!e.dead && Math.hypot(e.mesh.position.x-tx,e.mesh.position.z-tz)<areaR(9)+e.r) applyAilment(e,'ignite',skillDmg(1,P)); } shakeCam(1.2); G.hitstop=Math.max(G.hitstop||0,.1); }}); }
+function fxMagnetar(P){ const p=G.player.position; let from={x:p.x,z:p.z}; const hit=new Set();   // Chain+Singularity: shocking chain that also chills
+  for(let j=0;j<9;j++){ let best=null,bd=1e9; for(const e of G.enemies){ if(hit.has(e)||e.dead)continue; const d=Math.hypot(e.mesh.position.x-from.x,e.mesh.position.z-from.z); if(d<17&&d<bd){bd=d;best=e;} } if(!best)break;
+    chainFx(from.x,from.z,best.mesh.position.x,best.mesh.position.z); const crit=Math.random()<G.S.crit, dmg=skillDmg(1.35,P)*(crit?G.S.critMult:1); hurtEnemy(best,dmg,crit,'light'); if(!best.dead){ applyAilment(best,'shock',dmg); best.chill=Math.max(best.chill||0,2.2); } hit.add(best); from={x:best.mesh.position.x,z:best.mesh.position.z}; } }
+function fxStasis(P){ const p=G.player.position, R=areaR(13); ringFx(p.x,p.z,R,0x9d7bff); ringFx(p.x,p.z,R*0.6,0x67c4ff);   // Time Warp+Singularity: yank in & deep-freeze
+  for(const e of G.enemies){ const dx=p.x-e.mesh.position.x,dz=p.z-e.mesh.position.z,d=Math.hypot(dx,dz); if(d<R+e.r){ if(d>4){ e.mesh.position.x+=dx/d*2; e.mesh.position.z+=dz/d*2; } e.chill=Math.max(e.chill||0,6.5); hurtEnemy(e,skillDmg(1.2,P),false,'cold'); } }
+  floatText(p.x,p.z,'🕳 STASIS FIELD','cold',3.2); }
+function fxHolyNova(P){ const p=G.player.position, R=areaR(9.5); ringFx(p.x,p.z,R,0xffe9a0); ringFx(p.x,p.z,R*0.6,0xffffff); burst(p.x,p.z,0xffce4d);   // Mend+Nova: smite + heal
+  hitRadius(p.x,p.z,R,skillDmg(2.7,P),320,'light'); const h=Math.min(G.maxhp*0.22,G.maxhp-G.hp); if(h>0){ G.hp+=h; G.run.healSelf+=h; floatText(p.x,p.z,'+'+Math.round(h),'heal',3); } shakeCam(.5); }
+function fxCataclysm(P){ const tx=aimPoint.x, tz=aimPoint.z;   // Meteor+Nova: a three-meteor cluster bombardment
+  const spots=[[0,0],[5,-3],[-4,4]]; spots.forEach((s,i)=>{ const mx=tx+s[0], mz=tz+s[1], R=areaR(5);
+    const ring=new THREE.Mesh(new THREE.RingGeometry(R-0.4,R,28), new THREE.MeshBasicMaterial({color:0xff5a2d,transparent:true,opacity:.5,side:THREE.DoubleSide})); ring.rotation.x=-Math.PI/2; ring.position.set(mx,.1,mz); scene.add(ring); G.decals.push({mesh:ring,hold:0.4+i*0.12,life:0.4+i*0.12});
+    G.timed.push({t:0.4+i*0.12, fn:()=>{ ringFx(mx,mz,R,0xff7a3d); burst(mx,mz,0xff7a3d); hitRadius(mx,mz,R,skillDmg(2.8,P),300,'fire'); shakeCam(.7); }}); }); }
+function fxThermalShock(P){ const p=G.player.position, R=areaR(7); ringFx(p.x,p.z,R,0xff9a6b);   // Meteor+Frost: ignite + chill everything → instant Thermal Shock reactions
+  for(const e of G.enemies){ if(e.dead)continue; if(Math.hypot(e.mesh.position.x-p.x,e.mesh.position.z-p.z)<R+e.r){ const dmg=skillDmg(1.8,P); hurtEnemy(e,dmg,false,'fire'); if(!e.dead){ e.chill=Math.max(e.chill||0,2.5); applyAilment(e,'ignite',dmg); } } } shakeCam(.5); }
 
 function hitRadius(x,z,R,dmg,knock,element){ element=element||G.S.element;
   for(const e of G.enemies){ const d=Math.hypot(e.mesh.position.x-x,e.mesh.position.z-z); if(d<R+e.r){ hurtEnemy(e,dmg,false,element); if(knock){ const dx=(e.mesh.position.x-x)/(d||1),dz=(e.mesh.position.z-z)/(d||1); e.kx=dx*knock*0.02; e.kz=dz*knock*0.02; } } }
@@ -4544,7 +4566,7 @@ function updateWorld(dt){
         b.mesh.position.x+=b.vx*dt*1.1; b.mesh.position.z+=b.vz*dt*1.1; }
       else { b.dead=true; continue; } }
     for(const e of G.enemies){ if(b.hit&&b.hit.has(e))continue; const d=Math.hypot(e.mesh.position.x-b.mesh.position.x,e.mesh.position.z-b.mesh.position.z);
-      if(d<e.r+.4){ hurtEnemy(e,b.dmg,b.crit,b.element,b.src,b.owner); (b.hit||(b.hit=new Set())).add(e); if(b.pierce>0)b.pierce--; else {b.dead=true;break;} } }
+      if(d<e.r+.4){ hurtEnemy(e,b.dmg,b.crit,b.element,b.src,b.owner); if(b.forceAil&&!e.dead) applyAilment(e,b.forceAil,b.dmg); (b.hit||(b.hit=new Set())).add(e); if(b.pierce>0)b.pierce--; else {b.dead=true;break;} } }
     if(!b.dead && G.goblin){ const d=Math.hypot(G.goblin.mesh.position.x-b.mesh.position.x,G.goblin.mesh.position.z-b.mesh.position.z); if(d<1.4){ hurtGoblin(b.dmg,b.crit,b.element); if(b.pierce>0)b.pierce--; else b.dead=true; } }
   }
   G.projectiles=G.projectiles.filter(b=>{ if(b.dead){scene.remove(b.mesh);return false;} return true; });
