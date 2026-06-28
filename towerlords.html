@@ -570,6 +570,17 @@
   .petCard .pcActive{margin-top:11px;font-size:10px;font-weight:bold;letter-spacing:2px;color:var(--gold);text-align:center;}
   /* run score */
   #scorePanel{top:50%;left:50%;transform:translate(-50%,-50%);width:560px;max-height:90vh;padding-bottom:14px;}
+  #codexPanel{top:50%;left:50%;transform:translate(-50%,-50%);width:600px;max-height:92vh;padding-bottom:10px;}
+  #codexBody{padding:4px 14px 8px;overflow-y:auto;}
+  .cdxSec{font-size:12px;letter-spacing:2px;color:var(--neon);text-transform:uppercase;margin:12px 2px 8px;opacity:.85;}
+  .cdxGrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(128px,1fr));gap:8px;}
+  .cdxCard{border:1px solid rgba(255,255,255,.12);border-radius:9px;padding:9px 8px;background:linear-gradient(180deg,rgba(255,255,255,.04),rgba(0,0,0,.25));text-align:center;}
+  .cdxCard.boss{border-color:rgba(255,206,77,.4);background:linear-gradient(180deg,rgba(255,206,77,.08),rgba(0,0,0,.3));}
+  .cdxCard.locked{opacity:.45;border-style:dashed;}
+  .cdxIc{font-size:26px;line-height:1;margin-bottom:4px;}
+  .cdxNm{font-size:12.5px;font-weight:bold;margin-bottom:3px;}
+  .cdxTag{font-size:10px;opacity:.75;line-height:1.35;min-height:26px;}
+  .cdxStat{font-size:9.5px;opacity:.55;margin-top:4px;letter-spacing:.3px;}
   #scoreBody{overflow-y:auto;max-height:78vh;padding-right:4px;}
   #scoreBody::-webkit-scrollbar{width:8px;} #scoreBody::-webkit-scrollbar-thumb{background:rgba(255,206,77,.3);border-radius:4px;}
   #settingsPanel{top:50%;left:50%;transform:translate(-50%,-50%);width:372px;padding-bottom:14px;z-index:60;}
@@ -704,6 +715,7 @@
       <div class="mItem" id="openInvBtn"><span class="mKey">I</span><span class="mIc">🎒</span><span class="mLbl">Inventory</span></div>
       <div class="mItem" id="openPetBtn"><span class="mKey">P</span><span class="mIc">🐾</span><span class="mLbl" id="petChip">Pet Yard —</span></div>
       <div class="mItem" id="openScoreBtn"><span class="mKey">V</span><span class="mIc">📜</span><span class="mLbl">Record</span><span class="mEnd" id="rankChip"></span></div>
+      <div class="mItem" id="openCodexBtn"><span class="mKey">B</span><span class="mIc">📖</span><span class="mLbl">Bestiary</span></div>
       <div class="mItem" id="openSettingsBtn"><span class="mKey">O</span><span class="mIc">⚙</span><span class="mLbl">Settings</span><span class="mEnd" id="muteInd" style="cursor:pointer">🔊</span></div>
     </div>
 
@@ -836,6 +848,12 @@
     <h3>📜 RUN RECORD</h3><div class="closeX" data-close="scorePanel">✕ <span style="font-size:11px;opacity:.6">(V)</span></div>
     <div id="scoreBody" style="margin:0 16px;"></div>
     <div class="hint">your record for this character · resets on a new character</div>
+  </div>
+
+  <div id="codexPanel" class="panel hidden">
+    <h3>📖 BESTIARY</h3><div class="closeX" data-close="codexPanel">✕ <span style="font-size:11px;opacity:.6">(B)</span></div>
+    <div id="codexBody"></div>
+    <div class="hint">foes &amp; guardians you have encountered · persists across runs</div>
   </div>
 
   <div id="settingsPanel" class="panel hidden">
@@ -1242,9 +1260,10 @@ const FEATS=[
   {id:'f100',     nm:'Tower Lord',   ds:'Reach Floor 100',                fame:12000},
   {id:'ng',       nm:'Eternal',      ds:'Enter New Game+',                fame:6000},
 ];
-let META={fame:0, feats:[], invRows:0, stashRows:0};
-function loadMeta(){ try{ const s=localStorage.getItem(META_KEY); if(s){ const m=JSON.parse(s); META={fame:m.fame||0, feats:m.feats||[], invRows:m.invRows||0, stashRows:m.stashRows||0}; } }catch(e){} }
+let META={fame:0, feats:[], invRows:0, stashRows:0, codex:{}};
+function loadMeta(){ try{ const s=localStorage.getItem(META_KEY); if(s){ const m=JSON.parse(s); META={fame:m.fame||0, feats:m.feats||[], invRows:m.invRows||0, stashRows:m.stashRows||0, codex:m.codex||{}}; } }catch(e){} }
 function saveMeta(){ try{ localStorage.setItem(META_KEY, JSON.stringify(META)); }catch(e){} }
+function discover(key){ if(!META.codex) META.codex={}; if(!META.codex[key]){ META.codex[key]=true; saveMeta(); } }   // bestiary: record a first encounter
 function fortuneMult(){ return 1; }   // fame grants no combat power — but CAN be spent on bag/stash rows (see buyInvRow/buyStashRow)
 // ---- fame-funded storage upgrades (account-wide, persisted in META; fame is deducted, lowering star rank) ----
 const ROW_CELLS=10, INV_BASE=50, STASH_BASE=50, INV_ROWS_MAX=10, STASH_ROWS_MAX=10;   // +10 rows each → up to 150 cells
@@ -1832,14 +1851,14 @@ const ATTR_INFO=[
 const keys={}; const mouse=new THREE.Vector2(); let mouseDown=false; let mouseR=false;
 const aimPoint=new THREE.Vector3(); const raycaster=new THREE.Raycaster();
 const groundPlane=new THREE.Plane(new THREE.Vector3(0,1,0),0);
-const PANELS=['charPanel','treePanel','stashPanel','invPanel','vendorPanel','petPanel','scorePanel','settingsPanel'];
+const PANELS=['charPanel','treePanel','stashPanel','invPanel','vendorPanel','petPanel','scorePanel','codexPanel','settingsPanel'];
 function anyPanelOpen(){ return PANELS.some(p=>!$(p).classList.contains('hidden')); }
 function syncPause(){ G.paused=false; }   // menus never pause gameplay — the world keeps running while you browse (mouse-attack stays suppressed via anyPanelOpen so clicking UI won't fire your weapon)
 
 addEventListener('keydown',e=>{
   const k=e.key.toLowerCase(); keys[k]=true;
   if(!G.running) return;
-  const pk={c:'charPanel',t:'treePanel',i:'invPanel',p:'petPanel',v:'scorePanel',o:'settingsPanel'}[k];
+  const pk={c:'charPanel',t:'treePanel',i:'invPanel',p:'petPanel',v:'scorePanel',b:'codexPanel',o:'settingsPanel'}[k];
   if(pk){ _G.menuOwner=0; _G.cur=0; togglePanel(pk); }   // P1's keyboard always manages P1
   else if(k==='m'){ toggleMute(); }
   else if(k==='f'){ interact(); }
@@ -2104,6 +2123,7 @@ $('openTreeBtn').onclick=()=>togglePanel('treePanel');
 $('openInvBtn').onclick=()=>togglePanel('invPanel');
 $('openPetBtn').onclick=()=>togglePanel('petPanel');
 $('openScoreBtn').onclick=()=>togglePanel('scorePanel');
+$('openCodexBtn').onclick=()=>togglePanel('codexPanel');
 $('openSettingsBtn').onclick=()=>togglePanel('settingsPanel');
 $('muteInd').onclick=(e)=>{ e.stopPropagation(); toggleMute(); };
 document.querySelectorAll('.closeX').forEach(x=>x.onclick=()=>{ $(x.dataset.close).classList.add('hidden'); syncPause(); refreshMenuState(); });
@@ -2116,7 +2136,7 @@ function togglePanel(id){
   if(id!=='stashPanel'){ /* allow stacking char+tree? keep simple: close others */ }
   el.classList.toggle('hidden');
   clearPin();   // a fresh panel open/close starts with nothing selected (avoids a stale pin from a prior screen)
-  if(willOpen){ if(id==='charPanel')renderChar(); else if(id==='treePanel')renderTree(); else if(id==='stashPanel')renderStash(); else if(id==='invPanel')renderInv(); else if(id==='vendorPanel')renderVendor(); else if(id==='petPanel')renderPet(); else if(id==='scorePanel')renderScore(); else if(id==='settingsPanel')renderSettings(); }
+  if(willOpen){ if(id==='charPanel')renderChar(); else if(id==='treePanel')renderTree(); else if(id==='stashPanel')renderStash(); else if(id==='invPanel')renderInv(); else if(id==='vendorPanel')renderVendor(); else if(id==='petPanel')renderPet(); else if(id==='scorePanel')renderScore(); else if(id==='codexPanel')renderCodex(); else if(id==='settingsPanel')renderSettings(); }
   syncPause(); refreshMenuState();
 }
 // ============================================================ PER-PLAYER CO-OP MENUS
@@ -2645,12 +2665,22 @@ const ELITE_AFFIXES=[
   {id:'arcane',   nm:'Arcane',      col:0x56e0ff, apply:e=>{ e.arcane=true; }},          // periodically spits a bullet ring
 ];
 function applyAffixes(e, n){
-  const pool=ELITE_AFFIXES.slice(), names=[]; let col=null;
-  for(let i=0;i<n && pool.length;i++){ const a=pool.splice(randi(0,pool.length-1),1)[0]; a.apply(e); names.push(a.nm); if(col==null)col=a.col; }
-  if(names.length){ e.affixNames=names; e.affixCol=col; }
+  const pool=ELITE_AFFIXES.slice(), names=[], ids=[]; let col=null;
+  for(let i=0;i<n && pool.length;i++){ const a=pool.splice(randi(0,pool.length-1),1)[0]; a.apply(e); names.push(a.nm); ids.push(a.id); if(col==null)col=a.col; }
+  if(names.length){ e.affixNames=names; e.affixIds=ids; e.affixCol=col; }
 }
+// each affix biases its dropped loot toward a matching element/stat
+const AFFIX_THEME={
+  volatile:{element:'fire'}, toxic:{element:'fire'}, arcane:{element:'light'},
+  vampiric:{affix:{key:'lifesteal',name:'lifesteal',pct:true,val:6}},
+  shielded:{affix:{key:'armor',name:'armour',pct:false,val:44}},
+  frenzied:{affix:{key:'asPct',name:'attack speed',pct:true,val:12}},
+  swift:{affix:{key:'movePct',name:'move speed',pct:true,val:10}},
+  mending:{affix:{key:'lifePct',name:'maximum life',pct:true,val:10}},
+  teleport:{affix:{key:'critMultPct',name:'crit multiplier',pct:true,val:18}},
+};
 function spawnEnemy(floor,home,forceType,forceElite){
-  const t=forceType||pickEType(floor);
+  const t=forceType||pickEType(floor); discover(t.id);   // log the foe in the bestiary
   const lvl=scaleLvl(floor);                            // stat scaling tracks the player, not just the floor
   const hpScale=1+lvl*1.0, dmgScale=1+lvl*0.40;   // tanky (longer fights) but per-hit damage is less swingy — a real threat, not a one-shot
   const e={ etype:t.id, type:t.ranged?'ranged':'melee', shape:t.shape, color:t.color,
@@ -2836,7 +2866,14 @@ function spawnBoss(floor,room){
   const ring=new THREE.Mesh(new THREE.TorusGeometry(def.scale*0.87,.18,8,24), new THREE.MeshStandardMaterial({color:0xffce4d,emissive:0xffce4d,emissiveIntensity:1}));
   ring.rotation.x=Math.PI/2; ring.position.y=def.scale*0.9; e.mesh.add(ring);
   e.mesh.position.set(room.cx, 0, room.cz-room.rh/2+6); scene.add(e.mesh); G.enemies.push(e);
+  // ---- dramatic intro ----
   banner(def.nm, 'FLOOR GUARDIAN · Lv '+floor);
+  const bx=e.mesh.position.x, bz=e.mesh.position.z;
+  ringFx(bx,bz,def.scale*4,def.color); ringFx(bx,bz,def.scale*6.5,0xffce4d); burst(bx,bz,def.color);
+  shakeCam(1.5); G.hitstop=Math.max(G.hitstop||0,0.45);   // brief slow-mo on the reveal
+  const fl=$('shiftFlash'); if(fl){ fl.classList.remove('go'); void fl.offsetWidth; fl.classList.add('go'); }
+  sfx.evolve&&sfx.evolve();
+  discover('boss:'+def.key);
 }
 function spawnGoblin(floor,room){
   const g={hp:48+floor*5, maxhp:48+floor*5, speed:8.5, life:14, hitFlash:0};
@@ -3227,6 +3264,7 @@ function killEnemy(e){
     if(e.gold||e.boss){ const amt=Math.round((e.boss?200+G.floor*10:30+G.floor*4)*goldMult()); G.gold+=amt; flashGold(); floatText(ex,ez,'+'+amt+' gold','goldtxt',e.boss?5:3); }
     if(Math.random() < (e.boss?1:base*lootMult())) dropLoot(ex,ez, uChanceBase||undefined, pid);   // loot soulbound to this player
   }); }
+  if(e.affixIds && e.affixIds.length){ const k=e._killer!=null?e._killer:(_G.cur||0); withPlayer(k, ()=> dropLoot(ex,ez, e.elite?0.12:0.03, k, pick(e.affixIds))); }   // affixed foes always drop one themed item
   G.hitstop=Math.max(G.hitstop||0, e.boss?0.3:0.04);
   if(e.boss){ unlockFeat('firstboss'); log('⚔ GUARDIAN SLAIN! The portal awakens — ascend whenever you are ready.'); G.portal.active=true; G.shiftT=60; G.shiftWarned=false; shakeCam(1.3); }
   else if(floorType(G.floor)==='NORMAL' && !e.leftRoom) G.respawns.push({t:15, room:e.room, home:e.home});   // repopulate its room after ~15s
@@ -3247,13 +3285,19 @@ function hurtGoblin(dmg,crit,element){
     scene.remove(g.mesh); G.goblin=null; }
 }
 function spawnPickup(x,z,kind,val){ const m=new THREE.Mesh(new THREE.OctahedronGeometry(.42,0),M.xp); m.position.set(x,.6,z); scene.add(m); G.pickups.push({mesh:m,kind,val,x,z}); }
-function dropLoot(x,z,uniqueChance,owner){
+function dropLoot(x,z,uniqueChance,owner,themeKey){
   let item; const r=Math.random();
   if(r < 0.004 + G.floor*0.0006) item=makePot(G.floor);          // ULTRA-rare permanent stat potion
   else if(r < 0.065) item=makeSkillGem(G.floor);                  // skill gem (active skill)
   else if(r < 0.105) item=makeEgg(G.floor);                       // pet egg (fodder / hatch)
   else if(r < 0.15) item=makeFlask(G.floor);                      // belt flask (active panic button)
   else item = Math.random()<0.16 ? makeGem(G.floor) : makeItem(G.floor,null,null,uniqueChance);
+  // affix-themed bias: a Volatile foe tends to drop fire gear, Vampiric → lifesteal, etc.
+  if(themeKey && AFFIX_THEME[themeKey] && item && item.slotKey && !item.isGem && !item.isSkillGem && !item.isFlask && !item.isPot && !item.isPet){
+    const th=AFFIX_THEME[themeKey];
+    if(th.element && item.slotKey==='weapon' && !item.element){ item.element=th.element; item.name=({fire:'Flaming ',cold:'Frozen ',light:'Shocking '}[th.element]||'')+item.name; }
+    if(th.affix && !item.affixes.some(a=>a.key===th.affix.key)) item.affixes.push(Object.assign({},th.affix));
+  }
   const grp=new THREE.Group(), tier = item.isPot?5 : item.unique?4 : (item.isGem||item.isPet||item.isSkillGem)?3 : item.isFlask?2 : RARITY.indexOf(item.rarity);
   const shape = item.isPot ? new THREE.ConeGeometry(.4,.9,6) : item.isPet ? new THREE.SphereGeometry(.5,10,8) : item.isSkillGem ? new THREE.IcosahedronGeometry(.5,0) : item.isFlask ? new THREE.CylinderGeometry(.28,.34,.9,8) : item.isGem ? new THREE.OctahedronGeometry(.5,0) : new THREE.TetrahedronGeometry(.55,0);
   const mesh=new THREE.Mesh(shape, new THREE.MeshStandardMaterial({color:item.rarity.col,emissive:item.rarity.col,emissiveIntensity:.8})); mesh.position.y=.1;
@@ -4243,6 +4287,27 @@ function spawnDummy(x,z){
   e.mesh=makeEnemyMesh('box',e.color,e.scale); e.mesh.position.set(x,0,z); scene.add(e.mesh); G.enemies.push(e);
 }
 function exitPractice(){ G.practice=false; G.running=false; clearWorld(); showMenu(); }
+const CDX_SHAPE={ico:'🔴',tetra:'🔺',cone:'🔻',oct:'🔶',dodec:'🟣',box:'🟦'};
+function cdxBehaviour(t){ const g=[];
+  if(t.ranged)g.push('ranged'); if(t.lancer)g.push('rapid fire'); if(t.weaver)g.push('weaving shots'); if(t.sniper)g.push('sniper'); if(t.gunner)g.push('suppressing fire');
+  if(t.lob)g.push('caster'); if(t.hexer)g.push('hex zones'); if(t.dash)g.push('charges'); if(t.kite)g.push('kites');
+  if(t.bomb)g.push('explodes'); if(t.split)g.push('splits'); if(t.heal||t.aura)g.push('buffs allies'); if(t.shield)g.push('shields');
+  if(t.revive)g.push('revives'); if(t.blink)g.push('teleports'); if(t.enrage)g.push('enrages');
+  return g.length?g.join(' · '):'melee bruiser'; }
+function renderCodex(){
+  const b=$('codexBody'); if(!b) return; const cx=META.codex||{};
+  const hx=c=>'#'+(c>>>0).toString(16).padStart(6,'0').slice(-6);
+  const foesSeen=ETYPES.filter(t=>cx[t.id]).length, bossSeen=BOSSES.filter(d=>cx['boss:'+d.key]).length;
+  let h=`<div class="cdxSec">⚔ FOES — ${foesSeen}/${ETYPES.length} discovered</div><div class="cdxGrid">`;
+  for(const t of ETYPES){ h+= cx[t.id]
+    ? `<div class="cdxCard"><div class="cdxIc" style="color:${hx(t.color)}">${CDX_SHAPE[t.shape]||'🔴'}</div><div class="cdxNm">${t.nm}</div><div class="cdxTag">${cdxBehaviour(t)}</div><div class="cdxStat">hp ${t.hp} · dmg ${t.dmg} · floor ${t.minF||1}+</div></div>`
+    : `<div class="cdxCard locked"><div class="cdxIc">❔</div><div class="cdxNm">???</div><div class="cdxTag">undiscovered</div></div>`; }
+  h+=`</div><div class="cdxSec">👑 GUARDIANS — ${bossSeen}/${BOSSES.length} discovered</div><div class="cdxGrid">`;
+  for(const d of BOSSES){ h+= cx['boss:'+d.key]
+    ? `<div class="cdxCard boss"><div class="cdxIc" style="color:${hx(d.color)}">${CDX_SHAPE[d.shape]||'🔴'}</div><div class="cdxNm">${d.nm}</div><div class="cdxTag">${d.moves.length} attacks · 2 phases</div></div>`
+    : `<div class="cdxCard locked boss"><div class="cdxIc">❔</div><div class="cdxNm">??? GUARDIAN</div><div class="cdxTag">undiscovered</div></div>`; }
+  h+='</div>'; b.innerHTML=h;
+}
 function renderScore(){
   const r=G.run, best=loadBest();
   // ---------- LEFT COLUMN: this run + fame + feats ----------
