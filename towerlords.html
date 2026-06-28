@@ -103,13 +103,17 @@
   /* player status / buff stack (above the action bar — Torchlight-style icon row) */
   #buffBar{position:absolute;bottom:174px;left:50%;transform:translateX(-50%);display:flex;gap:7px;
     justify-content:center;align-items:flex-end;flex-wrap:wrap-reverse;max-width:700px;pointer-events:none;}
-  .buff{display:flex;align-items:center;gap:5px;padding:4px 9px 4px 7px;border-radius:8px;
+  .buff{position:relative;overflow:hidden;display:flex;align-items:center;gap:5px;padding:4px 9px 5px 7px;border-radius:8px;
     background:rgba(8,12,22,.85);border:1px solid var(--bc,rgba(255,255,255,.22));
     box-shadow:0 2px 10px rgba(0,0,0,.5),0 0 12px color-mix(in srgb,var(--bc,#fff) 22%,transparent);
     font-size:11px;font-weight:bold;letter-spacing:.3px;animation:buffIn .18s ease-out;}
   .buff .bic{font-size:15px;line-height:1;filter:drop-shadow(0 0 5px color-mix(in srgb,var(--bc,#000) 60%,transparent));}
   .buff .bnm{color:#eaf0ff;} .buff .bt{color:var(--bc,#fff);opacity:.95;font-variant-numeric:tabular-nums;}
+  .buff .bbar{position:absolute;left:0;bottom:0;height:2.5px;width:100%;background:var(--bc,#fff);
+    box-shadow:0 0 6px var(--bc,#fff);opacity:.9;transition:width .14s linear;}
   .buff.pulse{animation:buffIn .18s ease-out, buffPulse .9s ease-in-out .18s infinite;}
+  .buff.warn{animation:buffIn .18s ease-out, buffWarn .42s ease-in-out infinite;}
+  @keyframes buffWarn{0%,100%{opacity:1;}50%{opacity:.5;}}
   @keyframes buffIn{from{opacity:0;transform:translateY(7px) scale(.85);}to{opacity:1;transform:none;}}
   @keyframes buffPulse{0%,100%{box-shadow:0 2px 10px rgba(0,0,0,.5),0 0 9px color-mix(in srgb,var(--bc,#fff) 25%,transparent);}
     50%{box-shadow:0 2px 10px rgba(0,0,0,.5),0 0 22px color-mix(in srgb,var(--bc,#fff) 70%,transparent);}}
@@ -4995,20 +4999,39 @@ function updateFameBar(){
 function renderBuffs(){
   const bar=$('buffBar'); if(!bar) return;
   const list=[]; const st=fervorStacks();
+  // --- offensive / tempo ---
   if(st>0)                  list.push({id:'ramp', ic:'🔥', nm:'Rampage ×'+(1+st), t:Math.max(0,G.fervorT||0), col:'#ff9a3d', pulse:st>=4});
   if(G.swiftT>0)            list.push({id:'swift',ic:'💨', nm:'Swift',            t:G.swiftT,  col:'#8effd9'});
   if(G.flowT>0)             list.push({id:'flow', ic:'✦',  nm:'Flow',             t:G.flowT,   col:'#ffce4d'});
-  if(G.invuln>0.35)         list.push({id:'guard',ic:'🛡', nm:'Guarded',          t:G.invuln,  col:'#7fd0ff'});
+  if((G.S.lowHpDmg||0)>0 && G.hp<G.maxhp*0.35)
+                            list.push({id:'exec', ic:'☠️', nm:'Executioner +'+Math.round(G.S.lowHpDmg)+'%', col:'#ff5470', pulse:true});
+  // --- defensive ---
+  if(G.invuln>0.35)         list.push({id:'guard',ic:'🛡', nm:'Guarded',          t:G.invuln,  col:'#7fd0ff', pulse:G.invuln>1.1});
+  if(G.S.manaShield && G.mana>0)
+                            list.push({id:'mshd', ic:'🔷', nm:'Mana Shield',      frac:clamp(G.mana/G.maxmana,0,1), val:Math.round(G.mana/G.maxmana*100)+'%', col:'#56b8ff'});
+  // --- environmental ---
   if(G.floorMod)            list.push({id:'mod',  ic:G.floorMod.nm.split(' ')[0], nm:G.floorMod.nm.replace(/^\S+\s/,''), col:G.floorMod.col, ds:G.floorMod.ds});
   const sig=list.map(x=>x.id).join(',');
   if(bar._sig!==sig){
     bar._sig=sig;
-    bar.innerHTML=list.map(x=>`<div class="buff${x.pulse?' pulse':''}" data-bid="${x.id}" style="--bc:${x.col}"${x.ds?' title="'+x.ds.replace(/"/g,'')+'"':''}><span class="bic">${x.ic}</span><span class="bnm">${x.nm}</span>${x.t!=null?'<span class="bt"></span>':''}</div>`).join('');
+    bar.innerHTML=list.map(x=>`<div class="buff" data-bid="${x.id}" style="--bc:${x.col}"${x.ds?' title="'+x.ds.replace(/"/g,'')+'"':''}><span class="bic">${x.ic}</span><span class="bnm">${x.nm}</span>${(x.t!=null||x.val!=null)?'<span class="bt"></span>':''}${(x.t!=null||x.frac!=null)?'<span class="bbar"></span>':''}</div>`).join('');
   }
+  const mxc=bar._bmax||(bar._bmax={});
+  const seen={};
   for(const x of list){ const el=bar.querySelector('[data-bid="'+x.id+'"]'); if(!el) continue;
-    if(x.t!=null){ const ts=el.querySelector('.bt'); if(ts) ts.textContent=x.t.toFixed(1)+'s'; }
+    seen[x.id]=1;
+    // value label (seconds for timers, custom for gauges)
+    const ts=el.querySelector('.bt'); if(ts) ts.textContent = x.t!=null ? x.t.toFixed(1)+'s' : (x.val||'');
     if(x.id==='ramp'){ const nm=el.querySelector('.bnm'); if(nm) nm.textContent='Rampage ×'+(1+st); }
+    // draining bar: timers track their own peak so the bar reads as remaining/total
+    let frac=x.frac;
+    if(x.t!=null){ const pk=Math.max(mxc[x.id]||0, x.t); mxc[x.id]=pk; frac=pk>0?x.t/pk:0; }
+    const bb=el.querySelector('.bbar'); if(bb && frac!=null) bb.style.width=clamp(frac*100,0,100)+'%';
+    // flash when a timed buff is nearly spent (skip things that already pulse)
+    el.classList.toggle('warn', x.t!=null && x.t<0.6 && !x.pulse);
+    el.classList.toggle('pulse', !!x.pulse);
   }
+  for(const k in mxc){ if(!seen[k]) delete mxc[k]; }   // forget peaks for expired buffs
 }
 function updateHUD(){
   $('lvlNum').textContent=G.level; $('xpTxt').textContent=Math.floor(G.xp)+'/'+G.xpNeed; $('goldNum').textContent=G.gold;
