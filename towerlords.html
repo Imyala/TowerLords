@@ -3375,7 +3375,7 @@ function itemTile(it, o){ o=o||{};
   if(it.sockets){ let s=''; for(let i=0;i<it.sockets;i++){ const g=it.socketed&&it.socketed[i]; s+=`<i class="${g?'f':''}"></i>`; } inner+=`<span class="tsock">${s}</span>`; }
   if(o.badge) inner+=`<span class="tbadge">${o.badge}</span>`;
   d.innerHTML=inner;
-  if(o.tip){ d.addEventListener('mouseenter',()=>showTileTip(o.tip)); d.addEventListener('mousemove',moveTileTip); d.addEventListener('mouseleave',hideTileTip); }
+  if(o.tip){ d.classList.add('has-gtip'); d.addEventListener('mouseenter',()=>showTileTip(o.tip)); d.addEventListener('mousemove',moveTileTip); d.addEventListener('mouseleave',hideTileTip); }
   else if(o.title) d.title=o.title;
   if(o.ctx!==null) d.addEventListener('mouseenter', ()=>showItemDetail(it, o.ctx||{kind:'bag'}));
   if(o.onclick) d.onclick=o.onclick;
@@ -3387,6 +3387,10 @@ function showTileTip(html){ if(!_gtip){ _gtip=document.createElement('div'); _gt
 function moveTileTip(e){ if(!_gtip)return; let x=e.clientX+15, y=e.clientY+16; const w=_gtip.offsetWidth, h=_gtip.offsetHeight;
   if(x+w>innerWidth-8) x=e.clientX-w-15; if(y+h>innerHeight-8) y=e.clientY-h-16; _gtip.style.left=Math.max(6,x)+'px'; _gtip.style.top=Math.max(6,y)+'px'; }
 function hideTileTip(){ if(_gtip) _gtip.style.display='none'; }
+// safety net: if the cursor isn't over a tip-owning tile, hide the tooltip. mouseleave can be missed when a
+// hovered tile is removed mid-hover (panel re-render/close), which left the tip stuck on screen; mousemove fires
+// continuously so this always clears it the moment the pointer is elsewhere.
+addEventListener('mousemove', e=>{ if(_gtip && _gtip.style.display!=='none' && !(e.target&&e.target.closest&&e.target.closest('.has-gtip'))) hideTileTip(); }, true);
 function emptyTile(label, icon){ const d=document.createElement('div'); d.className='tile empty'; d.innerHTML=`<span class="ic">${icon||'＋'}</span>`+(label?`<span class="tlabel">${label}</span>`:''); return d; }
 // a truly blank recessed cell — backpack/stash filler so the grid always reads as a full container
 function blankCell(){ const d=document.createElement('div'); d.className='tile empty'; return d; }
