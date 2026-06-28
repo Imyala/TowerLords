@@ -454,6 +454,16 @@
   .dp-socks .ds.f:hover{border-color:#ff7a8a;box-shadow:0 0 13px rgba(255,122,138,.6);}
   .dp-socks.armed .ds.empty{border-color:var(--neon);color:var(--neon);font-weight:bold;background:rgba(86,224,255,.12);animation:sockpulse 1.1s ease-in-out infinite;}
   @keyframes sockpulse{0%,100%{box-shadow:0 0 7px rgba(86,224,255,.4);}50%{box-shadow:0 0 19px rgba(86,224,255,.9);transform:scale(1.07);}}
+  /* skill fusion preview block in the inspect pane */
+  .dp-fuse{margin-top:12px;padding:11px 12px;border-radius:10px;border:1px solid rgba(157,123,255,.42);
+    background:linear-gradient(180deg,rgba(157,123,255,.13),rgba(157,123,255,.03));}
+  .dp-fuse.syn{border-color:rgba(255,206,77,.6);background:linear-gradient(180deg,rgba(255,206,77,.15),rgba(255,206,77,.03));box-shadow:0 0 22px -8px rgba(255,206,77,.6);}
+  .dp-fuse .dfh{font-size:11px;letter-spacing:2px;font-weight:bold;color:var(--xp);margin-bottom:5px;}
+  .dp-fuse.syn .dfh{color:var(--gold);}
+  .dp-fuse .dfn{font-size:13px;opacity:.92;}
+  .dp-fuse .dfr{font-size:16.5px;margin:5px 0;}
+  .dp-fuse .dfd{font-size:12px;opacity:.82;line-height:1.5;}
+  .dp-fuse .dfcost{font-size:12.5px;margin-top:7px;color:var(--gold);font-weight:bold;} .dp-fuse .dfcost.no{color:var(--hp);}
   .dp-cmp{margin-top:11px;padding-top:9px;border-top:1px solid rgba(255,255,255,.14);}
   .dp-cmp .h{font-size:11px;letter-spacing:1.5px;text-transform:uppercase;opacity:.6;margin-bottom:6px;}
   .dp-cmp .cn{font-size:14.5px;font-weight:bold;margin-bottom:4px;}
@@ -1265,6 +1275,66 @@ const SKILLS = {
 const SKILL_IDS=Object.keys(SKILLS);
 const SLOT_KEYS=['1','2','3','4','5','6','7','8','9']; const SLOT_LABEL=['1','2','3','4','5','6','7','8','9'];   // 9-skill bar (Torchlight-style)
 const FLASK_KEYS=['q','e','r','z','x']; const FLASK_LABEL=['Q','E','R','Z','X'];   // 5 belt flasks
+
+// ============================================================ SKILL FUSION
+// Combine two skill gems into one. A predefined SYNERGY pair becomes a unique skill that's stronger than both;
+// any other pair becomes a generic hybrid that fires BOTH skills plus a bonus. The fused gem CONSUMES its two
+// sources (the originals are gone for good), REMEMBERS every skill baked into it, costs more mana, and costs
+// fame to make — fame & mana both escalate with how many fuses are already inside the inputs.
+const SKILL_SYNERGY = {
+  'gChain|gFrost':   {nm:'Superconductor', ic:'🌩'},
+  'gFrost|gMeteor':  {nm:'Cometfall',      ic:'☄'},
+  'gChain|gVolley':  {nm:'Storm Volley',   ic:'⚡'},
+  'gMeteor|gNova':   {nm:'Cataclysm',      ic:'🌋'},
+  'gFrost|gNova':    {nm:'Glacial Burst',  ic:'💠'},
+  'gBarrage|gChain': {nm:'Tesla Barrage',  ic:'🎇'},
+  'gMeteor|gVolley': {nm:'Starfall',       ic:'🌠'},
+  'gFrost|gWhirl':   {nm:'Blizzard',       ic:'🌨'},
+  'gNova|gWhirl':    {nm:'Maelstrom',      ic:'🌪'},
+  'gBlink|gNova':    {nm:'Voidstep',       ic:'🌌'},
+};
+function synergyFor(idA,idB){ return SKILL_SYNERGY[[idA,idB].sort().join('|')]||null; }
+function skMana(g){ const s=SKILLS[g.skillId]; return s?s.mana:12; }
+function skCd(g){ const s=SKILLS[g.skillId]; return s?s.cd:0.6; }
+function skComponents(g){ return (g.components&&g.components.length)?g.components.slice():[(SKILLS[g.skillId]||{}).nm||'Skill']; }
+function firstWord(s){ return (s||'').split(/[ \-]/)[0]; }
+function fusePriorN(a,b){ return (a.fuseCount||0)+(b.fuseCount||0); }   // total fuses already baked into both inputs
+function fuseFameCost(a,b){ const n=fusePriorN(a,b); return 1500*(n+1)*(n+1); }   // 1.5k → 6k → 13.5k → 24k …
+function previewFuse(a,b){
+  const syn=synergyFor(a.skillId,b.skillId), n=fusePriorN(a,b);
+  const mana=Math.round((skMana(a)+skMana(b))*(syn?0.85:0.95)*(1+0.06*n));   // always > either source, climbs with depth
+  const comps=[...new Set([...skComponents(a),...skComponents(b)])];
+  const name=syn?syn.nm:`${firstWord(a.name||(SKILLS[a.skillId]||{}).nm)}-${firstWord(b.name||(SKILLS[b.skillId]||{}).nm)}`;
+  return { syn:!!syn, name, ic:syn?syn.ic:'⚛', mana, comps, fame:fuseFameCost(a,b), fuseCount:n+1 };
+}
+let _fuseSeq=0;
+function doFuse(a,b){
+  if(!a||!b||a===b||!a.isSkillGem||!b.isSkillGem) return false;
+  const pv=previewFuse(a,b);
+  if(META.fame<pv.fame){ log(`Not enough fame to fuse — need ${pv.fame.toLocaleString()} (you have ${Math.floor(META.fame).toLocaleString()}).`); sfx.deny&&sfx.deny(); return false; }
+  const idA=a.skillId, idB=b.skillId, syn=pv.syn, power=syn?1.35:1.12;
+  const id='gFz'+(++_fuseSeq);
+  SKILLS[id]={ nm:pv.name, ic:pv.ic, mana:pv.mana, cd:Math.max(0.3,(skCd(a)+skCd(b))/2), fused:true, cast:(pwr)=>{
+    const P=(pwr||1)*power, sa=SKILLS[idA], sb=SKILLS[idB];
+    if(sa)sa.cast(P); if(sb)sb.cast(P*0.9);                                   // fire BOTH source skills…
+    const p=G.player.position;                                               // …plus a bonus burst (bigger for synergies)
+    hitRadius(p.x,p.z,areaR(syn?7:5), skillDmg(syn?1.6:0.9,P), syn?360:240, G.S.element);
+    ringFx(p.x,p.z,areaR(syn?7:5), syn?0xffce4d:0x9d7bff);
+  }};
+  for(const g of [a,b]){ const si=G.slots.indexOf(g); if(si>=0)G.slots[si]=null; if(G.sigSlot===g)G.sigSlot=null; }   // unbind sources
+  G.inv=G.inv.filter(x=>x!==a&&x!==b); if(G.selGem===a||G.selGem===b)G.selGem=null;                                  // …and remove them for good
+  META.fame-=pv.fame; saveMeta();
+  const gem={ isSkillGem:true, fused:true, synergy:syn, skillId:id, ic:pv.ic, slotIc:pv.ic, slotNm:'Fused Skill',
+    tier:Math.max(a.tier||1,b.tier||1), fuseCount:pv.fuseCount, components:pv.comps, mana:pv.mana,
+    rarity: syn?UNIQUE_RAR:RARITY[2], name:pv.name, value:0,
+    desc:`Fused active skill · ${pv.comps.length} skills baked in · ${pv.mana} mana · bind to 1–9${syn?' · ★ SYNERGY':''}` };
+  G.inv.push(gem); autoBind(gem); _fuseA=null;
+  sfx.evolve&&sfx.evolve();
+  banner(syn?'★ SYNERGY FUSE':'⚛ SKILL FUSED', pv.name+'  ·  −'+pv.fame.toLocaleString()+' fame');
+  log(`${syn?'★ SYNERGY! ':'⚛ Fused '}${pv.name} (${pv.comps.join(' + ')}) · ${pv.mana} mana · −${pv.fame.toLocaleString()} fame.`);
+  renderInv(); updateHUD(); pinItem(gem,{kind:'bag'});
+  return true;
+}
 
 // ---------------- skill tree definition (generated: 6 branches, ~100 nodes) ----------------
 const EFF_LBL={dmgPct:'% attack damage',asPct:'% attack speed',crit:'% crit chance',critMultPct:'% crit multiplier',
@@ -3393,9 +3463,9 @@ function itemTile(it, o){ o=o||{};
 }
 // ---- selection / pin: clicking a tile LOCKS the inspect pane to it so you can reach its bind/equip/stash
 // buttons without an intervening hover stealing the pane. Hover still previews, but reverts to the pinned item. ----
-let _pinItem=null, _pinCtx=null;
+let _pinItem=null, _pinCtx=null, _fuseA=null;
 function pinItem(it,ctx){ _pinItem=it; _pinCtx=ctx; showItemDetail(it,ctx); refreshPinSel(); }
-function clearPin(){ _pinItem=null; _pinCtx=null; refreshPinSel(); }
+function clearPin(){ _pinItem=null; _pinCtx=null; _fuseA=null; refreshPinSel(); }
 function refreshPinSel(){ document.querySelectorAll('.tile.pinsel').forEach(e=>e.classList.remove('pinsel'));
   if(_pinItem) document.querySelectorAll('.tile').forEach(e=>{ if(e._item===_pinItem) e.classList.add('pinsel'); }); }
 // shared instant tooltip (styled to match the menus) — used wherever a tile wants a hover hint without the slow native title=
@@ -3440,7 +3510,30 @@ function showItemDetail(it, ctx){ ctx=ctx||{}; const dp=$('itemDetail'); if(!dp)
   }
   if(comparable){ if(eqItem) h+=`<div class="dp-cmp"><div class="h">▼ currently equipped</div><div class="cn" style="color:var(--${eqItem.rarity.css})">${eqItem.slotIc} ${eqItem.name}</div><div class="ca">${eqItem.affixes.map(affixLine).join('<br>')}</div></div>`;
     else h+=`<div class="dp-cmp"><div class="h">currently equipped</div><div class="ca" style="opacity:.5">— ${SLOTMAP[it.slotKey].nm} slot empty —</div></div>`; }
-  if(ctx.kind==='bag' && it.isSkillGem){ let b='<div class="dp-bind"><span class="bl">Bind:</span>'; for(let i=0;i<9;i++) b+=`<div class="bindBtn${G.slots[i]===it?' act':''}" data-bskill="${i}">${SLOT_LABEL[i]}</div>`; b+=`<div class="bindBtn${G.sigSlot===it?' act':''}" data-bsig="1" title="Signature ultimate">⇧</div></div>`; h+=b; }
+  if(it.isSkillGem){ const sd=SKILLS[it.skillId];
+    if(sd) h+=`<div class="dp-elem" style="color:var(--mana)">🔵 ${sd.mana} mana · ${sd.cd.toFixed(2)}s cooldown</div>`;
+    if(it.fused && it.components) h+=`<div class="dp-uniq">⚛ Fused from ${it.components.length} skills — ${it.components.join(' + ')} (fused ${it.fuseCount}×)</div>`; }
+  if(ctx.kind==='bag' && it.isSkillGem){
+    let b='<div class="dp-bind"><span class="bl">Bind:</span>'; for(let i=0;i<9;i++) b+=`<div class="bindBtn${G.slots[i]===it?' act':''}" data-bskill="${i}">${SLOT_LABEL[i]}</div>`; b+=`<div class="bindBtn${G.sigSlot===it?' act':''}" data-bsig="1" title="Signature ultimate">⇧</div></div>`; h+=b;
+  }
+  // ---- fusion controls (work whether the skill is loose in the bag OR bound to a slot/signature) ----
+  if(it.isSkillGem){
+    if(_fuseA && _fuseA!==it && _fuseA.isSkillGem){
+      const pv=previewFuse(_fuseA,it), can=META.fame>=pv.fame;
+      h+=`<div class="dp-fuse${pv.syn?' syn':''}">
+          <div class="dfh">${pv.syn?'★ SYNERGY FUSION':'⚛ FUSION'}</div>
+          <div class="dfn">${_fuseA.ic} ${_fuseA.name} &nbsp;＋&nbsp; ${it.ic} ${it.name}</div>
+          <div class="dfr">→ <b>${pv.ic} ${pv.name}</b></div>
+          <div class="dfd">${pv.mana} mana · remembers ${pv.comps.length} skills · ${pv.syn?'a unique skill, stronger than both':'fires both skills + bonus damage'}</div>
+          <div class="dfcost ${can?'':'no'}">Cost: ${pv.fame.toLocaleString()} ✦ fame · you have ${Math.floor(META.fame).toLocaleString()}</div>
+          <div class="dp-acts"><button class="vbtn gold" data-act="fuseconfirm"${can?'':' disabled'}>${can?'⚛ Fuse them':'Not enough fame'}</button><button class="vbtn" data-act="fusecancel">Cancel</button></div>
+        </div>`;
+    } else if(_fuseA===it){
+      h+=`<div class="dp-fuse"><div class="dfh">⚛ FUSION BASE SELECTED</div><div class="dfd">Now click another skill gem to fuse it with this one.</div><div class="dp-acts"><button class="vbtn" data-act="fusecancel">Cancel fusion</button></div></div>`;
+    } else {
+      h+=`<div class="dp-acts"><button class="vbtn" data-act="fusestart" title="Combine two skills into one stronger skill (costs fame; the originals are consumed)">⚛ Fuse this skill…</button></div>`;
+    }
+  }
   if(ctx.kind==='bag' && it.isFlask){ let b='<div class="dp-bind"><span class="bl">Belt:</span>'; for(let i=0;i<5;i++) b+=`<div class="bindBtn${G.belt[i]===it?' act':''}" data-bflask="${i}">${FLASK_LABEL[i]}</div>`; b+='</div>'; h+=b; }
   let acts='';
   if(ctx.kind==='bag'){
@@ -3474,6 +3567,9 @@ function showItemDetail(it, ctx){ ctx=ctx||{}; const dp=$('itemDetail'); if(!dp)
     else if(a==='takeback'){ if(G.inv.length>=G.invCap){ log('🎒 Bag full — make room first.'); return; } G.stash=G.stash.filter(x=>x!==it); G.inv.push(it); renderInv(); }
     else if(a==='hatch'){ if((G.pets?G.pets.length:0)<PET_YARD_CAP){ G.inv=G.inv.filter(x=>x!==it); hatchPet(it); renderInv(); } else log('🥚 Pet yard full.'); }
     else if(a==='usepot'){ G.inv=G.inv.filter(x=>x!==it); applyStatPot(it); renderInv(); }
+    else if(a==='fusestart'){ _fuseA=it; showItemDetail(it,ctx); }
+    else if(a==='fusecancel'){ _fuseA=null; showItemDetail(it,ctx); }
+    else if(a==='fuseconfirm'){ doFuse(_fuseA, it); }
   });
 }
 function clearItemDetail(){ const dp=$('itemDetail'); if(dp){ dp.className='detailPane blank'; dp.textContent='Hover an item to inspect it — carried gear compares against what you have equipped.'; } }
