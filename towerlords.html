@@ -181,7 +181,10 @@
 
   /* panels */
   .panel{position:absolute;pointer-events:auto;background:rgba(7,10,20,.96);
-    border:1px solid rgba(86,224,255,.25);border-radius:14px;box-shadow:0 0 40px rgba(0,0,0,.7);z-index:40;}
+    border:1px solid rgba(86,224,255,.25);border-radius:14px;box-shadow:0 0 40px rgba(0,0,0,.7);z-index:40;
+    max-width:96vw;max-height:94vh;overflow-y:auto;overflow-x:hidden;}   /* never exceed the screen — scroll inside on small monitors instead of spilling off-screen */
+  .panel::-webkit-scrollbar{width:9px;} .panel::-webkit-scrollbar-track{background:transparent;}
+  .panel::-webkit-scrollbar-thumb{background:rgba(86,224,255,.22);border-radius:5px;} .panel::-webkit-scrollbar-thumb:hover{background:rgba(86,224,255,.4);}
   .panel h3{font-size:14px;letter-spacing:2px;color:var(--neon);padding:14px 16px 10px;margin-bottom:6px;
     border-bottom:1px solid rgba(86,224,255,.16);background:linear-gradient(180deg,rgba(86,224,255,.08),transparent);
     border-radius:14px 14px 0 0;text-shadow:0 0 12px rgba(86,224,255,.4);}
@@ -405,8 +408,9 @@
   .tile .tsock i{width:7px;height:7px;border-radius:50%;border:1px solid rgba(255,255,255,.45);background:rgba(0,0,0,.5);}
   .tile .tsock i.f{background:var(--gold);border-color:var(--gold);box-shadow:0 0 5px var(--gold);}
   .tile.sel{box-shadow:0 0 0 2px var(--neon),0 0 16px rgba(86,224,255,.55);}
+  .tile.pinsel{box-shadow:0 0 0 2px var(--gold),0 0 18px rgba(255,206,77,.6);border-color:var(--gold);}   /* the currently-selected item locked into the inspect pane */
   .tile .tbound{position:absolute;bottom:2px;right:5px;font-size:9.5px;font-weight:bold;color:var(--gold);text-shadow:0 0 4px #000;}
-  .bagGrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(60px,1fr));gap:7px;max-height:264px;overflow-y:auto;}
+  .bagGrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(54px,1fr));gap:7px;max-height:min(264px,32vh);overflow-y:auto;}
   .bagGrid::-webkit-scrollbar{width:9px;} .bagGrid::-webkit-scrollbar-track{background:rgba(0,0,0,.25);border-radius:5px;}
   .bagGrid::-webkit-scrollbar-thumb{background:rgba(86,224,255,.28);border-radius:5px;} .bagGrid::-webkit-scrollbar-thumb:hover{background:rgba(86,224,255,.45);}
   .bagEmptyNote{grid-column:1/-1;text-align:center;font-size:11px;opacity:.42;padding:5px 0 3px;letter-spacing:.5px;}
@@ -574,7 +578,8 @@
 
   /* overlays */
   .overlay{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;
-    background:rgba(4,5,12,.92);backdrop-filter:blur(4px);text-align:center;pointer-events:auto;z-index:50;}
+    background:rgba(4,5,12,.92);backdrop-filter:blur(4px);text-align:center;pointer-events:auto;z-index:50;
+    overflow-y:auto;padding:18px 0;}   /* tall menus (climb setup, tutorial) scroll instead of clipping on short screens */
   h1{font-size:58px;letter-spacing:10px;background:linear-gradient(90deg,#56e0ff,#b06bff,#ff9a3d);
     -webkit-background-clip:text;background-clip:text;color:transparent;text-shadow:0 0 50px rgba(176,107,255,.3);}
   .tag{opacity:.7;font-size:14px;letter-spacing:4px;margin:10px 0 28px;}
@@ -1853,6 +1858,7 @@ function togglePanel(id){
   const el=$(id), willOpen=el.classList.contains('hidden');
   if(id!=='stashPanel'){ /* allow stacking char+tree? keep simple: close others */ }
   el.classList.toggle('hidden');
+  clearPin();   // a fresh panel open/close starts with nothing selected (avoids a stale pin from a prior screen)
   if(willOpen){ if(id==='charPanel')renderChar(); else if(id==='treePanel')renderTree(); else if(id==='stashPanel')renderStash(); else if(id==='invPanel')renderInv(); else if(id==='vendorPanel')renderVendor(); else if(id==='petPanel')renderPet(); else if(id==='scorePanel')renderScore(); else if(id==='settingsPanel')renderSettings(); }
   syncPause(); refreshMenuState();
 }
@@ -3377,10 +3383,21 @@ function itemTile(it, o){ o=o||{};
   d.innerHTML=inner;
   if(o.tip){ d.classList.add('has-gtip'); d.addEventListener('mouseenter',()=>showTileTip(o.tip)); d.addEventListener('mousemove',moveTileTip); d.addEventListener('mouseleave',hideTileTip); }
   else if(o.title) d.title=o.title;
-  if(o.ctx!==null) d.addEventListener('mouseenter', ()=>showItemDetail(it, o.ctx||{kind:'bag'}));
-  if(o.onclick) d.onclick=o.onclick;
+  d._item=it;
+  if(o.ctx!==null){ const cx=o.ctx||{kind:'bag'};
+    d.addEventListener('mouseenter', ()=>showItemDetail(it, cx));                                  // hover = quick preview
+    d.addEventListener('mouseleave', ()=>{ if(_pinItem) showItemDetail(_pinItem, _pinCtx); });     // …but snap back to the SELECTED item so its buttons stay reachable
+    d.addEventListener('click', ()=>{ if(it.isGem) G.selGem=(G.selGem===it)?null:it; pinItem(it, cx); if(it.isGem) renderInv(); });  // click = select & lock to the inspect pane
+  } else if(o.onclick) d.onclick=o.onclick;   // action tiles (e.g. pet feed) still act immediately on click
   return d;
 }
+// ---- selection / pin: clicking a tile LOCKS the inspect pane to it so you can reach its bind/equip/stash
+// buttons without an intervening hover stealing the pane. Hover still previews, but reverts to the pinned item. ----
+let _pinItem=null, _pinCtx=null;
+function pinItem(it,ctx){ _pinItem=it; _pinCtx=ctx; showItemDetail(it,ctx); refreshPinSel(); }
+function clearPin(){ _pinItem=null; _pinCtx=null; refreshPinSel(); }
+function refreshPinSel(){ document.querySelectorAll('.tile.pinsel').forEach(e=>e.classList.remove('pinsel'));
+  if(_pinItem) document.querySelectorAll('.tile').forEach(e=>{ if(e._item===_pinItem) e.classList.add('pinsel'); }); }
 // shared instant tooltip (styled to match the menus) — used wherever a tile wants a hover hint without the slow native title=
 let _gtip=null;
 function showTileTip(html){ if(!_gtip){ _gtip=document.createElement('div'); _gtip.id='gtip'; document.body.appendChild(_gtip); } _gtip.innerHTML=html; _gtip.style.display='block'; }
@@ -3534,7 +3551,8 @@ function renderInv(){
     if(!G.stash.length){ const n=document.createElement('div'); n.className='bagEmptyNote'; n.textContent='Bank loot here via ⇩ Stash — it survives death.'; sg.prepend(n); }
     sw.appendChild(sg);
   }
-  const hint=$('invHint'); if(hint) hint.innerHTML = G.selGem ? 'Stat gem selected — open a socketed item and click a socket ◯ in the inspect pane.' : 'hover to inspect &amp; compare · click gear to equip · click a gem then a socket ◯ · ⇩ Stash banks loot';
+  const hint=$('invHint'); if(hint) hint.innerHTML = G.selGem ? 'Stat gem selected — click an item with a socket, then click a glowing socket in the inspect pane.' : '<b>Click</b> an item or skill to select it, then use its buttons in the inspect pane (equip · bind · stash). Hover to peek &amp; compare.';
+  refreshPinSel();   // re-apply the selected-tile highlight after the grid rebuilt
 }
 // ---------------- vendor (gold sink) ----------------
 function renderVendor(){
