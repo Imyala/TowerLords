@@ -680,6 +680,21 @@
   .modeBtn.sel{border-color:var(--neon);background:rgba(86,224,255,.1);box-shadow:0 0 22px rgba(86,224,255,.2);}
   #modeHardcore.sel{border-color:var(--hp);background:rgba(255,77,109,.1);box-shadow:0 0 22px rgba(255,77,109,.25);}
   #modeHardcore.sel b{color:var(--hp);}
+  /* ---- ascension selector (climb setup) ---- */
+  #ascBox{width:476px;max-width:90vw;margin:0 0 22px;padding:14px 18px 16px;border-radius:13px;
+    border:1px solid rgba(176,107,255,.34);background:linear-gradient(170deg,rgba(20,14,30,.7),rgba(10,8,18,.7));box-shadow:0 0 26px rgba(176,107,255,.12);}
+  .ascHead{display:flex;align-items:center;justify-content:space-between;gap:10px;}
+  .ascTitle{font-size:18px;font-weight:bold;letter-spacing:3px;color:#d9b6ff;text-shadow:0 0 16px rgba(176,107,255,.5);}
+  .ascStep{cursor:pointer;width:34px;height:34px;display:flex;align-items:center;justify-content:center;border-radius:9px;
+    border:1px solid rgba(176,107,255,.4);color:#caa6ff;font-size:15px;user-select:none;transition:.12s;}
+  .ascStep:hover{background:rgba(176,107,255,.18);color:#fff;box-shadow:0 0 14px rgba(176,107,255,.4);}
+  .ascStep.dis{opacity:.25;pointer-events:none;}
+  .ascFame{font-size:11px;letter-spacing:2px;color:var(--gold);opacity:.95;margin:6px 0 2px;text-transform:uppercase;}
+  .ascList{display:flex;flex-direction:column;gap:3px;margin-top:8px;max-height:168px;overflow-y:auto;text-align:left;}
+  .ascRow{font-size:11.5px;line-height:1.45;color:#c7cbe0;display:flex;gap:7px;}
+  .ascRow .ai{width:16px;text-align:center;flex:none;}
+  .ascRow.new{color:#fff;} .ascRow.new b{color:#d9b6ff;}
+  .ascHint{font-size:10.5px;opacity:.5;letter-spacing:1px;margin-top:9px;line-height:1.4;}
   #deathStats{font-size:16px;line-height:2.1;margin:6px 0 26px;} #deathStats b{color:var(--gold);}
   #loadErr{position:absolute;inset:0;display:none;align-items:center;justify-content:center;text-align:center;
     font-size:15px;padding:40px;color:#ff8fa3;line-height:1.7;z-index:99;}
@@ -907,6 +922,12 @@
       <div class="modeSel">
         <div class="modeBtn sel" id="modeNormal"><b>NORMAL</b><span>2nd death wipes your stash — but you keep your character and restart the tower</span></div>
         <div class="modeBtn" id="modeHardcore"><b>HARDCORE</b><span>2nd death is permanent — your character is wiped and you start over from scratch</span></div>
+      </div>
+      <div id="ascBox">
+        <div class="ascHead"><span class="ascStep" id="ascDown">◀</span><div class="ascTitle" id="ascTitle">⛧ ASCENSION 0</div><span class="ascStep" id="ascUp">▶</span></div>
+        <div class="ascFame" id="ascFame"></div>
+        <div class="ascList" id="ascList"></div>
+        <div class="ascHint" id="ascHint"></div>
       </div>
       <button class="btn" id="startBtn">▶ ENTER THE TOWER</button>
       <button class="btn ghost small" id="climbBack">← Back to menu</button>
@@ -1297,8 +1318,8 @@ const FEATS=[
   {id:'f100',     nm:'Tower Lord',   ds:'Reach Floor 100',                fame:12000},
   {id:'ng',       nm:'Eternal',      ds:'Enter New Game+',                fame:6000},
 ];
-let META={fame:0, feats:[], invRows:0, stashRows:0, codex:{}};
-function loadMeta(){ try{ const s=localStorage.getItem(META_KEY); if(s){ const m=JSON.parse(s); META={fame:m.fame||0, feats:m.feats||[], invRows:m.invRows||0, stashRows:m.stashRows||0, codex:m.codex||{}}; } }catch(e){} }
+let META={fame:0, feats:[], invRows:0, stashRows:0, codex:{}, ascMax:0};
+function loadMeta(){ try{ const s=localStorage.getItem(META_KEY); if(s){ const m=JSON.parse(s); META={fame:m.fame||0, feats:m.feats||[], invRows:m.invRows||0, stashRows:m.stashRows||0, codex:m.codex||{}, ascMax:m.ascMax||0}; } }catch(e){} }
 function saveMeta(){ try{ localStorage.setItem(META_KEY, JSON.stringify(META)); }catch(e){} }
 function discover(key){ if(!META.codex) META.codex={}; if(!META.codex[key]){ META.codex[key]=true; saveMeta(); } }   // bestiary: record a first encounter
 function fortuneMult(){ return 1; }   // fame grants no combat power — but CAN be spent on bag/stash rows (see buyInvRow/buyStashRow)
@@ -2106,11 +2127,26 @@ function repositionParty(x,z){ joinedPlayers().forEach((p,i)=>{ if(p.player){ co
 $('startBtn').onclick=startGame;
 $('modeNormal').onclick=()=>{ G.hardcore=false; $('modeNormal').classList.add('sel'); $('modeHardcore').classList.remove('sel'); };
 $('modeHardcore').onclick=()=>{ G.hardcore=true; $('modeHardcore').classList.add('sel'); $('modeNormal').classList.remove('sel'); };
+// ---- ascension selector ----
+let selAsc=0;
+function renderAscSel(){
+  const max=META.ascMax||0; selAsc=clamp(selAsc,0,max);
+  $('ascTitle').textContent='⛧ ASCENSION '+selAsc;
+  $('ascFame').textContent = selAsc>0 ? ('Fame reward ×'+(1+selAsc*0.15).toFixed(2)) : 'Fame reward ×1.00 · the standard climb';
+  $('ascDown').classList.toggle('dis', selAsc<=0);
+  $('ascUp').classList.toggle('dis', selAsc>=max);
+  const list=$('ascList');
+  if(selAsc<=0){ list.innerHTML='<div class="ascRow" style="opacity:.6">No modifiers — a fair climb. Slay a guardian to unlock Ascension 1.</div>'; }
+  else list.innerHTML=ASC_MODS.slice(0,selAsc).map((m,i)=>`<div class="ascRow${i===selAsc-1?' new':''}"><span class="ai">${m.ic}</span><span><b>${m.nm}</b> — ${m.ds}</span></div>`).join('');
+  $('ascHint').textContent = max>=ASC_MAX ? 'Every ascension unlocked — the summit of mastery.' : 'Harder climbs grant more fame. Clear a guardian at Ascension '+max+' to unlock the next.';
+}
+$('ascUp').onclick=()=>{ if(selAsc<(META.ascMax||0)){ selAsc++; renderAscSel(); if(sfx.tick)sfx.tick(); } };
+$('ascDown').onclick=()=>{ if(selAsc>0){ selAsc--; renderAscSel(); if(sfx.tick)sfx.tick(); } };
 $('reviveBtn').onclick=()=>{ $('death').classList.add('hidden'); if(G.permadead){ G.permadead=false; $('hud').classList.add('hidden'); showMenu(); } else { returnToTown(); } };
 // ---- main menu navigation ----
 function showMenu(){ ['hud','tutorial','deathlog','death'].forEach(id=>$(id).classList.add('hidden')); PANELS.forEach(p=>$(p).classList.add('hidden'));
   $('start').classList.remove('hidden'); $('menuMain').classList.remove('hidden'); $('climbScreen').classList.add('hidden'); $('coopLobby').classList.add('hidden'); $('onlineLobby').classList.add('hidden'); coopLobbyOpen=false; G.running=false; G.practice=false; syncPause(); }
-function showClimb(){ ['tutorial','deathlog'].forEach(id=>$(id).classList.add('hidden')); $('start').classList.remove('hidden'); $('menuMain').classList.add('hidden'); $('climbScreen').classList.remove('hidden'); $('coopLobby').classList.add('hidden'); coopLobbyOpen=false; }
+function showClimb(){ ['tutorial','deathlog'].forEach(id=>$(id).classList.add('hidden')); $('start').classList.remove('hidden'); $('menuMain').classList.add('hidden'); $('climbScreen').classList.remove('hidden'); $('coopLobby').classList.add('hidden'); coopLobbyOpen=false; loadMeta(); renderAscSel(); }
 $('menuClimb').onclick=showClimb;
 $('climbBack').onclick=showMenu;
 // ---- local co-op lobby: claim slots with controllers, then start together ----
@@ -2370,6 +2406,8 @@ function recompute(){
   S.procs={};
   for(const id in G.alloc){ const t=TALENTMAP[id], rank=G.alloc[id]||0; if(rank>0 && t&&t.procs) for(const pr of t.procs){
     (S.procs[pr.on]||(S.procs[pr.on]=[])).push({type:pr.type, chance:Math.min(1,(pr.chance||1)*rank), amt:pr.amt||0, dur:pr.dur||0, r:pr.r||6}); } }
+  // ascension "Withered": cut all healing / regen / leech
+  { const hm=ascEff().healMul; if(hm!==1){ S.lifeRegen*=hm; S.manaRegen*=hm; S.lifesteal*=hm; S.lifeOnHit*=hm; S.lifeOnKill*=hm; } }
   G.S=S;
   G.maxhp=S.maxhp; G.maxmana=S.maxmana;
   if(G.hp>G.maxhp)G.hp=G.maxhp; if(G.mana>G.maxmana)G.mana=G.maxmana;
@@ -2510,7 +2548,7 @@ function generateFloor(anchor){
     for(let i=0;i<7;i++){ const pt=pick(G.camps); for(let k=0;k<randi(3,5);k++) spawnEnemy(G.floor, pt, ETYPES[1]); }
     if(Math.random()<0.32) spawnGoblin(G.floor, pick(rooms));
     placeTraps(rooms);   // hidden spike/dart traps along the corridors
-    G.floorKills=0; G.killGoal=Math.max(10, Math.round(G.enemies.length*0.7));   // clear ~70% to open the portal
+    G.floorKills=0; G.killGoal=Math.max(10, Math.round(G.enemies.length*ascEff().killFrac));   // clear ~70% (more at high ascension) to open the portal
     G.shiftT=999; G.shiftWarned=false;   // shift clock only starts (=30s) once the portal opens on clear
   }
   unstuckParty();   // final safety net — no player ever ends a floor-gen stuck inside a pillar
@@ -2556,6 +2594,34 @@ function floorType(f){ if(f%5===0)return 'BOSS'; if(f%5===1 && f>1)return 'SAFE'
 // ---------------- New Game+ : the Tower loops past 100, deadlier and richer ----------------
 function ngLevel(f){ return Math.floor(((f||G.floor)-1)/100); }
 function ngMult(){ return 1 + ngLevel(G.floor)*0.7; }
+// ---------------- ASCENSION: opt-in stacking difficulty (fame = skill, so harder climbs pay more fame — no power creep) ----------------
+// Cumulative: choosing Ascension N applies every modifier 1..N. Clear a guardian at your highest level to unlock the next.
+const ASC_MODS=[
+  {ic:'🩸',nm:'Hardened',  ds:'Enemies have +20% health.',                          ehp:1.20},
+  {ic:'⚔',nm:'Vicious',   ds:'Enemies deal +20% damage.',                          edmg:1.20},
+  {ic:'👁',nm:'Infested',  ds:'Elites appear far more often.',                       eliteMul:1.6},
+  {ic:'⏳',nm:'Hunted',    ds:'Less time to loot — the floor reshuffles sooner.',    shiftT:45},
+  {ic:'🛡',nm:'Resilient', ds:'Enemies have +25% more health.',                      ehp:1.25},
+  {ic:'💢',nm:'Brutal',    ds:'You take +15% more damage.',                          dmgTaken:1.15},
+  {ic:'🔒',nm:'Relentless',ds:'Floors demand more clearing to open the portal.',     killFrac:0.85},
+  {ic:'🗡',nm:'Savage',    ds:'Enemies deal +25% more damage.',                      edmg:1.25},
+  {ic:'⛓',nm:'Withered',   ds:'Your healing & regeneration are cut by 30%.',         healMul:0.70},
+  {ic:'🐺',nm:'Swarming',  ds:'Elites & champions everywhere.',                      eliteMul:1.5, champMul:1.8},
+  {ic:'💎',nm:'Adamant',   ds:'Enemies have +30% more health.',                      ehp:1.30},
+  {ic:'👑',nm:'Tyranny',   ds:'Guardians are far deadlier (+40% HP, +15% damage).',  bossHp:1.40, bossDmg:1.15},
+];
+const ASC_MAX=ASC_MODS.length;
+function ascEffects(level){
+  const e={ehp:1,edmg:1,eliteMul:1,champMul:1,bossHp:1,bossDmg:1,dmgTaken:1,killFrac:0.7,shiftT:60,healMul:1};
+  for(let i=0;i<Math.min(level||0,ASC_MAX);i++){ const m=ASC_MODS[i];
+    if(m.ehp)e.ehp*=m.ehp; if(m.edmg)e.edmg*=m.edmg; if(m.eliteMul)e.eliteMul*=m.eliteMul; if(m.champMul)e.champMul*=m.champMul;
+    if(m.bossHp)e.bossHp*=m.bossHp; if(m.bossDmg)e.bossDmg*=m.bossDmg; if(m.dmgTaken)e.dmgTaken*=m.dmgTaken;
+    if(m.killFrac!=null)e.killFrac=m.killFrac; if(m.shiftT!=null)e.shiftT=m.shiftT; if(m.healMul)e.healMul*=m.healMul; }
+  return e;
+}
+function ascEff(){ return _G.ascEff || (_G.ascEff=ascEffects(_G.asc||0)); }
+function ascFameMult(){ return 1 + (_G.asc||0)*0.15; }   // each ascension level → +15% fame
+function portalShiftT(){ return ascEff().shiftT; }       // how long the portal stays before the floor reshuffles
 // ---------------- per-floor bounties ----------------
 function rollBounty(){
   const f=G.floor, kinds=[
@@ -2747,11 +2813,12 @@ function spawnEnemy(floor,home,forceType,forceElite){
     lancer:!!t.lancer, weaver:!!t.weaver, shield:!!t.shield, revive:!!t.revive, blink:!!t.blink, aura:!!t.aura, hexer:!!t.hexer, enrage:!!t.enrage,
     shootCd:rand(.8,2.2), atkCd:rand(.2,.8), windup:0, dashCd:rand(2,4), hitFlash:0, elite:false,
     aggro:false, home:home||{x:0,z:0} };
-  if(forceElite || Math.random()<0.09+floor*0.006){ e.elite=true; e.hp*=3.2; e.dmg*=1.6; e.scale*=1.35; e.r*=1.3; e.xp*=4; e.gold=true;
+  const _ae=ascEff();
+  if(forceElite || Math.random()<(0.09+floor*0.006)*_ae.eliteMul){ e.elite=true; e.hp*=3.2; e.dmg*=1.6; e.scale*=1.35; e.r*=1.3; e.xp*=4; e.gold=true;
     applyAffixes(e, 1+(floor>=10?1:0)+(floor>=26?1:0)); }   // 1-3 affixes, deeper = more
-  else if(floor>=3 && Math.random()<0.06){ applyAffixes(e,1); e.champion=true; e.hp*=1.4; e.dmg*=1.15; e.xp*=1.7; }   // occasional "champion" normal — run-to-run variety
+  else if(floor>=3 && Math.random()<0.06*_ae.champMul){ applyAffixes(e,1); e.champion=true; e.hp*=1.4; e.dmg*=1.15; e.xp*=1.7; }   // occasional "champion" normal — run-to-run variety
   // New Game+ scaling
-  const ng=ngMult(); e.hp*=ng; e.dmg*=ng; e.maxhp=e.hp;
+  const ng=ngMult(); e.hp*=ng*_ae.ehp; e.dmg*=ng*_ae.edmg; e.maxhp=e.hp;   // ascension piles on enemy HP/damage
   // floor-modifier effects
   const mod=G.floorMod; if(mod){ if(mod.espd)e.speed*=mod.espd; if(mod.edmg)e.dmg*=mod.edmg; if(mod.ehp){e.hp*=mod.ehp;} if(mod.xpm)e.xp*=mod.xpm; }
   const rb=Math.min(0.1+floor*0.004,0.35);
@@ -2914,8 +2981,9 @@ function spawnBoss(floor,room){
   const ng=ngMult();
   const idx=((Math.floor(floor/5)-1)%BOSSES.length + BOSSES.length)%BOSSES.length;   // milestone → boss, cycling
   const lvl=scaleLvl(floor);   // boss also rubber-bands to the party level
-  const def=BOSSES[idx], hp=(1100+lvl*120)*ng*def.hpMult;
-  const e={type:'boss',boss:true,bossDef:def,hp,maxhp:hp,speed:3.4*def.spdMult,dmg:(38+lvl*2.6)*ng,r:2.6,scale:def.scale,xp:90*ng,
+  const _ae=ascEff();
+  const def=BOSSES[idx], hp=(1100+lvl*120)*ng*def.hpMult*_ae.bossHp;
+  const e={type:'boss',boss:true,bossDef:def,hp,maxhp:hp,speed:3.4*def.spdMult,dmg:(38+lvl*2.6)*ng*_ae.bossDmg,r:2.6,scale:def.scale,xp:90*ng,
     hitFlash:0,color:def.color,keep:def.keep||0,name:def.nm,
     moveCd:def.moves.map(m=>rand(m.cd[0]*0.5,m.cd[1])),   // stagger the first cast of each move
     res:{phys:0.15,fire:0.2,cold:0.2,light:0.2}};
@@ -3375,14 +3443,17 @@ function killEnemy(e){
   }); }
   if(e.affixIds && e.affixIds.length){ const k=e._killer!=null?e._killer:(_G.cur||0); withPlayer(k, ()=> dropLoot(ex,ez, e.elite?0.12:0.03, k, pick(e.affixIds))); }   // affixed foes always drop one themed item
   G.hitstop=Math.max(G.hitstop||0, e.boss?0.3:0.04);
-  if(e.boss){ unlockFeat('firstboss'); log('⚔ GUARDIAN SLAIN! The portal awakens — ascend whenever you are ready.'); G.portal.active=true; G.shiftT=60; G.shiftWarned=false; shakeCam(1.3);
+  if(e.boss){ unlockFeat('firstboss'); log('⚔ GUARDIAN SLAIN! The portal awakens — ascend whenever you are ready.'); G.portal.active=true; G.shiftT=portalShiftT(); G.shiftWarned=false; shakeCam(1.3);
+    // ascension ladder: beat a guardian at your highest unlocked level → unlock the next
+    if((_G.asc||0)>=(META.ascMax||0) && (META.ascMax||0)<ASC_MAX){ META.ascMax=(_G.asc||0)+1; saveMeta();
+      const nm=ASC_MODS[META.ascMax-1]; banner('⛧ ASCENSION '+META.ascMax+' UNLOCKED', nm.ic+' '+nm.nm+' — '+nm.ds); log('⛧ Ascension '+META.ascMax+' unlocked — '+nm.nm+'.'); }
     if(!_G.splitscreen && !NET.role){ const cur=(_G.cur!=null?_G.cur:0); setTimeout(()=>{ if(_G.running) withPlayer(cur,()=>offerBoonDraft()); }, 700); }   // boss-reward draft (single-player) — let the death FX land first
   }
   else if(floorType(G.floor)==='NORMAL' && !e.leftRoom) G.respawns.push({t:15, room:e.room, home:e.home});   // repopulate its room after ~15s
   // clear-gate: putting down the floor's population opens the portal
   if(!e.boss && floorType(G.floor)==='NORMAL' && G.portal && !G.portal.active){
     G.floorKills=(G.floorKills||0)+1;
-    if(G.floorKills>=(G.killGoal||999)){ G.portal.active=true; G.shiftT=60; G.shiftWarned=false; banner('✦ PORTAL OPEN','press F to ascend whenever you are ready'); log('✦ Floor cleared — the portal is open and stays open. The layout reshuffles every minute, but the portal remains.'); if(sfx.evolve)sfx.evolve(); }
+    if(G.floorKills>=(G.killGoal||999)){ G.portal.active=true; G.shiftT=portalShiftT(); G.shiftWarned=false; banner('✦ PORTAL OPEN','press F to ascend whenever you are ready'); log('✦ Floor cleared — the portal is open and stays open. The layout reshuffles every minute, but the portal remains.'); if(sfx.evolve)sfx.evolve(); }
   }
   burst(e.mesh.position.x,e.mesh.position.z,e.color);
   if(NET.role==='host') _G.netDeaths.push({x:Math.round(e.mesh.position.x*100)/100, z:Math.round(e.mesh.position.z*100)/100, c:e.color, b:e.boss?1:0});   // peers replay the death FX
@@ -3719,7 +3790,7 @@ function doFloorShift(){
   log('✦ THE TOWER HAS SHIFTED — a new layout (your portal stays open).');
   G.layoutSalt++;
   generateFloor({x:G.player.position.x, z:G.player.position.z});   // rebuild the map AROUND you (you stay put)
-  if(wasOpen && G.portal){ G.portal.active=true; G.floorKills=G.killGoal||0; G.shiftT=60; G.shiftWarned=false; }   // keep the portal open, keep the floor "cleared", and arm the next 1-min reshuffle
+  if(wasOpen && G.portal){ G.portal.active=true; G.floorKills=G.killGoal||0; G.shiftT=portalShiftT(); G.shiftWarned=false; }   // keep the portal open, keep the floor "cleared", and arm the next 1-min reshuffle
   shakeCam(1.0); G.hitstop=Math.max(G.hitstop||0,.12);
 }
 function spendAttr(k){ if(G.attrPts<=0)return; G.attrPts--; G.attr[k]++; recompute(); renderChar(); updatePips(); }
@@ -4247,14 +4318,15 @@ function die(){ if(G.dead)return;
   const carried=G.inv.length; G.inv=[];
   const greedLost = (G.greed>1.05 && carried>0) ? G.greed : 0; G.greed=1;   // dying forfeits the unbanked greed haul
   // fame is a skill rating now — earn a meaningful chunk per run (scales with depth, kills, level)
-  const fameEarned=Math.max(50, Math.floor(G.floor*160 + G.run.kills*6 + G.level*40)); META.fame+=fameEarned; saveMeta();
+  const fameEarned=Math.max(50, Math.floor((G.floor*160 + G.run.kills*6 + G.level*40)*ascFameMult())); META.fame+=fameEarned; saveMeta();
   const secondDeath = G.stashStrikes>=2;
   let msg='';
   if(secondDeath && G.stash.length>0){ const lost=G.stash.length; G.stash=[]; msg+=`<span style="color:var(--hp)">Your stash of ${lost} item(s) was WIPED.</span><br>`; }
   // record this death (with killer + full run stats) and compare against the all-time best run
-  const deathRec={ floor:G.floor, level:G.level, kills:G.run.kills, gold:G.gold, time:Math.floor(G.run.totalTime), hardcore:G.hardcore, permadead:(G.hardcore&&secondDeath), fame:fameEarned, when:Date.now(), killer:lastKiller, run:Object.assign({},G.run) };
+  const deathRec={ floor:G.floor, level:G.level, kills:G.run.kills, gold:G.gold, time:Math.floor(G.run.totalTime), hardcore:G.hardcore, permadead:(G.hardcore&&secondDeath), fame:fameEarned, asc:(_G.asc||0), when:Date.now(), killer:lastKiller, run:Object.assign({},G.run) };
   const best=loadBest(); G._newBest = !best || runScore(deathRec)>runScore(best); if(G._newBest) saveBest(deathRec);
-  msg = (G._newBest?`<span style="color:var(--gold)">★ NEW BEST RUN!</span><br>`:'') + `<span style="opacity:.85">Felled by <b style="color:var(--hp)">${lastKiller}</b>.</span><br>` + msg;
+  const ascBadge = (_G.asc||0)>0 ? `<span style="color:#d9b6ff">⛧ Ascension ${_G.asc}</span><br>` : '';
+  msg = ascBadge + (G._newBest?`<span style="color:var(--gold)">★ NEW BEST RUN!</span><br>`:'') + `<span style="opacity:.85">Felled by <b style="color:var(--hp)">${lastKiller}</b>.</span><br>` + msg;
   const h1=$('death').querySelector('h1');
   if(G.hardcore && secondDeath){
     G.permadead=true; h1.textContent='PERMADEATH';
@@ -4371,6 +4443,7 @@ function enterPractice(){
   if(G.petMesh){ scene.remove(G.petMesh); G.petMesh=null; } G.pet=null; G.pets=[]; G.petMagnet=0;
   G.run={kills:0,assists:0,healSelf:0,healOthers:0,xp:0,floorTime:0,totalTime:0,floorsCleared:0,boons:[]};
   G.practice=true; G.inTown=false; G.hardcore=false; G.seed=randi(0,9999);
+  _G.asc=0; _G.ascEff=ascEffects(0);   // the practice arena is never ascended
   initAudio(); startAmbient();
   recompute(); G.hp=G.maxhp; G.mana=G.maxmana;
   if(!G.player) G.player=createPlayer();
@@ -4523,6 +4596,8 @@ function initPlayerChar(){
 function startGame(){
   $('start').classList.add('hidden'); $('hud').classList.remove('hidden');
   loadMeta(); loadSettings();
+  _G.asc=clamp(selAsc|0, 0, META.ascMax||0); _G.ascEff=ascEffects(_G.asc);   // lock in the chosen ascension for this climb
+  if(_G.asc>0) log('⛧ Ascension '+_G.asc+' — '+ASC_MODS.slice(0,_G.asc).map(m=>m.nm).join(', ')+'. Fame ×'+ascFameMult().toFixed(2)+'.');
   // shared run state
   G.floor=1; G.running=true; G.paused=false; G.hitstop=0; G.permadead=false;
   G.floorMod=null; G.bounty=null; G.practice=false; G.seed=randi(0,9999);
@@ -5085,7 +5160,7 @@ function updateDecals(dt){
     else if(dc.hold!==undefined){ dc.hold-=dt; if(dc.hold<=0)dc.dead=true; } }
   G.decals=G.decals.filter(dc=>{ if(dc.dead){scene.remove(dc.mesh);return false;} return true; });
 }
-function hurtPlayer(dmg){ if(G.invuln>0)return; bountyFail(); let real=dmg*(1-dr());
+function hurtPlayer(dmg){ if(G.invuln>0)return; bountyFail(); let real=dmg*(1-dr())*ascEff().dmgTaken;
   if(G.S.manaShield && G.mana>0){ const absorb=Math.min(G.mana, real*0.6); G.mana-=absorb; real-=absorb; }   // Mana Bulwark: mana soaks 60% while it lasts
   G.hp-=real; G.invuln=0.5; shakeCam(.4); sfx.hurt();
   G.fervor=Math.max(0,G.fervor-25); floatText(G.player.position.x,G.player.position.z,'-'+Math.round(real),'hurt',2.6);
