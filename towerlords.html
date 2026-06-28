@@ -298,6 +298,8 @@
   .talent.skillnode .tic{font-size:28px;}
   .talent.skillnode .trank{color:var(--gold);border-color:color-mix(in srgb,var(--gold) 60%,transparent);font-weight:bold;}
   .talent.skillnode.maxed .tbox{outline-style:solid;}
+  /* build-defining keystones (Blood Magic, Twincast, Brutalist…): magenta keystone glow */
+  .talent.keyflag .tbox{outline:2px solid #ff6ad5;outline-offset:2px;box-shadow:0 0 20px -1px #ff6ad5;background:linear-gradient(160deg,rgba(255,106,213,.30),rgba(40,12,34,.9));}
   /* state → border + icon (kept off box-shadow so rarity glow survives) */
   .talent.lock .tbox{border-color:#2c3650;}
   .talent.avail .tbox{border-color:var(--sc);} .talent.avail .tic{filter:none;}
@@ -1400,6 +1402,28 @@ const SKILL_SYNERGY = {
   'gHeal|gNova':     {nm:'Holy Nova',        ic:'🌟', fx:fxHolyNova},
   'gSlow|gStorm':    {nm:'Static Field',     ic:'🌐'},
   'gChain|gVortex':  {nm:'Magnetar',         ic:'🧲', fx:fxMagnetar},
+  // --- combos with the 7 newest skills ---
+  'gFlame|gPoison':  {nm:'Wildfire',         ic:'🔥'},
+  'gFrost|gPoison':  {nm:'Blight',           ic:'☣'},
+  'gMeteor|gPoison': {nm:'Fallout',          ic:'☢'},
+  'gChain|gShock':   {nm:'Chain Reaction',   ic:'⚡'},
+  'gNova|gShock':    {nm:'EMP Burst',        ic:'📡'},
+  'gFrost|gShock':   {nm:'Static Freeze',    ic:'❄'},
+  'gBeam|gMeteor':   {nm:'Death Ray',        ic:'🔆', fx:fxDeathRay},
+  'gBeam|gChain':    {nm:'Prism Laser',      ic:'📡'},
+  'gBeam|gFrost':    {nm:'Glacial Ray',      ic:'🧊'},
+  'gMeteor|gMortar': {nm:'Bombardment',      ic:'🎆'},
+  'gMortar|gQuake':  {nm:'Carpet Bomb',      ic:'💣'},
+  'gFlame|gMortar':  {nm:'Napalm',           ic:'🔥', fx:fxNapalm},
+  'gReap|gWhirl':    {nm:'Reaper Dance',     ic:'🌪'},
+  'gFrost|gReap':    {nm:'Frostreaper',      ic:'❄'},
+  'gMeteor|gReap':   {nm:'Hellblade',        ic:'😈'},
+  'gComet|gFrost':   {nm:'Ice Comet',        ic:'☄'},
+  'gComet|gMeteor':  {nm:'Meteor Shower',    ic:'🌠', fx:fxMeteorShower},
+  'gComet|gVortex':  {nm:'Comet Storm',      ic:'💫'},
+  'gBulwark|gShield':{nm:'Bastion',          ic:'🏰', fx:fxBastion},
+  'gBulwark|gHeal':  {nm:'Fortify',          ic:'🛡'},
+  'gBulwark|gQuake': {nm:'Earthbreaker',     ic:'🪨'},
 };
 function synergyFor(idA,idB){ return SKILL_SYNERGY[[idA,idB].sort().join('|')]||null; }
 function skMana(g){ const s=SKILLS[g.skillId]; return s?s.mana:12; }
@@ -1609,7 +1633,9 @@ const TREE_KEYSTONES={
       {nm:'Blood Magic',ic:'🩸',gives:'bloodMagic',eff:{dmgPct:24},note:'Skills cost LIFE instead of mana.'},
       {nm:'Berserker',ic:'😤',eff:{dmgPct:22,asPct:14,lifePct:-8}},{nm:'Bloodlust',ic:'🦇',eff:{lifesteal:6,dmgPct:14}},
       {nm:'Rampager',ic:'🔥',eff:{fervorRatePct:30},proc:{on:'crit',chance:0.25,type:'fervor',amt:14}},{nm:'Annihilator',ic:'💢',eff:{dmgPct:26,asPct:8}},
-      {nm:'Headhunter',ic:'🎯',eff:{critMultPct:44,crit:6}},{nm:'Carnage',ic:'⚔️',eff:{dmgPct:16},proc:{on:'crit',chance:0.2,type:'nova',amt:1.5,r:7}}],
+      {nm:'Headhunter',ic:'🎯',eff:{critMultPct:44,crit:6}},{nm:'Carnage',ic:'⚔️',eff:{dmgPct:16},proc:{on:'crit',chance:0.2,type:'nova',amt:1.5,r:7}},
+      {nm:'Brutalist',ic:'🔨',gives:'noCrit',eff:{skillDmgPct:50,dmgPct:25},note:'Your hits can NEVER crit — but deal far more flat damage.'},
+      {nm:'Bloodrage',ic:'🩸',gives:'noHeal',eff:{dmgPct:35,asPct:14},note:'No passive healing (regen / leech / on-hit) — but immense offense.'}],
   mn:[{nm:'Phoenix Heart',ic:'🔥',eff:{lifeRegen:9,lifePct:16,lifesteal:4}},{nm:'Transfusion',ic:'🩹',eff:{lifeOnHit:8,lifesteal:4}},
       {nm:'Sanctuary',ic:'✨',eff:{lifeRegen:4},proc:{on:'hurt',chance:0.22,type:'shield',dur:1.1}},{nm:'Lifebound',ic:'💞',eff:{lifePct:14,lifeOnKill:14}},
       {nm:'Wellspring',ic:'⛲',eff:{lifeRegen:7,manaRegen:4}},{nm:'Bloodfeast',ic:'🍖',eff:{lifesteal:7,lifeOnKill:10}},
@@ -1618,7 +1644,8 @@ const TREE_KEYSTONES={
       {nm:'Twincast',ic:'🔁',gives:'doubleCast',eff:{skillDmgPct:8,manaCostPct:8},note:'Skills have a 35% chance to fire twice.'},
       {nm:'Overcharge',ic:'⚡',eff:{skillDmgPct:18},proc:{on:'cast',chance:0.2,type:'nova',amt:1.6,r:8}},{nm:'Channeler',ic:'🌀',eff:{area:24,cdrPct:14,manaRegen:4}},
       {nm:'Cataclysm',ic:'☄️',eff:{skillDmgPct:26,area:12}},{nm:'Battery',ic:'🔋',eff:{manaPct:20,manaOnKill:16}},
-      {nm:'Stormcaller',ic:'🌩',eff:{skillDmgPct:14},proc:{on:'cast',chance:0.18,type:'shock'}},{nm:'Archon',ic:'🌟',eff:{skillDmgPct:30,area:16,cdrPct:10}}],
+      {nm:'Stormcaller',ic:'🌩',eff:{skillDmgPct:14},proc:{on:'cast',chance:0.18,type:'shock'}},{nm:'Archon',ic:'🌟',eff:{skillDmgPct:30,area:16,cdrPct:10}},
+      {nm:'Overclock',ic:'⏱️',gives:'noManaRegen',eff:{cdrPct:25,manaPct:25},note:'No mana regen — but skills recharge much faster and your mana pool is far larger.'}],
   rg:[{nm:'Phantom',ic:'👻',eff:{movePct:22,asPct:18,crit:6,dashCdrPct:24}},{nm:'Apex Predator',ic:'🐅',eff:{dmgPct:18,critMultPct:28}},
       {nm:'Windrunner',ic:'🍃',eff:{movePct:16,asPct:8},proc:{on:'dash',chance:0.6,type:'haste',dur:2.5}},
       {nm:'Shadowdancer',ic:'🌑',eff:{dashCdrPct:26},proc:{on:'dash',chance:0.5,type:'shield',dur:0.9}},
@@ -1680,7 +1707,7 @@ function talentRarity(ti, rowLen){ let r=Math.min(4, Math.floor((ti/TREE_ROWS)*5
   const capEff=(g,ti)=>{ const e={}; for(let i=0;i<4;i++){ const st=g.stats[(ti+i)%g.stats.length]; e[st.k]=(e[st.k]||0)+gv(st,ti); } return e; };
   for(const spec of SPECS){ const g=GEN[spec.kw]; if(!g) continue;
     spec.tiers=[];   // regenerate the whole tree (incl. the wide, varied top band) — curated heads above are superseded
-    const skills=TREE_SKILLS[spec.kw]||[], keys=TREE_KEYSTONES[spec.kw]||[];
+    const skills=TREE_SKILLS[spec.kw]||[], keys=(TREE_KEYSTONES[spec.kw]||[]).slice().sort((a,b)=>(b.gives?1:0)-(a.gives?1:0));   // build-defining keystones first so they always reach the bottleneck slots
     const step=Math.max(3, Math.floor((TREE_ROWS-6)/Math.max(1,skills.length)));   // spread skills down the WHOLE column
     const skillAt={}; skills.forEach((sid,i)=>{ let ti=3+i*step; while(ti<TREE_ROWS-2 && (ti%g.key===0 || skillAt[ti])) ti++; if(ti<TREE_ROWS-2) skillAt[ti]=sid; });
     let keyIdx=0;
@@ -2243,6 +2270,9 @@ function recompute(){
   S.ailChance = elem==='phys' ? 0 : clamp((special.alwaysShock?100:18) + ailBonus, 0, 100);
   if(flags.alwaysAil && elem!=='phys') S.ailChance=100;   // Elementalist keystone
   S.bloodMagic=!!flags.bloodMagic; S.doubleCast=!!flags.doubleCast; S.manaShield=!!flags.manaShield;
+  if(flags.noCrit) S.crit=0;                                                  // Brutalist — trade crits for flat damage (eff already added)
+  if(flags.noManaRegen) S.manaRegen=0;                                        // Overclock — no regen, big pool + cdr
+  if(flags.noHeal){ S.lifeRegen=0; S.lifesteal=0; S.lifeOnHit=0; }            // Bloodrage — no passive healing
   S.igniteMult = igniteMult;
   // ---- extended mechanics (talent-driven) ----
   S.cdr        = clamp((m.cdrPct||0)/100, 0, 0.6);          // skill cooldown reduction
@@ -3043,6 +3073,17 @@ function fxCataclysm(P){ const tx=aimPoint.x, tz=aimPoint.z;   // Meteor+Nova: a
     G.timed.push({t:0.4+i*0.12, fn:()=>{ ringFx(mx,mz,R,0xff7a3d); burst(mx,mz,0xff7a3d); hitRadius(mx,mz,R,skillDmg(2.8,P),300,'fire'); shakeCam(.7); }}); }); }
 function fxThermalShock(P){ const p=G.player.position, R=areaR(7); ringFx(p.x,p.z,R,0xff9a6b);   // Meteor+Frost: ignite + chill everything → instant Thermal Shock reactions
   for(const e of G.enemies){ if(e.dead)continue; if(Math.hypot(e.mesh.position.x-p.x,e.mesh.position.z-p.z)<R+e.r){ const dmg=skillDmg(1.8,P); hurtEnemy(e,dmg,false,'fire'); if(!e.dead){ e.chill=Math.max(e.chill||0,2.5); applyAilment(e,'ignite',dmg); } } } shakeCam(.5); }
+function fxDeathRay(P){ const p=G.player.position, a=Math.atan2(aimPoint.x-p.x,aimPoint.z-p.z), dx=Math.sin(a), dz=Math.cos(a);   // Beam+Meteor: a long igniting beam that skewers a whole line
+  let ex=p.x, ez=p.z; for(let s=2;s<34;s+=2){ const x=p.x+dx*s, z=p.z+dz*s; if(!inAny(x,z,0))break; ex=x; ez=z; hitRadius(x,z,areaR(2.2),skillDmg(0.85,P),100,'fire'); for(const e of G.enemies){ if(!e.dead && Math.hypot(e.mesh.position.x-x,e.mesh.position.z-z)<areaR(2.2)+e.r) applyAilment(e,'ignite',skillDmg(0.5,P)); } }
+  chainFx(p.x,p.z,ex,ez); ringFx(ex,ez,3,0xff7a3d); shakeCam(.8); }
+function fxMeteorShower(P){ const tx=aimPoint.x, tz=aimPoint.z;   // Comet+Meteor: rain eight meteors over the area
+  for(let k=0;k<8;k++){ const mx=tx+rand(-9,9), mz=tz+rand(-9,9), R=areaR(3.5), delay=0.2+k*0.12;
+    const ring=new THREE.Mesh(new THREE.RingGeometry(R-0.3,R,20), new THREE.MeshBasicMaterial({color:0xff5a2d,transparent:true,opacity:.5,side:THREE.DoubleSide})); ring.rotation.x=-Math.PI/2; ring.position.set(mx,.1,mz); scene.add(ring); G.decals.push({mesh:ring,hold:delay,life:delay});
+    G.timed.push({t:delay, fn:()=>{ ringFx(mx,mz,R,0xff7a3d); burst(mx,mz,0xff7a3d); hitRadius(mx,mz,R,skillDmg(2.0,P),240,'fire'); shakeCam(.5); }}); } }
+function fxNapalm(P){ const tx=aimPoint.x, tz=aimPoint.z, R=areaR(6);   // Mortar+Flame: a lingering fire field that keeps igniting
+  const fill=new THREE.Mesh(new THREE.CircleGeometry(R,28), new THREE.MeshBasicMaterial({color:0xff6a2d,transparent:true,opacity:.2,side:THREE.DoubleSide})); fill.rotation.x=-Math.PI/2; fill.position.set(tx,.08,tz); scene.add(fill); G.decals.push({mesh:fill,hold:4,life:4});
+  for(let k=0;k<8;k++) G.timed.push({t:k*0.5, fn:()=>{ ringFx(tx,tz,R,0xff7a3d); for(const e of G.enemies){ if(!e.dead && Math.hypot(e.mesh.position.x-tx,e.mesh.position.z-tz)<R+e.r){ hurtEnemy(e,skillDmg(0.7,P),false,'fire'); if(!e.dead) applyAilment(e,'ignite',skillDmg(0.6,P)); } } }}); }
+function fxBastion(P){ const p=G.player.position; const h=Math.min(G.maxhp*0.30,G.maxhp-G.hp); if(h>0){G.hp+=h;G.run.healSelf+=h;} G.invuln=Math.max(G.invuln,2.4); ringFx(p.x,p.z,areaR(4),0x56e0ff); ringFx(p.x,p.z,areaR(2.6),0xffce4d); floatText(p.x,p.z,'⛨ BASTION','heal',3); }   // Stoneskin+Aegis: big heal + long shield
 
 function hitRadius(x,z,R,dmg,knock,element){ element=element||G.S.element;
   for(const e of G.enemies){ const d=Math.hypot(e.mesh.position.x-x,e.mesh.position.z-z); if(d<R+e.r){ hurtEnemy(e,dmg,false,element); if(knock){ const dx=(e.mesh.position.x-x)/(d||1),dz=(e.mesh.position.z-z)/(d||1); e.kx=dx*knock*0.02; e.kz=dz*knock*0.02; } } }
@@ -3512,6 +3553,7 @@ function talentCell(t){
   if(reason===null) cls+=' avail'; else if(rank===0) cls+=' lock';
   if(t.req) cls+=' hasreq'+((G.alloc[t.req]||0)>=TALENTMAP[t.req].max?' reqok':'');
   if(t.grantSkill) cls+=' skillnode';
+  if(t.gives) cls+=' keyflag';
   return `<div class="${cls}" data-tid="${t.id}"><div class="tbox"><span class="tic">${t.ic}</span></div><div class="trank">${t.grantSkill?(rank>0?'✓':'learn'):rank+'/'+t.max}</div></div>`;
 }
 // No connector lines — rows unlock by spending points (tier gate). The first locked row shows the requirement.
