@@ -2772,11 +2772,12 @@ function generateFloor(anchor){
     // several camps get a pack (swarm) so encounters are fights, not singles
     for(let i=0;i<7;i++){ const pt=pick(G.camps); for(let k=0;k<randi(3,5);k++) spawnEnemy(G.floor, pt, ETYPES[1]); }
     if(Math.random()<0.32) spawnGoblin(G.floor, pick(rooms));
-    // NEMESIS: at most ONE lord may be roaming any floor, off his post and hunting (first meetings only).
-    // How often depends on this run's activity roll: some climbs none roam at all, others they hunt in numbers.
-    if(G.floor>=3 && _G.nemesis && (_G.nemesis._activity||0)>0 && rand(0,1)<_G.nemesis._activity){
+    // NEMESIS: at most ONE lord may be roaming any floor, off his post and hunting (first meetings
+    // only). Gated by this run's encounter budget — a typical climb meets 1-3 roaming lords total,
+    // a rare climb none, a rarer climb many. 11%/floor spreads them out unpredictably.
+    if(G.floor>=3 && _G.nemesis && (_G.nemesis._roamBudget||0)>0 && rand(0,1)<0.11){
       const pool=BOSSES.filter(b=>{ const x=nemOf(b.key); return x && !x.dead && x.kills===0 && !x.roamed && !x.assisting; });
-      if(pool.length){ const d=pick(pool); nemOf(d.key).roamed=true;
+      if(pool.length){ const d=pick(pool); nemOf(d.key).roamed=true; _G.nemesis._roamBudget--;
         const rm=rooms.length>1?pick(rooms.slice(1)):rooms[0];
         spawnBoss(G.floor, rm, {def:d, roaming:true}); } }
     placeTraps(rooms);   // hidden spike/dart traps along the corridors
@@ -3312,20 +3313,83 @@ const BOSS_VOICE={
     kill:['Another brick. That is all you were.','Settle into my foundations.','The draft is sealed.'],
     death:['At last… someone… to inherit… the view…','The wind… takes the crown…']},
 };
+// ---- COMPOSITIONAL VOICE ENGINE: per-lord word banks × shared templates → thousands of
+// one-off lines per lord. Handwritten pools stay as quality anchors (~40% of picks); the rest
+// are composed fresh, so even a thousand climbs rarely repeat a sentence.
+const VOICE_BANK={
+  warden:  {you:['climber','trespasser','stray','gatecrasher'], my:['gate','post','watch','wall'],
+    doom:['fold you into the floor','file you beneath the flagstones','close on you like a portcullis','stand you down for good','post your bones as a warning'],
+    boast:['I have held this gate a hundred years','No one has ever relieved my watch','The wall does not tire, and neither do I','Order holds wherever I stand','Every stone here answers to me']},
+  bombard: {you:['target','shell-dodger','powder-thief','walking bullseye'], my:['barrels','battery','arsenal','powder store'],
+    doom:['blow you into next week','turn you into weather','paint the walls with you','deliver you airmail, in pieces','ring you like a bell'],
+    boast:['My guns have out-shouted thunder','I have levelled floors prettier than you','Nothing I aim at stays standing','The tower trembles when I clear my throat','I count in calibres']},
+  summoner:{you:['guest','stray','plaything','uninvited thing'], my:['garden','children','parlour','circle'],
+    doom:['feed you to the children','plant you where you fall','add you to the collection','let the little ones play with you','compost you politely'],
+    boast:['My children adore me','Everything buried here answers when I call','I have never raised the same servant twice','Death takes messages for me','My garden has eaten armies']},
+  sweeper: {you:['DEBRIS','ANOMALY','CONTAMINANT','UNSCHEDULED OBJECT'], my:['FLOOR','SCHEDULE','PROTOCOL','MAINTENANCE CYCLE'],
+    doom:['REMOVE YOU','SANITIZE THIS SECTOR','FILE YOU UNDER WASTE','RESTORE ACCEPTABLE CLEANLINESS','COMPACT YOU FOR STORAGE'],
+    boast:['THIS FLOOR HAS BEEN CLEAN FOR 400 CYCLES','MY EFFICIENCY RATING IS ABSOLUTE','NO STAIN HAS EVER SURVIVED ME','I DO NOT MALFUNCTION — I ESCALATE','THE SCHEDULE IS SACRED']},
+  twinfang:{you:['morsel','dancer','little pulse','warm thing'], my:['hunting ground','coils','fangs','dance floor'],
+    doom:['tassste you properly','wrap you in the lassst embrace','sstrike where you breathe','dance you to sstillness','drink the hurry out of you'],
+    boast:['I ssstruck before you saw me blink','No prey has ever bored me twice','My fangs remember every vintage','The dance always ends my way','I am patience with teeth']},
+  overlord:{you:['peasant','rebel','commoner','pretender'], my:['throne','crown','court','kingdom'],
+    doom:['have you executed formally','add your name to the proclamation of the dead','teach you to kneel the permanent way','revoke your climbing privileges','make an example of you, beautifully'],
+    boast:['Every floor below is my tax base','There are no kings above me','My word is architecture here','The crown chose me — repeatedly','I have outlawed defeat itself']},
+  voidlord:{you:['heartbeat','spark','little light','warm noise'], my:['silence','dark','static','between-places'],
+    doom:['unmake you syllable by syllable','fold you into the between','turn you down like a lamp','return you to static','teach you how quiet quiet can be'],
+    boast:['The dark between floors is mine','I have swallowed brighter lights than yours','Silence is my native tongue','Nothing echoes where I have been','I was here before the stairs']},
+  warlock: {you:['specimen','test subject','sample','volunteer'], my:['laboratory','notes','research','methodology'],
+    doom:['dissect the interesting parts','document your failure thoroughly','reduce you to a promising footnote','run you until you break — for science','archive you in formaldehyde'],
+    boast:['My citations outnumber your heartbeats','Science forgives everything I do','I have disproven death twice','The margins of my notes hold darker things than you','Every experiment ends in MY conclusion']},
+  reaper:  {you:['appointment','name on the list','punctual one','client'], my:['list','ledger','schedule','quiet'],
+    doom:['keep your appointment for you','sign for you personally','close your account','collect what is owed','see you out, gently'],
+    boast:['I have never missed a collection','The list is always right','Everyone is punctual eventually','My ledger has no erasures','Time works for me now']},
+  towerlord:{you:['draft','little wind','climber','tenant'], my:['halls','foundations','walls','crown'],
+    doom:['mortar you into the walls','close every stair around you','let the floors digest you','file you among the missing','settle you like dust'],
+    boast:['I am the architecture of your whole life','Ten thousand years I have stood','Every floor you loved is my body','The summit was never meant to be touched','I have outlasted every god who built me']},
+};
+const VOICE_TPL={
+  intro:['{boast}. And you are only a {you}.','Another {you} at my {my}. {boast}.','Look — a {you}. Soon I will {doom}.','{boast}. Test it, {you}.',
+    'You bring nothing to my {my} but yourself, {you}. It will do.','Come then, {you}. My {my} has been quiet too long.',
+    'I noticed you three rooms away, {you}. Now I will {doom}.','Stand still, {you}. I will {doom}.'],
+  grudge:['{k} deaths, {you}. I remember each one fondly.','You again? {k} times I chose to {doom} — and you never learn.',
+    'The {you} who died {k} times returns. {boast}.','My {my} counts your visits: {k} graves so far.',
+    '{k} endings and still climbing. Very well — I will {doom} once more.','{boast} — and you have tested it {k} times. Fatally.',
+    'Ah, my favourite {you}. Shall we make it {k} plus one?','Your {k} deaths bored me, {you}. Impress me this time.'],
+  kill:['Done. {boast}.','Sleep, {you}. My {my} keeps you now.','As expected of a {you}.','One more {you} for my {my}.',
+    'Down. Stay.','I said I would {doom}. I keep my word.','The tower thanks you for your visit, {you}.','A {you}, concluded.'],
+  roamIntro:['No {my} today, {you} — I came looking for YOU.','Surprised? A lord walks where he pleases. And I will {doom}.',
+    'This floor is mine tonight, {you}. So are you.','Far from my {my}, closer to your end.',
+    'The hunt came down the stairs, {you}.','You were easier to find than I hoped, {you}.'],
+  reforged:['Killed {d} times, returned {d} times. {boast}.','Death and I have an arrangement now, {you}.',
+    'You broke me. What stands here is the repair — and it will {doom}.','The grave was a lesson, not an ending. Again.',
+    '{d} times you ended me. Endings wear out, {you}.','Stronger. Angrier. And owed {d} debts, {you}.'],
+  phase2:['Good. GOOD. Now I stop pretending.','You scratch deep, {you}. My turn.','Half my blood for half your hope. Fair trade.',
+    'Now the {my} answers.','Harder, then. I will {doom} the hard way.','You have my attention entirely, {you}.'],
+};
+function composeLine(key,slot){ const b=VOICE_BANK[key], tps=VOICE_TPL[slot]; if(!b||!tps) return null;
+  const P=a=>a[Math.floor(Math.random()*a.length)];
+  return P(tps).replace(/\{you\}/g,()=>P(b.you)).replace(/\{my\}/g,()=>P(b.my)).replace(/\{doom\}/g,()=>P(b.doom)).replace(/\{boast\}/g,()=>P(b.boast)); }
 function bossFullName(def){ const v=BOSS_VOICE[def.key]; return (v&&v.given)? v.given+', '+def.nm : def.nm; }
 function grudgeOf(key){ if(!META.grudges)META.grudges={}; return META.grudges[key]||(META.grudges[key]={k:0,d:0}); }
-// variant-aware line picker with anti-repeat: remembers the last index said per boss+slot
-// (persisted in META.voiceSeen) so a lord never delivers the same line twice in a row.
-function _pickLine(vk,val){ if(val==null) return null;
-  if(typeof val==='string') return val;
-  if(!val.length) return null; if(val.length===1) return val[0];
-  META.voiceSeen=META.voiceSeen||{}; const last=META.voiceSeen[vk];
-  let i=Math.floor(Math.random()*val.length); if(i===last) i=(i+1)%val.length;
-  META.voiceSeen[vk]=i; saveMeta(); return val[i]; }
+// anti-repeat with MEMORY: per boss+slot we persist the last 6 lines actually spoken
+// (META.voiceSeen) and regenerate until we get something not in that window — so even
+// across hundreds of sessions a lord almost never repeats himself.
+function _noRepeat(vk,gen){ META.voiceSeen=META.voiceSeen||{};
+  let seen=META.voiceSeen[vk]; if(!Array.isArray(seen)) seen=[];   // (migrates the old index format)
+  let s=null; for(let t=0;t<7;t++){ s=gen(); if(s && !seen.includes(s)) break; }
+  if(s){ META.voiceSeen[vk]=[s].concat(seen).slice(0,6); saveMeta(); }
+  return s; }
 function _subLine(key,s,k){ if(!s) return null; const gr=(META.grudges&&META.grudges[key])||{};
   return s.replace(/\{k\}/g,String(k!=null?k:(gr.k||0))).replace(/\{d\}/g,String(gr.d||0)); }
-function voiceLine(key,which,k){ const v=BOSS_VOICE[key]; if(!v||!v[which])return null;
-  return _subLine(key,_pickLine(key+':'+which, v[which]), k); }
+// ~40% handwritten anchor lines, ~60% composed fresh from the lord's word bank
+function _mixLine(key,slot,pool){ const canCompose=!!(VOICE_BANK[key]&&VOICE_TPL[slot]);
+  if(!pool&&!canCompose) return null;
+  return _noRepeat(key+':'+slot, ()=>{
+    if(canCompose && (!pool || Math.random()<0.6)) return composeLine(key,slot);
+    return typeof pool==='string'?pool:pool[Math.floor(Math.random()*pool.length)]; }); }
+function voiceLine(key,which,k){ const v=BOSS_VOICE[key];
+  return _subLine(key,_mixLine(key,which,v&&v[which]),k); }
 // a spoken line: gold text over the boss + a quoted log entry — personality, not just patterns
 function bossSpeak(e,line){ if(!line)return; const p=e.mesh&&e.mesh.position;
   if(p) floatText(p.x,p.z,'“'+line+'”','goldtxt',Math.min(3.4,(e.scale||3)*0.75+1.4));
@@ -3341,7 +3405,15 @@ const NEM_EPITHETS=['THE ASHEN','THE HOLLOW','THE CRUEL','THE PATIENT','THE BUTC
   'THE MERCILESS','THE SLEEPLESS','THE CROOKED','THE RADIANT','THE DROWNED','THE FEVERED','THE SPITEFUL','THE SERENE','THE JAGGED','THE VELVET',
   'THE STARVING','THE OATHBOUND','THE FACELESS','THE THUNDEROUS','THE WITHERED','THE IMMACULATE','THE FERAL','THE SOLEMN','THE GRINNING','THE UNREPENTANT',
   'THE MOURNFUL','THE BRAZEN','THE CINDERED','THE STILL','THE WRETCHED','THE OPULENT','THE HOWLING','THE METICULOUS','THE GRAVEBORN','THE UNWANTED',
-  'THE SEETHING','THE PRISTINE','THE CALLOUS','THE WANDERING','THE ANOINTED','THE RUSTED','THE INSATIABLE','THE DIM','THE ALMIGHTY','THE SECOND-BORN'];
+  'THE SEETHING','THE PRISTINE','THE CALLOUS','THE WANDERING','THE ANOINTED','THE RUSTED','THE INSATIABLE','THE DIM','THE ALMIGHTY','THE SECOND-BORN',
+  'THE UNBOWED','THE PENITENT','THE GLOAMING','THE SPLINTERED','THE VORACIOUS','THE HALF-CROWNED','THE EMBERBORN','THE TIDELESS','THE THRICE-CURSED','THE LUMINOUS',
+  'THE CARRION-SWEET','THE UNSUMMONED','THE MARROW-DEEP','THE LISTLESS','THE KNIVING','THE PALLID','THE THORN-CROWNED','THE EVERWAKE','THE SALT-TONGUED','THE LOOMING',
+  'THE FLINT-HEARTED','THE UNDIMMED','THE CREEPING','THE VAULTED','THE SHRIEKING','THE DUST-CLAD','THE OATHBREAKER','THE LAST-LIT','THE HOLLOW-EYED','THE GRANITE',
+  'THE WHISPERED','THE UNFED','THE MOON-STRUCK','THE IRONJAW','THE FESTERING','THE STARLESS','THE GILT-EDGED','THE BONE-TIRED','THE UNFORGIVEN','THE SEVENFOLD',
+  'THE MIRRORED','THE THREADBARE','THE ONCE-LOYAL','THE STORM-FED','THE CROWNLESS','THE ASH-TONGUED','THE UNKNELLED','THE LOCKSTEP','THE RIVEN','THE PITILESS',
+  'THE WINTER-BORN','THE LANTERN-EYED','THE GRUDGEBEARER','THE SLOW-BURNING','THE VELVET-VOICED','THE KNUCKLEBONE','THE UNCHARTED','THE THIRSTING','THE GALLOWS-BORN','THE MERIDIAN',
+  'THE COBWEBBED','THE FIRST-FALLEN','THE SUNDERED','THE QUIET-FOOTED','THE OVERGROWN','THE BLOOD-PATIENT','THE CANDLELIT','THE UNRAVELED','THE STONE-FACED','THE FARSIGHT',
+  'THE HALF-HEARD','THE WOLF-MANNERED','THE TARNISHED','THE EVENFALL','THE BRIAR-WRAPPED','THE UNLAMENTED','THE DEEP-DELVED','THE SMOULDERING','THE CLOCKWORK','THE NAMELESS-NO-MORE'];
 const NEM_TRAITS=[
   {id:'fireproof', nm:'Fireproof',  ds:'shrugs off fire',              res:{fire:0.5}},
   {id:'frostproof',nm:'Frostproof', ds:'shrugs off frost',             res:{cold:0.5}},
@@ -3365,6 +3437,30 @@ const NEM_TRAITS=[
   {id:'reckless',  nm:'Reckless',   ds:'abandons all caution to reach you', keep0:true, spdMult:1.15},
   {id:'ancient',   nm:'Ancient',    ds:'older than his post — resists everything a little', res:{phys:0.1,fire:0.15,cold:0.15,light:0.15}},
   {id:'furious',   nm:'Furious',    ds:'enrages when wounded',         flag:'enrage'},
+  {id:'juggernaut',nm:'Juggernaut', ds:'unstoppable mass — slow, but so much of him', hpMult:1.5, spdMult:0.85},
+  {id:'glasslord', nm:'Glass Lord', ds:'devastating but brittle',      hpMult:0.7, dmgMult:1.5},
+  {id:'siegeborn', nm:'Siegeborn',  ds:'built to break walls — and you', dmgMult:1.35, spdMult:0.85},
+  {id:'skittish',  nm:'Skittish',   ds:'flinches through space when threatened', flag:'blink', hpMult:0.9},
+  {id:'venomous',  nm:'Venomous',   ds:'poison follows him; his blows fester', flag:'toxic', dmgMult:1.1},
+  {id:'stormfed',  nm:'Storm-Fed',  ds:'crackles with stray charge',   res:{light:0.35}, flag:'arcane'},
+  {id:'pyre',      nm:'Pyre-Hearted',ds:'burns from within — and goes up with a blast', res:{fire:0.35}, flag:'volatile'},
+  {id:'relentless',nm:'Relentless', ds:'never lets the pressure drop', castRate:0.9, spdMult:1.1},
+  {id:'towering',  nm:'Towering',   ds:'a head taller than his legend', scaleMult:1.25, hpMult:1.1, spdMult:0.92},
+  {id:'diminutive',nm:'Diminutive', ds:'small, furious, and very hard to hit where it counts', scaleMult:0.8, hpMult:0.85, spdMult:1.25},
+  {id:'ironclad',  nm:'Ironclad',   ds:'sheds blades like rain',       res:{phys:0.35}},
+  {id:'spellward', nm:'Spellwarded',ds:'runes drink your elements',    res:{fire:0.2,cold:0.2,light:0.2}},
+  {id:'berserker', nm:'Berserker',  ds:'pain only feeds him',          flag:'enrage', dmgMult:1.1},
+  {id:'legion',    nm:'Legion',     ds:'his soldiers follow him everywhere', extraMove:'adds', hpMult:1.1},
+  {id:'hoarder',   nm:'Hoarder',    ds:'buried in treasure — heavy with it, drops double', loot2:true, hpMult:1.1, spdMult:0.92},
+  {id:'oldblood',  nm:'Oldblood',   ds:'a lineage of survivors',       res:{phys:0.12,fire:0.12,cold:0.12,light:0.12}, hpMult:1.08},
+  {id:'unstable',  nm:'Unstable',   ds:'barely contained — casts fast, ends loud', castRate:0.92, flag:'volatile'},
+  {id:'predatory', nm:'Predatory',  ds:'hunts like he has done this forever', spdMult:1.18, dmgMult:1.1, hpMult:0.92},
+  {id:'stalwart',  nm:'Stalwart',   ds:'a shield that decided to fight back', hpMult:1.2, res:{phys:0.2}},
+  {id:'feverish',  nm:'Feverish',   ds:'casts in a delirium',          castRate:0.85, hpMult:0.95},
+  {id:'dreadlord', nm:'Dreadlord',  ds:'his presence alone is heavier', dmgMult:1.15, scaleMult:1.1},
+  {id:'scarred',   nm:'Scarred',    ds:'old wounds taught him to keep steel out', res:{phys:0.25}},
+  {id:'leech',     nm:'Leeching',   ds:'every strike feeds him — and he strikes to feed', flag:'vampiric', dmgMult:1.08},
+  {id:'bulwarked', nm:'Bubble-Warded', ds:'cycles a stubborn damage ward', flag:'shield', hpMult:1.05},
 ];
 // nemesis-arc lines, in each lord's own voice: roamIntro / roamdefeat / reforged / laststand / finaldeath.
 // Every slot is a VARIANT POOL — picks are randomized and never repeat back-to-back (see _pickLine).
@@ -3425,14 +3521,16 @@ function makeNemesis(){ const nem={}; const eps=NEM_EPITHETS.slice(); const trs=
     if(Math.random()<0.35){ const other=pick(BOSSES.filter(b=>b.key!==d.key)); stolen=pick(other.moves); }
     nem[d.key]={ kills:0, dead:false, epithet:eps.splice(ei,1)[0], trait:t1, trait2:t2, stolen,
       learned:{el:null,dash:false}, lastStand:false, roamed:false, assisting:false }; }
-  // per-run roaming ACTIVITY: some climbs the lords keep to their floors (none roam at all);
-  // other climbs they hunt in numbers. Rolled once per run.
+  // per-run roaming BUDGET: how many lords will leave their posts this climb. Typically 1-3,
+  // sometimes more, and ~2.5% of climbs none at all. The per-floor chance (11%) spreads the
+  // encounters out so they ambush rather than queue up — and never more than one per floor.
   const r=Math.random();
-  nem._activity = r<0.15?0 : r<0.45?0.10 : r<0.80?0.22 : 0.38;
+  if(r<0.025) nem._roamBudget=0;
+  else { const b=Math.random(); nem._roamBudget = b<0.30?1 : b<0.62?2 : b<0.84?3 : b<0.95?4 : 6; }
   return nem; }
 function nemOf(key){ return (_G.nemesis&&_G.nemesis[key])||null; }
-function nemLine(key,which){ const v=NEM_VOICE[key]; if(!v||!v[which])return null;
-  return _subLine(key,_pickLine(key+':nem:'+which, v[which])); }
+function nemLine(key,which){ const v=NEM_VOICE[key];
+  return _subLine(key,_mixLine(key,which,v&&v[which])); }
 function nemName(def,n){ const g=BOSS_VOICE[def.key]&&BOSS_VOICE[def.key].given;
   if(!g||!n) return bossFullName(def);
   const tier=NEM_TIER_TITLE[Math.min(n.kills,2)];
