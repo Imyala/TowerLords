@@ -689,7 +689,7 @@
   .btn.ghost{border-color:rgba(255,255,255,.25);color:var(--ink);background:rgba(255,255,255,.04);font-size:15px;padding:11px 30px;width:280px;}
   .btn.ghost:hover{background:rgba(255,255,255,.12);color:#fff;box-shadow:none;transform:translateY(-2px);}
   .btn.small{font-size:12px;padding:8px 22px;width:auto;letter-spacing:2px;}
-  #menuClimb{width:280px;}
+  #menuClimb{width:280px;border-color:#8effd9;box-shadow:0 0 20px #8effd944;font-weight:800;}
   /* tutorial */
   #tutCard{width:560px;max-width:88vw;background:rgba(10,14,26,.92);border:1px solid rgba(86,224,255,.22);border-radius:14px;padding:22px 26px;text-align:left;min-height:300px;}
   #tutCard .tut-ic{font-size:34px;}
@@ -1070,6 +1070,7 @@
     <div id="runWrap"></div>
     <div id="deathScore" style="width:300px;margin:0 auto 22px;"></div>
     <button class="btn" id="reviveBtn">🏛 RETURN TO SANCTUARY</button>
+    <button class="btn ghost small" id="shareDeathBtn">📸 Share card</button>
   </div>
 
   <!-- Victory — the floor-50 summit falls -->
@@ -1080,6 +1081,7 @@
     <div id="victScore" style="width:300px;margin:0 auto 22px;"></div>
     <button class="btn" id="victClimbBtn">⛰ ENDLESS ASCENT — climb on into NG+</button>
     <button class="btn ghost" id="victTownBtn">🏛 RETURN TO SANCTUARY</button>
+    <button class="btn ghost small" id="shareVictBtn">📸 Share card</button>
   </div>
 
   <div id="draftPanel" class="overlay hidden">
@@ -1152,11 +1154,58 @@ const sfx={
   pot:()=>{[440,587,740,988,1318].forEach((f,i)=>setTimeout(()=>tone(f,0.22,'triangle',0.18),i*80));},
   shift:()=>{tone(110,0.5,'sawtooth',0.16,55);},
   drop:(tier)=>{ const f=[392,523,659,880,1175][clamp(tier,0,4)]; tone(f,0.1,'triangle',0.08+tier*0.02,f*1.4); if(tier>=3)setTimeout(()=>tone(f*1.5,0.14,'triangle',0.14),80); },
+  nemesis:()=>{ tone(98,0.7,'sawtooth',0.2,55); setTimeout(()=>tone(138.6,0.6,'sawtooth',0.16,70),50);   // tritone dread — a lord has found you
+    noiseBurst(0.3,0.1); setTimeout(()=>tone(196,0.5,'square',0.1,392),380); },
 };
 function startAmbient(){ if(!actx||ambStarted)return; ambStarted=true;
   [55,82.4,110].forEach((f,i)=>{ const o=actx.createOscillator(); o.type='sine'; o.frequency.value=f*(1+i*0.002); const g=actx.createGain(); g.gain.value=0.5/(i+1); o.connect(g); g.connect(ambGain); o.start();
     const lfo=actx.createOscillator(), lg=actx.createGain(); lfo.frequency.value=0.05+i*0.02; lg.gain.value=0.3; lfo.connect(lg); lg.connect(g.gain); lfo.start(); }); }
 function toggleMute(){ G.muted=!G.muted; if(master)master.gain.value=G.muted?0:0.32; $('muteInd').textContent=G.muted?'🔇':'🔊'; log(G.muted?'Sound off':'Sound on'); }
+// ============================================================ MUSIC — procedural mood loops
+// Three moods composed live on the WebAudio graph (zero assets): 'town' (warm arps over slow
+// roots), 'climb' (tense minor ostinato), 'boss' (driving bass with a tritone snarl + hats).
+// 16-step lookahead scheduler; per-bar randomized lead notes so nothing loops exactly.
+// Fades between moods; owns a gain under `master` so the mute button governs it too.
+let musGain=null; const MUS={mood:null,next:0,step:0,timer:null}; const MUS_VOL=0.12;
+const nfreq=s=>220*Math.pow(2,s/12);   // semitones from A3
+const MUS_DEFS={
+  town:{ bpm:72,  roots:[-24,-28,-21,-26], arp:[0,7,12,19,24,19,12,7], lead:0.085 },
+  climb:{ bpm:104, bassSeq:[-24,null,-24,null,-21,null,-24,-19,-24,null,-24,null,-17,null,-19,-21], scale:[0,3,5,7,10,12,15], lead:0.10, prob:0.38 },
+  boss:{ bpm:126, bassSeq:[-24,-24,-18,-24,-24,-24,-17,-18,-24,-24,-18,-24,-23,-24,-17,-18], scale:[0,3,6,10,12,15], lead:0.12, prob:0.55, hat:true },
+};
+function musNote(freq,t,dur,type,vol){ if(!actx||!musGain)return; const o=actx.createOscillator(),g=actx.createGain();
+  o.type=type; o.frequency.value=freq; o.connect(g); g.connect(musGain);
+  g.gain.setValueAtTime(0.0001,t); g.gain.linearRampToValueAtTime(vol,t+0.02); g.gain.exponentialRampToValueAtTime(0.0001,t+dur);
+  o.start(t); o.stop(t+dur+0.06); }
+function musHat(t,vol){ if(!actx||!musGain)return; const n=Math.floor(actx.sampleRate*0.03);
+  const buf=actx.createBuffer(1,n,actx.sampleRate), d=buf.getChannelData(0); for(let i=0;i<n;i++)d[i]=(Math.random()*2-1)*(1-i/n);
+  const s=actx.createBufferSource(); s.buffer=buf; const g=actx.createGain(); g.gain.value=vol;
+  const hp=actx.createBiquadFilter(); hp.type='highpass'; hp.frequency.value=6000;
+  s.connect(hp); hp.connect(g); g.connect(musGain); s.start(t); }
+function musTick(){ if(!actx||!MUS.mood)return; const D=MUS_DEFS[MUS.mood]; if(!D)return;
+  const stepDur=60/D.bpm/4;
+  while(MUS.next<actx.currentTime+0.22){
+    const t=MUS.next, s=MUS.step%16, bar=Math.floor(MUS.step/16);
+    if(D.roots){ // town: slow root + gentle fixed arp
+      if(s===0) musNote(nfreq(D.roots[bar%D.roots.length]), t, stepDur*15, 'sine', 0.11);
+      if(s%2===0) musNote(nfreq(D.roots[bar%D.roots.length]+12+D.arp[(s>>1)%8]), t, stepDur*2.4, 'triangle', D.lead);
+    } else {      // climb/boss: 16th ostinato + probabilistic lead
+      const bs=D.bassSeq[s]; if(bs!=null) musNote(nfreq(bs), t, stepDur*0.95, 'square', 0.09);
+      if(D.hat && s%2===1) musHat(t,0.03);
+      if(s%2===0 && Math.random()<D.prob){ const n=D.scale[Math.floor(Math.random()*D.scale.length)]+(Math.random()<0.25?12:0);
+        musNote(nfreq(n), t, stepDur*1.8, 'triangle', D.lead); }
+    }
+    MUS.next+=stepDur; MUS.step++;
+  } }
+function setMusic(mood){ MUS.desired=mood; if(mood && !SETTINGS.music) mood=null;
+  if(MUS.mood===mood) return; MUS.mood=mood;
+  if(!actx) return;
+  if(!musGain){ musGain=actx.createGain(); musGain.gain.value=0; musGain.connect(master); }
+  musGain.gain.cancelScheduledValues(actx.currentTime);
+  musGain.gain.setTargetAtTime(mood?MUS_VOL:0, actx.currentTime, 0.7);
+  if(mood){ MUS.step=0; MUS.next=actx.currentTime+0.12; if(!MUS.timer) MUS.timer=setInterval(musTick,60); }
+  else if(MUS.timer){ setTimeout(()=>{ if(!MUS.mood&&MUS.timer){ clearInterval(MUS.timer); MUS.timer=null; } },2500); }
+}
 
 // ---------------- biomes ----------------
 const BIOMES = [
@@ -1395,8 +1444,8 @@ function makeSkillGem(floor, idForce){ const id=idForce||pick(SKILL_IDS), sk=SKI
     value:60+tier*40+floor*3, desc:`Active skill · bind to 1–9 bar${tier>1?` · +${(tier-1)*15}% power`:''}`}; }
 // ---- user settings (persist across sessions) ----
 const SETTINGS_KEY='towerlords_settings_v1';
-const SETTINGS={ bigNumbers:true, moveMode:'keyboard', tips:true, autoSalvage:true };   // autoSalvage: grey/common drops auto-sell for gold instead of flooding the bag
-function loadSettings(){ try{ const s=localStorage.getItem(SETTINGS_KEY); if(s){ const o=JSON.parse(s); if(typeof o.bigNumbers==='boolean')SETTINGS.bigNumbers=o.bigNumbers; if(o.moveMode==='keyboard'||o.moveMode==='mouse')SETTINGS.moveMode=o.moveMode; if(typeof o.tips==='boolean')SETTINGS.tips=o.tips; if(typeof o.autoSalvage==='boolean')SETTINGS.autoSalvage=o.autoSalvage; } }catch(e){} }
+const SETTINGS={ bigNumbers:true, moveMode:'keyboard', tips:true, autoSalvage:true, music:true };   // autoSalvage: grey/common drops auto-sell for gold instead of flooding the bag
+function loadSettings(){ try{ const s=localStorage.getItem(SETTINGS_KEY); if(s){ const o=JSON.parse(s); if(typeof o.bigNumbers==='boolean')SETTINGS.bigNumbers=o.bigNumbers; if(o.moveMode==='keyboard'||o.moveMode==='mouse')SETTINGS.moveMode=o.moveMode; if(typeof o.tips==='boolean')SETTINGS.tips=o.tips; if(typeof o.autoSalvage==='boolean')SETTINGS.autoSalvage=o.autoSalvage; if(typeof o.music==='boolean')SETTINGS.music=o.music; } }catch(e){} }
 function saveSettings(){ try{ localStorage.setItem(SETTINGS_KEY, JSON.stringify(SETTINGS)); }catch(e){} }
 // ---- death log (persist last 40 runs) ----
 const DEATHLOG_KEY='towerlords_deathlog_v1';
@@ -2296,6 +2345,8 @@ $('reviveBtn').onclick=()=>{ $('death').classList.add('hidden'); if(G.permadead)
 $('victClimbBtn').onclick=()=>{ $('victory').classList.add('hidden'); G.victoryOpen=false; _G.running=true; _G.paused=false; clock.getDelta();
   banner('⛰ ENDLESS ASCENT','the portal is open — the tower rebuilds above you'); log('⛰ Take the portal when ready — NG+'+(ngLevel(G.floor)+1)+' awaits above.'); };
 $('victTownBtn').onclick=()=>{ $('victory').classList.add('hidden'); G.victoryOpen=false; returnToTown(); log('🏛 You return in triumph. The tower will be taller next time.'); };
+$('shareDeathBtn').onclick=()=>shareCard('death');
+$('shareVictBtn').onclick=()=>shareCard('victory');
 // ---- main menu navigation ----
 function showMenu(){ ['hud','tutorial','deathlog','death'].forEach(id=>$(id).classList.add('hidden')); PANELS.forEach(p=>$(p).classList.add('hidden'));
   $('start').classList.remove('hidden'); $('menuMain').classList.remove('hidden'); $('climbScreen').classList.add('hidden'); $('coopLobby').classList.add('hidden'); $('onlineLobby').classList.add('hidden'); coopLobbyOpen=false; G.running=false; G.practice=false; loadMeta(); refreshDailyBtn(); syncPause(); }
@@ -2787,12 +2838,13 @@ function generateFloor(anchor){
   unstuckParty();   // final safety net — no player ever ends a floor-gen stuck inside a pillar
   if(G.dailyRun) srandOff();   // combat/loot rolls go back to true random — only the TOWER is shared
   if(NET.role==='host') netBroadcastFloor();   // stream the new floor's layout to connected peers
+  setMusic(type==='BOSS'?'boss':type==='SAFE'?'town':'climb');
   updateFloorUI(type);
 }
 let biome;
 
 function generateTown(){
-  clearWorld(); G.inTown=true;
+  clearWorld(); G.inTown=true; setMusic('town');
   G.floorMod=null; G.bounty=null; G.shiftT=999; G.shiftWarned=false;   // the sanctuary is a rest area — drop any mods/bounty/reshuffle clock carried in from the run
   biome=BIOMES[4];                                   // Gilded Halls — the sanctuary
   scene.background=new THREE.Color(biome.fog); scene.fog=new THREE.Fog(biome.fog,46,150); hemi.groundColor.setHex(biome.fog);
@@ -3624,6 +3676,7 @@ function spawnBoss(floor,room,opts){
   e.mesh.position.set(px, 0, pz); scene.add(e.mesh); G.enemies.push(e);
   // ---- dramatic intro: the tower remembers you (and its lords have their own agendas) ----
   const trTag=trs.length?(' · '+trs.map(t=>t.nm.toUpperCase()).join(' · ')):'';
+  if(opts.roaming||opts.assist){ sfx.nemesis&&sfx.nemesis(); }   // the dread sting — a lord found YOU
   const sub = opts.roaming ? ('⚠ ROAMING LORD — off his floor, hunting'+trTag)
             : opts.assist ? ('⚔ LAST STAND — he has nothing left to lose'+trTag)
             : gr.k>0 ? ('☠ HAS SLAIN YOU ×'+gr.k+(def.final?' · THE SUMMIT':trTag))
@@ -5030,6 +5083,7 @@ function die(){ if(G.dead)return;
   if(G.practice){ G.hp=G.maxhp; G.invuln=1; return; }   // no death in the practice arena
   if(_G.victoryPending||G.victoryOpen){ G.hp=Math.max(1,G.hp); G.invuln=2; return; }   // the tower fell first — victory outranks a stray bullet
   G.dead=true; G.running=false; PANELS.forEach(p=>$(p).classList.add('hidden'));
+  setMusic(null);   // the tower goes quiet for you
   G.stashStrikes++;
   const carried=G.inv.length; G.inv=[];
   const greedLost = (G.greed>1.05 && carried>0) ? G.greed : 0; G.greed=1;   // dying forfeits the unbanked greed haul
@@ -5103,9 +5157,57 @@ function victoryScreen(){ if(G.victoryOpen) return; G.victoryOpen=true; _G.victo
       +`<div class="scoreRow" style="color:var(--gold)"><span>★ Total fame</span><b>${META.fame.toLocaleString()}</b></div>`
       +`<div class="scoreRow"><span>Rank · <span style="color:${rk.col}">${rk.name}</span></span><b style="color:${rk.col};letter-spacing:2px">${rankStars(rk.stars)}</b></div>`; }
   shakeCam(1.2); if(sfx.evolve)sfx.evolve();
+  setMusic('town');   // triumph sounds like home
   $('victory').classList.remove('hidden');
 }
 function fmtTime(s){ s=Math.max(0,Math.floor(s)); return Math.floor(s/60)+':'+String(s%60).padStart(2,'0'); }
+// ============================================================ SHARE CARDS
+// A run's story as a PNG: floor, the lord who ended it (with his running kill-count), stats,
+// fame rank. Saved to disk and copied to the clipboard where the browser allows it.
+const _ord=n=>n+(n%10===1&&n%100!==11?'st':n%10===2&&n%100!==12?'nd':n%10===3&&n%100!==13?'rd':'th');
+function drawShareCard(kind){
+  const c=document.createElement('canvas'); c.width=840; c.height=440; const x=c.getContext('2d');
+  const grd=x.createLinearGradient(0,0,0,440); grd.addColorStop(0,'#0c1120'); grd.addColorStop(1,'#141b30');
+  x.fillStyle=grd; x.fillRect(0,0,840,440);
+  x.strokeStyle=kind==='victory'?'#ffce4d':'#ff5470'; x.lineWidth=3; x.strokeRect(10,10,820,420);
+  x.strokeStyle=kind==='victory'?'#ffce4d33':'#ff547033'; x.lineWidth=1; x.strokeRect(18,18,804,404);
+  x.textAlign='left'; x.fillStyle='#8aa0c0'; x.font='700 22px system-ui,Segoe UI,sans-serif'; x.fillText('⛰ TOWERLORDS',36,54);
+  const rk=fameRank(META.fame);
+  x.textAlign='right'; x.fillStyle=rk.col; x.font='700 20px system-ui,Segoe UI,sans-serif'; x.fillText(rankStars(rk.stars)+'  '+rk.name,804,54);
+  x.textAlign='center';
+  if(kind==='victory'){
+    x.fillStyle='#ffce4d'; x.font='800 56px system-ui,Segoe UI,sans-serif'; x.fillText('👑 THE TOWER FALLS',420,158);
+    x.fillStyle='#e8edf7'; x.font='400 24px system-ui,Segoe UI,sans-serif';
+    x.fillText('THE TOWER LORD slain · victory #'+(META.victories||1)+(ngLevel(G.floor)>0?' · NG+'+ngLevel(G.floor):''),420,204);
+  } else {
+    x.fillStyle='#ff5470'; x.font='800 56px system-ui,Segoe UI,sans-serif'; x.fillText('SLAIN ON FLOOR '+G.floor,420,158);
+    const gbDef=ALL_BOSSES.find(d=>{ const g=BOSS_VOICE[d.key]&&BOSS_VOICE[d.key].given; return lastKiller===bossFullName(d)||(g&&lastKiller.indexOf(g)===0); });
+    const gr=gbDef?((META.grudges||{})[gbDef.key]||{}):null;
+    x.fillStyle='#e8edf7'; x.font='400 24px system-ui,Segoe UI,sans-serif';
+    x.fillText('by '+lastKiller+(gr&&gr.k?(' — my '+_ord(gr.k)+' death to him'):''),420,204);
+  }
+  const stats=[['LEVEL',String(G.level)],['KILLS',String(G.run.kills||0)],['TIME',fmtTime(G.run.totalTime||0)],['FAME',Math.floor(META.fame).toLocaleString()]];
+  const bw=170, gap=22, x0=420-(bw*4+gap*3)/2;
+  stats.forEach((s,i)=>{ const bx=x0+i*(bw+gap);
+    x.fillStyle='#0d1320'; x.strokeStyle='#2a3550'; x.lineWidth=1;
+    x.fillRect(bx,252,bw,88); x.strokeRect(bx,252,bw,88);
+    x.fillStyle='#8aa0c0'; x.font='600 14px system-ui,Segoe UI,sans-serif'; x.fillText(s[0],bx+bw/2,280);
+    x.fillStyle=kind==='victory'?'#ffce4d':'#e8edf7'; x.font='800 30px system-ui,Segoe UI,sans-serif'; x.fillText(s[1],bx+bw/2,322); });
+  x.fillStyle='#5a6b8c'; x.font='400 15px system-ui,Segoe UI,sans-serif';
+  x.fillText(new Date().toLocaleDateString()+'  ·  climb the tower — know when to retreat',420,398);
+  return c;
+}
+async function shareCard(kind){
+  try{ const blob=await new Promise(res=>drawShareCard(kind).toBlob(res,'image/png'));
+    if(!blob) throw new Error('no blob');
+    let copied=false;
+    try{ if(navigator.clipboard&&window.ClipboardItem){ await navigator.clipboard.write([new ClipboardItem({'image/png':blob})]); copied=true; } }catch(_){}
+    const a=document.createElement('a'); a.href=URL.createObjectURL(blob);
+    a.download='towerlords-'+kind+'-floor'+G.floor+'.png'; a.click();
+    setTimeout(()=>URL.revokeObjectURL(a.href),4000);
+    log('📸 Share card saved'+(copied?' — and copied to your clipboard':'')+'.');
+  }catch(e){ log('⚠ Could not create the share card.'); }
+}
 function scoreSummary(){ const r=G.run; const row=(l,v)=>`<div class="scoreRow"><span>${l}</span><b>${v}</b></div>`;
   return row('Floors cleared',r.floorsCleared)+row('Kills',r.kills)+row('Pet assists',r.assists)+
     row('Healing — self',Math.round(r.healSelf))+row('Healing — companion',Math.round(r.healOthers))+
@@ -5151,6 +5253,8 @@ function renderSettings(){
       <div class="tog${SETTINGS.tips?' on':''}" id="togTips"><div class="knob"></div></div></div>
     <div class="setRow"><div class="lbl">Auto-salvage junk<small>Grey/common drops auto-sell for gold instead of filling your bag</small></div>
       <div class="tog${SETTINGS.autoSalvage?' on':''}" id="togSalv"><div class="knob"></div></div></div>
+    <div class="setRow"><div class="lbl">Music<small>Procedural mood loops — calm hub, tense climb, driving boss fights</small></div>
+      <div class="tog${SETTINGS.music?' on':''}" id="togMusic"><div class="knob"></div></div></div>
     <div style="margin:16px 16px 6px;font-size:11px;opacity:.6;letter-spacing:1px;text-transform:uppercase">Movement</div>
     <div style="display:flex;gap:8px;margin:0 16px 14px;">
       <div class="segBtn${mm==='keyboard'?' sel':''}" data-mm="keyboard">⌨ Keyboard<small>WASD to move · cursor to aim · L-click attack</small></div>
@@ -5162,6 +5266,8 @@ function renderSettings(){
     if(!SETTINGS.tips) dismissCoach(); else log('💡 Coaching tips on — hints will appear as you meet new systems.'); };
   $('togSalv').onclick=()=>{ SETTINGS.autoSalvage=!SETTINGS.autoSalvage; saveSettings(); renderSettings();
     log(SETTINGS.autoSalvage?'♻ Auto-salvage on — grey drops become gold.':'Auto-salvage off — all drops go to your bag.'); };
+  $('togMusic').onclick=()=>{ SETTINGS.music=!SETTINGS.music; saveSettings(); renderSettings();
+    if(SETTINGS.music){ setMusic(MUS.desired||null); log('🎵 Music on.'); } else { const d=MUS.desired; setMusic(null); MUS.desired=d; log('Music off.'); } };
   b.querySelectorAll('[data-mm]').forEach(el=>el.onclick=()=>{ SETTINGS.moveMode=el.dataset.mm; saveSettings(); renderSettings();
     log(SETTINGS.moveMode==='mouse'?'🖱 Mouse-move: hold left-click to move, right-click to attack.':'⌨ Keyboard: WASD to move, left-click to attack.'); });
 }
@@ -5277,11 +5383,42 @@ function cdxBehaviour(t){ const g=[];
   if(t.bomb)g.push('explodes'); if(t.split)g.push('splits'); if(t.heal||t.aura)g.push('buffs allies'); if(t.shield)g.push('shields');
   if(t.revive)g.push('revives'); if(t.blink)g.push('teleports'); if(t.enrage)g.push('enrages');
   return g.length?g.join(' · '):'melee bruiser'; }
+// ---- RIVALS: the nemesis ledger — who you are feuding with, this climb and across every run ----
+function rivalStatus(key){ const n=nemOf(key);
+  if(!n) return {txt:'the lords sleep between climbs', col:'#8aa0c0'};
+  if(n.dead) return {txt:'☠ SLAIN FOREVER this climb', col:'#ff5470'};
+  if(n.kills>=2) return {txt:'⚔ broken — waiting on a last stand', col:'#ff9a3d'};
+  if(n.kills===1) return {txt:'⚠ REFORGED — he will return stronger', col:'#ffe14d'};
+  if(n.roamed) return {txt:'👣 crossed paths while roaming', col:'#8effd9'};
+  return {txt:'unmet this climb', col:'#8aa0c0'}; }
+function renderRivals(cx,hx){
+  let h=`<div class="cdxSec">🗡 RIVALS — the tower remembers, and so do they</div><div style="display:flex;flex-direction:column;gap:6px;margin:6px 0 14px">`;
+  for(const d of BOSSES){
+    const seen=cx['boss:'+d.key]; const gr=(META.grudges&&META.grudges[d.key])||{k:0,d:0};
+    const n=nemOf(d.key); const st=rivalStatus(d.key);
+    if(!seen){ h+=`<div style="display:flex;gap:10px;align-items:center;background:#0d1320;border:1px solid #1c2740;border-radius:8px;padding:8px 12px;opacity:.55">
+      <span style="font-size:20px">❔</span><div><b>??? — an unmet lord</b><div style="font-size:11px;opacity:.6">climb higher to make an enemy</div></div></div>`; continue; }
+    const nm = n ? nemName(d,n) : bossFullName(d);
+    const traits = n ? [n.trait,n.trait2].filter(Boolean).map(t=>t.nm).join(' · ') : '';
+    const learned = n&&n.learned&&(n.learned.el||n.learned.dash) ? ('🧠 knows your '+[n.learned.el,n.learned.dash?'dashing':null].filter(Boolean).join(' & ')) : '';
+    h+=`<div style="display:flex;gap:10px;align-items:center;background:#0d1320;border:1px solid ${gr.k>0?'#4a1626':'#1c2740'};border-radius:8px;padding:8px 12px">
+      <span style="font-size:20px;color:${hx(d.color)}">${CDX_SHAPE[d.shape]||'🔴'}</span>
+      <div style="flex:1;text-align:left">
+        <b style="color:${hx(d.color)}">${nm}</b>${traits?` <span style="font-size:11px;opacity:.75">· ${traits}</span>`:''}
+        <div style="font-size:11px"><span style="color:${st.col}">${st.txt}</span>${learned?` · <span style="color:#b06bff">${learned}</span>`:''}</div>
+      </div>
+      <div style="text-align:right;font-size:11px;line-height:1.7">
+        <span style="color:#ff5470">☠ slain you ×${gr.k||0}</span><br><span style="color:#8effd9">⚔ slain by you ×${gr.d||0}</span>
+      </div></div>`;
+  }
+  return h+'</div>';
+}
 function renderCodex(){
   const b=$('codexBody'); if(!b) return; const cx=META.codex||{};
   const hx=c=>'#'+(c>>>0).toString(16).padStart(6,'0').slice(-6);
   const foesSeen=ETYPES.filter(t=>cx[t.id]).length, bossSeen=ALL_BOSSES.filter(d=>cx['boss:'+d.key]).length;
-  let h=`<div class="cdxSec">⚔ FOES — ${foesSeen}/${ETYPES.length} discovered</div><div class="cdxGrid">`;
+  let h=renderRivals(cx,hx);
+  h+=`<div class="cdxSec">⚔ FOES — ${foesSeen}/${ETYPES.length} discovered</div><div class="cdxGrid">`;
   for(const t of ETYPES){ h+= cx[t.id]
     ? `<div class="cdxCard"><div class="cdxIc" style="color:${hx(t.color)}">${CDX_SHAPE[t.shape]||'🔴'}</div><div class="cdxNm">${t.nm}</div><div class="cdxTag">${cdxBehaviour(t)}</div><div class="cdxStat">hp ${t.hp} · dmg ${t.dmg} · floor ${t.minF||1}+</div></div>`
     : `<div class="cdxCard locked"><div class="cdxIc">❔</div><div class="cdxNm">???</div><div class="cdxTag">undiscovered</div></div>`; }
@@ -5402,10 +5539,24 @@ function startGame(){
   _G.cur=0; _G.splitscreen=false; $('hud').classList.remove('cohide');
   initPlayerChar();
   initAudio(); startAmbient();
-  generateTown(); renderActionbar(); updatePips();
+  // FIRST-EVER RUN: skip the hub entirely — straight into Act I combat within seconds.
+  // The sanctuary (stash/vendor/tree shopping) unlocks naturally on your first return.
+  const firstRun = !G.dailyRun && !(META.fame>0 || (META.feats||[]).length>0 || loadBest());
+  if(firstRun){ G.inTown=false; G.floor=1; G.run.floorTime=0; generateFloor(); showFirstRunHints();
+    log('⛰ Your first climb — the sanctuary will be there when you return.'); }
+  else generateTown();
+  renderActionbar(); updatePips();
   layoutViewports(); buildCoopHud();
-  log('Spend your 3 starting skill points in the tree (T), then enter the portal to climb. Plug in a controller and press START to add a co-op player.');
+  if(!firstRun) log('Spend your 3 starting skill points in the tree (T), then enter the portal to climb. Plug in a controller and press START to add a co-op player.');
   clock.getDelta();
+}
+// big friendly controls card for the very first minute of play — fades on its own
+function showFirstRunHints(){
+  const d=document.createElement('div'); d.id='frHints';
+  d.style.cssText='position:fixed;left:50%;bottom:130px;transform:translateX(-50%);z-index:60;background:#0d1320ee;border:1px solid #2a8f77;border-radius:12px;padding:14px 26px;font-size:16px;letter-spacing:1px;color:#e8edf7;text-align:center;box-shadow:0 0 24px #8effd922;transition:opacity 1.2s';
+  d.innerHTML='<b style="color:#8effd9">⌨ WASD</b> move &nbsp;·&nbsp; <b style="color:#8effd9">🖱 MOUSE</b> aim &nbsp;·&nbsp; <b style="color:#8effd9">HOLD CLICK</b> shoot &nbsp;·&nbsp; <b style="color:#ffe14d">SPACE</b> dash — you are <b>invulnerable</b> mid-dash';
+  document.body.appendChild(d);
+  setTimeout(()=>{ d.style.opacity='0'; setTimeout(()=>d.remove(),1400); },11000);
 }
 
 // floating labels over hub/floor stations so you know what each glowing object does

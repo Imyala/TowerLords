@@ -1,0 +1,9 @@
+name = "towerlords-lb"
+main = "leaderboard-worker.js"
+compatibility_date = "2026-01-01"
+
+# KV namespace for the boards. deploy-leaderboard.ps1 fills the id in automatically;
+# or create one manually with:  npx wrangler kv namespace create LB
+[[kv_namespaces]]
+binding = "LB"
+id = "REPLACE_WITH_KV_ID"

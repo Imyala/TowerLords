@@ -5,7 +5,17 @@ The game ships with the leaderboard client built in but pointing nowhere
 [leaderboard-worker.js](leaderboard-worker.js) to a free Cloudflare account,
 paste the URL in, and every player's deaths/dailies start posting globally.
 
-## Steps
+## Fastest path (2 commands)
+
+```powershell
+npx wrangler login          # opens a browser — sign in / create the free account, click Allow
+.\deploy-leaderboard.ps1    # creates the KV namespace, fills wrangler.toml, deploys
+```
+
+Then paste the printed `https://towerlords-lb.<subdomain>.workers.dev` URL into
+`LEADERBOARD_URL` in `towerlords.html` and rebuild the offline file.
+
+## Manual dashboard path (if you prefer clicking)
 
 1. **Create a Cloudflare account** (free): https://dash.cloudflare.com/sign-up
 2. **Create the Worker**: Dashboard → *Workers & Pages* → *Create Worker* →
