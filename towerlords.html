@@ -616,8 +616,8 @@
   .scoreRow span{opacity:.7;} .scoreRow b{color:var(--gold);font-size:15px;}
   #deathScore .scoreRow{font-size:13px;}
   /* ---- run wrap-up ("THE CLIMB") card on the death screen ---- */
-  #runWrap{width:430px;max-width:92vw;margin:2px auto 18px;}
-  #runWrap:empty{display:none;}
+  #runWrap,#victWrap{width:430px;max-width:92vw;margin:2px auto 18px;}
+  #runWrap:empty,#victWrap:empty{display:none;}
   .wrapCard{border:1px solid rgba(176,107,255,.3);border-radius:13px;padding:15px 17px 16px;
     background:linear-gradient(170deg,rgba(20,16,32,.7),rgba(9,8,16,.7));box-shadow:0 0 24px rgba(176,107,255,.1);}
   .wrapEye{font-size:10.5px;letter-spacing:4px;opacity:.55;text-transform:uppercase;margin-bottom:7px;}
@@ -1055,6 +1055,16 @@
     <button class="btn" id="reviveBtn">🏛 RETURN TO SANCTUARY</button>
   </div>
 
+  <!-- Victory — the floor-50 summit falls -->
+  <div id="victory" class="overlay hidden">
+    <h1 style="font-size:46px;color:var(--gold);text-shadow:0 0 24px #ffce4d66">👑 THE TOWER FALLS</h1>
+    <div id="victStats"></div>
+    <div id="victWrap"></div>
+    <div id="victScore" style="width:300px;margin:0 auto 22px;"></div>
+    <button class="btn" id="victClimbBtn">⛰ ENDLESS ASCENT — climb on into NG+</button>
+    <button class="btn ghost" id="victTownBtn">🏛 RETURN TO SANCTUARY</button>
+  </div>
+
   <div id="draftPanel" class="overlay hidden">
     <div class="draft-eyebrow">⚔ GUARDIAN SLAIN</div>
     <h1 style="font-size:40px;letter-spacing:7px;">CLAIM A BLESSING</h1>
@@ -1135,6 +1145,18 @@ const BIOMES = [
   {name:'Gilded Halls',  ground:0x322a18, accent:0xffce4d, fog:0x161104, wall:0x4a3e22},
   {name:'Bone Crypt',    ground:0x2b2b30, accent:0xd8d2c0, fog:0x101013, wall:0x44444a},
 ];
+// ---------------- THE CLIMB: five 10-floor ACTS, each locked to one biome, ending at the
+// floor-50 summit where THE TOWER LORD waits. Beyond 50 the tower rebuilds (Endless Ascent /
+// NG+) and the acts repeat, deadlier each cycle. Gilded Halls stays the sanctuary's biome.
+const ACTS=[
+  {biome:0, num:'I',   sub:'the roots of the tower'},
+  {biome:1, num:'II',  sub:'the tower’s burning heart'},
+  {biome:2, num:'III', sub:'archives of dead knowledge'},
+  {biome:5, num:'IV',  sub:'the remains of every failed climb'},
+  {biome:3, num:'V',   sub:'the summit approaches'},
+];
+const SUMMIT_FLOOR=50;
+function actOf(f){ return ACTS[Math.floor((((f||1)-1)%SUMMIT_FLOOR)/10)]; }
 
 // ---------------- rarity / items ----------------
 const RARITY = [
@@ -1393,12 +1415,13 @@ const FEATS=[
   {id:'evolve',   nm:'Beastmaster',  ds:'Evolve your companion',          fame:600},
   {id:'f10',      nm:'Ascendant',    ds:'Reach Floor 10',                 fame:500},
   {id:'f25',      nm:'Climber',      ds:'Reach Floor 25',                 fame:1500},
-  {id:'f50',      nm:'Skybreaker',   ds:'Reach Floor 50',                 fame:4000},
-  {id:'f100',     nm:'Tower Lord',   ds:'Reach Floor 100',                fame:12000},
-  {id:'ng',       nm:'Eternal',      ds:'Enter New Game+',                fame:6000},
+  {id:'f50',      nm:'Skybreaker',   ds:'Reach Floor 50 — the summit',    fame:4000},
+  {id:'summit',   nm:'Lord of the Tower', ds:'Slay THE TOWER LORD',       fame:20000},
+  {id:'f100',     nm:'Centurion',    ds:'Reach Floor 100',                fame:12000},
+  {id:'ng',       nm:'Eternal',      ds:'Enter the Endless Ascent (NG+)', fame:6000},
 ];
-let META={fame:0, feats:[], invRows:0, stashRows:0, codex:{}, ascMax:0, tips:{}};
-function loadMeta(){ try{ const s=localStorage.getItem(META_KEY); if(s){ const m=JSON.parse(s); META={fame:m.fame||0, feats:m.feats||[], invRows:m.invRows||0, stashRows:m.stashRows||0, codex:m.codex||{}, ascMax:m.ascMax||0, tips:m.tips||{}}; } }catch(e){} }
+let META={fame:0, feats:[], invRows:0, stashRows:0, codex:{}, ascMax:0, tips:{}, victories:0, grudges:{}};
+function loadMeta(){ try{ const s=localStorage.getItem(META_KEY); if(s){ const m=JSON.parse(s); META={fame:m.fame||0, feats:m.feats||[], invRows:m.invRows||0, stashRows:m.stashRows||0, codex:m.codex||{}, ascMax:m.ascMax||0, tips:m.tips||{}, victories:m.victories||0, grudges:m.grudges||{}}; } }catch(e){} }
 function saveMeta(){ try{ localStorage.setItem(META_KEY, JSON.stringify(META)); }catch(e){} }
 function discover(key){ if(!META.codex) META.codex={}; if(!META.codex[key]){ META.codex[key]=true; saveMeta(); } }   // bestiary: record a first encounter
 function fortuneMult(){ return 1; }   // fame grants no combat power — but CAN be spent on bag/stash rows (see buyInvRow/buyStashRow)
@@ -1966,7 +1989,7 @@ const PF = new Set(['id','name','input','cam','viewport','color','joined','playe
   'swiftT','perfectT','dashRewarded','dashCd','dashCdMax','dashT','dashDir','flowT','attackCd','invuln','dead','rootT',
   'fervor','fervorT','nearStash','nearVendor','nearPortal','nearScore','_ph','_sh','aim','in','downed','downT','reviveT']);
 const _G = {
-  running:false, paused:false, floor:1, maxFloor:100, seed:0,
+  running:false, paused:false, floor:1, maxFloor:50, seed:0,
   enemies:[], projectiles:[], eProjectiles:[], pickups:[], decals:[], scenery:[], timed:[], netDeaths:[],
   portal:null, stashStation:null, vendorStation:null, scoreStation:null, goblin:null,
   rects:[], rooms:[], obstacles:[], camps:[], respawns:[], bounds:140,
@@ -2223,6 +2246,9 @@ function renderAscSel(){
 $('ascUp').onclick=()=>{ if(selAsc<(META.ascMax||0)){ selAsc++; renderAscSel(); if(sfx.tick)sfx.tick(); } };
 $('ascDown').onclick=()=>{ if(selAsc>0){ selAsc--; renderAscSel(); if(sfx.tick)sfx.tick(); } };
 $('reviveBtn').onclick=()=>{ $('death').classList.add('hidden'); if(G.permadead){ G.permadead=false; $('hud').classList.add('hidden'); showMenu(); } else { returnToTown(); } };
+$('victClimbBtn').onclick=()=>{ $('victory').classList.add('hidden'); G.victoryOpen=false; _G.running=true; _G.paused=false; clock.getDelta();
+  banner('⛰ ENDLESS ASCENT','the portal is open — the tower rebuilds above you'); log('⛰ Take the portal when ready — NG+'+(ngLevel(G.floor)+1)+' awaits above.'); };
+$('victTownBtn').onclick=()=>{ $('victory').classList.add('hidden'); G.victoryOpen=false; returnToTown(); log('🏛 You return in triumph. The tower will be taller next time.'); };
 // ---- main menu navigation ----
 function showMenu(){ ['hud','tutorial','deathlog','death'].forEach(id=>$(id).classList.add('hidden')); PANELS.forEach(p=>$(p).classList.add('hidden'));
   $('start').classList.remove('hidden'); $('menuMain').classList.remove('hidden'); $('climbScreen').classList.add('hidden'); $('coopLobby').classList.add('hidden'); $('onlineLobby').classList.add('hidden'); coopLobbyOpen=false; G.running=false; G.practice=false; syncPause(); }
@@ -2561,7 +2587,11 @@ function generateFloor(anchor){
   G.floorMod=null; G.bounty=null;
   checkFloorFeats();
   const type=floorType(G.floor);
-  biome = BIOMES[(G.floor + G.seed)%BIOMES.length];
+  const act=actOf(G.floor); biome=BIOMES[act.biome];   // acts lock the biome — the tower has geography now
+  if(((G.floor-1)%SUMMIT_FLOOR)%10===0){ const ngl=ngLevel(G.floor);
+    banner('ACT '+act.num+' — '+biome.name.toUpperCase()+(ngl>0?' ⛰NG+'+ngl:''), act.sub);
+    log('⌖ Act '+act.num+' — '+biome.name+': '+act.sub+'.'); }
+  if(G.floor%SUMMIT_FLOOR===0) log('👑 The summit. THE TOWER LORD holds this floor.');
   scene.background=new THREE.Color(biome.fog);
   scene.fog=new THREE.Fog(biome.fog, 46, 150);
   hemi.groundColor.setHex(biome.fog);
@@ -2686,8 +2716,8 @@ function returnToTown(){ _G.running=true; _G.paused=false;
   _G.cur=0; clock.getDelta(); generateTown(); }
 
 function floorType(f){ if(f%5===0)return 'BOSS'; if(f%5===1 && f>1)return 'SAFE'; return 'NORMAL'; }
-// ---------------- New Game+ : the Tower loops past 100, deadlier and richer ----------------
-function ngLevel(f){ return Math.floor(((f||G.floor)-1)/100); }
+// ---------------- Endless Ascent / New Game+ : past the floor-50 summit the Tower rebuilds, deadlier and richer ----------------
+function ngLevel(f){ return Math.floor(((f||G.floor)-1)/SUMMIT_FLOOR); }
 function ngMult(){ return 1 + ngLevel(G.floor)*0.7; }
 // ---------------- ASCENSION: opt-in stacking difficulty (fame = skill, so harder climbs pay more fame — no power creep) ----------------
 // Cumulative: choosing Ascension N applies every modifier 1..N. Clear a guardian at your highest level to unlock the next.
@@ -2810,7 +2840,8 @@ function updateFloorUI(type){
   $('floorTitle').textContent='FLOOR '+G.floor;
   $('floorType').textContent = type==='BOSS'?'⚔ GUARDIAN MILESTONE':type==='SAFE'?'🛡 ADMINISTRATOR SAFE ZONE':biome.name;
   const ng=ngLevel(G.floor);
-  $('floorBig').innerHTML=G.floor+(ng>0?`<span style="color:var(--gold);font-size:14px"> NG+${ng}</span>`:'<span style="opacity:.4;font-size:14px">/100</span>');
+  $('floorBig').innerHTML=G.floor+(ng>0?`<span style="color:var(--gold);font-size:14px"> NG+${ng}</span>`:'<span style="opacity:.4;font-size:14px">/'+SUMMIT_FLOOR+'</span>');
+  const _act=actOf(G.floor); if(type==='NORMAL') $('floorType').textContent='ACT '+_act.num+' · '+biome.name;
   $('modTxt').innerHTML = G.floorMod?`<span style="color:${G.floorMod.col}">${G.floorMod.nm}</span>`:'';
   const threat=clamp(Math.ceil(G.floor/8),1,8);
   const TLBL=['','TRIVIAL','LOW','MODERATE','RISKY','DANGEROUS','SEVERE','DEADLY','LETHAL'];
@@ -3077,13 +3108,19 @@ const BOSSES=[
   {key:'reaper',  nm:'THE REAPER',   shape:'cone', color:0xff3b5c, scale:3.0, hpMult:1.1,  spdMult:1.4,  keep:0,
     moves:[{fn:mTeleSlam,cd:[3.5,5]},{fn:mFan,cd:[3,4]},{fn:mCross,cd:[4.5,6]},{fn:mCharge,cd:[4,5.5]},{fn:mSeekers,cd:[5.5,7]}]},
 ];
+// THE TOWER LORD — the floor-50 summit fight; not in the guardian cycle. Steals the deadliest
+// move from every guardian below him: he IS the tower's greatest hits, played back at you.
+const TOWER_LORD={key:'towerlord', nm:'THE TOWER LORD', shape:'dodec', color:0xffce4d, scale:4.4, hpMult:2.2, spdMult:1.0, keep:10, final:true,
+  moves:[{fn:mArms,cd:[4.5,6]},{fn:mNova,cd:[5,6.5]},{fn:mTeleSlam,cd:[4,5.5]},{fn:mWall,cd:[5.5,7]},{fn:mFlower,cd:[6,7.5]},{fn:mBlackhole,cd:[6.5,8.5]},{fn:mLaserCross,cd:[7,9]},{fn:mAdds,cd:[10,12]}]};
+const ALL_BOSSES=BOSSES.concat([TOWER_LORD]);
 function spawnBoss(floor,room){
   const ng=ngMult();
   const idx=((Math.floor(floor/5)-1)%BOSSES.length + BOSSES.length)%BOSSES.length;   // milestone → boss, cycling
   const lvl=scaleLvl(floor);   // boss also rubber-bands to the party level
   const _ae=ascEff();
   const BOSS_HITS=40;   // a guardian must endure ~40 of your biggest hits — a real DPS check, never a burst-down
-  const def=BOSSES[idx], hp=Math.max((1100+lvl*120)*ng*def.hpMult*_ae.bossHp, playerBigHit()*BOSS_HITS*def.hpMult*_ae.bossHp);
+  const def=(floor%SUMMIT_FLOOR===0)?TOWER_LORD:BOSSES[idx];   // every 50th floor is the summit — the Tower Lord himself
+  const hp=Math.max((1100+lvl*120)*ng*def.hpMult*_ae.bossHp, playerBigHit()*BOSS_HITS*def.hpMult*_ae.bossHp);
   const e={type:'boss',boss:true,bossDef:def,hp,maxhp:hp,speed:3.4*def.spdMult,dmg:(38+lvl*2.6)*ng*_ae.bossDmg,r:2.6,scale:def.scale,xp:90*ng,
     hitFlash:0,color:def.color,keep:def.keep||0,name:def.nm,
     moveCd:def.moves.map(m=>rand(m.cd[0]*0.5,m.cd[1])),   // stagger the first cast of each move
@@ -3093,7 +3130,7 @@ function spawnBoss(floor,room){
   ring.rotation.x=Math.PI/2; ring.position.y=def.scale*0.9; e.mesh.add(ring);
   e.mesh.position.set(room.cx, 0, room.cz-room.rh/2+6); scene.add(e.mesh); G.enemies.push(e);
   // ---- dramatic intro ----
-  banner(def.nm, 'FLOOR GUARDIAN · Lv '+floor);
+  banner(def.nm, def.final?'LORD OF THE TOWER · THE SUMMIT':'FLOOR GUARDIAN · Lv '+floor);
   const bx=e.mesh.position.x, bz=e.mesh.position.z;
   ringFx(bx,bz,def.scale*4,def.color); ringFx(bx,bz,def.scale*6.5,0xffce4d); burst(bx,bz,def.color);
   shakeCam(1.5); G.hitstop=Math.max(G.hitstop||0,0.45);   // brief slow-mo on the reveal
@@ -3558,7 +3595,8 @@ function killEnemy(e){
     // ascension ladder: beat a guardian at your highest unlocked level → unlock the next
     if((_G.asc||0)>=(META.ascMax||0) && (META.ascMax||0)<ASC_MAX){ META.ascMax=(_G.asc||0)+1; saveMeta();
       const nm=ASC_MODS[META.ascMax-1]; banner('⛧ ASCENSION '+META.ascMax+' UNLOCKED', nm.ic+' '+nm.nm+' — '+nm.ds); log('⛧ Ascension '+META.ascMax+' unlocked — '+nm.nm+'.'); }
-    if(!_G.splitscreen && !NET.role){ const cur=(_G.cur!=null?_G.cur:0); setTimeout(()=>{ if(_G.running) withPlayer(cur,()=>offerBoonDraft()); }, 700); }   // boss-reward draft (single-player) — let the death FX land first
+    if(e.bossDef&&e.bossDef.final){ _G.victoryPending=true; setTimeout(()=>victoryScreen(), 1100); }   // the summit falls — victory (replaces the blessing draft)
+    else if(!_G.splitscreen && !NET.role){ const cur=(_G.cur!=null?_G.cur:0); setTimeout(()=>{ if(_G.running) withPlayer(cur,()=>offerBoonDraft()); }, 700); }   // boss-reward draft (single-player) — let the death FX land first
   }
   else if(floorType(G.floor)==='NORMAL' && !e.leftRoom) G.respawns.push({t:15, room:e.room, home:e.home});   // repopulate its room after ~15s
   // clear-gate: putting down the floor's population opens the portal
@@ -4441,8 +4479,7 @@ function interact(){
   if(G.nearPortal && G.portal.active){ if(coopGateAtPortal()) ascend(); } else if(G.nearVendor) togglePanel('vendorPanel'); else if(G.nearStash) togglePanel('stashPanel');
 }
 function ascend(){ bountyAscendCheck(); const prevNg=ngLevel(G.floor); G.floor++; const ng=ngLevel(G.floor);
-  if(G.floor===100) log('👑 Floor 100 — the Tower\'s peak. Push on into New Game+!');
-  if(ng>prevNg){ unlockFeat('ng'); banner('NEW GAME +'+ng, 'the Tower resets — deadlier & richer'); log('☠ NEW GAME +'+ng+' — enemies far stronger, loot far richer.'); }
+  if(ng>prevNg){ unlockFeat('ng'); banner('⛰ ENDLESS ASCENT · NG+'+ng, 'the Tower rebuilds — deadlier & richer'); log('☠ ENDLESS ASCENT NG+'+ng+' — enemies far stronger, loot far richer.'); }
   G.run.floorsCleared++; G.run.floorTime=0; sfx.dash();
   const pg=G.greed||1; G.greed=Math.min(GREED_MAX,pg+GREED_STEP);   // pushing deeper without banking raises the stakes
   G.run.greedPeak=Math.max(G.run.greedPeak||1, G.greed);   // run highlight: highest greed reached
@@ -4463,6 +4500,7 @@ function saveBest(r){ try{ localStorage.setItem(BEST_KEY, JSON.stringify(r)); }c
 function runScore(r){ return (r.floor||0)*100000 + (r.kills||0)*100 + Math.floor(r.time||0); }
 function die(){ if(G.dead)return;
   if(G.practice){ G.hp=G.maxhp; G.invuln=1; return; }   // no death in the practice arena
+  if(_G.victoryPending||G.victoryOpen){ G.hp=Math.max(1,G.hp); G.invuln=2; return; }   // the tower fell first — victory outranks a stray bullet
   G.dead=true; G.running=false; PANELS.forEach(p=>$(p).classList.add('hidden'));
   G.stashStrikes++;
   const carried=G.inv.length; G.inv=[];
@@ -4500,6 +4538,29 @@ function die(){ if(G.dead)return;
       +`<div class="scoreRow"><span>Rank · <span style="color:${rk.col}">${rk.name}</span></span><b style="color:${rk.col};letter-spacing:2px">${rankStars(rk.stars)}</b></div>`
       +`<div style="font-size:11px;opacity:.6;margin-top:6px">${rk.nextAt!=null?('Next ★ at '+rk.nextAt.toLocaleString()+' fame.'):'Maximum rank reached!'} Fame is your skill rating — see Record (V).</div>`; }
   $('death').classList.remove('hidden');
+}
+// ============================================================ VICTORY — the floor-50 summit falls
+function victoryScreen(){ if(G.victoryOpen) return; G.victoryOpen=true; _G.victoryPending=false;
+  _G.running=false; PANELS.forEach(p=>$(p).classList.add('hidden'));
+  $('death').classList.add('hidden');   // victory outranks any death that slipped in during the kill FX
+  for(const pl of joinedPlayers()){ withPlayer(pl.id,()=>{ G.dead=false; G.downed=false; G.downT=0; G.hp=Math.max(G.hp,G.maxhp*0.5); G.invuln=2; }); }
+  const ng=ngLevel(G.floor), cycle=ng+1;
+  const fameEarned=Math.floor(25000*cycle*ascFameMult()); META.fame+=fameEarned;
+  META.victories=(META.victories||0)+1; saveMeta();
+  unlockFeat('summit');
+  const ascBadge=(_G.asc||0)>0?`<span style="color:#d9b6ff">⛧ Ascension ${_G.asc}</span><br>`:'';
+  $('victStats').innerHTML=ascBadge
+    +`<span style="color:var(--gold)">THE TOWER LORD is slain${ng>0?' — again (NG+'+ng+')':''}.</span><br>`
+    +`<span style="opacity:.85">Victory <b>#${META.victories}</b> · Floor <b>${G.floor}</b> · Level <b>${G.level}</b></span><br>`
+    +`<span style="opacity:.7">The portal behind the throne leads ever upward — the tower rebuilds itself, deadlier and richer.</span>`;
+  $('victWrap').innerHTML=runWrapHTML();
+  { const rk=fameRank(META.fame);
+    $('victScore').innerHTML=scoreSummary()
+      +`<div class="scoreRow" style="color:var(--gold)"><span>👑 Summit fame</span><b>+${fameEarned.toLocaleString()}</b></div>`
+      +`<div class="scoreRow" style="color:var(--gold)"><span>★ Total fame</span><b>${META.fame.toLocaleString()}</b></div>`
+      +`<div class="scoreRow"><span>Rank · <span style="color:${rk.col}">${rk.name}</span></span><b style="color:${rk.col};letter-spacing:2px">${rankStars(rk.stars)}</b></div>`; }
+  shakeCam(1.2); if(sfx.evolve)sfx.evolve();
+  $('victory').classList.remove('hidden');
 }
 function fmtTime(s){ s=Math.max(0,Math.floor(s)); return Math.floor(s/60)+':'+String(s%60).padStart(2,'0'); }
 function scoreSummary(){ const r=G.run; const row=(l,v)=>`<div class="scoreRow"><span>${l}</span><b>${v}</b></div>`;
@@ -4566,7 +4627,7 @@ const TUT_PAGES=[
   {ic:'⛰', t:'The Tower', h:`<p>You begin in the <b class="hl">Sanctuary</b> — a safe hub to bank loot, trade, check your record, then step into the portal to climb.</p>
     <div class="ti"><div class="k">100+</div><div class="d">Ascend floor by floor. Every <b class="hl">5th floor</b> is a Guardian boss; the floor after is a safe zone to regroup.</div></div>
     <div class="ti"><div class="k">2 deaths</div><div class="d">Die once → restart the tower keeping your character. A <b class="hl">second death</b> before re-banking wipes your stash (Normal) or your whole character (Hardcore).</div></div>
-    <div class="ti"><div class="k">NG+</div><div class="d">Clear floor 100 and the Tower loops into <b class="hl">New Game+</b> — far deadlier, far richer.</div></div>`},
+    <div class="ti"><div class="k">THE SUMMIT</div><div class="d">Five acts, fifty floors — <b class="hl">THE TOWER LORD</b> waits at the top. Slay him to win the climb, then push on into the <b class="hl">Endless Ascent (NG+)</b> — far deadlier, far richer.</div></div>`},
   {ic:'🏃', t:'Move & Dodge', h:`<div class="ti"><div class="k">WASD</div><div class="d">Move. Prefer the mouse? Switch to <b class="hl">click-to-move</b> in Settings.</div></div>
     <div class="ti"><div class="k">Space</div><div class="d"><b class="hl">Dash</b> — you're invulnerable mid-dash (i-frames). Your #1 survival tool against telegraphed attacks.</div></div>
     <div class="ti"><div class="k">Perfect</div><div class="d">Dash <i>through</i> an attack at the last instant → <b class="hl">Perfect Dodge</b>: a burst, charge, and an extended combo window.</div></div>
@@ -4676,13 +4737,13 @@ function cdxBehaviour(t){ const g=[];
 function renderCodex(){
   const b=$('codexBody'); if(!b) return; const cx=META.codex||{};
   const hx=c=>'#'+(c>>>0).toString(16).padStart(6,'0').slice(-6);
-  const foesSeen=ETYPES.filter(t=>cx[t.id]).length, bossSeen=BOSSES.filter(d=>cx['boss:'+d.key]).length;
+  const foesSeen=ETYPES.filter(t=>cx[t.id]).length, bossSeen=ALL_BOSSES.filter(d=>cx['boss:'+d.key]).length;
   let h=`<div class="cdxSec">⚔ FOES — ${foesSeen}/${ETYPES.length} discovered</div><div class="cdxGrid">`;
   for(const t of ETYPES){ h+= cx[t.id]
     ? `<div class="cdxCard"><div class="cdxIc" style="color:${hx(t.color)}">${CDX_SHAPE[t.shape]||'🔴'}</div><div class="cdxNm">${t.nm}</div><div class="cdxTag">${cdxBehaviour(t)}</div><div class="cdxStat">hp ${t.hp} · dmg ${t.dmg} · floor ${t.minF||1}+</div></div>`
     : `<div class="cdxCard locked"><div class="cdxIc">❔</div><div class="cdxNm">???</div><div class="cdxTag">undiscovered</div></div>`; }
-  h+=`</div><div class="cdxSec">👑 GUARDIANS — ${bossSeen}/${BOSSES.length} discovered</div><div class="cdxGrid">`;
-  for(const d of BOSSES){ h+= cx['boss:'+d.key]
+  h+=`</div><div class="cdxSec">👑 GUARDIANS — ${bossSeen}/${ALL_BOSSES.length} discovered</div><div class="cdxGrid">`;
+  for(const d of ALL_BOSSES){ h+= cx['boss:'+d.key]
     ? `<div class="cdxCard boss"><div class="cdxIc" style="color:${hx(d.color)}">${CDX_SHAPE[d.shape]||'🔴'}</div><div class="cdxNm">${d.nm}</div><div class="cdxTag">${d.moves.length} attacks · 2 phases</div></div>`
     : `<div class="cdxCard locked boss"><div class="cdxIc">❔</div><div class="cdxNm">??? GUARDIAN</div><div class="cdxTag">undiscovered</div></div>`; }
   h+='</div>'; b.innerHTML=h;
@@ -4822,6 +4883,10 @@ function updateWorldLabels(){
   for(const id of IDS){ if(!seen.has(id)){ const e=document.getElementById(id); if(e) e.style.display='none'; } }
 }
 // ============================================================ LOOP
+// ---- dev/test handle (console): _dev.goto(50) jumps the run to a floor; _dev.G inspects state ----
+window._dev={ get G(){ return _G; }, get meta(){ return META; },
+  goto(f){ if(!_G.running){ console.warn('start a run first'); return; } G.floor=Math.max(1,(f|0))-0; generateFloor(); log('⚙ dev: jumped to floor '+G.floor); },
+  slayBoss(){ const b=_G.enemies.find(e=>e.boss&&!e.dead); if(b){ b.hp=0; b.dead=true; b._killer=0; killEnemy(b); } } };
 // ============================================================ ONLINE CO-OP (host-authoritative WebRTC)
 // No game server: the HOST runs the only authoritative sim; PEERS send input and render the
 // snapshots the host streams back. Signaling: short ROOM CODES via the free PeerJS cloud broker
@@ -4866,7 +4931,7 @@ async function netAcceptAnswer(answerStr){ const h=NET.host; if(!h)return false;
   const rec=h.conns.filter(c=>c.awaiting).pop(); if(!rec)return false;
   await rec.pc.setRemoteDescription(JSON.parse(answerStr.trim())); return true; }
 function netHostBroadcast(){ const h=NET.host; if(!h)return; const buf=serializeSnapshot();
-  for(const c of h.conns){ if(c.ch.readyState==='open'){ try{ c.ch.send(buf); }catch(_){} } }
+  for(const c of h.conns){ if(c.ch&&c.ch.readyState==='open'){ try{ c.ch.send(buf); }catch(_){} } }
   if(_G.netDeaths.length) _G.netDeaths.length=0; }   // deaths delivered — clear the per-broadcast queue
 
 // ---- PEER: render-only guest; sends input up, draws the host's snapshots ----
