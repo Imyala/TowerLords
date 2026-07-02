@@ -955,6 +955,7 @@
     <div class="tag">ASCEND · BUILD · RAMPAGE · KNOW WHEN TO RETREAT</div>
     <div id="menuMain" class="menuCol">
       <button class="btn" id="menuClimb">⛰ Climb the Tower</button>
+      <button class="btn" id="menuDaily">🌅 Daily Climb</button>
       <button class="btn" id="menuCoop">🎮 Local Co-op</button>
       <button class="btn" id="menuOnline">🌐 Online Co-op</button>
       <button class="btn ghost" id="menuTutorial">📖 Tutorial</button>
@@ -1081,10 +1082,15 @@
 import * as THREE from 'three';
 
 const $ = id => document.getElementById(id);
-const rand=(a,b)=>a+Math.random()*(b-a);
+// RNG is switchable: Math.random normally, a seeded mulberry32 stream while generating DAILY
+// CLIMB floors — so everyone in the world races the same tower layout on the same date.
+let _rngFn=Math.random;
+function srandOn(seed){ let s=(seed>>>0)||1; _rngFn=()=>{ s|=0; s=(s+0x6D2B79F5)|0; let t=Math.imul(s^(s>>>15),1|s); t=(t+Math.imul(t^(t>>>7),61|t))^t; return ((t^(t>>>14))>>>0)/4294967296; }; }
+function srandOff(){ _rngFn=Math.random; }
+const rand=(a,b)=>a+_rngFn()*(b-a);
 const randi=(a,b)=>Math.floor(rand(a,b+1));
 const clamp=(v,a,b)=>v<a?a:v>b?b:v;
-const pick=arr=>arr[Math.floor(Math.random()*arr.length)];
+const pick=arr=>arr[Math.floor(_rngFn()*arr.length)];
 
 let renderer, scene, camera, clock, hemi, dir;
 
@@ -1420,8 +1426,12 @@ const FEATS=[
   {id:'f100',     nm:'Centurion',    ds:'Reach Floor 100',                fame:12000},
   {id:'ng',       nm:'Eternal',      ds:'Enter the Endless Ascent (NG+)', fame:6000},
 ];
-let META={fame:0, feats:[], invRows:0, stashRows:0, codex:{}, ascMax:0, tips:{}, victories:0, grudges:{}};
-function loadMeta(){ try{ const s=localStorage.getItem(META_KEY); if(s){ const m=JSON.parse(s); META={fame:m.fame||0, feats:m.feats||[], invRows:m.invRows||0, stashRows:m.stashRows||0, codex:m.codex||{}, ascMax:m.ascMax||0, tips:m.tips||{}, victories:m.victories||0, grudges:m.grudges||{}}; } }catch(e){} }
+let META={fame:0, feats:[], invRows:0, stashRows:0, codex:{}, ascMax:0, tips:{}, victories:0, grudges:{}, daily:null};
+function loadMeta(){ try{ const s=localStorage.getItem(META_KEY); if(s){ const m=JSON.parse(s); META={fame:m.fame||0, feats:m.feats||[], invRows:m.invRows||0, stashRows:m.stashRows||0, codex:m.codex||{}, ascMax:m.ascMax||0, tips:m.tips||{}, victories:m.victories||0, grudges:m.grudges||{}, daily:m.daily||null}; } }catch(e){} }
+// ---- DAILY CLIMB: one scored attempt per UTC day; everyone races the same seeded tower ----
+function dailyKey(){ return new Date().toISOString().slice(0,10); }   // UTC date — the world shares one tower
+function dailySeedInt(){ const s='TOWERLORDS-'+dailyKey(); let h=2166136261; for(let i=0;i<s.length;i++){ h^=s.charCodeAt(i); h=Math.imul(h,16777619); } return h>>>0; }
+function dailyState(){ const d=META.daily; return (d&&d.date===dailyKey())?d:null; }   // null = not attempted today
 function saveMeta(){ try{ localStorage.setItem(META_KEY, JSON.stringify(META)); }catch(e){} }
 function discover(key){ if(!META.codex) META.codex={}; if(!META.codex[key]){ META.codex[key]=true; saveMeta(); } }   // bestiary: record a first encounter
 function fortuneMult(){ return 1; }   // fame grants no combat power — but CAN be spent on bag/stash rows (see buyInvRow/buyStashRow)
@@ -2251,9 +2261,29 @@ $('victClimbBtn').onclick=()=>{ $('victory').classList.add('hidden'); G.victoryO
 $('victTownBtn').onclick=()=>{ $('victory').classList.add('hidden'); G.victoryOpen=false; returnToTown(); log('🏛 You return in triumph. The tower will be taller next time.'); };
 // ---- main menu navigation ----
 function showMenu(){ ['hud','tutorial','deathlog','death'].forEach(id=>$(id).classList.add('hidden')); PANELS.forEach(p=>$(p).classList.add('hidden'));
-  $('start').classList.remove('hidden'); $('menuMain').classList.remove('hidden'); $('climbScreen').classList.add('hidden'); $('coopLobby').classList.add('hidden'); $('onlineLobby').classList.add('hidden'); coopLobbyOpen=false; G.running=false; G.practice=false; syncPause(); }
+  $('start').classList.remove('hidden'); $('menuMain').classList.remove('hidden'); $('climbScreen').classList.add('hidden'); $('coopLobby').classList.add('hidden'); $('onlineLobby').classList.add('hidden'); coopLobbyOpen=false; G.running=false; G.practice=false; loadMeta(); refreshDailyBtn(); syncPause(); }
 function showClimb(){ ['tutorial','deathlog'].forEach(id=>$(id).classList.add('hidden')); $('start').classList.remove('hidden'); $('menuMain').classList.add('hidden'); $('climbScreen').classList.remove('hidden'); $('coopLobby').classList.add('hidden'); coopLobbyOpen=false; loadMeta(); renderAscSel(); }
 $('menuClimb').onclick=showClimb;
+// ---- DAILY CLIMB: same seeded tower for everyone today, one scored attempt, level playing rules ----
+function refreshDailyBtn(){ const b=$('menuDaily'); if(!b)return; const d=dailyState();
+  b.innerHTML = d ? ('🌅 Daily Climb · <span style="color:var(--gold)">scored — floor '+(d.floor||0)+' · '+(d.kills||0)+' kills</span>')
+                  : ('🌅 Daily Climb · <span style="color:#8effd9">'+dailyKey()+' — unplayed</span>');
+  b.disabled=!!d; b.style.opacity=d?0.55:1; }
+// the attempt burns the moment you enter the tower; the score keeps updating as you climb —
+// refreshing mid-run keeps your best floor, never grants a second attempt.
+function dailyScoreTick(){ if(!G.dailyRun)return;
+  const rec={date:dailyKey(), done:true, floor:G.floor, kills:G.run.kills||0, score:runScore({floor:G.floor,kills:G.run.kills||0,time:G.run.totalTime||0})};
+  const cur=dailyState(); META.daily=(cur&&(cur.score||0)>rec.score)?cur:rec; saveMeta(); }
+loadMeta(); refreshDailyBtn();   // reflect today's daily state on the menu at boot
+$('menuDaily').onclick=()=>{
+  loadMeta(); const d=dailyState();
+  if(d&&d.done){ log('🌅 Today’s Daily is scored — a new tower rises at midnight UTC.'); return; }
+  selAsc=0; G.hardcore=false;             // level playing field: no ascension mods, no hardcore
+  startGame();
+  G.seed=dailySeedInt(); G.dailyRun=true; // startGame rolled a random seed — the daily overrides it
+  banner('🌅 DAILY CLIMB — '+dailyKey(),'one attempt · the whole world races this tower');
+  log('🌅 DAILY CLIMB: everyone gets this exact tower today. Your attempt is scored when it ends — climb far, kill lots, die proud.');
+};
 $('climbBack').onclick=showMenu;
 // ---- local co-op lobby: claim slots with controllers, then start together ----
 let coopLobbyOpen=false, lobbyPads=[], lobbyPrev={};
@@ -2586,6 +2616,7 @@ function generateFloor(anchor){
   clearWorld();
   G.floorMod=null; G.bounty=null;
   checkFloorFeats();
+  if(G.dailyRun) srandOn((G.seed*7919 + G.floor*104729)>>>0);   // daily: identical layout/spawns/mods for everyone today
   const type=floorType(G.floor);
   const act=actOf(G.floor); biome=BIOMES[act.biome];   // acts lock the biome — the tower has geography now
   if(((G.floor-1)%SUMMIT_FLOOR)%10===0){ const ngl=ngLevel(G.floor);
@@ -2676,6 +2707,7 @@ function generateFloor(anchor){
     G.shiftT=999; G.shiftWarned=false;   // shift clock only starts (=30s) once the portal opens on clear
   }
   unstuckParty();   // final safety net — no player ever ends a floor-gen stuck inside a pillar
+  if(G.dailyRun) srandOff();   // combat/loot rolls go back to true random — only the TOWER is shared
   if(NET.role==='host') netBroadcastFloor();   // stream the new floor's layout to connected peers
   updateFloorUI(type);
 }
@@ -2709,7 +2741,7 @@ function generateTown(){
   updateFloorUI('TOWN');
   log('🏛 SANCTUARY — bank, trade, check your record, then step into the portal to climb.');
 }
-function enterTower(){ G.inTown=false; G.floor=1; G.run.floorTime=0; PANELS.forEach(p=>$(p).classList.add('hidden')); syncPause(); sfx.dash(); log('Descending into the Tower…'); generateFloor();
+function enterTower(){ G.inTown=false; G.floor=1; G.run.floorTime=0; PANELS.forEach(p=>$(p).classList.add('hidden')); syncPause(); sfx.dash(); log('Descending into the Tower…'); dailyScoreTick(); generateFloor();
   coach('move','🎮','Climbing begins','Move with <b>WASD</b>, aim with the <b>mouse</b>, hold <b>click</b> to attack. Press <b>Space to dash</b> — you\'re invulnerable mid-dash, your best defence.'); }
 function returnToTown(){ _G.running=true; _G.paused=false;
   for(const pl of joinedPlayers()){ withPlayer(pl.id,()=>{ G.dead=false; G.downed=false; G.downT=0; G.hp=G.maxhp; G.mana=G.maxmana; G.invuln=1; G.fervor=0; G.charge=0; G.swiftT=0; G.petErrand=null; refillFlasks(100); if(G.petMesh)G.petMesh.visible=true; }); }
@@ -4556,7 +4588,7 @@ function ascend(){ bountyAscendCheck(); const prevNg=ngLevel(G.floor); G.floor++
   const pg=G.greed||1; G.greed=Math.min(GREED_MAX,pg+GREED_STEP);   // pushing deeper without banking raises the stakes
   G.run.greedPeak=Math.max(G.run.greedPeak||1, G.greed);   // run highlight: highest greed reached
   if(pg<2 && G.greed>=2 && G.inv.length) banner('💰 GREED ×'+G.greed.toFixed(1),'rich haul at risk — bank it at a safe zone');
-  $('stashPanel').classList.add('hidden'); syncPause(); log('Ascending to Floor '+G.floor+'…'); generateFloor(); G.hp=Math.min(G.maxhp,G.hp+G.maxhp*0.12); }
+  $('stashPanel').classList.add('hidden'); syncPause(); log('Ascending to Floor '+G.floor+'…'); dailyScoreTick(); generateFloor(); G.hp=Math.min(G.maxhp,G.hp+G.maxhp*0.12); }
 
 // ============================================================ DEATH
 // --- killer tracking (what felled the player, for the death log) ---
@@ -4609,8 +4641,12 @@ function die(){ if(G.dead)return;
   }
   recordDeath(deathRec);
   $('runWrap').innerHTML=runWrapHTML();   // celebratory "the climb" wrap-up — build identity, blessings, highlights
+  let dailyRow='';
+  if(G.dailyRun){ dailyScoreTick(); const d=dailyState();
+    dailyRow=`<div class="scoreRow" style="color:#8effd9"><span>🌅 DAILY ${dailyKey()}</span><b>floor ${d?d.floor:G.floor} · locked in</b></div>`; G.dailyRun=false; }
   { const rk=fameRank(META.fame);
     $('deathScore').innerHTML=scoreSummary()
+      +dailyRow
       +`<div class="scoreRow" style="color:var(--gold)"><span>★ Fame earned</span><b>+${fameEarned.toLocaleString()}</b></div>`
       +`<div class="scoreRow" style="color:var(--gold)"><span>★ Total fame</span><b>${META.fame.toLocaleString()}</b></div>`
       +`<div class="scoreRow"><span>Rank · <span style="color:${rk.col}">${rk.name}</span></span><b style="color:${rk.col};letter-spacing:2px">${rankStars(rk.stars)}</b></div>`
@@ -4632,8 +4668,10 @@ function victoryScreen(){ if(G.victoryOpen) return; G.victoryOpen=true; _G.victo
     +`<span style="opacity:.85">Victory <b>#${META.victories}</b> · Floor <b>${G.floor}</b> · Level <b>${G.level}</b></span><br>`
     +`<span style="opacity:.7">The portal behind the throne leads ever upward — the tower rebuilds itself, deadlier and richer.</span>`;
   $('victWrap').innerHTML=runWrapHTML();
+  let vDailyRow='';
+  if(G.dailyRun){ dailyScoreTick(); vDailyRow=`<div class="scoreRow" style="color:#8effd9"><span>🌅 DAILY ${dailyKey()}</span><b>SUMMIT — floor ${G.floor}</b></div>`; }
   { const rk=fameRank(META.fame);
-    $('victScore').innerHTML=scoreSummary()
+    $('victScore').innerHTML=vDailyRow+scoreSummary()
       +`<div class="scoreRow" style="color:var(--gold)"><span>👑 Summit fame</span><b>+${fameEarned.toLocaleString()}</b></div>`
       +`<div class="scoreRow" style="color:var(--gold)"><span>★ Total fame</span><b>${META.fame.toLocaleString()}</b></div>`
       +`<div class="scoreRow"><span>Rank · <span style="color:${rk.col}">${rk.name}</span></span><b style="color:${rk.col};letter-spacing:2px">${rankStars(rk.stars)}</b></div>`; }
@@ -4930,7 +4968,7 @@ function startGame(){
   if(_G.asc>0) log('⛧ Ascension '+_G.asc+' — '+ASC_MODS.slice(0,_G.asc).map(m=>m.nm).join(', ')+'. Fame ×'+ascFameMult().toFixed(2)+'.');
   // shared run state
   G.floor=1; G.running=true; G.paused=false; G.hitstop=0; G.permadead=false;
-  G.floorMod=null; G.bounty=null; G.practice=false; G.seed=randi(0,9999);
+  G.floorMod=null; G.bounty=null; G.practice=false; G.dailyRun=false; G.seed=randi(0,9999);
   // start solo (co-op players drop-in by pressing START on a controller); rebuild P1's character
   _G.players.length=1; const p0=_G.players[0]; p0.joined=true; p0.color=PLAYER_COLORS[0]; p0.input=p0.input||makeKbmInput();
   _G.cur=0; _G.splitscreen=false; $('hud').classList.remove('cohide');
