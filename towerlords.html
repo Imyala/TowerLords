@@ -1442,8 +1442,8 @@ const FEATS=[
   {id:'f100',     nm:'Centurion',    ds:'Reach Floor 100',                fame:12000},
   {id:'ng',       nm:'Eternal',      ds:'Enter the Endless Ascent (NG+)', fame:6000},
 ];
-let META={fame:0, feats:[], invRows:0, stashRows:0, codex:{}, ascMax:0, tips:{}, victories:0, grudges:{}, daily:null, playerName:'', playerId:''};
-function loadMeta(){ try{ const s=localStorage.getItem(META_KEY); if(s){ const m=JSON.parse(s); META={fame:m.fame||0, feats:m.feats||[], invRows:m.invRows||0, stashRows:m.stashRows||0, codex:m.codex||{}, ascMax:m.ascMax||0, tips:m.tips||{}, victories:m.victories||0, grudges:m.grudges||{}, daily:m.daily||null, playerName:m.playerName||'', playerId:m.playerId||''}; } }catch(e){} }
+let META={fame:0, feats:[], invRows:0, stashRows:0, codex:{}, ascMax:0, tips:{}, victories:0, grudges:{}, daily:null, playerName:'', playerId:'', voiceSeen:{}};
+function loadMeta(){ try{ const s=localStorage.getItem(META_KEY); if(s){ const m=JSON.parse(s); META={fame:m.fame||0, feats:m.feats||[], invRows:m.invRows||0, stashRows:m.stashRows||0, codex:m.codex||{}, ascMax:m.ascMax||0, tips:m.tips||{}, victories:m.victories||0, grudges:m.grudges||{}, daily:m.daily||null, playerName:m.playerName||'', playerId:m.playerId||'', voiceSeen:m.voiceSeen||{}}; } }catch(e){} }
 // ---------------- GLOBAL LEADERBOARD (optional backend) ----------------
 // Set LEADERBOARD_URL to a deployed copy of leaderboard-worker.js (free Cloudflare Worker —
 // see LEADERBOARD_SETUP.md next to this file). Leave null for local-only boards: the game
@@ -2772,8 +2772,9 @@ function generateFloor(anchor){
     // several camps get a pack (swarm) so encounters are fights, not singles
     for(let i=0;i<7;i++){ const pt=pick(G.camps); for(let k=0;k<randi(3,5);k++) spawnEnemy(G.floor, pt, ETYPES[1]); }
     if(Math.random()<0.32) spawnGoblin(G.floor, pick(rooms));
-    // NEMESIS: a lord may be roaming this floor, off his post and hunting (first meetings only)
-    if(G.floor>=3 && _G.nemesis && rand(0,1)<0.22){
+    // NEMESIS: at most ONE lord may be roaming any floor, off his post and hunting (first meetings only).
+    // How often depends on this run's activity roll: some climbs none roam at all, others they hunt in numbers.
+    if(G.floor>=3 && _G.nemesis && (_G.nemesis._activity||0)>0 && rand(0,1)<_G.nemesis._activity){
       const pool=BOSSES.filter(b=>{ const x=nemOf(b.key); return x && !x.dead && x.kills===0 && !x.roamed && !x.assisting; });
       if(pool.length){ const d=pick(pool); nemOf(d.key).roamed=true;
         const rm=rooms.length>1?pick(rooms.slice(1)):rooms[0];
@@ -3227,51 +3228,104 @@ const ALL_BOSSES=BOSSES.concat([TOWER_LORD]);
 // times you have killed it (.d). Grudges change their greeting, hang death-trophies on them,
 // and pay a VENGEANCE fame bonus when you finally put a tormentor down. `{k}` in a line is
 // replaced with the current kill-count.
+// Every slot is a VARIANT POOL — random pick, never the same line twice in a row (_pickLine).
+// {k} = times he has killed you · {d} = times you have killed him (persistent, across every run).
 const BOSS_VOICE={
-  warden:  {given:'VEXROTH', intro:'Another climber. The first floors are littered with your kind.',
-    grudge:'Back again? I have kept count, climber — {k} deaths at my gate.', return:'You again. My post remembers its shame.',
-    phase2:'You are sturdier than you look.', phase3:'The Tower will hear of this…',
-    kill:'The climb ends where it always ends. At my feet.', death:'So the gate… finally… opens…'},
-  bombard: {given:'KHARGYLE', intro:'MORE POWDER! A guest has come to be perforated!',
-    grudge:'HA! The one I have buried {k} times returns for another volley!', return:'YOU! My barrels remember you, little shell-dodger!',
-    phase2:'NOW we load the good ammunition!', phase3:'EVERYTHING! FIRE EVERYTHING!',
-    kill:'BOOM. Sweep the stairs.', death:'Beautiful… what a blast…'},
-  summoner:{given:'MALVESSA', intro:'I do not dirty my hands. Children — greet our guest.',
-    grudge:'My pets have eaten you {k} times. They are developing a taste.', return:'The one who broke my circle. This time I brought more.',
-    phase2:'Fine. I shall attend to you PERSONALLY.', phase3:'RISE! ALL OF YOU, RISE!',
-    kill:'Sweep that off my floor, darlings.', death:'My children… avenge… me…'},
-  sweeper: {given:'TESSERAKT', intro:'UNIT DETECTED. COMMENCING FLOOR MAINTENANCE.',
-    grudge:'RECORD: {k} PRIOR SANITATIONS OF THIS UNIT. ROUTINE.', return:'WARNING: UNIT PREVIOUSLY CAUSED CRITICAL DAMAGE. RECALIBRATED.',
-    phase2:'EFFICIENCY THRESHOLD EXCEEDED. ESCALATING.', phase3:'CORE INTEGRITY CRITICAL. PROTOCOL: SCORCH.',
-    kill:'DEBRIS CLEARED. FLOOR RESTORED.', death:'MAINTENANCE… INCOMPLETE…'},
-  twinfang:{given:'SSYLTH', intro:'Sso quick to climb… are you quick enough to dodge?',
-    grudge:'I have tasted you {k} times, morsel. You come back sweeter each time.', return:'The one that sstung me. Come. Dance again.',
-    phase2:'Yesss! Faster! FASTER!', phase3:'No more games. Now I strike true.',
-    kill:'Too sslow. They are always too sslow.', death:'At lassst… someone… worthy…'},
-  overlord:{given:'AURENOX', intro:'Kneel. Or be knelt. Every floor below is mine.',
-    grudge:'{k} times you have knelt before me. Once more, for the throne.', return:'The regicide returns. Guards — no. This one is MINE.',
-    phase2:'You dare wound a king?!', phase3:'I AM THE CROWN AND THE MOUNTAIN BENEATH IT!',
-    kill:'Court is adjourned.', death:'A crown… is only… borrowed…'},
-  voidlord:{given:'NYXARETH', intro:'You are very small. The dark between floors is very large.',
-    grudge:'I have unmade you {k} times. You keep reassembling. Curious.', return:'The stitch in the void. I remember your shape.',
-    phase2:'The light in you flickers.', phase3:'ENOUGH. BE NOTHING.',
-    kill:'Returned to static.', death:'The void… does not… end…'},
-  warlock: {given:'GRIMMOIRE', intro:'A live specimen! Do try to survive the whole experiment.',
-    grudge:'Trial resumes. Previous outcomes: {k} fatalities. All yours.', return:'Ah, the anomaly that ruined my notes. New hypothesis: DIE.',
-    phase2:'Fascinating resistance! Increasing the dosage.', phase3:'THE MARGINS! I AM WRITING IN THE MARGINS!',
-    kill:'Results conclusive. Specimen discarded.', death:'What a… final… footnote…'},
-  reaper:  {given:'MORVANE', intro:'Everyone meets me twice. This is merely the rehearsal.',
-    grudge:'{k} rehearsals now. You know your part perfectly.', return:'You cut our last appointment short. Rude.',
-    phase2:'Closer now.', phase3:'It is time.',
-    kill:'As scheduled.', death:'Ah… so that is… how it feels…'},
-  towerlord:{given:null, intro:'I am every floor you bled on. Every stair. Every wall. And you are a draft through my halls.',
-    grudge:'I have swallowed you {k} times, little draft. The tower digests slowly.', return:'You topple me and still you climb. What do you imagine is above me?',
-    phase2:'You climb WELL. Let us see how you FALL.', phase3:'I HAVE STOOD TEN THOUSAND YEARS. YOU HAVE THIS MINUTE.',
-    kill:'Another brick. That is all you were.', death:'At last… someone… to inherit… the view…'},
+  warden:  {given:'VEXROTH',
+    intro:['Another climber. The first floors are littered with your kind.','State your business. No? Then state your grave.','I have held this gate a hundred years. You are not special.'],
+    grudge:['Back again? I have kept count, climber — {k} deaths at my gate.','{k} times I have folded you into the floor. The stone remembers. So do I.','You wear your {k} deaths well. Shall we make it a rounder number?'],
+    return:['You again. My post remembers its shame.','You have killed me {d} times across your little lives. A gate always reopens.'],
+    phase2:['You are sturdier than you look.','Reinforcements? No. I AM the reinforcements.'],
+    phase3:['The Tower will hear of this…','I do not yield the gate. The gate yields ME.'],
+    kill:['The climb ends where it always ends. At my feet.','Denied. As all are denied.','Rest now, climber. The gate is patient.'],
+    death:['So the gate… finally… opens…','Relieved… of duty… at last…']},
+  bombard: {given:'KHARGYLE',
+    intro:['MORE POWDER! A guest has come to be perforated!','RANGE: PERFECT. EXCUSES: NONE. FIRE!','Ha! The tower sends me a moving target — my FAVOURITE kind!'],
+    grudge:['HA! The one I have buried {k} times returns for another volley!','{k} craters with your name on them, and STILL you march into my sights!','My gunners chalk your deaths on the barrel — {k} marks and counting!'],
+    return:['YOU! My barrels remember you, little shell-dodger!','The one who spiked my guns — {d} times! LOAD EVERYTHING!'],
+    phase2:['NOW we load the good ammunition!','Smoke? No, no. That was just the OVERTURE!'],
+    phase3:['EVERYTHING! FIRE EVERYTHING!','IF I GO UP — WE ALL GO UP!'],
+    kill:['BOOM. Sweep the stairs.','Direct hit! Someone fetch a mop.','And THAT is how the artillery says goodbye.'],
+    death:['Beautiful… what a blast…','Misfire… how… embarrassing…']},
+  summoner:{given:'MALVESSA',
+    intro:['I do not dirty my hands. Children — greet our guest.','Oh, how quaint. It thinks it was invited.','Darlings, wake. Dinner has delivered itself.'],
+    grudge:['My pets have eaten you {k} times. They are developing a taste.','{k} of your corpses fed my garden. You keep growing back. Delightful.','You again? The children have missed their favourite toy — all {k} pieces of it.'],
+    return:['The one who broke my circle. This time I brought more.','You have unmade me {d} times. My children took notes.'],
+    phase2:['Fine. I shall attend to you PERSONALLY.','You broke the children. Now you answer to their MOTHER.'],
+    phase3:['RISE! ALL OF YOU, RISE!','EVERY grave in this tower answers to ME!'],
+    kill:['Sweep that off my floor, darlings.','Shhh. The children are eating.','How rude — dying without a curtsy.'],
+    death:['My children… avenge… me…','Unhand… my… garden…']},
+  sweeper: {given:'TESSERAKT',
+    intro:['UNIT DETECTED. COMMENCING FLOOR MAINTENANCE.','ANOMALY: ONE (1) CLIMBER. RESOLUTION: REMOVAL.','THIS FLOOR WAS CLEAN. YOU ARE A REGRESSION.'],
+    grudge:['RECORD: {k} PRIOR SANITATIONS OF THIS UNIT. ROUTINE.','YOU HAVE BEEN SWEPT {k} TIMES. DUST ALWAYS RETURNS.','INCIDENT COUNT: {k}. ESCALATING TO PERMANENT DISPOSAL.'],
+    return:['WARNING: UNIT PREVIOUSLY CAUSED CRITICAL DAMAGE. RECALIBRATED.','DESTRUCTION EVENTS LOGGED: {d}. PATCHES: APPLIED.'],
+    phase2:['EFFICIENCY THRESHOLD EXCEEDED. ESCALATING.','ENGAGING SECONDARY ARRAYS.'],
+    phase3:['CORE INTEGRITY CRITICAL. PROTOCOL: SCORCH.','WARRANTY: VOID. RESTRAINT: VOID.'],
+    kill:['DEBRIS CLEARED. FLOOR RESTORED.','STAIN REMOVED.','MAINTENANCE COMPLETE. HAVE A CLEAN DEATH.'],
+    death:['MAINTENANCE… INCOMPLETE…','FILING… FINAL… REPORT…']},
+  twinfang:{given:'SSYLTH',
+    intro:['Sso quick to climb… are you quick enough to dodge?','A dance partner! The lasst one sstepped poorly.','Come closer, morsel. My fangs hate to missss.'],
+    grudge:['I have tasted you {k} times, morsel. You come back sweeter each time.','{k} bites, and sstill you wriggle back up the tower. Delicioussss.','Your blood has a vintage now, morsel — {k} deaths of it.'],
+    return:['The one that sstung me. Come. Dance again.','You shed my skin {d} times. I grew sharper ones.'],
+    phase2:['Yesss! Faster! FASTER!','Now the real tempo beginssss!'],
+    phase3:['No more games. Now I strike true.','Lasst verse, little dancer. Missstep for me.'],
+    kill:['Too sslow. They are always too sslow.','The dance endss as it musst.','Sstill at lasst. A pity — you had rhythm.'],
+    death:['At lassst… someone… worthy…','What a finissh… to the dance…']},
+  overlord:{given:'AURENOX',
+    intro:['Kneel. Or be knelt. Every floor below is mine.','You stand in a throne room. The etiquette is DYING.','Peasant. You climbed far to be executed formally.'],
+    grudge:['{k} times you have knelt before me. Once more, for the throne.','I have signed your death warrant {k} times. My quill is patient.','The court fool returns! Your {k} executions were BELOVED.'],
+    return:['The regicide returns. Guards — no. This one is MINE.','{d} crowns you have broken. This one is forged from grudge.'],
+    phase2:['You dare wound a king?!','This is TREASON — and treason has a PRICE!'],
+    phase3:['I AM THE CROWN AND THE MOUNTAIN BENEATH IT!','A KINGDOM DIES LOUDLY!'],
+    kill:['Court is adjourned.','Let the record show: the crown endures.','Drag this rebel from my sight.'],
+    death:['A crown… is only… borrowed…','The throne… sits… empty…']},
+  voidlord:{given:'NYXARETH',
+    intro:['You are very small. The dark between floors is very large.','Light. How briefly it visits.','I heard your heartbeat three floors down. It offends the silence.'],
+    grudge:['I have unmade you {k} times. You keep reassembling. Curious.','The void kept {k} copies of your ending. None flattered you.','{k} times returned to static. You are stubborn arithmetic.'],
+    return:['The stitch in the void. I remember your shape.','You scattered me {d} times. The dark is very good at puzzles.'],
+    phase2:['The light in you flickers.','The silence leans closer.'],
+    phase3:['ENOUGH. BE NOTHING.','THE DARK OPENS ITS MOUTH.'],
+    kill:['Returned to static.','The silence thanks you.','One less heartbeat. The floors exhale.'],
+    death:['The void… does not… end…','How loud… the light…']},
+  warlock: {given:'GRIMMOIRE',
+    intro:['A live specimen! Do try to survive the whole experiment.','Subject arrives ON SCHEDULE. Hypothesis: it screams.','Sign nothing, touch nothing — oh, who am I kidding. TOUCH EVERYTHING.'],
+    grudge:['Trial resumes. Previous outcomes: {k} fatalities. All yours.','Your {k} deaths made a WONDERFUL appendix.','Ah, the recurring result! {k} data points and still no survival instinct.'],
+    return:['Ah, the anomaly that ruined my notes. New hypothesis: DIE.','You falsified me {d} times. Peer review is OVER.'],
+    phase2:['Fascinating resistance! Increasing the dosage.','Marvellous! Let us add VARIABLES.'],
+    phase3:['THE MARGINS! I AM WRITING IN THE MARGINS!','ETHICS BOARD BE DAMNED!'],
+    kill:['Results conclusive. Specimen discarded.','Cause of death: curiosity. Mine.','Another footnote for the pile.'],
+    death:['What a… final… footnote…','Publish… my… remains…']},
+  reaper:  {given:'MORVANE',
+    intro:['Everyone meets me twice. This is merely the rehearsal.','Punctual. I appreciate that in the doomed.','Do not be afraid. Be brief.'],
+    grudge:['{k} rehearsals now. You know your part perfectly.','I have signed for you {k} times. The ink never dries on you.','Your appointment recurs — {k} visits. Loyal, in your way.'],
+    return:['You cut our last appointment short. Rude.','You erased my name {d} times. It rewrites itself.'],
+    phase2:['Closer now.','The hour thins.'],
+    phase3:['It is time.','The bell. Listen.'],
+    kill:['As scheduled.','On time, as promised.','Settled. Next.'],
+    death:['Ah… so that is… how it feels…','My own… appointment… kept…']},
+  towerlord:{given:null,
+    intro:['I am every floor you bled on. Every stair. Every wall. And you are a draft through my halls.','Fifty floors I let you climb. Consider what that makes this room.','You knock at my crown, little draft. Enter, and become architecture.'],
+    grudge:['I have swallowed you {k} times, little draft. The tower digests slowly.','{k} of your endings are mortared into my walls. Touch them as you fall.'],
+    return:['You topple me and still you climb. What do you imagine is above me?','Rebuilt, re-crowned, and {d} times wiser about you.'],
+    phase2:['You climb WELL. Let us see how you FALL.','I have dropped mountains from lesser heights.'],
+    phase3:['I HAVE STOOD TEN THOUSAND YEARS. YOU HAVE THIS MINUTE.','EVERY BRICK REMEMBERS. EVERY BRICK ANSWERS.'],
+    kill:['Another brick. That is all you were.','Settle into my foundations.','The draft is sealed.'],
+    death:['At last… someone… to inherit… the view…','The wind… takes the crown…']},
 };
 function bossFullName(def){ const v=BOSS_VOICE[def.key]; return (v&&v.given)? v.given+', '+def.nm : def.nm; }
 function grudgeOf(key){ if(!META.grudges)META.grudges={}; return META.grudges[key]||(META.grudges[key]={k:0,d:0}); }
-function voiceLine(key,which,k){ const v=BOSS_VOICE[key]; if(!v||!v[which])return null; return v[which].replace('{k}',String(k||0)); }
+// variant-aware line picker with anti-repeat: remembers the last index said per boss+slot
+// (persisted in META.voiceSeen) so a lord never delivers the same line twice in a row.
+function _pickLine(vk,val){ if(val==null) return null;
+  if(typeof val==='string') return val;
+  if(!val.length) return null; if(val.length===1) return val[0];
+  META.voiceSeen=META.voiceSeen||{}; const last=META.voiceSeen[vk];
+  let i=Math.floor(Math.random()*val.length); if(i===last) i=(i+1)%val.length;
+  META.voiceSeen[vk]=i; saveMeta(); return val[i]; }
+function _subLine(key,s,k){ if(!s) return null; const gr=(META.grudges&&META.grudges[key])||{};
+  return s.replace(/\{k\}/g,String(k!=null?k:(gr.k||0))).replace(/\{d\}/g,String(gr.d||0)); }
+function voiceLine(key,which,k){ const v=BOSS_VOICE[key]; if(!v||!v[which])return null;
+  return _subLine(key,_pickLine(key+':'+which, v[which]), k); }
 // a spoken line: gold text over the boss + a quoted log entry — personality, not just patterns
 function bossSpeak(e,line){ if(!line)return; const p=e.mesh&&e.mesh.position;
   if(p) floatText(p.x,p.z,'“'+line+'”','goldtxt',Math.min(3.4,(e.scale||3)*0.75+1.4));
@@ -3283,7 +3337,11 @@ function bossSpeak(e,line){ if(!line)return; const p=e.mesh&&e.mesh.position;
 // resists, dash counters), and can crash another lord's fight for a LAST STAND. Three deaths
 // end a lord forever — his boss floor falls to whichever rival claims the vacancy. Sometimes
 // the last stand never comes, and two deaths are all he gets.
-const NEM_EPITHETS=['THE ASHEN','THE HOLLOW','THE CRUEL','THE PATIENT','THE BUTCHER','THE SILENT','THE GILDED','THE RAVENOUS','THE UNBLINKING','THE BITTER','THE PALE','THE STORM-MARKED','THE IRON-WILLED','THE FORGOTTEN','THE HUNGRY','THE COLD','THE VAIN','THE TWICE-SCARRED','THE LAWLESS','THE DEVOTED'];
+const NEM_EPITHETS=['THE ASHEN','THE HOLLOW','THE CRUEL','THE PATIENT','THE BUTCHER','THE SILENT','THE GILDED','THE RAVENOUS','THE UNBLINKING','THE BITTER','THE PALE','THE STORM-MARKED','THE IRON-WILLED','THE FORGOTTEN','THE HUNGRY','THE COLD','THE VAIN','THE TWICE-SCARRED','THE LAWLESS','THE DEVOTED',
+  'THE MERCILESS','THE SLEEPLESS','THE CROOKED','THE RADIANT','THE DROWNED','THE FEVERED','THE SPITEFUL','THE SERENE','THE JAGGED','THE VELVET',
+  'THE STARVING','THE OATHBOUND','THE FACELESS','THE THUNDEROUS','THE WITHERED','THE IMMACULATE','THE FERAL','THE SOLEMN','THE GRINNING','THE UNREPENTANT',
+  'THE MOURNFUL','THE BRAZEN','THE CINDERED','THE STILL','THE WRETCHED','THE OPULENT','THE HOWLING','THE METICULOUS','THE GRAVEBORN','THE UNWANTED',
+  'THE SEETHING','THE PRISTINE','THE CALLOUS','THE WANDERING','THE ANOINTED','THE RUSTED','THE INSATIABLE','THE DIM','THE ALMIGHTY','THE SECOND-BORN'];
 const NEM_TRAITS=[
   {id:'fireproof', nm:'Fireproof',  ds:'shrugs off fire',              res:{fire:0.5}},
   {id:'frostproof',nm:'Frostproof', ds:'shrugs off frost',             res:{cold:0.5}},
@@ -3295,27 +3353,86 @@ const NEM_TRAITS=[
   {id:'proud',     nm:'Proud',      ds:'wounded pride — critical hits strike him +35% harder', critWeak:true},
   {id:'brute',     nm:'Brutish',    ds:'hits like a landslide',        dmgMult:1.25},
   {id:'gluttonous',nm:'Gluttonous', ds:'bloated with stolen loot — drops double', loot2:true},
+  {id:'vampiric',  nm:'Vampiric',   ds:'drinks life from every strike', flag:'vampiric'},
+  {id:'volatile',  nm:'Volatile',   ds:'detonates on death — stand clear', flag:'volatile'},
+  {id:'blinking',  nm:'Blinking',   ds:'tears through space to reach you', flag:'blink'},
+  {id:'warded',    nm:'Warded',     ds:'raises a periodic damage bubble', flag:'shield'},
+  {id:'toxic',     nm:'Toxic',      ds:'leaves poison pools in his wake', flag:'toxic'},
+  {id:'arcane',    nm:'Arcane',     ds:'bleeds stray bullet rings',    flag:'arcane'},
+  {id:'colossal',  nm:'Colossal',   ds:'towers over his kin',          hpMult:1.15, scaleMult:1.18},
+  {id:'lithe',     nm:'Lithe',      ds:'frail but blindingly quick',   hpMult:0.85, spdMult:1.35},
+  {id:'tireless',  nm:'Tireless',   ds:'casts without pause',          castRate:0.82},
+  {id:'reckless',  nm:'Reckless',   ds:'abandons all caution to reach you', keep0:true, spdMult:1.15},
+  {id:'ancient',   nm:'Ancient',    ds:'older than his post — resists everything a little', res:{phys:0.1,fire:0.15,cold:0.15,light:0.15}},
+  {id:'furious',   nm:'Furious',    ds:'enrages when wounded',         flag:'enrage'},
 ];
-// nemesis-specific lines, in each lord's own voice: roamIntro / roamdefeat / reforged / laststand / finaldeath
+// nemesis-arc lines, in each lord's own voice: roamIntro / roamdefeat / reforged / laststand / finaldeath.
+// Every slot is a VARIANT POOL — picks are randomized and never repeat back-to-back (see _pickLine).
+// {k} = times he has killed you · {d} = times you have killed him (all-time) · {n} = kills this climb.
 const NEM_VOICE={
-  warden:  {roamIntro:'You are early, climber. Good — I hate waiting at my post.', roamdefeat:'A post… can be… re-manned…', reforged:'You killed me once. The Tower stood me back up. It agrees with me about you.', laststand:'My gate is gone. All I have left is spite.', finaldeath:'At last… no more… watch to keep…'},
-  bombard: {roamIntro:'A WILD SHOT! And look what it flushed out!', roamdefeat:'Reloading… takes… time…', reforged:'BIGGER BARRELS THIS TIME! I MELTED DOWN MY OWN TOMB FOR THE IRON!', laststand:'ONE SHELL LEFT! IT HAS YOUR NAME ON IT!', finaldeath:'What a way… to go… off…'},
-  summoner:{roamIntro:'Oh how delicious — I found you first. Children, dinner.', roamdefeat:'Rude… I was… entertaining…', reforged:'Death was instructive. I brought BACK some friends from there.', laststand:'My circles are broken. I will strangle you MYSELF.', finaldeath:'Children… where are… my children…'},
-  sweeper: {roamIntro:'PATROL SWEEP. UNSCHEDULED DEBRIS LOCATED.', roamdefeat:'RETURNING… TO DOCK… FOR REPAIRS…', reforged:'UNIT REBUILT. ARMOUR REVISION 2. YOUR METHODS HAVE BEEN PATCHED.', laststand:'FINAL DIRECTIVE: TAKE IT WITH ME.', finaldeath:'POWERING… DOWN… FLOOR STILL… DIRTY…'},
-  twinfang:{roamIntro:'I hunt where I please, morsel. Today I please to hunt YOU.', roamdefeat:'First blood… to you… sssecond is mine…', reforged:'I shed my old skin. The new one does not forgive.', laststand:'One lassst dance. Make it beautiful.', finaldeath:'Beautiful… after all…'},
-  overlord:{roamIntro:'A king walks his OWN halls. On your knees, trespasser.', roamdefeat:'Regicide… again… you make a habit…', reforged:'A king buried is a king furious. My crown remembers your hands.', laststand:'A throne in ruins still commands ONE loyal sword. Mine.', finaldeath:'Bury me… standing…'},
-  voidlord:{roamIntro:'I drift where the dark drifts. Today it drifted to you.', roamdefeat:'Scattered… but the dark… re-collects…', reforged:'You unmade me. What came back is less polite.', laststand:'The void owes me one last shape. This one.', finaldeath:'How strange… to finally… end…'},
-  warlock: {roamIntro:'Field research! The specimen comes to ME for once!', roamdefeat:'Fascinating… mortality… noted…', reforged:'I peer-reviewed my own death. The revised edition has TEETH.', laststand:'My last experiment: how much of you fits in a crater.', finaldeath:'Conclusion… reached… publish… me…'},
-  reaper:  {roamIntro:'You are not on today\'s list. I make exceptions.', roamdefeat:'Postponed… not… cancelled…', reforged:'Even death takes appointments from me. I rescheduled mine.', laststand:'The last name on my list… is mine. Yours goes first.', finaldeath:'The list… is done…'},
+  warden:  {roamIntro:['You are early, climber. Good — I hate waiting at my post.','Off my floor, off my schedule. On my nerves.','A patrol! The gate watches even when it walks.'],
+    roamdefeat:['A post… can be… re-manned…','This proves… nothing… climber…'],
+    reforged:['You killed me once. The Tower stood me back up. It agrees with me about you.','Dying was a demotion. I clawed my rank back for THIS.','You have killed me {d} times in all. The gate keeps better records than you.'],
+    laststand:['My gate is gone. All I have left is spite.','No post. No orders. Just you and me, climber.'],
+    finaldeath:['At last… no more… watch to keep…','Tell the Tower… the gate… held long enough…']},
+  bombard: {roamIntro:['A WILD SHOT! And look what it flushed out!','FIELD EXERCISE! Live targets make the BEST practice!','You hear that whistle, climber? That is FORESHADOWING!'],
+    roamdefeat:['Reloading… takes… time…','A dud… of all the… luck…'],
+    reforged:['BIGGER BARRELS THIS TIME! I MELTED DOWN MY OWN TOMB FOR THE IRON!','You have spiked me {d} times! I RE-CAST MYSELF WITH SPITE!','Back from the scrapyard — with INTEREST!'],
+    laststand:['ONE SHELL LEFT! IT HAS YOUR NAME ON IT!','LAST BARRAGE! MAKE A CRATER OF ME!'],
+    finaldeath:['What a way… to go… off…','Save my… powder… for the… fireworks…']},
+  summoner:{roamIntro:['Oh how delicious — I found you first. Children, dinner.','A stroll among the rabble, and look what I stepped in.','Away from my parlour I am less forgiving. Children!'],
+    roamdefeat:['Rude… I was… entertaining…','The children… saw that… shame on you…'],
+    reforged:['Death was instructive. I brought BACK some friends from there.','You have buried me {d} times. The soil keeps returning me — with company.','I redecorated my grave. It was too small for my ambition.'],
+    laststand:['My circles are broken. I will strangle you MYSELF.','No more children between us. Just mother.'],
+    finaldeath:['Children… where are… my children…','The garden… will grow… wild now…']},
+  sweeper: {roamIntro:['PATROL SWEEP. UNSCHEDULED DEBRIS LOCATED.','ROUTE DEVIATION AUTHORIZED. TARGET: YOU.','MOBILE MAINTENANCE ONLINE. THIS FLOOR IS NEXT.'],
+    roamdefeat:['RETURNING… TO DOCK… FOR REPAIRS…','FAULT LOGGED… REBUILD… QUEUED…'],
+    reforged:['UNIT REBUILT. ARMOUR REVISION 2. YOUR METHODS HAVE BEEN PATCHED.','DESTRUCTION COUNT: {d}. EACH ONE MADE ME BETTER.','FIRMWARE UPDATED. GRUDGE MODULE: INSTALLED.'],
+    laststand:['FINAL DIRECTIVE: TAKE IT WITH ME.','SALVAGE VALUE: ZERO. SPITE VALUE: MAXIMUM.'],
+    finaldeath:['POWERING… DOWN… FLOOR STILL… DIRTY…','END OF… SERVICE… LIFE…']},
+  twinfang:{roamIntro:['I hunt where I please, morsel. Today I please to hunt YOU.','The tower is my garden path. You are the thing rustling in it.','Sssurprise. The floor was never safe.'],
+    roamdefeat:['First blood… to you… sssecond is mine…','A ssscratch… I have shed worse…'],
+    reforged:['I shed my old skin. The new one does not forgive.','{d} skins you have taken. This one bites back.','Dying sharpened me, morsel. Come test the edge.'],
+    laststand:['One lassst dance. Make it beautiful.','No venue. No music. Jussst fangs.'],
+    finaldeath:['Beautiful… after all…','The dance… endsss… bravo…']},
+  overlord:{roamIntro:['A king walks his OWN halls. On your knees, trespasser.','Royal procession! And you without a gift.','Even between thrones, a king out-ranks you utterly.'],
+    roamdefeat:['Regicide… again… you make a habit…','A king… merely… relocates…'],
+    reforged:['A king buried is a king furious. My crown remembers your hands.','{d} coronations you have interrupted. This one is armoured.','I abdicated my grave. It bored me.'],
+    laststand:['A throne in ruins still commands ONE loyal sword. Mine.','A king with nothing left is the most dangerous kind of king.'],
+    finaldeath:['Bury me… standing…','The dynasty… ends… loudly…']},
+  voidlord:{roamIntro:['I drift where the dark drifts. Today it drifted to you.','Between floors there are cracks. I am what leaks through.','You walked past my shadow. It followed you here.'],
+    roamdefeat:['Scattered… but the dark… re-collects…','Thin… I was spread… too thin…'],
+    reforged:['You unmade me. What came back is less polite.','{d} times scattered, {d} times regathered. The dark rounds up.','The void returned me postage-due. Someone must pay.'],
+    laststand:['The void owes me one last shape. This one.','All my dark, spent on one ending. Yours or mine.'],
+    finaldeath:['How strange… to finally… end…','The dark… closes… over…']},
+  warlock: {roamIntro:['Field research! The specimen comes to ME for once!','Do not mind me — I am observing you in your natural habitat. Dying.','A wandering laboratory requires wandering test subjects!'],
+    roamdefeat:['Fascinating… mortality… noted…','Results… inconclusive… rerun the trial…'],
+    reforged:['I peer-reviewed my own death. The revised edition has TEETH.','{d} failed trials — and yet the grant renews me every time.','Resurrection is just publication with extra steps.'],
+    laststand:['My last experiment: how much of you fits in a crater.','Final trial. No control group. No survivors.'],
+    finaldeath:['Conclusion… reached… publish… me…','Peer… reviewed… at last…']},
+  reaper:  {roamIntro:['You are not on today\'s list. I make exceptions.','I was passing through. Now I am passing sentence.','An unscheduled visit. How intimate.'],
+    roamdefeat:['Postponed… not… cancelled…','You bought… an extension… nothing more…'],
+    reforged:['Even death takes appointments from me. I rescheduled mine.','You have crossed my name out {d} times. It is written in something stronger now.','My own funeral bored me. I left early — for this.'],
+    laststand:['The last name on my list… is mine. Yours goes first.','One appointment left. We keep it together.'],
+    finaldeath:['The list… is done…','Kept… every… appointment…']},
 };
 const NEM_TIER_TITLE=['','THE REFORGED','THE UNDYING'];   // title grows with each death he shrugs off
 function makeNemesis(){ const nem={}; const eps=NEM_EPITHETS.slice(); const trs=NEM_TRAITS.slice();
   for(const d of BOSSES){ const ei=Math.floor(Math.random()*eps.length), ti=Math.floor(Math.random()*trs.length);
-    nem[d.key]={ kills:0, dead:false, epithet:eps.splice(ei,1)[0], trait:trs.splice(ti,1)[0]||pick(NEM_TRAITS),
+    const t1=trs.splice(ti,1)[0]||pick(NEM_TRAITS);
+    const t2=(Math.random()<0.4 && trs.length)?trs.splice(Math.floor(Math.random()*trs.length),1)[0]:null;   // ~40% of lords are doubly strange
+    let stolen=null;   // ~35% of lords stole a move from a rival's kit this climb — kits differ every run
+    if(Math.random()<0.35){ const other=pick(BOSSES.filter(b=>b.key!==d.key)); stolen=pick(other.moves); }
+    nem[d.key]={ kills:0, dead:false, epithet:eps.splice(ei,1)[0], trait:t1, trait2:t2, stolen,
       learned:{el:null,dash:false}, lastStand:false, roamed:false, assisting:false }; }
+  // per-run roaming ACTIVITY: some climbs the lords keep to their floors (none roam at all);
+  // other climbs they hunt in numbers. Rolled once per run.
+  const r=Math.random();
+  nem._activity = r<0.15?0 : r<0.45?0.10 : r<0.80?0.22 : 0.38;
   return nem; }
 function nemOf(key){ return (_G.nemesis&&_G.nemesis[key])||null; }
-function nemLine(key,which){ const v=NEM_VOICE[key]; return (v&&v[which])||null; }
+function nemLine(key,which){ const v=NEM_VOICE[key]; if(!v||!v[which])return null;
+  return _subLine(key,_pickLine(key+':nem:'+which, v[which])); }
 function nemName(def,n){ const g=BOSS_VOICE[def.key]&&BOSS_VOICE[def.key].given;
   if(!g||!n) return bossFullName(def);
   const tier=NEM_TIER_TITLE[Math.min(n.kills,2)];
@@ -3374,24 +3491,29 @@ function spawnBoss(floor,room,opts){
   }
   const tier=n?Math.min(n.kills,2):0;            // each death you dealt him made him stronger
   const tierMult=1+0.4*tier;
-  const tr=n?n.trait:null;
+  const trs=n?[n.trait,n.trait2].filter(Boolean):[];   // 1-2 traits per lord per climb
+  let hpT=1,dmgT=1,spdT=1,sclT=1,castT=1,keep=def.keep||0;
+  for(const t of trs){ hpT*=(t.hpMult||1); dmgT*=(t.dmgMult||1); spdT*=(t.spdMult||1); sclT*=(t.scaleMult||1); castT*=(t.castRate||1); if(t.keep0)keep=0; }
   const pow=opts.roaming?0.55:opts.assist?0.8:1; // roaming/assist forms fight below full strength
   const hp=Math.max((1100+lvl*120)*ng*def.hpMult*_ae.bossHp, playerBigHit()*BOSS_HITS*def.hpMult*_ae.bossHp)
-           *tierMult*((tr&&tr.hpMult)||1)*pow;
-  // move kit: base + what he LEARNED (dash-spam → seekers) + trait extras (Pack Lord calls adds)
+           *tierMult*hpT*pow;
+  // move kit: base + what he LEARNED (dash-spam → seekers) + trait extras (Pack Lord) + a move STOLEN from a rival this climb
   const moves=def.moves.slice();
   if(n&&n.learned.dash && !moves.some(m=>m.fn===mSeekers)) moves.push({fn:mSeekers,cd:[4,5.5]});
-  if(tr&&tr.extraMove==='adds' && !moves.some(m=>m.fn===mAdds)) moves.push({fn:mAdds,cd:[8,10]});
+  if(trs.some(t=>t.extraMove==='adds') && !moves.some(m=>m.fn===mAdds)) moves.push({fn:mAdds,cd:[8,10]});
+  if(n&&n.stolen && !moves.some(m=>m.fn===n.stolen.fn)) moves.push(n.stolen);
   const res={phys:0.15,fire:0.2,cold:0.2,light:0.2};
-  if(tr&&tr.res) for(const k in tr.res) res[k]=Math.min(0.85,(res[k]||0)+tr.res[k]);
+  for(const t of trs){ if(t.res) for(const k in t.res) res[k]=Math.min(0.85,(res[k]||0)+t.res[k]); }
   if(n&&n.learned.el) res[n.learned.el]=Math.min(0.85,(res[n.learned.el]||0)+0.5);   // he studied the element that killed him
-  const e={type:'boss',boss:true,bossDef:def,hp,maxhp:hp,speed:3.4*def.spdMult*((tr&&tr.spdMult)||1),
-    dmg:(38+lvl*2.6)*ng*_ae.bossDmg*tierMult*((tr&&tr.dmgMult)||1)*(opts.roaming?0.75:1),
-    r:2.6,scale:def.scale*(opts.roaming?0.85:1),xp:90*ng,
-    hitFlash:0,color:def.color,keep:def.keep||0,name:n?nemName(def,n):bossFullName(def),
-    roaming:!!opts.roaming, assist:!!opts.assist, nemTrait:tr,
+  const e={type:'boss',boss:true,bossDef:def,hp,maxhp:hp,speed:3.4*def.spdMult*spdT,
+    dmg:(38+lvl*2.6)*ng*_ae.bossDmg*tierMult*dmgT*(opts.roaming?0.75:1),
+    r:2.6,scale:def.scale*sclT*(opts.roaming?0.85:1),xp:90*ng,
+    hitFlash:0,color:def.color,keep,name:n?nemName(def,n):bossFullName(def),
+    roaming:!!opts.roaming, assist:!!opts.assist, nemTraits:trs.length?trs:null,
     moveCd:moves.map(m=>rand(m.cd[0]*0.5,m.cd[1])), moves,   // stagger the first cast of each move
     res};
+  if(castT!==1) e.castRate=castT;                       // Tireless lords cast without pause
+  for(const t of trs){ if(t.flag) e[t.flag]=true; }     // behaviour flags reuse the proven elite machinery (vampiric/volatile/blink/shield/toxic/arcane/enrage)
   e.mesh=makeEnemyMesh(def.shape,def.color,e.scale);
   const ring=new THREE.Mesh(new THREE.TorusGeometry(e.scale*0.87,.18,8,24), new THREE.MeshStandardMaterial({color:0xffce4d,emissive:0xffce4d,emissiveIntensity:1}));
   ring.rotation.x=Math.PI/2; ring.position.y=e.scale*0.9; e.mesh.add(ring);
@@ -3403,14 +3525,15 @@ function spawnBoss(floor,room,opts){
   const px=opts.at?opts.at.x:room.cx, pz=opts.at?opts.at.z:(room.cz-room.rh/2+6);
   e.mesh.position.set(px, 0, pz); scene.add(e.mesh); G.enemies.push(e);
   // ---- dramatic intro: the tower remembers you (and its lords have their own agendas) ----
-  const trTag=tr?(' · '+tr.nm.toUpperCase()):'';
+  const trTag=trs.length?(' · '+trs.map(t=>t.nm.toUpperCase()).join(' · ')):'';
   const sub = opts.roaming ? ('⚠ ROAMING LORD — off his floor, hunting'+trTag)
             : opts.assist ? ('⚔ LAST STAND — he has nothing left to lose'+trTag)
             : gr.k>0 ? ('☠ HAS SLAIN YOU ×'+gr.k+(def.final?' · THE SUMMIT':trTag))
             : def.final?'LORD OF THE TOWER · THE SUMMIT':('FLOOR GUARDIAN · Lv '+floor+trTag);
   banner(e.name, sub);
   if(vacancy) log('⛰ The floor\'s master is gone — '+e.name+' has claimed the vacancy.');
-  if(tr) log('✦ '+e.name+' — '+tr.nm+': '+tr.ds+'.');
+  for(const t of trs) log('✦ '+e.name+' — '+t.nm+': '+t.ds+'.');
+  if(n&&n.stolen) log('⚔ He fights with a move stolen from a rival lord this climb.');
   if(n&&n.learned.el) log('🧠 He studied your '+n.learned.el+' — it barely marks him now.');
   if(n&&n.learned.dash) log('🧠 He studied your dashing — seekers hunt where you dodge.');
   const introLine = opts.assist ? (nemLine(def.key,'laststand')||voiceLine(def.key,'grudge',gr.k))
@@ -3765,8 +3888,8 @@ function hurtEnemy(e,dmg,crit,element,src,owner){
   if(e.shieldT>0){ dmg*=0.28; }   // bulwark damage-resistant bubble
   if(e.res) dmg *= (1-(e.res[element]||0));
   if(e.shock>0) dmg *= 1.3;                       // shocked enemies take +30%
-  if(e.nemTrait){ if(e.nemTrait.frail && e.hp<e.maxhp*0.5) dmg*=1.3;      // Craven lords panic when wounded
-    if(e.nemTrait.critWeak && crit) dmg*=1.35; }                          // Proud lords crumble to critical hits
+  if(e.nemTraits){ for(const t of e.nemTraits){ if(t.frail && e.hp<e.maxhp*0.5) dmg*=1.3;   // Craven lords panic when wounded
+    if(t.critWeak && crit) dmg*=1.35; } }                                                   // Proud lords crumble to critical hits
   if(e.boss && isPlayerSrc){ const pr=e._prof||(e._prof={}); pr[element]=(pr[element]||0)+dmg; }   // he studies what hurts him
   if(isPlayerSrc){ if((G.S.exec||0)>0 && e.hp < e.maxhp*0.30) dmg*=(1+G.S.exec/100);          // execute low-HP foes
                    if((G.S.elemDmg||0)>0 && element!=='phys') dmg*=(1+G.S.elemDmg/100); }
@@ -3880,7 +4003,7 @@ function killEnemy(e){
     gainXP(e.xp);
     if(e.gold||e.boss){ const amt=Math.round((e.boss?200+G.floor*10:30+G.floor*4)*goldMult()); G.gold+=amt; flashGold(); floatText(ex,ez,'+'+amt+' gold','goldtxt',e.boss?5:3); }
     if(Math.random() < (e.boss?1:base*lootMult())) dropLoot(ex,ez, uChanceBase||undefined, pid);   // loot soulbound to this player
-    if(e.boss && e.nemTrait && e.nemTrait.loot2) dropLoot(ex,ez, uChanceBase||undefined, pid);   // Gluttonous lords burst with stolen loot
+    if(e.boss && e.nemTraits && e.nemTraits.some(t=>t.loot2)) dropLoot(ex,ez, uChanceBase||undefined, pid);   // Gluttonous lords burst with stolen loot
   }); }
   if(e.affixIds && e.affixIds.length){ const k=e._killer!=null?e._killer:(_G.cur||0); withPlayer(k, ()=> dropLoot(ex,ez, e.elite?0.12:0.03, k, pick(e.affixIds))); }   // affixed foes always drop one themed item
   G.hitstop=Math.max(G.hitstop||0, e.boss?0.3:0.04);
