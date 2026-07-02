@@ -2772,6 +2772,12 @@ function generateFloor(anchor){
     // several camps get a pack (swarm) so encounters are fights, not singles
     for(let i=0;i<7;i++){ const pt=pick(G.camps); for(let k=0;k<randi(3,5);k++) spawnEnemy(G.floor, pt, ETYPES[1]); }
     if(Math.random()<0.32) spawnGoblin(G.floor, pick(rooms));
+    // NEMESIS: a lord may be roaming this floor, off his post and hunting (first meetings only)
+    if(G.floor>=3 && _G.nemesis && rand(0,1)<0.22){
+      const pool=BOSSES.filter(b=>{ const x=nemOf(b.key); return x && !x.dead && x.kills===0 && !x.roamed && !x.assisting; });
+      if(pool.length){ const d=pick(pool); nemOf(d.key).roamed=true;
+        const rm=rooms.length>1?pick(rooms.slice(1)):rooms[0];
+        spawnBoss(G.floor, rm, {def:d, roaming:true}); } }
     placeTraps(rooms);   // hidden spike/dart traps along the corridors
     G.floorKills=0; G.killGoal=Math.max(10, Math.round(G.enemies.length*ascEff().killFrac));   // clear ~70% (more at high ascension) to open the portal
     G.shiftT=999; G.shiftWarned=false;   // shift clock only starts (=30s) once the portal opens on clear
@@ -3270,32 +3276,147 @@ function voiceLine(key,which,k){ const v=BOSS_VOICE[key]; if(!v||!v[which])retur
 function bossSpeak(e,line){ if(!line)return; const p=e.mesh&&e.mesh.position;
   if(p) floatText(p.x,p.z,'“'+line+'”','goldtxt',Math.min(3.4,(e.scale||3)*0.75+1.4));
   log('『'+line+'』 — '+(e.name||'the guardian')); }
-function spawnBoss(floor,room){
+
+// ---------------- NEMESIS SYSTEM: no two climbs meet the same lords ----------------
+// Every climb, each guardian rolls a unique EPITHET + TRAIT, may AMBUSH you while roaming any
+// floor, RETURNS REFORGED (stronger) each time you kill him, LEARNS how you fight (element
+// resists, dash counters), and can crash another lord's fight for a LAST STAND. Three deaths
+// end a lord forever — his boss floor falls to whichever rival claims the vacancy. Sometimes
+// the last stand never comes, and two deaths are all he gets.
+const NEM_EPITHETS=['THE ASHEN','THE HOLLOW','THE CRUEL','THE PATIENT','THE BUTCHER','THE SILENT','THE GILDED','THE RAVENOUS','THE UNBLINKING','THE BITTER','THE PALE','THE STORM-MARKED','THE IRON-WILLED','THE FORGOTTEN','THE HUNGRY','THE COLD','THE VAIN','THE TWICE-SCARRED','THE LAWLESS','THE DEVOTED'];
+const NEM_TRAITS=[
+  {id:'fireproof', nm:'Fireproof',  ds:'shrugs off fire',              res:{fire:0.5}},
+  {id:'frostproof',nm:'Frostproof', ds:'shrugs off frost',             res:{cold:0.5}},
+  {id:'stormproof',nm:'Stormproof', ds:'shrugs off storm',             res:{light:0.5}},
+  {id:'swift',     nm:'Swift',      ds:'unnaturally fast',             spdMult:1.22},
+  {id:'bulwark',   nm:'Bulwark',    ds:'monstrously tough',            hpMult:1.3},
+  {id:'packlord',  nm:'Pack Lord',  ds:'never fights alone',           extraMove:'adds'},
+  {id:'craven',    nm:'Craven',     ds:'panics when wounded — takes +30% below half life', frail:true},
+  {id:'proud',     nm:'Proud',      ds:'wounded pride — critical hits strike him +35% harder', critWeak:true},
+  {id:'brute',     nm:'Brutish',    ds:'hits like a landslide',        dmgMult:1.25},
+  {id:'gluttonous',nm:'Gluttonous', ds:'bloated with stolen loot — drops double', loot2:true},
+];
+// nemesis-specific lines, in each lord's own voice: roamIntro / roamdefeat / reforged / laststand / finaldeath
+const NEM_VOICE={
+  warden:  {roamIntro:'You are early, climber. Good — I hate waiting at my post.', roamdefeat:'A post… can be… re-manned…', reforged:'You killed me once. The Tower stood me back up. It agrees with me about you.', laststand:'My gate is gone. All I have left is spite.', finaldeath:'At last… no more… watch to keep…'},
+  bombard: {roamIntro:'A WILD SHOT! And look what it flushed out!', roamdefeat:'Reloading… takes… time…', reforged:'BIGGER BARRELS THIS TIME! I MELTED DOWN MY OWN TOMB FOR THE IRON!', laststand:'ONE SHELL LEFT! IT HAS YOUR NAME ON IT!', finaldeath:'What a way… to go… off…'},
+  summoner:{roamIntro:'Oh how delicious — I found you first. Children, dinner.', roamdefeat:'Rude… I was… entertaining…', reforged:'Death was instructive. I brought BACK some friends from there.', laststand:'My circles are broken. I will strangle you MYSELF.', finaldeath:'Children… where are… my children…'},
+  sweeper: {roamIntro:'PATROL SWEEP. UNSCHEDULED DEBRIS LOCATED.', roamdefeat:'RETURNING… TO DOCK… FOR REPAIRS…', reforged:'UNIT REBUILT. ARMOUR REVISION 2. YOUR METHODS HAVE BEEN PATCHED.', laststand:'FINAL DIRECTIVE: TAKE IT WITH ME.', finaldeath:'POWERING… DOWN… FLOOR STILL… DIRTY…'},
+  twinfang:{roamIntro:'I hunt where I please, morsel. Today I please to hunt YOU.', roamdefeat:'First blood… to you… sssecond is mine…', reforged:'I shed my old skin. The new one does not forgive.', laststand:'One lassst dance. Make it beautiful.', finaldeath:'Beautiful… after all…'},
+  overlord:{roamIntro:'A king walks his OWN halls. On your knees, trespasser.', roamdefeat:'Regicide… again… you make a habit…', reforged:'A king buried is a king furious. My crown remembers your hands.', laststand:'A throne in ruins still commands ONE loyal sword. Mine.', finaldeath:'Bury me… standing…'},
+  voidlord:{roamIntro:'I drift where the dark drifts. Today it drifted to you.', roamdefeat:'Scattered… but the dark… re-collects…', reforged:'You unmade me. What came back is less polite.', laststand:'The void owes me one last shape. This one.', finaldeath:'How strange… to finally… end…'},
+  warlock: {roamIntro:'Field research! The specimen comes to ME for once!', roamdefeat:'Fascinating… mortality… noted…', reforged:'I peer-reviewed my own death. The revised edition has TEETH.', laststand:'My last experiment: how much of you fits in a crater.', finaldeath:'Conclusion… reached… publish… me…'},
+  reaper:  {roamIntro:'You are not on today\'s list. I make exceptions.', roamdefeat:'Postponed… not… cancelled…', reforged:'Even death takes appointments from me. I rescheduled mine.', laststand:'The last name on my list… is mine. Yours goes first.', finaldeath:'The list… is done…'},
+};
+const NEM_TIER_TITLE=['','THE REFORGED','THE UNDYING'];   // title grows with each death he shrugs off
+function makeNemesis(){ const nem={}; const eps=NEM_EPITHETS.slice(); const trs=NEM_TRAITS.slice();
+  for(const d of BOSSES){ const ei=Math.floor(Math.random()*eps.length), ti=Math.floor(Math.random()*trs.length);
+    nem[d.key]={ kills:0, dead:false, epithet:eps.splice(ei,1)[0], trait:trs.splice(ti,1)[0]||pick(NEM_TRAITS),
+      learned:{el:null,dash:false}, lastStand:false, roamed:false, assisting:false }; }
+  return nem; }
+function nemOf(key){ return (_G.nemesis&&_G.nemesis[key])||null; }
+function nemLine(key,which){ const v=NEM_VOICE[key]; return (v&&v[which])||null; }
+function nemName(def,n){ const g=BOSS_VOICE[def.key]&&BOSS_VOICE[def.key].given;
+  if(!g||!n) return bossFullName(def);
+  const tier=NEM_TIER_TITLE[Math.min(n.kills,2)];
+  return g+' '+n.epithet+(tier?(', '+tier):''); }
+// what the lord LEARNED from this fight — called when he dies (he studies even in death)
+function nemLearn(e,n){ const pr=e._prof||{};
+  let top=null,tv=0; for(const k of ['fire','cold','light']){ if((pr[k]||0)>tv){ tv=pr[k]; top=k; } }
+  if(top && tv>(pr.phys||0)*0.5) n.learned.el=top;             // he remembers the element that burned him
+  if((e._dashSeen||0)>=6) n.learned.dash=true;                  // he remembers how much you dash
+}
+// a lord died — advance his nemesis arc. Returns true if this death is PERMANENT.
+function nemOnBossKilled(e){ const def=e.bossDef; if(!def||def.final||!_G.nemesis) return false;
+  const n=nemOf(def.key); if(!n) return false;
+  nemLearn(e,n); n.kills++; n.assisting=false;
+  if(n.kills===2) n.lastStand = Math.random()<0.55;             // sometimes the third meeting never comes
+  const permanent = n.kills>=3 || (n.kills>=2 && !n.lastStand);
+  if(permanent){ n.dead=true;
+    setTimeout(()=>{ banner('☠ '+nemName(def,n)+' — SLAIN FOREVER','his floor stands empty… for now'); },900);
+    bossSpeak(e, nemLine(def.key,'finaldeath')||voiceLine(def.key,'death'));
+    const vFame=Math.floor(1500*ascFameMult()); META.fame+=vFame; saveMeta();
+    log('☠ '+nemName(def,n)+' will never rise again. +'+vFame.toLocaleString()+' fame.');
+  } else {
+    bossSpeak(e, nemLine(def.key,'roamdefeat')||voiceLine(def.key,'death'));
+    const what=n.learned.el?('He studied your '+n.learned.el+'.'):(n.learned.dash?'He studied your dashing.':'');
+    setTimeout(()=>{ banner('⚠ '+nemName(def,n)+' WILL RETURN','stronger. '+what); },900);
+    log('⚠ '+(BOSS_VOICE[def.key].given||def.nm)+' is not done — he will return stronger.'+(what?' '+what:''));
+  }
+  return permanent; }
+// a fallen lord with one death left may crash the fight once the floor guardian hits phase II
+function nemTryAssist(main){ if(!main.ph2 || main._assistTried || main.roaming || main.assist || main.dead) return;
+  if(!_G.nemesis || floorType(G.floor)!=='BOSS' || (main.bossDef&&main.bossDef.final)) return;
+  main._assistTried=true;
+  const mainKey=main.bossDef&&main.bossDef.key;
+  const pool=BOSSES.filter(b=>{ if(b.key===mainKey) return false; const x=nemOf(b.key); return x && !x.dead && x.kills>=2 && x.lastStand && !x.assisting; });
+  if(!pool.length || Math.random()>=0.6) return;   // not guaranteed — sometimes the last stand never comes
+  const def=pick(pool); nemOf(def.key).assisting=true;
+  setTimeout(()=>{ if(!_G.running || main.dead) return;
+    spawnBoss(G.floor, G.rooms[0]||{cx:main.mesh.position.x,cz:main.mesh.position.z,rh:24},
+      {def, assist:true, at:{x:main.mesh.position.x+rand(-9,9), z:main.mesh.position.z+rand(-9,9)}});
+    shakeCam(1.2); },900);
+}
+function spawnBoss(floor,room,opts){
+  opts=opts||{};
   const ng=ngMult();
   const idx=((Math.floor(floor/5)-1)%BOSSES.length + BOSSES.length)%BOSSES.length;   // milestone → boss, cycling
   const lvl=scaleLvl(floor);   // boss also rubber-bands to the party level
   const _ae=ascEff();
   const BOSS_HITS=40;   // a guardian must endure ~40 of your biggest hits — a real DPS check, never a burst-down
-  const def=(floor%SUMMIT_FLOOR===0)?TOWER_LORD:BOSSES[idx];   // every 50th floor is the summit — the Tower Lord himself
-  const hp=Math.max((1100+lvl*120)*ng*def.hpMult*_ae.bossHp, playerBigHit()*BOSS_HITS*def.hpMult*_ae.bossHp);
-  const e={type:'boss',boss:true,bossDef:def,hp,maxhp:hp,speed:3.4*def.spdMult,dmg:(38+lvl*2.6)*ng*_ae.bossDmg,r:2.6,scale:def.scale,xp:90*ng,
-    hitFlash:0,color:def.color,keep:def.keep||0,name:bossFullName(def),
-    moveCd:def.moves.map(m=>rand(m.cd[0]*0.5,m.cd[1])),   // stagger the first cast of each move
-    res:{phys:0.15,fire:0.2,cold:0.2,light:0.2}};
-  e.mesh=makeEnemyMesh(def.shape,def.color,def.scale);
-  const ring=new THREE.Mesh(new THREE.TorusGeometry(def.scale*0.87,.18,8,24), new THREE.MeshStandardMaterial({color:0xffce4d,emissive:0xffce4d,emissiveIntensity:1}));
-  ring.rotation.x=Math.PI/2; ring.position.y=def.scale*0.9; e.mesh.add(ring);
+  let def=opts.def || ((floor%SUMMIT_FLOOR===0)?TOWER_LORD:BOSSES[idx]);   // every 50th floor is the summit
+  let n=(!def.final)?nemOf(def.key):null;
+  // NEMESIS vacancy: the cycle's lord is gone (dead, or saving himself for a last stand) — a rival claims his floor
+  let vacancy=false;
+  if(!opts.def && !def.final && n && (n.dead||n.kills>=2)){
+    const alive=BOSSES.filter(b=>{ const x=nemOf(b.key); return x && !x.dead && x.kills<2; });
+    if(alive.length){ def=pick(alive); n=nemOf(def.key); vacancy=true; }
+  }
+  const tier=n?Math.min(n.kills,2):0;            // each death you dealt him made him stronger
+  const tierMult=1+0.4*tier;
+  const tr=n?n.trait:null;
+  const pow=opts.roaming?0.55:opts.assist?0.8:1; // roaming/assist forms fight below full strength
+  const hp=Math.max((1100+lvl*120)*ng*def.hpMult*_ae.bossHp, playerBigHit()*BOSS_HITS*def.hpMult*_ae.bossHp)
+           *tierMult*((tr&&tr.hpMult)||1)*pow;
+  // move kit: base + what he LEARNED (dash-spam → seekers) + trait extras (Pack Lord calls adds)
+  const moves=def.moves.slice();
+  if(n&&n.learned.dash && !moves.some(m=>m.fn===mSeekers)) moves.push({fn:mSeekers,cd:[4,5.5]});
+  if(tr&&tr.extraMove==='adds' && !moves.some(m=>m.fn===mAdds)) moves.push({fn:mAdds,cd:[8,10]});
+  const res={phys:0.15,fire:0.2,cold:0.2,light:0.2};
+  if(tr&&tr.res) for(const k in tr.res) res[k]=Math.min(0.85,(res[k]||0)+tr.res[k]);
+  if(n&&n.learned.el) res[n.learned.el]=Math.min(0.85,(res[n.learned.el]||0)+0.5);   // he studied the element that killed him
+  const e={type:'boss',boss:true,bossDef:def,hp,maxhp:hp,speed:3.4*def.spdMult*((tr&&tr.spdMult)||1),
+    dmg:(38+lvl*2.6)*ng*_ae.bossDmg*tierMult*((tr&&tr.dmgMult)||1)*(opts.roaming?0.75:1),
+    r:2.6,scale:def.scale*(opts.roaming?0.85:1),xp:90*ng,
+    hitFlash:0,color:def.color,keep:def.keep||0,name:n?nemName(def,n):bossFullName(def),
+    roaming:!!opts.roaming, assist:!!opts.assist, nemTrait:tr,
+    moveCd:moves.map(m=>rand(m.cd[0]*0.5,m.cd[1])), moves,   // stagger the first cast of each move
+    res};
+  e.mesh=makeEnemyMesh(def.shape,def.color,e.scale);
+  const ring=new THREE.Mesh(new THREE.TorusGeometry(e.scale*0.87,.18,8,24), new THREE.MeshStandardMaterial({color:0xffce4d,emissive:0xffce4d,emissiveIntensity:1}));
+  ring.rotation.x=Math.PI/2; ring.position.y=e.scale*0.9; e.mesh.add(ring);
   // ---- the grudge made visible: one dark trophy on the ring per time this boss has killed you ----
   const gr=grudgeOf(def.key);
   if(gr.k>0){ const tm=new THREE.MeshStandardMaterial({color:0x30060c,emissive:0xff2038,emissiveIntensity:.8});
     for(let i=0;i<Math.min(gr.k,6);i++){ const t=new THREE.Mesh(new THREE.TetrahedronGeometry(0.34),tm);
-      const a=i/Math.min(gr.k,6)*Math.PI*2; t.position.set(Math.sin(a)*def.scale*0.87, def.scale*0.9, Math.cos(a)*def.scale*0.87); e.mesh.add(t); } }
-  e.mesh.position.set(room.cx, 0, room.cz-room.rh/2+6); scene.add(e.mesh); G.enemies.push(e);
-  // ---- dramatic intro: the tower remembers you ----
-  const sub = gr.k>0 ? ('☠ HAS SLAIN YOU ×'+gr.k+(def.final?' · THE SUMMIT':' · Lv '+floor))
-            : def.final?'LORD OF THE TOWER · THE SUMMIT':'FLOOR GUARDIAN · Lv '+floor;
+      const a=i/Math.min(gr.k,6)*Math.PI*2; t.position.set(Math.sin(a)*e.scale*0.87, e.scale*0.9, Math.cos(a)*e.scale*0.87); e.mesh.add(t); } }
+  const px=opts.at?opts.at.x:room.cx, pz=opts.at?opts.at.z:(room.cz-room.rh/2+6);
+  e.mesh.position.set(px, 0, pz); scene.add(e.mesh); G.enemies.push(e);
+  // ---- dramatic intro: the tower remembers you (and its lords have their own agendas) ----
+  const trTag=tr?(' · '+tr.nm.toUpperCase()):'';
+  const sub = opts.roaming ? ('⚠ ROAMING LORD — off his floor, hunting'+trTag)
+            : opts.assist ? ('⚔ LAST STAND — he has nothing left to lose'+trTag)
+            : gr.k>0 ? ('☠ HAS SLAIN YOU ×'+gr.k+(def.final?' · THE SUMMIT':trTag))
+            : def.final?'LORD OF THE TOWER · THE SUMMIT':('FLOOR GUARDIAN · Lv '+floor+trTag);
   banner(e.name, sub);
-  const introLine = gr.k>0 ? voiceLine(def.key,'grudge',gr.k) : gr.d>0 ? voiceLine(def.key,'return') : voiceLine(def.key,'intro');
+  if(vacancy) log('⛰ The floor\'s master is gone — '+e.name+' has claimed the vacancy.');
+  if(tr) log('✦ '+e.name+' — '+tr.nm+': '+tr.ds+'.');
+  if(n&&n.learned.el) log('🧠 He studied your '+n.learned.el+' — it barely marks him now.');
+  if(n&&n.learned.dash) log('🧠 He studied your dashing — seekers hunt where you dodge.');
+  const introLine = opts.assist ? (nemLine(def.key,'laststand')||voiceLine(def.key,'grudge',gr.k))
+                  : opts.roaming ? (nemLine(def.key,'roamIntro')||voiceLine(def.key,'intro'))
+                  : tier>=1 ? (nemLine(def.key,'reforged')||voiceLine(def.key,'return'))
+                  : gr.k>0 ? voiceLine(def.key,'grudge',gr.k) : gr.d>0 ? voiceLine(def.key,'return') : voiceLine(def.key,'intro');
   setTimeout(()=>{ if(G.enemies.includes(e)) bossSpeak(e,introLine); },1400);
   const bx=e.mesh.position.x, bz=e.mesh.position.z;
   ringFx(bx,bz,def.scale*4,def.color); ringFx(bx,bz,def.scale*6.5,0xffce4d); burst(bx,bz,def.color);
@@ -3303,6 +3424,7 @@ function spawnBoss(floor,room){
   const fl=$('shiftFlash'); if(fl){ fl.classList.remove('go'); void fl.offsetWidth; fl.classList.add('go'); }
   sfx.evolve&&sfx.evolve();
   discover('boss:'+def.key);
+  return e;
 }
 function spawnGoblin(floor,room){
   const g={hp:48+floor*5, maxhp:48+floor*5, speed:8.5, life:14, hitFlash:0};
@@ -3501,6 +3623,7 @@ function doDash(){
   if(!dx&&!dz){ const a=Math.atan2(aimPoint.x-p.x,aimPoint.z-p.z); dx=Math.sin(a); dz=Math.cos(a); }
   const l=Math.hypot(dx,dz)||1; G.dashDir={x:dx/l,z:dz/l};
   G.dashT=0.16; G.dashCd=G.dashCdMax; G.invuln=Math.max(G.invuln,0.32); G.flowT=1.0; sfx.dash();
+  for(const en of G.enemies){ if(en.boss&&!en.dead) en._dashSeen=(en._dashSeen||0)+1; }   // NEMESIS: the lords watch how you dodge
   G.perfectT=0.34; G.dashRewarded=false;   // perfect-dodge window opens
   ringFx(p.x,p.z,2.6,0x56e0ff);
   fireProcs('dash',{pos:{x:p.x,z:p.z}});
@@ -3642,6 +3765,9 @@ function hurtEnemy(e,dmg,crit,element,src,owner){
   if(e.shieldT>0){ dmg*=0.28; }   // bulwark damage-resistant bubble
   if(e.res) dmg *= (1-(e.res[element]||0));
   if(e.shock>0) dmg *= 1.3;                       // shocked enemies take +30%
+  if(e.nemTrait){ if(e.nemTrait.frail && e.hp<e.maxhp*0.5) dmg*=1.3;      // Craven lords panic when wounded
+    if(e.nemTrait.critWeak && crit) dmg*=1.35; }                          // Proud lords crumble to critical hits
+  if(e.boss && isPlayerSrc){ const pr=e._prof||(e._prof={}); pr[element]=(pr[element]||0)+dmg; }   // he studies what hurts him
   if(isPlayerSrc){ if((G.S.exec||0)>0 && e.hp < e.maxhp*0.30) dmg*=(1+G.S.exec/100);          // execute low-HP foes
                    if((G.S.elemDmg||0)>0 && element!=='phys') dmg*=(1+G.S.elemDmg/100); }
   dmg=Math.max(1,dmg); e.hp-=dmg; e.hitFlash=.12; sfx.hit();
@@ -3754,23 +3880,30 @@ function killEnemy(e){
     gainXP(e.xp);
     if(e.gold||e.boss){ const amt=Math.round((e.boss?200+G.floor*10:30+G.floor*4)*goldMult()); G.gold+=amt; flashGold(); floatText(ex,ez,'+'+amt+' gold','goldtxt',e.boss?5:3); }
     if(Math.random() < (e.boss?1:base*lootMult())) dropLoot(ex,ez, uChanceBase||undefined, pid);   // loot soulbound to this player
+    if(e.boss && e.nemTrait && e.nemTrait.loot2) dropLoot(ex,ez, uChanceBase||undefined, pid);   // Gluttonous lords burst with stolen loot
   }); }
   if(e.affixIds && e.affixIds.length){ const k=e._killer!=null?e._killer:(_G.cur||0); withPlayer(k, ()=> dropLoot(ex,ez, e.elite?0.12:0.03, k, pick(e.affixIds))); }   // affixed foes always drop one themed item
   G.hitstop=Math.max(G.hitstop||0, e.boss?0.3:0.04);
-  if(e.boss){ unlockFeat('firstboss'); log('⚔ GUARDIAN SLAIN! The portal awakens — ascend whenever you are ready.'); G.portal.active=true; G.shiftT=portalShiftT(); G.shiftWarned=false; shakeCam(1.3);
+  if(e.boss){ unlockFeat('firstboss');
+    const offPost=e.roaming||e.assist;      // a NEMESIS encounter — doesn't open portals or grant guardian rewards
+    nemOnBossKilled(e);                     // advance his arc: reforge, last-stand roll, or permanent death (he speaks)
+    if(!offPost){ log('⚔ GUARDIAN SLAIN! The portal awakens — ascend whenever you are ready.'); G.portal.active=true; G.shiftT=portalShiftT(); G.shiftWarned=false; }
+    shakeCam(1.3);
     // ---- grudges settle: dying words + VENGEANCE fame if this one had killed you before ----
     if(e.bossDef){ const gr=grudgeOf(e.bossDef.key); gr.d=(gr.d||0)+1;
-      bossSpeak(e, voiceLine(e.bossDef.key,'death'));
+      if(e.bossDef.final||!_G.nemesis) bossSpeak(e, voiceLine(e.bossDef.key,'death'));   // nemesis lords speak their own arc lines
       if(gr.k>0){ const vFame=Math.floor(600*Math.min(gr.k,5)*ascFameMult()); META.fame+=vFame;
         banner('⚔ VENGEANCE','you avenged '+gr.k+' death'+(gr.k>1?'s':'')+' — +'+vFame.toLocaleString()+' fame');
         log('⚔ VENGEANCE — '+e.name+' had slain you ×'+gr.k+'. Debt repaid: +'+vFame.toLocaleString()+' fame.');
         gr.k=0; }   // the slate wipes clean — the next grudge starts fresh
       saveMeta(); }
-    // ascension ladder: beat a guardian at your highest unlocked level → unlock the next
-    if((_G.asc||0)>=(META.ascMax||0) && (META.ascMax||0)<ASC_MAX){ META.ascMax=(_G.asc||0)+1; saveMeta();
-      const nm=ASC_MODS[META.ascMax-1]; banner('⛧ ASCENSION '+META.ascMax+' UNLOCKED', nm.ic+' '+nm.nm+' — '+nm.ds); log('⛧ Ascension '+META.ascMax+' unlocked — '+nm.nm+'.'); }
-    if(e.bossDef&&e.bossDef.final){ _G.victoryPending=true; setTimeout(()=>victoryScreen(), 1100); }   // the summit falls — victory (replaces the blessing draft)
-    else if(!_G.splitscreen && !NET.role){ const cur=(_G.cur!=null?_G.cur:0); setTimeout(()=>{ if(_G.running) withPlayer(cur,()=>offerBoonDraft()); }, 700); }   // boss-reward draft (single-player) — let the death FX land first
+    if(!offPost){
+      // ascension ladder: beat a guardian at your highest unlocked level → unlock the next
+      if((_G.asc||0)>=(META.ascMax||0) && (META.ascMax||0)<ASC_MAX){ META.ascMax=(_G.asc||0)+1; saveMeta();
+        const nm=ASC_MODS[META.ascMax-1]; banner('⛧ ASCENSION '+META.ascMax+' UNLOCKED', nm.ic+' '+nm.nm+' — '+nm.ds); log('⛧ Ascension '+META.ascMax+' unlocked — '+nm.nm+'.'); }
+      if(e.bossDef&&e.bossDef.final){ _G.victoryPending=true; setTimeout(()=>victoryScreen(), 1100); }   // the summit falls — victory (replaces the blessing draft)
+      else if(!_G.splitscreen && !NET.role){ const cur=(_G.cur!=null?_G.cur:0); setTimeout(()=>{ if(_G.running) withPlayer(cur,()=>offerBoonDraft()); }, 700); }   // boss-reward draft (single-player) — let the death FX land first
+    }
   }
   else if(floorType(G.floor)==='NORMAL' && !e.leftRoom) G.respawns.push({t:15, room:e.room, home:e.home});   // repopulate its room after ~15s
   // clear-gate: putting down the floor's population opens the portal
@@ -4689,7 +4822,8 @@ function die(){ if(G.dead)return;
   const best=loadBest(); G._newBest = !best || runScore(deathRec)>runScore(best); if(G._newBest) saveBest(deathRec);
   // ---- the grudge deepens: a guardian that kills you REMEMBERS (and gloats on your death screen) ----
   let killQuote='';
-  { const gbDef=ALL_BOSSES.find(d=>bossFullName(d)===lastKiller);
+  { const gbDef=ALL_BOSSES.find(d=>{ const g=BOSS_VOICE[d.key]&&BOSS_VOICE[d.key].given;
+      return lastKiller===bossFullName(d) || (g && lastKiller.indexOf(g)===0); });   // nemesis names lead with the given name
     if(gbDef){ const gr=grudgeOf(gbDef.key); gr.k=(gr.k||0)+1; saveMeta();
       const q=voiceLine(gbDef.key,'kill');
       killQuote=`<span style="color:var(--gold);font-style:italic">“${q}”</span><span style="opacity:.6"> — ${lastKiller} (has slain you ×${gr.k})</span><br>`; } }
@@ -5041,6 +5175,7 @@ function startGame(){
   // shared run state
   G.floor=1; G.running=true; G.paused=false; G.hitstop=0; G.permadead=false;
   G.floorMod=null; G.bounty=null; G.practice=false; G.dailyRun=false; G.seed=randi(0,9999);
+  _G.nemesis=makeNemesis();   // NEMESIS: fresh epithets, traits and grudge-arcs for every climb — no two runs meet the same lords
   // start solo (co-op players drop-in by pressing START on a controller); rebuild P1's character
   _G.players.length=1; const p0=_G.players[0]; p0.joined=true; p0.color=PLAYER_COLORS[0]; p0.input=p0.input||makeKbmInput();
   _G.cur=0; _G.splitscreen=false; $('hud').classList.remove('cohide');
@@ -5072,7 +5207,7 @@ function updateWorldLabels(){
 }
 // ============================================================ LOOP
 // ---- dev/test handle (console): _dev.goto(50) jumps the run to a floor; _dev.G inspects state ----
-window._dev={ get G(){ return _G; }, get meta(){ return META; },
+window._dev={ get G(){ return _G; }, get meta(){ return META; }, get nem(){ return _G.nemesis; },
   goto(f){ if(!_G.running){ console.warn('start a run first'); return; } G.floor=Math.max(1,(f|0))-0; generateFloor(); log('⚙ dev: jumped to floor '+G.floor); },
   slayBoss(){ const b=_G.enemies.find(e=>e.boss&&!e.dead); if(b){ b.hp=0; b.dead=true; b._killer=0; killEnemy(b); } } };
 // ============================================================ ONLINE CO-OP (host-authoritative WebRTC)
@@ -5622,9 +5757,10 @@ function updateWorld(dt){
     if(e.boss && e.bossDef){
       if(!e.ph2 && e.hp<e.maxhp*0.55){ e.ph2=true; e.castRate=0.62; e.speed*=1.18; banner(e.name,'⚠ ENRAGED — PHASE II'); shakeCam(1.0); mNova(e); if(e.bossDef)bossSpeak(e,voiceLine(e.bossDef.key,'phase2')); }   // halfway: faster casts, a free nova
       if(!e.ph3 && e.hp<e.maxhp*0.25){ e.ph3=true; e.castRate=0.45; e.speed*=1.12; banner(e.name,'☠ DESPERATION'); shakeCam(1.3); mRing(e); mSeekers(e); if(e.bossDef)bossSpeak(e,voiceLine(e.bossDef.key,'phase3')); }   // near death: frantic
-      const cr=e.castRate||1, mv=e.bossDef.moves;
+      const cr=e.castRate||1, mv=e.moves||e.bossDef.moves;   // e.moves = nemesis-extended kit (learned counters, trait moves)
       for(let mi=0;mi<mv.length;mi++){ e.moveCd[mi]-=dt;
-        if(e.moveCd[mi]<=0 && d<38){ e.moveCd[mi]=rand(mv[mi].cd[0],mv[mi].cd[1])*cr; mv[mi].fn(e); } } }
+        if(e.moveCd[mi]<=0 && d<38){ e.moveCd[mi]=rand(mv[mi].cd[0],mv[mi].cd[1])*cr; mv[mi].fn(e); } }
+      nemTryAssist(e,d); }
     // melee wind-up strike → damage the targeted player
     if(!e.boss && !e.range){
       if(e.windup>0){ e.windup-=dt; if(e.windup<=0){ if(d<atkRange+0.7){ withPlayer(tp.id,()=>{ if(G.invuln<=0){ setKiller(enemyName(e)); hurtPlayer(e.dmg); } else if(G.perfectT>0) perfectDodge(); }); if(e.vampiric){ e.hp=Math.min(e.maxhp,e.hp+e.maxhp*0.06); ringFx(cx,cz,e.r+1,0xff3b6b); } } e.atkCd=rand(0.8,1.3); } }
