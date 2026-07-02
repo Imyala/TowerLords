@@ -3113,6 +3113,61 @@ const BOSSES=[
 const TOWER_LORD={key:'towerlord', nm:'THE TOWER LORD', shape:'dodec', color:0xffce4d, scale:4.4, hpMult:2.2, spdMult:1.0, keep:10, final:true,
   moves:[{fn:mArms,cd:[4.5,6]},{fn:mNova,cd:[5,6.5]},{fn:mTeleSlam,cd:[4,5.5]},{fn:mWall,cd:[5.5,7]},{fn:mFlower,cd:[6,7.5]},{fn:mBlackhole,cd:[6.5,8.5]},{fn:mLaserCross,cd:[7,9]},{fn:mAdds,cd:[10,12]}]};
 const ALL_BOSSES=BOSSES.concat([TOWER_LORD]);
+// ---------------- LIVING BOSSES: names, voices, and grudges ----------------
+// Every guardian is a person, not a stat block. The tower REMEMBERS: each boss keeps a
+// persistent count of how many times it has killed you (META.grudges[key].k) and how many
+// times you have killed it (.d). Grudges change their greeting, hang death-trophies on them,
+// and pay a VENGEANCE fame bonus when you finally put a tormentor down. `{k}` in a line is
+// replaced with the current kill-count.
+const BOSS_VOICE={
+  warden:  {given:'VEXROTH', intro:'Another climber. The first floors are littered with your kind.',
+    grudge:'Back again? I have kept count, climber — {k} deaths at my gate.', return:'You again. My post remembers its shame.',
+    phase2:'You are sturdier than you look.', phase3:'The Tower will hear of this…',
+    kill:'The climb ends where it always ends. At my feet.', death:'So the gate… finally… opens…'},
+  bombard: {given:'KHARGYLE', intro:'MORE POWDER! A guest has come to be perforated!',
+    grudge:'HA! The one I have buried {k} times returns for another volley!', return:'YOU! My barrels remember you, little shell-dodger!',
+    phase2:'NOW we load the good ammunition!', phase3:'EVERYTHING! FIRE EVERYTHING!',
+    kill:'BOOM. Sweep the stairs.', death:'Beautiful… what a blast…'},
+  summoner:{given:'MALVESSA', intro:'I do not dirty my hands. Children — greet our guest.',
+    grudge:'My pets have eaten you {k} times. They are developing a taste.', return:'The one who broke my circle. This time I brought more.',
+    phase2:'Fine. I shall attend to you PERSONALLY.', phase3:'RISE! ALL OF YOU, RISE!',
+    kill:'Sweep that off my floor, darlings.', death:'My children… avenge… me…'},
+  sweeper: {given:'TESSERAKT', intro:'UNIT DETECTED. COMMENCING FLOOR MAINTENANCE.',
+    grudge:'RECORD: {k} PRIOR SANITATIONS OF THIS UNIT. ROUTINE.', return:'WARNING: UNIT PREVIOUSLY CAUSED CRITICAL DAMAGE. RECALIBRATED.',
+    phase2:'EFFICIENCY THRESHOLD EXCEEDED. ESCALATING.', phase3:'CORE INTEGRITY CRITICAL. PROTOCOL: SCORCH.',
+    kill:'DEBRIS CLEARED. FLOOR RESTORED.', death:'MAINTENANCE… INCOMPLETE…'},
+  twinfang:{given:'SSYLTH', intro:'Sso quick to climb… are you quick enough to dodge?',
+    grudge:'I have tasted you {k} times, morsel. You come back sweeter each time.', return:'The one that sstung me. Come. Dance again.',
+    phase2:'Yesss! Faster! FASTER!', phase3:'No more games. Now I strike true.',
+    kill:'Too sslow. They are always too sslow.', death:'At lassst… someone… worthy…'},
+  overlord:{given:'AURENOX', intro:'Kneel. Or be knelt. Every floor below is mine.',
+    grudge:'{k} times you have knelt before me. Once more, for the throne.', return:'The regicide returns. Guards — no. This one is MINE.',
+    phase2:'You dare wound a king?!', phase3:'I AM THE CROWN AND THE MOUNTAIN BENEATH IT!',
+    kill:'Court is adjourned.', death:'A crown… is only… borrowed…'},
+  voidlord:{given:'NYXARETH', intro:'You are very small. The dark between floors is very large.',
+    grudge:'I have unmade you {k} times. You keep reassembling. Curious.', return:'The stitch in the void. I remember your shape.',
+    phase2:'The light in you flickers.', phase3:'ENOUGH. BE NOTHING.',
+    kill:'Returned to static.', death:'The void… does not… end…'},
+  warlock: {given:'GRIMMOIRE', intro:'A live specimen! Do try to survive the whole experiment.',
+    grudge:'Trial resumes. Previous outcomes: {k} fatalities. All yours.', return:'Ah, the anomaly that ruined my notes. New hypothesis: DIE.',
+    phase2:'Fascinating resistance! Increasing the dosage.', phase3:'THE MARGINS! I AM WRITING IN THE MARGINS!',
+    kill:'Results conclusive. Specimen discarded.', death:'What a… final… footnote…'},
+  reaper:  {given:'MORVANE', intro:'Everyone meets me twice. This is merely the rehearsal.',
+    grudge:'{k} rehearsals now. You know your part perfectly.', return:'You cut our last appointment short. Rude.',
+    phase2:'Closer now.', phase3:'It is time.',
+    kill:'As scheduled.', death:'Ah… so that is… how it feels…'},
+  towerlord:{given:null, intro:'I am every floor you bled on. Every stair. Every wall. And you are a draft through my halls.',
+    grudge:'I have swallowed you {k} times, little draft. The tower digests slowly.', return:'You topple me and still you climb. What do you imagine is above me?',
+    phase2:'You climb WELL. Let us see how you FALL.', phase3:'I HAVE STOOD TEN THOUSAND YEARS. YOU HAVE THIS MINUTE.',
+    kill:'Another brick. That is all you were.', death:'At last… someone… to inherit… the view…'},
+};
+function bossFullName(def){ const v=BOSS_VOICE[def.key]; return (v&&v.given)? v.given+', '+def.nm : def.nm; }
+function grudgeOf(key){ if(!META.grudges)META.grudges={}; return META.grudges[key]||(META.grudges[key]={k:0,d:0}); }
+function voiceLine(key,which,k){ const v=BOSS_VOICE[key]; if(!v||!v[which])return null; return v[which].replace('{k}',String(k||0)); }
+// a spoken line: gold text over the boss + a quoted log entry — personality, not just patterns
+function bossSpeak(e,line){ if(!line)return; const p=e.mesh&&e.mesh.position;
+  if(p) floatText(p.x,p.z,'“'+line+'”','goldtxt',Math.min(3.4,(e.scale||3)*0.75+1.4));
+  log('『'+line+'』 — '+(e.name||'the guardian')); }
 function spawnBoss(floor,room){
   const ng=ngMult();
   const idx=((Math.floor(floor/5)-1)%BOSSES.length + BOSSES.length)%BOSSES.length;   // milestone → boss, cycling
@@ -3122,15 +3177,24 @@ function spawnBoss(floor,room){
   const def=(floor%SUMMIT_FLOOR===0)?TOWER_LORD:BOSSES[idx];   // every 50th floor is the summit — the Tower Lord himself
   const hp=Math.max((1100+lvl*120)*ng*def.hpMult*_ae.bossHp, playerBigHit()*BOSS_HITS*def.hpMult*_ae.bossHp);
   const e={type:'boss',boss:true,bossDef:def,hp,maxhp:hp,speed:3.4*def.spdMult,dmg:(38+lvl*2.6)*ng*_ae.bossDmg,r:2.6,scale:def.scale,xp:90*ng,
-    hitFlash:0,color:def.color,keep:def.keep||0,name:def.nm,
+    hitFlash:0,color:def.color,keep:def.keep||0,name:bossFullName(def),
     moveCd:def.moves.map(m=>rand(m.cd[0]*0.5,m.cd[1])),   // stagger the first cast of each move
     res:{phys:0.15,fire:0.2,cold:0.2,light:0.2}};
   e.mesh=makeEnemyMesh(def.shape,def.color,def.scale);
   const ring=new THREE.Mesh(new THREE.TorusGeometry(def.scale*0.87,.18,8,24), new THREE.MeshStandardMaterial({color:0xffce4d,emissive:0xffce4d,emissiveIntensity:1}));
   ring.rotation.x=Math.PI/2; ring.position.y=def.scale*0.9; e.mesh.add(ring);
+  // ---- the grudge made visible: one dark trophy on the ring per time this boss has killed you ----
+  const gr=grudgeOf(def.key);
+  if(gr.k>0){ const tm=new THREE.MeshStandardMaterial({color:0x30060c,emissive:0xff2038,emissiveIntensity:.8});
+    for(let i=0;i<Math.min(gr.k,6);i++){ const t=new THREE.Mesh(new THREE.TetrahedronGeometry(0.34),tm);
+      const a=i/Math.min(gr.k,6)*Math.PI*2; t.position.set(Math.sin(a)*def.scale*0.87, def.scale*0.9, Math.cos(a)*def.scale*0.87); e.mesh.add(t); } }
   e.mesh.position.set(room.cx, 0, room.cz-room.rh/2+6); scene.add(e.mesh); G.enemies.push(e);
-  // ---- dramatic intro ----
-  banner(def.nm, def.final?'LORD OF THE TOWER · THE SUMMIT':'FLOOR GUARDIAN · Lv '+floor);
+  // ---- dramatic intro: the tower remembers you ----
+  const sub = gr.k>0 ? ('☠ HAS SLAIN YOU ×'+gr.k+(def.final?' · THE SUMMIT':' · Lv '+floor))
+            : def.final?'LORD OF THE TOWER · THE SUMMIT':'FLOOR GUARDIAN · Lv '+floor;
+  banner(e.name, sub);
+  const introLine = gr.k>0 ? voiceLine(def.key,'grudge',gr.k) : gr.d>0 ? voiceLine(def.key,'return') : voiceLine(def.key,'intro');
+  setTimeout(()=>{ if(G.enemies.includes(e)) bossSpeak(e,introLine); },1400);
   const bx=e.mesh.position.x, bz=e.mesh.position.z;
   ringFx(bx,bz,def.scale*4,def.color); ringFx(bx,bz,def.scale*6.5,0xffce4d); burst(bx,bz,def.color);
   shakeCam(1.5); G.hitstop=Math.max(G.hitstop||0,0.45);   // brief slow-mo on the reveal
@@ -3592,6 +3656,14 @@ function killEnemy(e){
   if(e.affixIds && e.affixIds.length){ const k=e._killer!=null?e._killer:(_G.cur||0); withPlayer(k, ()=> dropLoot(ex,ez, e.elite?0.12:0.03, k, pick(e.affixIds))); }   // affixed foes always drop one themed item
   G.hitstop=Math.max(G.hitstop||0, e.boss?0.3:0.04);
   if(e.boss){ unlockFeat('firstboss'); log('⚔ GUARDIAN SLAIN! The portal awakens — ascend whenever you are ready.'); G.portal.active=true; G.shiftT=portalShiftT(); G.shiftWarned=false; shakeCam(1.3);
+    // ---- grudges settle: dying words + VENGEANCE fame if this one had killed you before ----
+    if(e.bossDef){ const gr=grudgeOf(e.bossDef.key); gr.d=(gr.d||0)+1;
+      bossSpeak(e, voiceLine(e.bossDef.key,'death'));
+      if(gr.k>0){ const vFame=Math.floor(600*Math.min(gr.k,5)*ascFameMult()); META.fame+=vFame;
+        banner('⚔ VENGEANCE','you avenged '+gr.k+' death'+(gr.k>1?'s':'')+' — +'+vFame.toLocaleString()+' fame');
+        log('⚔ VENGEANCE — '+e.name+' had slain you ×'+gr.k+'. Debt repaid: +'+vFame.toLocaleString()+' fame.');
+        gr.k=0; }   // the slate wipes clean — the next grudge starts fresh
+      saveMeta(); }
     // ascension ladder: beat a guardian at your highest unlocked level → unlock the next
     if((_G.asc||0)>=(META.ascMax||0) && (META.ascMax||0)<ASC_MAX){ META.ascMax=(_G.asc||0)+1; saveMeta();
       const nm=ASC_MODS[META.ascMax-1]; banner('⛧ ASCENSION '+META.ascMax+' UNLOCKED', nm.ic+' '+nm.nm+' — '+nm.ds); log('⛧ Ascension '+META.ascMax+' unlocked — '+nm.nm+'.'); }
@@ -4490,7 +4562,7 @@ function ascend(){ bountyAscendCheck(); const prevNg=ngLevel(G.floor); G.floor++
 // --- killer tracking (what felled the player, for the death log) ---
 const ETYPE_NM={grunt:'Grunt',swarm:'Swarmling',charger:'Charger',archer:'Archer',gunner:'Gunner',brute:'Brute',caster:'Caster',bomber:'Bomber',splitter:'Splitter',warden:'Warden',sniper:'Sniper',lancer:'Lancer',weaver:'Weaver',bulwark:'Bulwark',revenant:'Revenant',phantom:'Phantom',shaman:'Shaman',hexer:'Hexer',berserker:'Berserker'};
 const _art=n=>/^[aeiou]/i.test(n)?'an ':'a ';
-function enemyName(e){ if(!e)return 'the Tower'; if(e.boss)return 'the Floor Guardian'; const nm=ETYPE_NM[e.etype]||'foe'; return e.elite?('an Elite '+nm):(_art(nm)+nm); }
+function enemyName(e){ if(!e)return 'the Tower'; if(e.boss)return e.name||'the Floor Guardian'; const nm=ETYPE_NM[e.etype]||'foe'; return e.elite?('an Elite '+nm):(_art(nm)+nm); }
 let lastKiller='the Tower';
 function setKiller(n){ lastKiller=n||'the Tower'; }
 // --- best-run record (persists; compared against the current run) ---
@@ -4513,8 +4585,14 @@ function die(){ if(G.dead)return;
   // record this death (with killer + full run stats) and compare against the all-time best run
   const deathRec={ floor:G.floor, level:G.level, kills:G.run.kills, gold:G.gold, time:Math.floor(G.run.totalTime), hardcore:G.hardcore, permadead:(G.hardcore&&secondDeath), fame:fameEarned, asc:(_G.asc||0), when:Date.now(), killer:lastKiller, run:Object.assign({},G.run) };
   const best=loadBest(); G._newBest = !best || runScore(deathRec)>runScore(best); if(G._newBest) saveBest(deathRec);
+  // ---- the grudge deepens: a guardian that kills you REMEMBERS (and gloats on your death screen) ----
+  let killQuote='';
+  { const gbDef=ALL_BOSSES.find(d=>bossFullName(d)===lastKiller);
+    if(gbDef){ const gr=grudgeOf(gbDef.key); gr.k=(gr.k||0)+1; saveMeta();
+      const q=voiceLine(gbDef.key,'kill');
+      killQuote=`<span style="color:var(--gold);font-style:italic">“${q}”</span><span style="opacity:.6"> — ${lastKiller} (has slain you ×${gr.k})</span><br>`; } }
   const ascBadge = (_G.asc||0)>0 ? `<span style="color:#d9b6ff">⛧ Ascension ${_G.asc}</span><br>` : '';
-  msg = ascBadge + (G._newBest?`<span style="color:var(--gold)">★ NEW BEST RUN!</span><br>`:'') + `<span style="opacity:.85">Felled by <b style="color:var(--hp)">${lastKiller}</b>.</span><br>` + msg;
+  msg = ascBadge + (G._newBest?`<span style="color:var(--gold)">★ NEW BEST RUN!</span><br>`:'') + `<span style="opacity:.85">Felled by <b style="color:var(--hp)">${lastKiller}</b>.</span><br>` + killQuote + msg;
   const h1=$('death').querySelector('h1');
   if(G.hardcore && secondDeath){
     G.permadead=true; h1.textContent='PERMADEATH';
@@ -4744,7 +4822,7 @@ function renderCodex(){
     : `<div class="cdxCard locked"><div class="cdxIc">❔</div><div class="cdxNm">???</div><div class="cdxTag">undiscovered</div></div>`; }
   h+=`</div><div class="cdxSec">👑 GUARDIANS — ${bossSeen}/${ALL_BOSSES.length} discovered</div><div class="cdxGrid">`;
   for(const d of ALL_BOSSES){ h+= cx['boss:'+d.key]
-    ? `<div class="cdxCard boss"><div class="cdxIc" style="color:${hx(d.color)}">${CDX_SHAPE[d.shape]||'🔴'}</div><div class="cdxNm">${d.nm}</div><div class="cdxTag">${d.moves.length} attacks · 2 phases</div></div>`
+    ? `<div class="cdxCard boss"><div class="cdxIc" style="color:${hx(d.color)}">${CDX_SHAPE[d.shape]||'🔴'}</div><div class="cdxNm">${bossFullName(d)}</div><div class="cdxTag">${d.moves.length} attacks · 2 phases${(META.grudges&&META.grudges[d.key]&&META.grudges[d.key].k)?' · ☠ has slain you ×'+META.grudges[d.key].k:''}</div></div>`
     : `<div class="cdxCard locked boss"><div class="cdxIc">❔</div><div class="cdxNm">??? GUARDIAN</div><div class="cdxTag">undiscovered</div></div>`; }
   h+='</div>'; b.innerHTML=h;
 }
@@ -5432,8 +5510,8 @@ function updateWorld(dt){
     }
     // boss attack kit — each move runs on its own cooldown, so every guardian plays differently
     if(e.boss && e.bossDef){
-      if(!e.ph2 && e.hp<e.maxhp*0.55){ e.ph2=true; e.castRate=0.62; e.speed*=1.18; banner(e.name,'⚠ ENRAGED — PHASE II'); shakeCam(1.0); mNova(e); }   // halfway: faster casts, a free nova
-      if(!e.ph3 && e.hp<e.maxhp*0.25){ e.ph3=true; e.castRate=0.45; e.speed*=1.12; banner(e.name,'☠ DESPERATION'); shakeCam(1.3); mRing(e); mSeekers(e); }   // near death: frantic
+      if(!e.ph2 && e.hp<e.maxhp*0.55){ e.ph2=true; e.castRate=0.62; e.speed*=1.18; banner(e.name,'⚠ ENRAGED — PHASE II'); shakeCam(1.0); mNova(e); if(e.bossDef)bossSpeak(e,voiceLine(e.bossDef.key,'phase2')); }   // halfway: faster casts, a free nova
+      if(!e.ph3 && e.hp<e.maxhp*0.25){ e.ph3=true; e.castRate=0.45; e.speed*=1.12; banner(e.name,'☠ DESPERATION'); shakeCam(1.3); mRing(e); mSeekers(e); if(e.bossDef)bossSpeak(e,voiceLine(e.bossDef.key,'phase3')); }   // near death: frantic
       const cr=e.castRate||1, mv=e.bossDef.moves;
       for(let mi=0;mi<mv.length;mi++){ e.moveCd[mi]-=dt;
         if(e.moveCd[mi]<=0 && d<38){ e.moveCd[mi]=rand(mv[mi].cd[0],mv[mi].cd[1])*cr; mv[mi].fn(e); } } }
@@ -5442,7 +5520,7 @@ function updateWorld(dt){
       if(e.windup>0){ e.windup-=dt; if(e.windup<=0){ if(d<atkRange+0.7){ withPlayer(tp.id,()=>{ if(G.invuln<=0){ setKiller(enemyName(e)); hurtPlayer(e.dmg); } else if(G.perfectT>0) perfectDodge(); }); if(e.vampiric){ e.hp=Math.min(e.maxhp,e.hp+e.maxhp*0.06); ringFx(cx,cz,e.r+1,0xff3b6b); } } e.atkCd=rand(0.8,1.3); } }
       else { e.atkCd=Math.max(0,e.atkCd-dt); if(e.atkCd<=0 && d<atkRange+0.4 && e.aggro){ e.windup=0.34; aimTell(e,0xff4d4d); } }   // red lock-on = a melee blow is coming
     }
-    if(e.boss && d<e.r+1.4){ withPlayer(tp.id,()=>{ if(G.invuln<=0){ setKiller('the Floor Guardian'); hurtPlayer(e.dmg*0.6); } }); e.kx=-dx*0.4; e.kz=-dz*0.4; }
+    if(e.boss && d<e.r+1.4){ withPlayer(tp.id,()=>{ if(G.invuln<=0){ setKiller(enemyName(e)); hurtPlayer(e.dmg*0.6); } }); e.kx=-dx*0.4; e.kz=-dz*0.4; }
   }
 
   // enemy projectiles — hit whichever player they reach
