@@ -988,34 +988,47 @@
         Player 1 plays on <b>keyboard &amp; mouse</b>. Plug in controllers and press <b>START</b> (or A) on each to claim a slot — you can also drop in mid-run anytime. Everyone shares a split-screen view and each player manages their own build &amp; menus in-game (press <b>Back/Select</b> on your controller).</div>
     </div>
     <div id="onlineLobby" class="menuCol hidden">
-      <div style="font-size:13px;letter-spacing:3px;opacity:.7;margin-bottom:4px">🌐 ONLINE CO-OP · serverless P2P (Phase 1)</div>
+      <div style="font-size:13px;letter-spacing:3px;opacity:.7;margin-bottom:4px">🌐 ONLINE CO-OP · room codes, serverless P2P</div>
       <div id="onlineChoose">
         <button class="btn" id="onHostBtn">🖥 Host a Game</button>
         <button class="btn" id="onJoinBtn">🔌 Join a Game</button>
         <button class="btn ghost small" id="onlineBack">← Back to menu</button>
       </div>
       <div id="onlineHost" class="hidden" style="max-width:520px">
-        <div style="font-size:12px;opacity:.7;margin:4px 0">1 · Send this <b>invite code</b> to your friend:</div>
-        <textarea id="onOfferOut" readonly style="width:100%;height:74px;font-size:10px"></textarea>
-        <button class="btn ghost small" id="onCopyOffer">📋 Copy invite</button>
-        <div style="font-size:12px;opacity:.7;margin:8px 0 4px">2 · Paste their <b>answer code</b> back here:</div>
-        <textarea id="onAnsIn" style="width:100%;height:74px;font-size:10px" placeholder="paste friend's answer code…"></textarea>
-        <button class="btn" id="onConnectBtn">✔ Connect Friend</button>
+        <div style="font-size:12px;opacity:.7;margin:4px 0">Share this <b>room code</b> — friends pick <i>Join a Game</i> and type it in:</div>
+        <div id="onRoomCode" style="font-size:44px;letter-spacing:12px;font-weight:700;color:#8effd9;margin:10px 0;user-select:all">·····</div>
+        <button class="btn ghost small" id="onCopyCode">📋 Copy code</button>
         <div id="onHostStatus" style="font-size:11px;opacity:.6;margin-top:8px"></div>
+        <div id="onHostPeers" style="font-size:12px;margin-top:6px;color:#8effd9"></div>
+        <details style="margin-top:14px;font-size:11px;opacity:.75"><summary style="cursor:pointer">Manual connect (fallback — no broker needed)</summary>
+          <div style="font-size:12px;opacity:.7;margin:4px 0">1 · Send this <b>invite code</b> to your friend:</div>
+          <textarea id="onOfferOut" readonly style="width:100%;height:74px;font-size:10px"></textarea>
+          <button class="btn ghost small" id="onGenOffer">⚙ Generate invite</button>
+          <button class="btn ghost small" id="onCopyOffer">📋 Copy invite</button>
+          <div style="font-size:12px;opacity:.7;margin:8px 0 4px">2 · Paste their <b>answer code</b> back here:</div>
+          <textarea id="onAnsIn" style="width:100%;height:74px;font-size:10px" placeholder="paste friend's answer code…"></textarea>
+          <button class="btn" id="onConnectBtn">✔ Connect Friend</button>
+        </details>
         <button class="btn ghost small" id="onHostBack">← Back</button>
       </div>
       <div id="onlineJoin" class="hidden" style="max-width:520px">
-        <div style="font-size:12px;opacity:.7;margin:4px 0">1 · Paste the host's <b>invite code</b>:</div>
-        <textarea id="onOfferIn" style="width:100%;height:74px;font-size:10px" placeholder="paste host's invite code…"></textarea>
-        <button class="btn" id="onGenAnsBtn">↪ Generate Answer</button>
-        <div style="font-size:12px;opacity:.7;margin:8px 0 4px">2 · Send this <b>answer code</b> back to the host:</div>
-        <textarea id="onAnsOut" readonly style="width:100%;height:74px;font-size:10px"></textarea>
-        <button class="btn ghost small" id="onCopyAns">📋 Copy answer</button>
+        <div style="font-size:12px;opacity:.7;margin:4px 0">Type the host's <b>room code</b>:</div>
+        <input id="onCodeIn" maxlength="5" placeholder="K7Q2M" autocomplete="off" spellcheck="false"
+          style="width:240px;font-size:32px;letter-spacing:10px;text-align:center;text-transform:uppercase;background:#0d1320;color:#8effd9;border:1px solid #2a3550;border-radius:8px;padding:8px 4px">
+        <button class="btn" id="onCodeJoinBtn">🔌 Join Room</button>
         <div id="onJoinStatus" style="font-size:11px;opacity:.6;margin-top:8px"></div>
+        <details style="margin-top:14px;font-size:11px;opacity:.75"><summary style="cursor:pointer">Manual connect (fallback — no broker needed)</summary>
+          <div style="font-size:12px;opacity:.7;margin:4px 0">1 · Paste the host's <b>invite code</b>:</div>
+          <textarea id="onOfferIn" style="width:100%;height:74px;font-size:10px" placeholder="paste host's invite code…"></textarea>
+          <button class="btn" id="onGenAnsBtn">↪ Generate Answer</button>
+          <div style="font-size:12px;opacity:.7;margin:8px 0 4px">2 · Send this <b>answer code</b> back to the host:</div>
+          <textarea id="onAnsOut" readonly style="width:100%;height:74px;font-size:10px"></textarea>
+          <button class="btn ghost small" id="onCopyAns">📋 Copy answer</button>
+        </details>
         <button class="btn ghost small" id="onJoinBack">← Back</button>
       </div>
       <div style="font-size:11px;opacity:.5;margin-top:10px;max-width:480px;line-height:1.6">
-        No server needed — one player <b>hosts</b> the world, friends connect peer-to-peer. The codes only introduce your browsers; gameplay flows directly between you. (Manual paste for now; short room codes come later.)</div>
+        No game server — one player <b>hosts</b> the world and friends connect peer-to-peer. The room code only introduces your browsers (via a free public broker); gameplay flows directly between you.</div>
     </div>
   </div>
 
@@ -2244,7 +2257,7 @@ function startCoop(){ const pads=lobbyPads.slice(); coopLobbyOpen=false; $('coop
 $('menuCoop').onclick=showCoopLobby;
 $('coopBack').onclick=showMenu;
 $('coopStartBtn').onclick=startCoop;
-// ---- online co-op lobby (manual-paste WebRTC) ----
+// ---- online co-op lobby (room codes via PeerJS broker; manual-paste WebRTC fallback) ----
 function showOnlineLobby(){ ['tutorial','deathlog'].forEach(id=>$(id).classList.add('hidden')); $('start').classList.remove('hidden');
   $('menuMain').classList.add('hidden'); $('climbScreen').classList.add('hidden'); $('coopLobby').classList.add('hidden'); $('onlineLobby').classList.remove('hidden');
   $('onlineChoose').classList.remove('hidden'); $('onlineHost').classList.add('hidden'); $('onlineJoin').classList.add('hidden'); }
@@ -2255,13 +2268,25 @@ $('onHostBack').onclick=onlineToChoose;
 $('onJoinBack').onclick=onlineToChoose;
 async function onlineCopy(id){ try{ await navigator.clipboard.writeText($(id).value); }catch(_){ $(id).select(); document.execCommand&&document.execCommand('copy'); } }
 $('onHostBtn').onclick=async()=>{ $('onlineChoose').classList.add('hidden'); $('onlineHost').classList.remove('hidden');
-  $('onHostStatus').textContent='Generating invite…'; try{ const offer=await netCreateInvite(); $('onOfferOut').value=offer; $('onHostStatus').textContent='Invite ready — send it, then paste their answer below.'; }
+  $('onHostStatus').textContent='Opening room…'; $('onRoomCode').textContent='·····';
+  try{ const code=await netRoomHost(s=>{ $('onHostStatus').textContent=s; }, n=>{ $('onHostPeers').textContent=n?('🌐 '+n+' friend'+(n>1?'s':'')+' connected'):''; });
+    $('onRoomCode').textContent=code; $('onHostStatus').textContent='Room open — waiting for friends. Keep this tab running; you are the world.'; }
+  catch(e){ $('onRoomCode').textContent='—'; $('onHostStatus').textContent='⚠ '+(e&&e.message||'Broker unreachable — use Manual connect below.'); } };
+$('onCopyCode').onclick=async()=>{ const c=$('onRoomCode').textContent.trim(); try{ await navigator.clipboard.writeText(c); }catch(_){} };
+$('onGenOffer').onclick=async()=>{ $('onHostStatus').textContent='Generating invite…';
+  try{ const offer=await netCreateInvite(); $('onOfferOut').value=offer; $('onHostStatus').textContent='Invite ready — send it, then paste their answer below.'; }
   catch(e){ $('onHostStatus').textContent='⚠ '+e.message; } };
 $('onCopyOffer').onclick=()=>onlineCopy('onOfferOut');
 $('onConnectBtn').onclick=async()=>{ const a=$('onAnsIn').value.trim(); if(!a){ $('onHostStatus').textContent='Paste the answer code first.'; return; }
   $('onHostStatus').textContent='Connecting…'; try{ await netAcceptAnswer(a); $('onHostStatus').textContent='✔ Answer accepted — waiting for the channel to open…'; }
   catch(e){ $('onHostStatus').textContent='⚠ '+e.message; } };
-$('onJoinBtn').onclick=()=>{ $('onlineChoose').classList.add('hidden'); $('onlineJoin').classList.remove('hidden'); $('onJoinStatus').textContent='Paste the host’s invite, then Generate Answer.'; };
+$('onJoinBtn').onclick=()=>{ $('onlineChoose').classList.add('hidden'); $('onlineJoin').classList.remove('hidden'); $('onJoinStatus').textContent='Type the 5-letter room code from the host.'; $('onCodeIn').focus(); };
+$('onCodeJoinBtn').onclick=async()=>{ const code=$('onCodeIn').value.trim().toUpperCase(); if(code.length<4){ $('onJoinStatus').textContent='Enter the 5-letter room code first.'; return; }
+  $('onCodeJoinBtn').disabled=true; $('onJoinStatus').textContent='Connecting to room '+code+'…';
+  try{ await netRoomJoin(code, s=>{ $('onJoinStatus').textContent=s; }); }
+  catch(e){ $('onJoinStatus').textContent='⚠ '+(e&&e.message||'Could not reach that room — check the code, or use Manual connect below.'); }
+  finally{ $('onCodeJoinBtn').disabled=false; } };
+$('onCodeIn').addEventListener('keydown',e=>{ if(e.key==='Enter') $('onCodeJoinBtn').click(); });
 $('onGenAnsBtn').onclick=async()=>{ const o=$('onOfferIn').value.trim(); if(!o){ $('onJoinStatus').textContent='Paste the invite code first.'; return; }
   $('onJoinStatus').textContent='Generating answer…'; try{ const ans=await netAcceptInvite(o); $('onAnsOut').value=ans; $('onJoinStatus').textContent='Answer ready — send it back to the host. You’ll connect automatically.'; }
   catch(e){ $('onJoinStatus').textContent='⚠ '+e.message; } };
@@ -4797,10 +4822,11 @@ function updateWorldLabels(){
   for(const id of IDS){ if(!seen.has(id)){ const e=document.getElementById(id); if(e) e.style.display='none'; } }
 }
 // ============================================================ LOOP
-// ============================================================ ONLINE CO-OP — Phase 1 (host-authoritative, manual-paste WebRTC)
+// ============================================================ ONLINE CO-OP (host-authoritative WebRTC)
 // No game server: the HOST runs the only authoritative sim; PEERS send input and render the
-// snapshots the host streams back. Signaling is a manual copy-paste of an offer/answer code
-// (zero infrastructure). Builds directly on the Phase-0 packet seam (netPacket / makeNetInput).
+// snapshots the host streams back. Signaling: short ROOM CODES via the free PeerJS cloud broker
+// (primary), or manual copy-paste of an offer/answer code (zero-infrastructure fallback).
+// Builds directly on the Phase-0 packet seam (netPacket / makeNetInput).
 const NET={ role:null, host:null, peer:null, localId:0, sendAcc:0, snapHz:18 };
 let _nid=1;   // lazily-assigned stable network ids for streamed enemies/projectiles
 const NET_ICE={ iceServers:[{urls:'stun:stun.l.google.com:19302'}] };
@@ -4809,19 +4835,23 @@ function netIceDone(pc){ return new Promise(res=>{ if(pc.iceGatheringState==='co
   const f=()=>{ if(pc.iceGatheringState==='complete'){ pc.removeEventListener('icegatheringstatechange',f); res(); } };
   pc.addEventListener('icegatheringstatechange',f); setTimeout(res,2600); }); }   // fall through after 2.6s
 
-// ---- HOST: authoritative; one RTCPeerConnection per friend ----
+// ---- HOST: authoritative; one connection per friend ----
 function netStartHost(){ if(NET.role==='peer')return null; NET.role='host'; NET.host=NET.host||{ conns:[] }; if(!_G.running) startGame(); return NET.host; }
+// shared "friend fully connected" step — used by both the room-code path and the manual-paste path.
+// rec.ch / rec.evt just need {send(), readyState} (raw RTCDataChannels or PeerJS shims both qualify).
+function netHostReady(rec){ if(rec._ready) return; if(rec.ch.readyState!=='open'||rec.evt.readyState!=='open') return;   // wait for BOTH channels
+  rec._ready=true; rec.awaiting=false; rec.player=joinNetPlayer();
+  try{ rec.evt.send(JSON.stringify({type:'hello',id:rec.player.id,seed:_G.seed,floor:_G.floor})); }catch(_){}
+  try{ rec.evt.send(serializeFloorLayout()); }catch(_){}     // send the current floor so the peer can build it
+  banner('🌐 PEER JOINED','online co-op'); log('🌐 A friend connected as Player '+(rec.player.id+1)+'.');
+  if(NET.host&&NET.host.onPeers) NET.host.onPeers(NET.host.conns.filter(c=>c._ready).length); }
 async function netCreateInvite(){
   const h=netStartHost();
   const pc=new RTCPeerConnection(NET_ICE);
   const ch=pc.createDataChannel('game',{ordered:false,maxRetransmits:0});   // unreliable/unordered for fast state
   const evt=pc.createDataChannel('evt',{ordered:true});                     // reliable/ordered for hello + floor layout
   const rec={pc,ch,evt,player:null,awaiting:true,_ready:false};
-  const onReady=()=>{ if(rec._ready) return; if(ch.readyState!=='open'||evt.readyState!=='open') return;   // wait for BOTH channels
-    rec._ready=true; rec.awaiting=false; rec.player=joinNetPlayer();
-    try{ evt.send(JSON.stringify({type:'hello',id:rec.player.id,seed:_G.seed,floor:_G.floor})); }catch(_){}
-    try{ evt.send(serializeFloorLayout()); }catch(_){}     // send the current floor so the peer can build it
-    banner('🌐 PEER JOINED','online co-op'); log('🌐 A friend connected as Player '+(rec.player.id+1)+'.'); };
+  const onReady=()=>netHostReady(rec);
   ch.onopen=onReady; evt.onopen=onReady;
   ch.onmessage=e=>{ try{ const m=JSON.parse(e.data); if(m.in && rec.player) rec.player.netPacket=m.in; }catch(_){} };
   ch.onclose=()=>{ if(rec.player){ rec.player.joined=false; rec.player.downed=true; } };
@@ -4849,6 +4879,83 @@ async function netAcceptInvite(offerStr){
   await pc.setRemoteDescription(JSON.parse(offerStr.trim()));
   await pc.setLocalDescription(await pc.createAnswer()); await netIceDone(pc);
   return JSON.stringify(pc.localDescription);   // paste THIS answer back to the host
+}
+
+// ---- ROOM CODES (PeerJS free cloud broker for signaling; gameplay still direct P2P) ----
+// The broker only introduces the browsers — after the handshake all traffic is host↔peer WebRTC,
+// exactly like the manual-paste path. PeerJS is lazy-loaded so the offline build never touches it.
+const ROOM_ALPHA='ABCDEFGHJKMNPQRSTUVWXYZ23456789';   // no I/L/O/0/1 — codes are read aloud
+function roomCode(n){ let s=''; for(let i=0;i<(n||5);i++) s+=ROOM_ALPHA[Math.floor(Math.random()*ROOM_ALPHA.length)]; return s; }
+function roomPeerId(code){ return 'twlords5-'+code; }
+let _pjLoad=null;
+function loadPeerJS(){ if(window.Peer) return Promise.resolve(); if(_pjLoad) return _pjLoad;
+  _pjLoad=new Promise((res,rej)=>{ const s=document.createElement('script');
+    s.src='https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js';
+    s.onload=()=>window.Peer?res():rej(new Error('PeerJS failed to initialise'));
+    s.onerror=()=>{ _pjLoad=null; rej(new Error('Could not load the connection library — no internet? Use Manual connect.')); };
+    document.head.appendChild(s); });
+  return _pjLoad; }
+// PeerJS DataConnections expose {send, open}; the game code expects RTCDataChannel's {send, readyState}.
+function pjChan(conn){ return { send:d=>conn.send(d), get readyState(){ return conn.open?'open':'connecting'; } }; }
+async function netRoomHost(status,onPeers){
+  await loadPeerJS();
+  const h=netStartHost(); if(!h) throw new Error('Already joined a game as a guest.');
+  h.onPeers=onPeers||null;
+  if(h.room) return h.room.code;                      // room already open — reuse (host pressed Back and returned)
+  const open=(tries)=>new Promise((res,rej)=>{
+    const code=roomCode(5);
+    const peer=new Peer(roomPeerId(code),{debug:0});
+    let settled=false;
+    peer.on('open',()=>{ if(settled)return; settled=true; res({peer,code}); });
+    peer.on('error',e=>{
+      if(!settled && e.type==='unavailable-id' && tries>0){ settled=true; peer.destroy(); res(open(tries-1)); return; }
+      if(!settled){ settled=true; rej(new Error(e.type==='network'?'Broker unreachable — check your internet, or use Manual connect.':(e.message||e.type))); return; }
+      if(e.type==='network'){ status&&status('⚠ Lost the broker — connected friends keep playing; new joins need a rehost.'); } });
+    setTimeout(()=>{ if(!settled){ settled=true; peer.destroy(); rej(new Error('Timed out reaching the broker — use Manual connect.')); } },12000); });
+  const {peer,code}=await open(3);
+  h.room={peer,code}; window._netRoom=h.room;   // debug handle (harmless; lets devtools inspect the broker peer)
+  peer.on('connection',conn=>{
+    console.log('[net] incoming conn', conn.label, 'from', conn.peer);
+    let rec=h.conns.find(c=>c.pjId===conn.peer);
+    if(!rec){
+      if(joinedPlayers().length>=4){ try{ conn.close(); }catch(_){} status&&status('A 5th player tried to join — the tower holds four.'); return; }
+      rec={pjId:conn.peer,pc:null,ch:null,evt:null,player:null,awaiting:true,_ready:false}; h.conns.push(rec); }
+    conn.on('open',()=>{
+      if(conn.label==='game'){ rec.ch=pjChan(conn);
+        conn.on('data',d=>{ try{ const m=JSON.parse(d); if(m.in && rec.player) rec.player.netPacket=m.in; }catch(_){} });
+        conn.on('close',()=>{ if(rec.player){ rec.player.joined=false; rec.player.downed=true; } if(h.onPeers) h.onPeers(h.conns.filter(c=>c._ready&&c.player&&c.player.joined).length); }); }
+      else if(conn.label==='evt'){ rec.evt=pjChan(conn); }
+      netHostReady(rec); }); });
+  return code;
+}
+async function netRoomJoin(code,status){
+  await loadPeerJS();
+  const pr=netPeerStart(); if(!pr) throw new Error('You are hosting — friends join YOUR code.');
+  status&&status('Reaching the broker…');
+  return new Promise((res,rej)=>{
+    const peer=new Peer({debug:0}); let settled=false;
+    const fail=m=>{ if(!settled){ settled=true; try{ peer.destroy(); }catch(_){} rej(new Error(m)); } };
+    peer.on('error',e=>fail(e.type==='peer-unavailable'?('No room "'+code+'" found — check the code with your host.')
+      : e.type==='network'?'Broker unreachable — check your internet, or use Manual connect.':(e.message||e.type)));
+    setTimeout(()=>fail('Timed out — check the code, or use Manual connect.'),15000);
+    peer.on('open',()=>{
+      status&&status('Found the broker — knocking on room '+code+'…');
+      const hostId=roomPeerId(code);
+      // NOTE: serialization MUST be 'json' — PeerJS silently drops connections with unknown
+      // serialization values ('none' is not valid in 1.x). We send pre-encoded JSON strings,
+      // which 'json' passes through unchanged (stringify(string) → parse → same string).
+      const evt =peer.connect(hostId,{label:'evt', reliable:true, serialization:'json'});
+      const game=peer.connect(hostId,{label:'game',reliable:false,serialization:'json'});
+      evt.on('data',d=>netPeerOnEvt(d));
+      game.on('data',d=>netPeerOnMsg(d));
+      const ready=()=>{ if(settled||!evt.open||!game.open) return; settled=true;
+        pr.evt=pjChan(evt); pr.ch=pjChan(game); pr.roomPeer=peer;
+        status&&status('✔ Connected — the host is pulling you into the tower…');
+        banner('🌐 CONNECTED','syncing with host'); log('🌐 Connected to host via room '+code+'.'); res(true); };
+      evt.on('open',ready); game.on('open',ready);
+      game.on('close',()=>{ if(settled){ banner('🌐 DISCONNECTED','the host closed the room'); log('🌐 Lost the host.'); } });
+    });
+  });
 }
 function netPeerOnMsg(data){ const pr=NET.peer; if(!pr)return;   // 'game' channel = high-frequency snapshots
   try{ const m=JSON.parse(data); pr.lastSnap=m; applySnapshot(m); }catch(_){} }
