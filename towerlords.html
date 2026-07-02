@@ -956,6 +956,7 @@
     <div id="menuMain" class="menuCol">
       <button class="btn" id="menuClimb">⛰ Climb the Tower</button>
       <button class="btn" id="menuDaily">🌅 Daily Climb</button>
+      <button class="btn" id="menuBoard">🏆 Leaderboard</button>
       <button class="btn" id="menuCoop">🎮 Local Co-op</button>
       <button class="btn" id="menuOnline">🌐 Online Co-op</button>
       <button class="btn ghost" id="menuTutorial">📖 Tutorial</button>
@@ -1045,6 +1046,21 @@
     <h1 style="font-size:34px;letter-spacing:6px;">💀 DEATH LOG</h1>
     <div id="deathlogBody"></div>
     <button class="btn ghost small" id="deathlogBack" style="margin-top:18px;">← Back to menu</button>
+  </div>
+
+  <!-- Leaderboard -->
+  <div id="boardPanel" class="overlay hidden">
+    <h1 style="font-size:34px;letter-spacing:6px;">🏆 LEADERBOARD</h1>
+    <div style="margin:2px 0 10px;font-size:12px;opacity:.8">Climbing as
+      <input id="lbNameIn" maxlength="20" spellcheck="false" style="width:170px;font-size:13px;text-align:center;background:#0d1320;color:#8effd9;border:1px solid #2a3550;border-radius:6px;padding:3px 6px">
+      <button class="btn ghost small" id="lbNameSave">✔</button></div>
+    <div class="modeSel" style="margin-bottom:10px">
+      <div class="modeBtn sel" id="lbTabFame"><b>★ FAME</b><span>all-time skill rating</span></div>
+      <div class="modeBtn" id="lbTabRuns"><b>⛰ BEST RUNS</b><span>deepest single climbs</span></div>
+      <div class="modeBtn" id="lbTabDaily"><b>🌅 DAILY</b><span>today's shared tower</span></div>
+    </div>
+    <div id="boardBody" style="width:420px;max-width:92vw;max-height:46vh;overflow:auto"></div>
+    <button class="btn ghost small" id="boardBack" style="margin-top:14px;">← Back to menu</button>
   </div>
 
   <!-- Death -->
@@ -1426,8 +1442,29 @@ const FEATS=[
   {id:'f100',     nm:'Centurion',    ds:'Reach Floor 100',                fame:12000},
   {id:'ng',       nm:'Eternal',      ds:'Enter the Endless Ascent (NG+)', fame:6000},
 ];
-let META={fame:0, feats:[], invRows:0, stashRows:0, codex:{}, ascMax:0, tips:{}, victories:0, grudges:{}, daily:null};
-function loadMeta(){ try{ const s=localStorage.getItem(META_KEY); if(s){ const m=JSON.parse(s); META={fame:m.fame||0, feats:m.feats||[], invRows:m.invRows||0, stashRows:m.stashRows||0, codex:m.codex||{}, ascMax:m.ascMax||0, tips:m.tips||{}, victories:m.victories||0, grudges:m.grudges||{}, daily:m.daily||null}; } }catch(e){} }
+let META={fame:0, feats:[], invRows:0, stashRows:0, codex:{}, ascMax:0, tips:{}, victories:0, grudges:{}, daily:null, playerName:'', playerId:''};
+function loadMeta(){ try{ const s=localStorage.getItem(META_KEY); if(s){ const m=JSON.parse(s); META={fame:m.fame||0, feats:m.feats||[], invRows:m.invRows||0, stashRows:m.stashRows||0, codex:m.codex||{}, ascMax:m.ascMax||0, tips:m.tips||{}, victories:m.victories||0, grudges:m.grudges||{}, daily:m.daily||null, playerName:m.playerName||'', playerId:m.playerId||''}; } }catch(e){} }
+// ---------------- GLOBAL LEADERBOARD (optional backend) ----------------
+// Set LEADERBOARD_URL to a deployed copy of leaderboard-worker.js (free Cloudflare Worker —
+// see LEADERBOARD_SETUP.md next to this file). Leave null for local-only boards: the game
+// works fully offline and silently skips submissions.
+const LEADERBOARD_URL=null;   // e.g. 'https://towerlords-lb.yourname.workers.dev'
+function lbId(){ if(!META.playerId){ META.playerId=Array.from(crypto.getRandomValues(new Uint8Array(12)),b=>b.toString(16).padStart(2,'0')).join(''); saveMeta(); } return META.playerId; }
+function lbName(){ if(!META.playerName){ META.playerName='Climber-'+String(1000+Math.floor(Math.random()*9000)); saveMeta(); } return META.playerName; }
+function lbSetName(n){ n=String(n||'').replace(/[<>&]/g,'').trim().slice(0,20); if(n){ META.playerName=n; saveMeta(); } return META.playerName; }
+async function lbSubmit(board,score,extra){ if(!LEADERBOARD_URL) return null;   // fire-and-forget; never blocks the game
+  try{ const ctl=new AbortController(); setTimeout(()=>ctl.abort(),6000);
+    const res=await fetch(LEADERBOARD_URL+'/submit',{method:'POST',signal:ctl.signal,headers:{'content-type':'application/json'},
+      body:JSON.stringify(Object.assign({board,score:Math.floor(score||0),id:lbId(),name:lbName()},extra||{}))});
+    return await res.json(); }catch(e){ return null; } }
+async function lbTop(board){ if(!LEADERBOARD_URL) return null;
+  try{ const ctl=new AbortController(); setTimeout(()=>ctl.abort(),6000);
+    const res=await fetch(LEADERBOARD_URL+'/top?board='+encodeURIComponent(board),{signal:ctl.signal});
+    return (await res.json()).list||[]; }catch(e){ return null; } }
+// every run that ends reports to the boards (no-op while LEADERBOARD_URL is null)
+function lbReportRun(rec,daily){ lbSubmit('fame',META.fame,{floor:rec.floor,kills:rec.kills});
+  lbSubmit('runs',runScore(rec),{floor:rec.floor,kills:rec.kills});
+  if(daily) lbSubmit('daily:'+dailyKey(),runScore(rec),{floor:rec.floor,kills:rec.kills}); }
 // ---- DAILY CLIMB: one scored attempt per UTC day; everyone races the same seeded tower ----
 function dailyKey(){ return new Date().toISOString().slice(0,10); }   // UTC date — the world shares one tower
 function dailySeedInt(){ const s='TOWERLORDS-'+dailyKey(); let h=2166136261; for(let i=0;i<s.length;i++){ h^=s.charCodeAt(i); h=Math.imul(h,16777619); } return h>>>0; }
@@ -2353,6 +2390,39 @@ $('menuTutorial').onclick=()=>{ loadSettings(); tutPage=0; $('start').classList.
 $('menuSettings').onclick=()=>{ loadSettings(); $('settingsPanel').classList.remove('hidden'); renderSettings(); };
 $('menuDeaths').onclick=()=>{ $('start').classList.add('hidden'); $('deathlog').classList.remove('hidden'); renderDeathLog(); };
 $('deathlogBack').onclick=showMenu;
+// ---- leaderboard panel: three boards, global when LEADERBOARD_URL is set, honest about local-only otherwise ----
+let _lbTab='fame';
+function lbBoardKey(){ return _lbTab==='daily' ? 'daily:'+dailyKey() : _lbTab; }
+function lbFmtScore(tab,e){ return tab==='fame' ? (e.score||0).toLocaleString()+' ✦' : 'floor '+(e.floor||Math.floor((e.score||0)/100000))+' · '+(e.kills!=null?e.kills:((e.score||0)%100000/100|0))+' kills'; }
+async function renderBoard(){
+  const body=$('boardBody');
+  ['lbTabFame','lbTabRuns','lbTabDaily'].forEach(id=>$(id).classList.remove('sel'));
+  $(_lbTab==='fame'?'lbTabFame':_lbTab==='runs'?'lbTabRuns':'lbTabDaily').classList.add('sel');
+  $('lbNameIn').value=lbName();
+  if(!LEADERBOARD_URL){
+    // local-only mode: show YOUR standing honestly + how to go global
+    const best=loadBest(); const d=dailyState(); const rk=fameRank(META.fame);
+    body.innerHTML=`<div style="text-align:left;font-size:13px;line-height:2">
+      <div class="scoreRow"><span>★ Your fame</span><b style="color:${rk.col}">${Math.floor(META.fame).toLocaleString()} · ${rk.name} ${rankStars(rk.stars)}</b></div>
+      <div class="scoreRow"><span>⛰ Your best run</span><b>${best?('floor '+best.floor+' · '+best.kills+' kills'):'—'}</b></div>
+      <div class="scoreRow"><span>🌅 Today's daily</span><b>${d?('floor '+(d.floor||0)+' · '+(d.kills||0)+' kills'):'unplayed'}</b></div>
+      <div style="opacity:.6;font-size:11px;margin-top:12px;line-height:1.7">🌐 <b>Global boards are one deploy away:</b> ship the free Cloudflare Worker in
+      <b>leaderboard-worker.js</b> (5-minute setup — see <b>LEADERBOARD_SETUP.md</b>), paste its URL into <b>LEADERBOARD_URL</b>, and every death starts posting here.</div></div>`;
+    return; }
+  body.innerHTML='<div style="opacity:.6;padding:20px">Reaching the tower records…</div>';
+  const list=await lbTop(lbBoardKey());
+  if(!list){ body.innerHTML='<div style="opacity:.6;padding:20px">⚠ The record-keeper is unreachable — try again shortly.</div>'; return; }
+  if(!list.length){ body.innerHTML='<div style="opacity:.6;padding:20px">No climbers on this board yet — be the first.</div>'; return; }
+  const me=lbId();
+  body.innerHTML=list.map((e,i)=>`<div class="scoreRow" style="${e.id===me?'color:var(--gold);font-weight:bold':''}">
+    <span>${i+1<4?['🥇','🥈','🥉'][i]:('#'+(i+1))} ${String(e.name||'?').replace(/[<>&]/g,'')}</span><b>${lbFmtScore(_lbTab,e)}</b></div>`).join('');
+}
+$('menuBoard').onclick=()=>{ loadMeta(); $('start').classList.add('hidden'); $('boardPanel').classList.remove('hidden'); renderBoard(); };
+$('boardBack').onclick=()=>{ $('boardPanel').classList.add('hidden'); showMenu(); };
+$('lbTabFame').onclick=()=>{ _lbTab='fame'; renderBoard(); };
+$('lbTabRuns').onclick=()=>{ _lbTab='runs'; renderBoard(); };
+$('lbTabDaily').onclick=()=>{ _lbTab='daily'; renderBoard(); };
+$('lbNameSave').onclick=()=>{ lbSetName($('lbNameIn').value); $('lbNameIn').value=lbName(); log('🏆 Climbing as '+lbName()+'.'); };
 $('openCharBtn').onclick=()=>togglePanel('charPanel');
 $('openTreeBtn').onclick=()=>togglePanel('treePanel');
 $('openInvBtn').onclick=()=>togglePanel('invPanel');
@@ -4642,6 +4712,7 @@ function die(){ if(G.dead)return;
   recordDeath(deathRec);
   $('runWrap').innerHTML=runWrapHTML();   // celebratory "the climb" wrap-up — build identity, blessings, highlights
   let dailyRow='';
+  lbReportRun(deathRec, !!G.dailyRun);   // global boards (no-op without a LEADERBOARD_URL)
   if(G.dailyRun){ dailyScoreTick(); const d=dailyState();
     dailyRow=`<div class="scoreRow" style="color:#8effd9"><span>🌅 DAILY ${dailyKey()}</span><b>floor ${d?d.floor:G.floor} · locked in</b></div>`; G.dailyRun=false; }
   { const rk=fameRank(META.fame);
@@ -4669,6 +4740,7 @@ function victoryScreen(){ if(G.victoryOpen) return; G.victoryOpen=true; _G.victo
     +`<span style="opacity:.7">The portal behind the throne leads ever upward — the tower rebuilds itself, deadlier and richer.</span>`;
   $('victWrap').innerHTML=runWrapHTML();
   let vDailyRow='';
+  lbReportRun({floor:G.floor,kills:G.run.kills||0,time:G.run.totalTime||0}, !!G.dailyRun);   // summit runs count too
   if(G.dailyRun){ dailyScoreTick(); vDailyRow=`<div class="scoreRow" style="color:#8effd9"><span>🌅 DAILY ${dailyKey()}</span><b>SUMMIT — floor ${G.floor}</b></div>`; }
   { const rk=fameRank(META.fame);
     $('victScore').innerHTML=vDailyRow+scoreSummary()
