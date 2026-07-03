@@ -1006,6 +1006,7 @@
     <h1>TOWERLORDS</h1>
     <div class="tag">ASCEND · BUILD · RAMPAGE · KNOW WHEN TO RETREAT</div>
     <div id="menuMain" class="menuCol">
+      <button class="btn hidden" id="menuContinue" style="background:linear-gradient(180deg,#1a3a2e,#0f241c);border-color:#3ad18a;color:#bfffdd;box-shadow:0 0 22px rgba(58,209,138,.25)">▶ Continue</button>
       <button class="btn" id="menuClimb">⛰ Climb the Tower</button>
       <button class="btn" id="menuDaily">🌅 Daily Climb</button>
       <button class="btn" id="menuBoard">🏆 Leaderboard</button>
@@ -1592,6 +1593,72 @@ function dailySeedInt(){ const s='TOWERLORDS-'+dailyKey(); let h=2166136261; for
 function dailyState(){ const d=META.daily; return (d&&d.date===dailyKey())?d:null; }   // null = not attempted today
 function saveMeta(){ try{ localStorage.setItem(META_KEY, JSON.stringify(META)); }catch(e){} }
 function discover(key){ if(!META.codex) META.codex={}; if(!META.codex[key]){ META.codex[key]=true; saveMeta(); } }   // bestiary: record a first encounter
+// ============================================================ SESSION SAVE / RESUME — jump in and out; continue from the floor you were on
+// A full single-player snapshot (character + which floor / sanctuary). Autosaves on every floor change and on tab close, so
+// closing the game and coming back later just works. Co-op / daily / practice are never saved (they're transient / one-shot).
+const RUN_KEY='towerlords_run_v1';
+function canSaveSession(){ return _G.running && !_G.splitscreen && !NET.role && !G.dailyRun && !G.practice; }
+function serializeSession(){
+  const p=_G.players[0]; if(!p||!p.player) return null;
+  try{ return { v:1, ts:Date.now(),
+    floor:G.floor|0, inTown:!!G.inTown, asc:_G.asc||0, hardcore:!!G.hardcore, seed:_G.seed|0, maxFloor:_G.maxFloor||50,
+    name:p.name, gold:p.gold|0, level:p.level|0, xp:p.xp, xpNeed:p.xpNeed, xpMode:p.xpMode||'use',
+    attrPts:p.attrPts|0, skillPts:p.skillPts|0, skillGranted:p.skillGranted|0, evolves:p.evolves|0,
+    attr:p.attr, alloc:p.alloc,
+    equip:p.equip, inv:p.inv, belt:p.belt, slots:p.slots, sigSlot:p.sigSlot,
+    pets:p.pets, petIdx:(p.pet&&p.pets)?p.pets.indexOf(p.pet):-1,
+    stash:p.stash, stashStrikes:p.stashStrikes|0,
+    greed:p.greed||1, charge:p.charge||0,
+    run:p.run }; }catch(e){ return null; }
+}
+function saveSession(){ if(!canSaveSession()) return; try{ const s=serializeSession(); if(s) localStorage.setItem(RUN_KEY, JSON.stringify(s)); }catch(e){} }
+function loadSession(){ try{ const s=localStorage.getItem(RUN_KEY); return s?JSON.parse(s):null; }catch(e){ return null; } }
+function clearSession(){ try{ localStorage.removeItem(RUN_KEY); }catch(e){} }
+function hasSession(){ const s=loadSession(); return !!(s && s.level); }
+function resumeSession(){
+  const s=loadSession(); if(!s || !s.level){ log('No saved climb to continue.'); return false; }
+  $('start').classList.add('hidden'); $('hud').classList.remove('hidden');
+  loadMeta(); loadSettings();
+  _G.asc=clamp(s.asc|0,0,99); _G.ascEff=ascEffects(_G.asc);
+  _G.seed=(s.seed|0)||randi(0,9999); _G.maxFloor=s.maxFloor||50;
+  G.running=true; G.paused=false; G.hitstop=0; G.permadead=false;
+  G.floorMod=null; G.bounty=null; G.practice=false; G.dailyRun=false; G.hardcore=!!s.hardcore;
+  _G.nemesis=makeNemesis();   // per-run nemesis isn't saved (has function refs) — a fresh cast greets your return; grudges (META) persist
+  _G.players.length=1; const p=_G.players[0]; p.joined=true; p.color=PLAYER_COLORS[0]; p.input=p.input||makeKbmInput();
+  _G.cur=0; _G.splitscreen=false; $('hud').classList.remove('cohide');
+  // ---- restore the character ----
+  p.name=s.name||'Player 1'; p.gold=s.gold||0; p.level=s.level||1; p.xp=s.xp||0; p.xpNeed=s.xpNeed||xpForLevel(p.level); p.xpMode=s.xpMode||'use';
+  p.attrPts=s.attrPts||0; p.skillPts=s.skillPts||0; p.skillGranted=s.skillGranted||0; p.evolves=s.evolves||0;
+  p.attr=s.attr||{str:5,dex:5,int:5,vit:5,will:5}; p.alloc=s.alloc||{};
+  p.equip=s.equip||{weapon:null,helm:null,chest:null,gloves:null,boots:null,ring:null};
+  p.inv=s.inv||[]; p.belt=s.belt||[null,null,null,null,null]; p.slots=s.slots||[null,null,null,null,null,null,null,null,null]; p.sigSlot=s.sigSlot||null;
+  p.pets=s.pets||[]; p.pet=(s.petIdx!=null && s.petIdx>=0 && p.pets[s.petIdx])?p.pets[s.petIdx]:null;
+  p.stash=s.stash||[]; p.stashStrikes=s.stashStrikes||0;
+  p.greed=s.greed||1; p.charge=s.charge||0;
+  p.run=s.run||{kills:0,assists:0,healSelf:0,healOthers:0,xp:0,floorTime:0,totalTime:0,floorsCleared:0,boons:[]};
+  if(!p.run.boons) p.run.boons=[];
+  p.dead=false; p.downed=false; p.downT=0; p.selGem=null; p.petErrand=null; p.invCap=invCapBase();
+  G.floor=s.floor||1;
+  initAudio(); startAmbient();
+  if(!p.player){ p.player=createPlayer(); tintPlayer(p.player,p.color); }
+  if(p.petMesh){ scene.remove(p.petMesh); p.petMesh=null; }
+  recompute(); p.hp=p.maxhp; p.mana=p.maxmana;   // return rested — the floor regenerates fresh around you
+  if(p.pet) setActivePet(p.pet);                 // rebuild the companion mesh
+  renderActionbar(); updatePips();
+  layoutViewports(); buildCoopHud();
+  if(s.inTown) generateTown(); else { G.inTown=false; G.run.floorTime=0; generateFloor(); }
+  clock.getDelta();
+  banner('▶ CONTINUE', s.inTown?'The Sanctuary':('Floor '+G.floor));
+  log('▶ Resumed your climb — '+(s.inTown?'back in the sanctuary':'Floor '+G.floor)+'.');
+  return true;
+}
+// leave the game with progress saved (the "extract" button)
+function extractToMenu(){
+  if(canSaveSession()){ saveSession(); banner('💾 PROGRESS SAVED', G.inTown?'The Sanctuary':('Floor '+G.floor)); log('💾 Saved — press ▶ Continue on the menu to pick up from '+(G.inTown?'the sanctuary':'Floor '+G.floor)+'.'); }
+  setMusic(null); G.running=false; showMenu();
+}
+addEventListener('beforeunload', ()=>{ try{ saveSession(); }catch(e){} });   // closing the tab mid-climb still preserves your floor
+document.addEventListener('visibilitychange', ()=>{ if(document.hidden){ try{ saveSession(); }catch(e){} } });
 function fortuneMult(){ return 1; }   // fame grants no combat power — but CAN be spent on bag/stash rows (see buyInvRow/buyStashRow)
 // ---- fame-funded storage upgrades (account-wide, persisted in META; fame is deducted, lowering star rank) ----
 const ROW_CELLS=10, INV_BASE=50, INV_ROWS_MAX=5;   // carried bag: starts at 50, buy up to 5 rows of 10 → neat 100-cell (10×10) max
@@ -2474,7 +2541,7 @@ function renderAscSel(){
 }
 $('ascUp').onclick=()=>{ if(selAsc<(META.ascMax||0)){ selAsc++; renderAscSel(); if(sfx.tick)sfx.tick(); } };
 $('ascDown').onclick=()=>{ if(selAsc>0){ selAsc--; renderAscSel(); if(sfx.tick)sfx.tick(); } };
-$('reviveBtn').onclick=()=>{ $('death').classList.add('hidden'); if(G.permadead){ G.permadead=false; $('hud').classList.add('hidden'); showMenu(); } else { returnToTown(); } };
+$('reviveBtn').onclick=()=>{ $('death').classList.add('hidden'); if(G.permadead){ G.permadead=false; clearSession(); $('hud').classList.add('hidden'); showMenu(); } else { returnToTown(); } };
 $('victClimbBtn').onclick=()=>{ $('victory').classList.add('hidden'); G.victoryOpen=false; _G.running=true; _G.paused=false; clock.getDelta();
   banner('⛰ ENDLESS ASCENT','the portal is open — the tower rebuilds above you'); log('⛰ Take the portal when ready — NG+'+(ngLevel(G.floor)+1)+' awaits above.'); };
 $('victTownBtn').onclick=()=>{ $('victory').classList.add('hidden'); G.victoryOpen=false; returnToTown(); log('🏛 You return in triumph. The tower will be taller next time.'); };
@@ -2482,9 +2549,13 @@ $('shareDeathBtn').onclick=()=>shareCard('death');
 $('shareVictBtn').onclick=()=>shareCard('victory');
 // ---- main menu navigation ----
 function showMenu(){ ['hud','tutorial','deathlog','death'].forEach(id=>$(id).classList.add('hidden')); PANELS.forEach(p=>$(p).classList.add('hidden'));
-  $('start').classList.remove('hidden'); $('menuMain').classList.remove('hidden'); $('climbScreen').classList.add('hidden'); $('coopLobby').classList.add('hidden'); $('onlineLobby').classList.add('hidden'); coopLobbyOpen=false; G.running=false; G.practice=false; loadMeta(); refreshDailyBtn(); syncPause(); }
+  $('start').classList.remove('hidden'); $('menuMain').classList.remove('hidden'); $('climbScreen').classList.add('hidden'); $('coopLobby').classList.add('hidden'); $('onlineLobby').classList.add('hidden'); coopLobbyOpen=false; G.running=false; G.practice=false; loadMeta(); refreshDailyBtn(); refreshContinueBtn(); syncPause(); }
+function refreshContinueBtn(){ const c=$('menuContinue'); if(!c) return; const s=loadSession();
+  if(s && s.level){ c.classList.remove('hidden'); c.innerHTML='▶ Continue — '+(s.inTown?'Sanctuary':'Floor '+s.floor)+' · Lv '+s.level+(s.evolves?' ✦×'+s.evolves:''); }
+  else c.classList.add('hidden'); }
 function showClimb(){ ['tutorial','deathlog'].forEach(id=>$(id).classList.add('hidden')); $('start').classList.remove('hidden'); $('menuMain').classList.add('hidden'); $('climbScreen').classList.remove('hidden'); $('coopLobby').classList.add('hidden'); coopLobbyOpen=false; loadMeta(); renderAscSel(); }
 $('menuClimb').onclick=showClimb;
+$('menuContinue').onclick=()=>{ if(!resumeSession()) refreshContinueBtn(); };
 // ---- DAILY CLIMB: same seeded tower for everyone today, one scored attempt, level playing rules ----
 function refreshDailyBtn(){ const b=$('menuDaily'); if(!b)return; const d=dailyState();
   b.innerHTML = d ? ('🌅 Daily Climb · <span style="color:var(--gold)">scored — floor '+(d.floor||0)+' · '+(d.kills||0)+' kills</span>')
@@ -2495,7 +2566,7 @@ function refreshDailyBtn(){ const b=$('menuDaily'); if(!b)return; const d=dailyS
 function dailyScoreTick(){ if(!G.dailyRun)return;
   const rec={date:dailyKey(), done:true, floor:G.floor, kills:G.run.kills||0, score:runScore({floor:G.floor,kills:G.run.kills||0,time:G.run.totalTime||0})};
   const cur=dailyState(); META.daily=(cur&&(cur.score||0)>rec.score)?cur:rec; saveMeta(); }
-loadMeta(); refreshDailyBtn();   // reflect today's daily state on the menu at boot
+loadMeta(); refreshDailyBtn(); refreshContinueBtn();   // reflect today's daily state + any saved climb on the menu at boot
 $('menuDaily').onclick=()=>{
   loadMeta(); const d=dailyState();
   if(d&&d.done){ log('🌅 Today’s Daily is scored — a new tower rises at midnight UTC.'); return; }
@@ -2980,6 +3051,7 @@ function generateFloor(anchor){
   if(NET.role==='host') netBroadcastFloor();   // stream the new floor's layout to connected peers
   setMusicSet(type==='BOSS'?'boss':type==='SAFE'?'calm':'floor');   // random battle track in boss rooms, calm in safe zones, a random adventurous track on normal floors
   updateFloorUI(type);
+  saveSession();   // autosave every floor — closing now and continuing later resumes here
 }
 let biome;
 
@@ -3009,6 +3081,7 @@ function generateTown(){
   pg.position.set(0,0,-16); scene.add(pg); G.portal={mesh:pg,x:0,z:-16,active:true,town:true};
   if(NET.role==='host') netBroadcastFloor();   // peers follow the host back to the sanctuary
   updateFloorUI('TOWN');
+  saveSession();   // autosave on returning to the sanctuary
   log('🏛 SANCTUARY — bank, trade, check your record, then step into the portal to climb.');
 }
 function enterTower(){ G.inTown=false; G.floor=1; G.run.floorTime=0; PANELS.forEach(p=>$(p).classList.add('hidden')); syncPause(); sfx.dash(); log('Descending into the Tower…'); dailyScoreTick(); generateFloor();
@@ -5568,7 +5641,12 @@ function renderSettings(){
     <div style="display:flex;gap:8px;margin:0 16px 14px;">
       <div class="segBtn${mm==='keyboard'?' sel':''}" data-mm="keyboard">⌨ Keyboard<small>WASD to move · cursor to aim · L-click attack</small></div>
       <div class="segBtn${mm==='mouse'?' sel':''}" data-mm="mouse">🖱 Mouse / Click-move<small>Hold L-click to move to cursor · R-click attack</small></div>
-    </div>`;
+    </div>`
+    +(G.running && !_G.splitscreen && !NET.role && !G.dailyRun && !G.practice
+      ? `<div style="margin:6px 16px 14px;border-top:1px solid rgba(255,255,255,.08);padding-top:14px">
+           <button class="btn" id="extractBtn" style="width:100%;background:linear-gradient(180deg,#1a3a2e,#0f241c);border-color:#3ad18a;color:#bfffdd">🚪 Save &amp; Leave to Menu</button>
+           <div style="font-size:10px;opacity:.6;margin-top:7px;text-align:center">Your climb is saved automatically each floor — leave any time and press <b>▶ Continue</b> to return to Floor ${G.floor}.</div>
+         </div>` : '');
   $('togBig').onclick=()=>{ SETTINGS.bigNumbers=!SETTINGS.bigNumbers; saveSettings(); renderSettings();
     if(G.player){ const p=G.player.position; floatText(p.x,p.z, SETTINGS.bigNumbers?'1234':'1234', 'crit', 2.6); } };
   $('togTips').onclick=()=>{ SETTINGS.tips=!SETTINGS.tips; saveSettings(); renderSettings();
@@ -5578,6 +5656,7 @@ function renderSettings(){
   $('togMusic').onclick=()=>{ SETTINGS.music=!SETTINGS.music; saveSettings(); renderSettings();
     if(SETTINGS.music){ setMusic(MUS.desired||null); log('🎵 Music on.'); } else { const d=MUS.desired; setMusic(null); MUS.desired=d; log('Music off.'); } };
   $('togSway').onclick=()=>{ SETTINGS.camSway=!SETTINGS.camSway; saveSettings(); renderSettings(); log(SETTINGS.camSway?'🎥 Camera sway on.':'Camera sway off.'); };
+  { const eb=$('extractBtn'); if(eb) eb.onclick=extractToMenu; }
   b.querySelectorAll('[data-mm]').forEach(el=>el.onclick=()=>{ SETTINGS.moveMode=el.dataset.mm; saveSettings(); renderSettings();
     log(SETTINGS.moveMode==='mouse'?'🖱 Mouse-move: hold left-click to move, right-click to attack.':'⌨ Keyboard: WASD to move, left-click to attack.'); });
 }
@@ -5836,6 +5915,8 @@ function initPlayerChar(){
   if(!G.player){ G.player=createPlayer(); tintPlayer(G.player, G.color); }
 }
 function startGame(){
+  if(hasSession() && !confirm('Start a NEW climb?\n\nYour saved character & progress will be replaced. (Use ▶ Continue on the menu to keep it.)')) return;
+  clearSession();   // a fresh character supersedes any saved run
   $('start').classList.add('hidden'); $('hud').classList.remove('hidden');
   loadMeta(); loadSettings();
   _G.asc=clamp(selAsc|0, 0, META.ascMax||0); _G.ascEff=ascEffects(_G.asc);   // lock in the chosen ascension for this climb
