@@ -850,6 +850,7 @@
       <div class="mItem" id="openPetBtn"><span class="mKey">P</span><span class="mIc">🐾</span><span class="mLbl" id="petChip">Pet Yard —</span></div>
       <div class="mItem" id="openScoreBtn"><span class="mKey">V</span><span class="mIc">📜</span><span class="mLbl">Record</span><span class="mEnd" id="rankChip"></span></div>
       <div class="mItem" id="openCodexBtn"><span class="mKey">B</span><span class="mIc">📖</span><span class="mLbl">Bestiary</span></div>
+      <div class="mItem" id="recallBtn"><span class="mKey">H</span><span class="mIc">🏛</span><span class="mLbl">Recall to Sanctuary</span></div>
       <div class="mItem" id="openSettingsBtn"><span class="mKey">O</span><span class="mIc">⚙</span><span class="mLbl">Settings</span><span class="mEnd" id="muteInd" style="cursor:pointer">🔊</span></div>
     </div>
 
@@ -1601,7 +1602,7 @@ function canSaveSession(){ return _G.running && !_G.splitscreen && !NET.role && 
 function serializeSession(){
   const p=_G.players[0]; if(!p||!p.player) return null;
   try{ return { v:1, ts:Date.now(),
-    floor:G.floor|0, inTown:!!G.inTown, asc:_G.asc||0, hardcore:!!G.hardcore, seed:_G.seed|0, maxFloor:_G.maxFloor||50,
+    floor:G.floor|0, inTown:!!G.inTown, returnFloor:_G.returnFloor|0, asc:_G.asc||0, hardcore:!!G.hardcore, seed:_G.seed|0, maxFloor:_G.maxFloor||50,
     name:p.name, gold:p.gold|0, level:p.level|0, xp:p.xp, xpNeed:p.xpNeed, xpMode:p.xpMode||'use',
     attrPts:p.attrPts|0, skillPts:p.skillPts|0, skillGranted:p.skillGranted|0, evolves:p.evolves|0,
     attr:p.attr, alloc:p.alloc,
@@ -1620,7 +1621,7 @@ function resumeSession(){
   $('start').classList.add('hidden'); $('hud').classList.remove('hidden');
   loadMeta(); loadSettings();
   _G.asc=clamp(s.asc|0,0,99); _G.ascEff=ascEffects(_G.asc);
-  _G.seed=(s.seed|0)||randi(0,9999); _G.maxFloor=s.maxFloor||50;
+  _G.seed=(s.seed|0)||randi(0,9999); _G.maxFloor=s.maxFloor||50; _G.returnFloor=s.returnFloor|0; _G.recallGo=false;
   G.running=true; G.paused=false; G.hitstop=0; G.permadead=false;
   G.floorMod=null; G.bounty=null; G.practice=false; G.dailyRun=false; G.hardcore=!!s.hardcore;
   _G.nemesis=makeNemesis();   // per-run nemesis isn't saved (has function refs) — a fresh cast greets your return; grudges (META) persist
@@ -2271,7 +2272,7 @@ function makePlayer(idx){ return {
   dashCd:0, dashCdMax:0.5, dashT:0, dashDir:{x:0,z:1}, flowT:0,
   attackCd:0, invuln:0, dead:false, fervor:0, fervorT:0, rootT:0,
   stunT:0, slowT:0, weakT:0, healCutT:0,   // enemy counter-play debuffs: stun-lock tanks, slow speedsters, weaken bruisers, mortal-wound healers
-  adaptWarned:false,
+  adaptWarned:false, recallT:0,            // recallT: channel timer for the quick teleport back to the sanctuary
   nearStash:false, nearVendor:false, nearPortal:false, nearScore:false, _ph:false, _sh:false,
   aim:new THREE.Vector3(),
   in:{mx:0,mz:0,ax:0,az:1,hasAim:false,atk:false,prev:{}},   // per-frame input snapshot (filled by input source)
@@ -2282,7 +2283,7 @@ const PF = new Set(['id','name','input','cam','viewport','color','joined','playe
   'attrPts','skillPts','skillGranted','evolves','attr','hp','maxhp','mana','maxmana','S','alloc','slots','cd','equip','invCap','inv','stash',
   'stashStrikes','selGem','greed','run','pet','pets','petMesh','petMagnet','petErrand','belt','charge','chargeMax','sigSlot','sigCd',
   'swiftT','perfectT','dashRewarded','dashCd','dashCdMax','dashT','dashDir','flowT','attackCd','invuln','dead','rootT',
-  'stunT','slowT','weakT','healCutT','adaptWarned',
+  'stunT','slowT','weakT','healCutT','adaptWarned','recallT',
   'fervor','fervorT','nearStash','nearVendor','nearPortal','nearScore','_ph','_sh','aim','in','downed','downT','reviveT']);
 const _G = {
   running:false, paused:false, floor:1, maxFloor:50, seed:0,
@@ -2293,6 +2294,7 @@ const _G = {
   hardcore:false, permadead:false, inTown:false, muted:false, practice:false,
   players:[], cur:0, nPlayers:1, splitscreen:false,
   menuOwner:0, menuPanel:null, menuPrev:{}, focusIdx:0,   // per-player co-op menus
+  returnFloor:0, recallGo:false,   // recall-to-sanctuary: returnFloor = the depth to drop back to via the town portal; recallGo = a channel finished, teleport next tick
 };
 const G = new Proxy(_G, {
   get(t,k){ if(PF.has(k)){ const pl=t.players[t.cur]; return pl?pl[k]:undefined; } return t[k]; },
@@ -2332,6 +2334,7 @@ addEventListener('keydown',e=>{
   if(pk){ _G.menuOwner=0; _G.cur=0; togglePanel(pk); }   // P1's keyboard always manages P1
   else if(k==='m'){ toggleMute(); }
   else if(k==='f'){ interact(); }
+  else if(k==='h'){ startRecall(); }   // quick recall to the sanctuary (RotMG nexus-style)
   else if(k==='escape'){ PANELS.forEach(p=>$(p).classList.add('hidden')); syncPause(); refreshMenuState(); }
   else if(k===' '){ if(!G.paused) doDash(); }
   else if(k==='shift'){ if(!G.paused) useSignature(); }
@@ -2685,6 +2688,7 @@ $('openPetBtn').onclick=()=>togglePanel('petPanel');
 $('openScoreBtn').onclick=()=>togglePanel('scorePanel');
 $('openCodexBtn').onclick=()=>togglePanel('codexPanel');
 $('openSettingsBtn').onclick=()=>togglePanel('settingsPanel');
+$('recallBtn').onclick=()=>startRecall();
 $('muteInd').onclick=(e)=>{ e.stopPropagation(); toggleMute(); };
 document.querySelectorAll('.closeX').forEach(x=>x.onclick=()=>{ $(x.dataset.close).classList.add('hidden'); syncPause(); refreshMenuState(); });
 $('depositAll').onclick=()=>{ if(G.inv?.length){ const n=stashPushMany(G.inv); G.inv=G.inv.slice(n); G.stashStrikes=0; bankCashIn(n); log(n?('Deposited '+n+' item(s)'+(G.inv.length?' — stash full, '+G.inv.length+' left in bag':'')):'Stash full — buy a stash row.'); renderStash();} };
@@ -3084,11 +3088,41 @@ function generateTown(){
   saveSession();   // autosave on returning to the sanctuary
   log('🏛 SANCTUARY — bank, trade, check your record, then step into the portal to climb.');
 }
-function enterTower(){ G.inTown=false; G.floor=1; G.run.floorTime=0; PANELS.forEach(p=>$(p).classList.add('hidden')); syncPause(); sfx.dash(); log('Descending into the Tower…'); dailyScoreTick(); generateFloor();
+function enterTower(){ const f=(_G.returnFloor|0)>1?(_G.returnFloor|0):1; _G.returnFloor=0;   // a recall remembers your depth → the portal drops you back there, not floor 1
+  G.inTown=false; G.floor=f; G.run.floorTime=0; PANELS.forEach(p=>$(p).classList.add('hidden')); syncPause(); sfx.dash(); log(f>1?('Returning to the Tower — Floor '+f+'…'):'Descending into the Tower…'); dailyScoreTick(); generateFloor();
   coach('move','🎮','Climbing begins','Move with <b>WASD</b>, aim with the <b>mouse</b>, hold <b>click</b> to attack. Press <b>Space to dash</b> — you\'re invulnerable mid-dash, your best defence.'); }
 function returnToTown(){ _G.running=true; _G.paused=false;
-  for(const pl of joinedPlayers()){ withPlayer(pl.id,()=>{ G.dead=false; G.downed=false; G.downT=0; G.hp=G.maxhp; G.mana=G.maxmana; G.invuln=1; G.fervor=0; G.charge=0; G.swiftT=0; G.petErrand=null; refillFlasks(100); if(G.petMesh)G.petMesh.visible=true; }); }
+  for(const pl of joinedPlayers()){ withPlayer(pl.id,()=>{ G.dead=false; G.downed=false; G.downT=0; G.hp=G.maxhp; G.mana=G.maxmana; G.invuln=1; G.fervor=0; G.charge=0; G.swiftT=0; G.recallT=0; G.petErrand=null; refillFlasks(100); if(G.petMesh)G.petMesh.visible=true; }); }
   _G.cur=0; clock.getDelta(); renderActionbar(); updatePips(); generateTown(); }
+// ---- QUICK RECALL: a short channel then teleport to the sanctuary (RotMG-nexus style); interrupted if you take a hit, so it's a "retreat when you get a breather", not a death-dodge ----
+const RECALL_TIME=2.6;
+function startRecall(){
+  if(!_G.running || _G.paused) return;
+  if(G.inTown){ log('🏛 You are already in the sanctuary.'); return; }
+  if(G.practice){ log('No recall in the practice arena.'); return; }
+  if(_G.splitscreen || NET.role){ log('Recall is single-player only for now.'); return; }
+  if(G.dead || G.downed) return;
+  if(G.recallT>0){ G.recallT=0; log('Recall cancelled.'); return; }   // press again to cancel
+  G.recallT=RECALL_TIME;
+  const p=G.player.position; ringFx(p.x,p.z,6,0x8effd9); sfx.cast&&sfx.cast();
+  banner('🏛 RECALLING','Returning to the Sanctuary — stay unhurt');
+  log('🏛 Recalling to the sanctuary… hold still and stay safe ('+RECALL_TIME.toFixed(1)+'s). It cancels if you take a hit.');
+  coach('recall','🏛','Quick recall','Press <b>H</b> to channel a return to the <b>Sanctuary</b> — bank loot, shop, respec, then the portal drops you back at the floor you left. It cancels if you get hit, so use it in a lull.');
+}
+function tickRecall(dt){
+  if(G.recallT<=0) return;
+  const p=G.player.position;
+  if(Math.floor((G.recallT+dt)*3)!==Math.floor(G.recallT*3)) ringFx(p.x,p.z,2.4,0x8effd9);   // pulsing channel rings
+  G.recallT-=dt;
+  if(G.recallT<=0){ G.recallT=0; _G.recallGo=true; }   // defer the actual teleport out of the per-player loop
+}
+function doRecallNow(){
+  _G.returnFloor=G.floor|0;   // remember the depth so the sanctuary portal returns you here
+  setMusic&&setMusic(null);
+  returnToTown();
+  banner('🏛 SANCTUARY','The portal will return you to Floor '+_G.returnFloor);
+  log('🏛 Recalled to the sanctuary — step into the portal to drop back at Floor '+_G.returnFloor+'.');
+}
 
 function floorType(f){ if(f%5===0)return 'BOSS'; if(f%5===1 && f>1)return 'SAFE'; return 'NORMAL'; }
 // ---------------- Endless Ascent / New Game+ : past the floor-50 summit the Tower rebuilds, deadlier and richer ----------------
@@ -5457,7 +5491,8 @@ function runScore(r){ return (r.floor||0)*100000 + (r.kills||0)*100 + Math.floor
 function die(){ if(G.dead)return;
   if(G.practice){ G.hp=G.maxhp; G.invuln=1; return; }   // no death in the practice arena
   if(_G.victoryPending||G.victoryOpen){ G.hp=Math.max(1,G.hp); G.invuln=2; return; }   // the tower fell first — victory outranks a stray bullet
-  G.dead=true; G.running=false; PANELS.forEach(p=>$(p).classList.add('hidden'));
+  G.dead=true; G.running=false; G.recallT=0; _G.returnFloor=0;   // death ends the descent — no recalled depth to return to
+  PANELS.forEach(p=>$(p).classList.add('hidden'));
   setMusic(null);   // the tower goes quiet for you
   G.stashStrikes++;
   const carried=G.inv.length; G.inv=[]; G.selGem=null;
@@ -5923,7 +5958,7 @@ function startGame(){
   if(_G.asc>0) log('⛧ Ascension '+_G.asc+' — '+ASC_MODS.slice(0,_G.asc).map(m=>m.nm).join(', ')+'. Fame ×'+ascFameMult().toFixed(2)+'.');
   // shared run state
   G.floor=1; G.running=true; G.paused=false; G.hitstop=0; G.permadead=false;
-  G.floorMod=null; G.bounty=null; G.practice=false; G.dailyRun=false; G.seed=randi(0,9999);
+  G.floorMod=null; G.bounty=null; G.practice=false; G.dailyRun=false; G.seed=randi(0,9999); _G.returnFloor=0; _G.recallGo=false;
   _G.nemesis=makeNemesis();   // NEMESIS: fresh epithets, traits and grudge-arcs for every climb — no two runs meet the same lords
   // start solo (co-op players drop-in by pressing START on a controller); rebuild P1's character
   _G.players.length=1; const p0=_G.players[0]; p0.joined=true; p0.color=PLAYER_COLORS[0]; p0.input=p0.input||makeKbmInput();
@@ -5960,7 +5995,7 @@ function updateWorldLabels(){
   if(G.stashStation) items.push(['lblStash','🗄 STASH — bank loot (F)',G.stashStation.x,G.stashStation.z]);
   if(G.vendorStation) items.push(['lblVendor','💰 VENDOR — sell · gamble · reforge (F)',G.vendorStation.x,G.vendorStation.z]);
   if(G.scoreStation) items.push(['lblScore','📜 RECORD (F)',G.scoreStation.x,G.scoreStation.z]);
-  if(G.portal && (G.inTown||G.portal.active)) items.push(['lblPortal', G.inTown?'⛰ Climb the Tower (F)':'⛰ Ascend (F)',G.portal.x,G.portal.z]);
+  if(G.portal && (G.inTown||G.portal.active)) items.push(['lblPortal', G.inTown?((_G.returnFloor|0)>1?('⛰ Return to Floor '+_G.returnFloor+' (F)'):'⛰ Climb the Tower (F)'):'⛰ Ascend (F)',G.portal.x,G.portal.z]);
   const seen=new Set();
   for(const [id,txt,x,z] of items){ seen.add(id); const e=ensureLabel(id,txt);
     _proj.set(x,3.4,z).project(camera);
@@ -6307,6 +6342,7 @@ function frameBody(){
 
 function update(dt){
   pollJoins();
+  if(_G.recallGo){ _G.recallGo=false; withPlayer(0,()=>doRecallNow()); return; }   // recall channel finished → rebuild the world as the sanctuary, skip the rest of this tick
   lerpSnapPrev(G.pickups);   // pickups are magnetised toward the player in the per-player pass below → remember their pre-move pos so frame() can interpolate them too (no jerk at high move speed / high refresh)
   // 1) per-player pass (input, movement, combat, pet, pickups, stations)
   for(const pl of joinedPlayers()){
@@ -6337,6 +6373,7 @@ function updatePlayerStep(dt){
   for(const k in G.cd) G.cd[k]=Math.max(0,G.cd[k]-dt);
   G.sigCd=Math.max(0,(G.sigCd||0)-dt); if(G.swiftT>0)G.swiftT-=dt; if(G.perfectT>0)G.perfectT-=dt; if(G.rootT>0)G.rootT-=dt;
   adaptTick(dt); const stunned=G.stunT>0;   // enemy stun-lock (counter to tank builds)
+  tickRecall(dt);                            // quick-recall channel (H) → teleport to the sanctuary
   for(const fl of G.belt){ if(fl&&fl.cd>0) fl.cd-=dt; }
   if(G.hp<G.maxhp){ const h=Math.min(G.S.lifeRegen*healScale()*dt,G.maxhp-G.hp); G.hp+=h; G.run.healSelf+=h; }
   G.mana=Math.min(G.maxmana,G.mana+G.S.manaRegen*dt);
@@ -6408,7 +6445,7 @@ function updatePlayerStations(dt){
   const p=G.player.position, isP0=(_G.cur===0);
   if(G.portal){ if(isP0){ G.portal.mesh.children[0].rotation.z+=dt*1.5; G.portal.mesh.visible=G.portal.active; G.portal.mesh.children[0].material.emissiveIntensity=1.5; }
     const d=Math.hypot(p.x-G.portal.x,p.z-G.portal.z); G.nearPortal=d<3.8 && G.portal.active;
-    if(G.nearPortal){ if(!G._ph){ log(G.practice?'▣ Press F to leave the practice arena':G.inTown?'▣ Press F to enter the Tower':'▣ Press F to ascend'); G._ph=true; } } else G._ph=false; }
+    if(G.nearPortal){ if(!G._ph){ log(G.practice?'▣ Press F to leave the practice arena':G.inTown?((_G.returnFloor|0)>1?'▣ Press F to return to Floor '+_G.returnFloor:'▣ Press F to enter the Tower'):'▣ Press F to ascend'); G._ph=true; } } else G._ph=false; }
   if(G.stashStation){ if(isP0) G.stashStation.mesh.children[1].rotation.y+=dt; const d=Math.hypot(p.x-G.stashStation.x,p.z-G.stashStation.z);
     const near=d<4.2; if(isP0){ if(near && !G.nearStash && !G.inTown && $('stashPanel').classList.contains('hidden')) togglePanel('stashPanel'); if(!near && G.nearStash && !$('stashPanel').classList.contains('hidden')){ $('stashPanel').classList.add('hidden'); syncPause(); } } G.nearStash=near; } else G.nearStash=false;
   if(G.vendorStation){ if(isP0) G.vendorStation.mesh.children[1].rotation.y+=dt*1.5; const d=Math.hypot(p.x-G.vendorStation.x,p.z-G.vendorStation.z);
@@ -6633,7 +6670,9 @@ function applyEnemyCounter(e, tp){ const S=tp.S; if(!S||!S.adaptKind)return; con
 }
 let _hurtFlashT;
 function hurtFlash(strong){ const v=$('vignette'); if(!v)return; v.classList.remove('hit','hitBig'); void v.offsetWidth; v.classList.add(strong?'hitBig':'hit'); clearTimeout(_hurtFlashT); _hurtFlashT=setTimeout(()=>v.classList.remove('hit','hitBig'), strong?360:220); }
-function hurtPlayer(dmg, opts){ if(G.invuln>0)return; opts=opts||{}; const heavy=!!opts.heavy; bountyFail(); let real=dmg*(1-dr())*ascEff().dmgTaken;
+function hurtPlayer(dmg, opts){ if(G.invuln>0)return; opts=opts||{}; const heavy=!!opts.heavy; bountyFail();
+  if(G.recallT>0){ G.recallT=0; floatText(G.player.position.x,G.player.position.z,'✕ RECALL INTERRUPTED','hurt',3); }   // taking a hit cancels the channel
+  let real=dmg*(1-dr())*ascEff().dmgTaken;
   if(G.S.manaShield && G.mana>0){ const absorb=Math.min(G.mana, real*0.6); G.mana-=absorb; real-=absorb; }   // Mana Bulwark: mana soaks 60% while it lasts
   G.hp-=real; G.invuln=heavy?0.62:0.5;
   shakeCam(heavy?1.15:.4);
@@ -6668,6 +6707,8 @@ function renderBuffs(){
   if(G.flowT>0)             list.push({id:'flow', ic:'✦',  nm:'Flow',             t:G.flowT,   col:'#ffce4d'});
   if((G.S.lowHpDmg||0)>0 && G.hp<G.maxhp*0.35)
                             list.push({id:'exec', ic:'☠️', nm:'Executioner +'+Math.round(G.S.lowHpDmg)+'%', col:'#ff5470', pulse:true});
+  // --- recall channel ---
+  if(G.recallT>0)           list.push({id:'recall',ic:'🏛', nm:'Recalling',         t:G.recallT, col:'#8effd9', pulse:true});
   // --- adaptation debuffs (the tower countering your build) ---
   if(G.stunT>0)             list.push({id:'stun', ic:'⚡', nm:'Stunned',           t:G.stunT,   col:'#ffd23b', pulse:true});
   if(G.slowT>0)             list.push({id:'slow', ic:'🕸', nm:'Slowed',            t:G.slowT,   col:'#7fd0ff'});
