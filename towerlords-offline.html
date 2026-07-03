@@ -178,8 +178,8 @@
   #shiftTxt.urgent{color:var(--hp);animation:lowpulse .6s infinite;}
 
   /* toast log */
-  #log{bottom:140px;left:50%;transform:translateX(-50%);width:540px;text-align:center;font-size:13px;
-    display:flex;flex-direction:column-reverse;gap:3px;}
+  #log{bottom:210px;left:50%;transform:translateX(-50%);width:540px;max-width:92vw;text-align:center;font-size:13px;
+    display:flex;flex-direction:column-reverse;gap:3px;pointer-events:none;z-index:6;}
   #log div{opacity:0;animation:toast 3s forwards;}
   @keyframes toast{8%{opacity:1;}80%{opacity:1;}100%{opacity:0;}}
 
