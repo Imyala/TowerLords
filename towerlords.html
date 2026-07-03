@@ -1221,10 +1221,27 @@ function toggleMute(){ G.muted=!G.muted; if(master)master.gain.value=G.muted?0:0
 let musGain=null; const MUS={mood:null,next:0,step:0,timer:null}; const MUS_VOL=0.12;
 const nfreq=s=>220*Math.pow(2,s/12);   // semitones from A3
 const MUS_DEFS={
+  // --- CALM (safe zones / sanctuary): warm, unhurried arps over slow roots ---
   town:{ bpm:72,  roots:[-24,-28,-21,-26], arp:[0,7,12,19,24,19,12,7], lead:0.085 },
+  hollow:{ bpm:64, roots:[-24,-31,-26,-29], arp:[0,7,10,15,19,15,10,7], lead:0.07 },        // airier, wistful
+  hearth:{ bpm:78, roots:[-21,-24,-28,-19], arp:[0,5,12,17,24,17,12,5], lead:0.08 },         // brighter, homely
+  // --- ADVENTUROUS (normal floors): moving ostinatos, exploratory leads ---
   climb:{ bpm:104, bassSeq:[-24,null,-24,null,-21,null,-24,-19,-24,null,-24,null,-17,null,-19,-21], scale:[0,3,5,7,10,12,15], lead:0.10, prob:0.38 },
+  trek:{ bpm:96,  bassSeq:[-24,null,-19,null,-22,null,-19,-24,-20,null,-17,null,-19,null,-15,-17], scale:[0,2,4,7,9,12,16], lead:0.10, prob:0.42 },   // heroic, major-leaning
+  delve:{ bpm:112, bassSeq:[-24,-24,null,-21,-24,null,-22,null,-24,-24,null,-19,-24,null,-17,null], scale:[0,3,5,7,10,12], lead:0.095, prob:0.34 },   // driving, deeper
+  wend:{ bpm:88,  bassSeq:[-22,null,-24,null,-20,null,-17,null,-22,null,-24,null,-19,null,-15,null], scale:[0,2,5,7,9,12,14], lead:0.10, prob:0.40 },  // lilting, curious
+  // --- BATTLE (boss rooms): heavier bass, dissonant snarl, hats ---
   boss:{ bpm:126, bassSeq:[-24,-24,-18,-24,-24,-24,-17,-18,-24,-24,-18,-24,-23,-24,-17,-18], scale:[0,3,6,10,12,15], lead:0.12, prob:0.55, hat:true },
+  dread:{ bpm:118, bassSeq:[-24,-24,-23,-24,-24,-18,-24,-23,-24,-24,-19,-24,-18,-24,-23,-24], scale:[0,1,6,7,10,13], lead:0.115, prob:0.5, hat:true },    // ominous, phrygian bite
+  wrath:{ bpm:140, bassSeq:[-24,-24,-24,-18,-24,-17,-24,-18,-24,-24,-24,-15,-24,-17,-24,-18], scale:[0,3,6,9,12,15], lead:0.125, prob:0.62, hat:true },   // fast, relentless
 };
+// music is grouped into sets; each floor/boss/safe zone rolls a random track from its set so nothing repeats every time
+const MUS_SETS={ calm:['town','hollow','hearth'], floor:['climb','trek','delve','wend'], boss:['boss','dread','wrath'] };
+let _musLast={};
+function musPick(set){ const arr=MUS_SETS[set]||[set]; if(arr.length<2) return arr[0];
+  let k=arr[Math.floor(Math.random()*arr.length)]; if(k===_musLast[set]) k=arr[(arr.indexOf(k)+1)%arr.length];   // Math.random (NOT the seeded RNG) so daily-climb determinism is untouched
+  _musLast[set]=k; return k; }
+function setMusicSet(set){ setMusic(musPick(set)); }
 function musNote(freq,t,dur,type,vol){ if(!actx||!musGain)return; const o=actx.createOscillator(),g=actx.createGain();
   o.type=type; o.frequency.value=freq; o.connect(g); g.connect(musGain);
   g.gain.setValueAtTime(0.0001,t); g.gain.linearRampToValueAtTime(vol,t+0.02); g.gain.exponentialRampToValueAtTime(0.0001,t+dur);
@@ -2961,13 +2978,13 @@ function generateFloor(anchor){
   unstuckParty();   // final safety net — no player ever ends a floor-gen stuck inside a pillar
   if(G.dailyRun) srandOff();   // combat/loot rolls go back to true random — only the TOWER is shared
   if(NET.role==='host') netBroadcastFloor();   // stream the new floor's layout to connected peers
-  setMusic(type==='BOSS'?'boss':type==='SAFE'?'town':'climb');
+  setMusicSet(type==='BOSS'?'boss':type==='SAFE'?'calm':'floor');   // random battle track in boss rooms, calm in safe zones, a random adventurous track on normal floors
   updateFloorUI(type);
 }
 let biome;
 
 function generateTown(){
-  clearWorld(); G.inTown=true; setMusic('town');
+  clearWorld(); G.inTown=true; setMusicSet('calm');
   G.floorMod=null; G.bounty=null; G.shiftT=999; G.shiftWarned=false;   // the sanctuary is a rest area — drop any mods/bounty/reshuffle clock carried in from the run
   biome=BIOMES[4];                                   // Gilded Halls — the sanctuary
   scene.background=new THREE.Color(biome.fog); scene.fog=new THREE.Fog(biome.fog,46,150); hemi.groundColor.setHex(biome.fog);
@@ -3195,9 +3212,15 @@ function partyLevel(){ let m=1; for(const p of _G.players){ if(p.joined && p.pla
 // enemies scale to max(zone level, party level): a lvl-1 in a lvl-10 zone still faces lvl-10s; a lvl-20 there faces lvl-20s
 // the player's "base power" = level implied by ALLOCATED base attributes only (start is 5×5=25; +5 pts/level).
 // Item/equipment attribute bonuses are deliberately excluded so gear is your EDGE over the curve, not part of it.
+// the player's "base power" = level implied by ALLOCATED base attributes (1 pt/level, persists through evolve) PLUS skill-tree
+// investment. Item/equipment bonuses are excluded so gear stays your EDGE over the curve. Enemies track this so leveling
+// your stats OR pouring into the tree makes the world grow to match — you never out-scale the tower for free.
 function basePowerLvl(){ let best=1; for(const pl of joinedPlayers()){ const A=pl.attr; if(!A)continue;
-  const s=(A.str||0)+(A.dex||0)+(A.int||0)+(A.vit||0)+(A.will||0); best=Math.max(best, Math.round((s-25)/5)+1); } return best; }
-function scaleLvl(floor){ return Math.max(floor, basePowerLvl()); }   // enemies track floor & attribute level; gear power is handled via the bigHit floors on elites/bosses
+  const attrPts=(A.str||0)+(A.dex||0)+(A.int||0)+(A.vit||0)+(A.will||0)-25;   // points spent into attributes (base 25)
+  let skillPts=0; const al=pl.alloc||{}; for(const id in al) skillPts+=al[id]||0;   // ranks spent across the skill tree
+  best=Math.max(best, 1 + Math.max(0,attrPts) + Math.round(skillPts*0.6)); } return best; }
+function scaleLvl(floor){ return Math.max(floor, basePowerLvl()); }   // HP scaling tracks your FULL investment (attrs + tree) → enemies get tankier as you grow
+function dmgScaleLvl(floor){ return Math.max(floor, Math.min(basePowerLvl(), floor*2+30)); }   // damage tracks depth (+ some leeway) so over-investing never lets foes one-shot you
 // the strongest player's representative BIG hit (a ~3-coef skill, crit-weighted) — the unit tough foes are balanced against, so burst can't trivialise them
 function playerBigHit(){ let best=0; for(const pl of joinedPlayers()){ const S=pl.S; if(!S||!S.dmgBase)continue;
     const critF=1+(S.crit||0)*((S.critMult||1.5)-1); best=Math.max(best, S.dmgBase*3.0*(S.skillMult||1)*critF); } return best||12; }
@@ -3230,10 +3253,11 @@ const AFFIX_THEME={
 };
 function spawnEnemy(floor,home,forceType,forceElite){
   const t=forceType||pickEType(floor); discover(t.id);   // log the foe in the bestiary
-  const lvl=scaleLvl(floor);                            // stat scaling tracks the player, not just the floor
-  const hpScale=1+lvl*1.0, dmgScale=1+lvl*0.40;   // tanky (longer fights) but per-hit damage is less swingy — a real threat, not a one-shot
+  const lvl=scaleLvl(floor);                            // HP scaling tracks the player's full investment
+  const dlvl=dmgScaleLvl(floor);                        // damage scaling tracks depth (capped) so heavy investment = tankier foes, not one-shots
+  const hpScale=1+lvl*1.0, dmgScale=1+dlvl*0.40;   // tanky (longer fights) but per-hit damage is less swingy — a real threat, not a one-shot
   const e={ etype:t.id, type:t.ranged?'ranged':'melee', shape:t.shape, color:t.color,
-    hp:t.hp*hpScale*1.2, speed:t.spd+Math.min(lvl*0.08,5), dmg:(t.dmg+lvl*0.95)*dmgScale,
+    hp:t.hp*hpScale*1.2, speed:t.spd+Math.min(lvl*0.08,5), dmg:(t.dmg+dlvl*0.95)*dmgScale,
     r:t.r, scale:t.scale, xp:t.xp, range:t.ranged||0, dash:!!t.dash, kite:!!t.kite, lob:!!t.lob,
     bomb:!!t.bomb, split:!!t.split, heal:!!t.heal, sniper:!!t.sniper, gunner:!!t.gunner, bspd:t.bspd||0,
     lancer:!!t.lancer, weaver:!!t.weaver, shield:!!t.shield, revive:!!t.revive, blink:!!t.blink, aura:!!t.aura, hexer:!!t.hexer, enrage:!!t.enrage,
@@ -3769,7 +3793,8 @@ function spawnBoss(floor,room,opts){
   opts=opts||{};
   const ng=ngMult();
   const idx=((Math.floor(floor/5)-1)%BOSSES.length + BOSSES.length)%BOSSES.length;   // milestone → boss, cycling
-  const lvl=scaleLvl(floor);   // boss also rubber-bands to the party level
+  const lvl=scaleLvl(floor);        // boss HP rubber-bands to your full power (attrs + tree)
+  const dlvl=dmgScaleLvl(floor);    // boss damage tracks depth (capped) so it stays a threat without one-shotting an over-invested character
   const _ae=ascEff();
   const BOSS_HITS=40;   // a guardian must endure ~40 of your biggest hits — a real DPS check, never a burst-down
   let def=opts.def || ((floor%SUMMIT_FLOOR===0)?TOWER_LORD:BOSSES[idx]);   // every 50th floor is the summit
@@ -3797,7 +3822,7 @@ function spawnBoss(floor,room,opts){
   for(const t of trs){ if(t.res) for(const k in t.res) res[k]=Math.min(0.85,(res[k]||0)+t.res[k]); }
   if(n&&n.learned.el) res[n.learned.el]=Math.min(0.85,(res[n.learned.el]||0)+0.5);   // he studied the element that killed him
   const e={type:'boss',boss:true,bossDef:def,hp,maxhp:hp,speed:3.4*def.spdMult*spdT,
-    dmg:(58+lvl*3.4)*ng*_ae.bossDmg*tierMult*dmgT*(opts.roaming?0.78:1),   // guardians hit HARD — a boss blow should be a real threat, not a tickle
+    dmg:(58+dlvl*3.4)*ng*_ae.bossDmg*tierMult*dmgT*(opts.roaming?0.78:1),   // guardians hit HARD — a boss blow should be a real threat, not a tickle
     r:2.6,scale:def.scale*sclT*(opts.roaming?0.85:1),xp:90*ng,
     hitFlash:0,color:def.color,keep,name:n?nemName(def,n):bossFullName(def),
     roaming:!!opts.roaming, assist:!!opts.assist, nemTraits:trs.length?trs:null,
@@ -5439,7 +5464,7 @@ function victoryScreen(){ if(G.victoryOpen) return; G.victoryOpen=true; _G.victo
       +`<div class="scoreRow" style="color:var(--gold)"><span>★ Total fame</span><b>${META.fame.toLocaleString()}</b></div>`
       +`<div class="scoreRow"><span>Rank · <span style="color:${rk.col}">${rk.name}</span></span><b style="color:${rk.col};letter-spacing:2px">${rankStars(rk.stars)}</b></div>`; }
   shakeCam(1.2); if(sfx.evolve)sfx.evolve();
-  setMusic('town');   // triumph sounds like home
+  setMusicSet('calm');   // triumph sounds like home
   $('victory').classList.remove('hidden');
 }
 function fmtTime(s){ s=Math.max(0,Math.floor(s)); return Math.floor(s/60)+':'+String(s%60).padStart(2,'0'); }
