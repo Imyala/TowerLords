@@ -1222,7 +1222,7 @@ function toggleMute(){ G.muted=!G.muted; if(master)master.gain.value=G.muted?0:0
 // roots), 'climb' (tense minor ostinato), 'boss' (driving bass with a tritone snarl + hats).
 // 16-step lookahead scheduler; per-bar randomized lead notes so nothing loops exactly.
 // Fades between moods; owns a gain under `master` so the mute button governs it too.
-let musGain=null; const MUS={mood:null,next:0,step:0,timer:null}; const MUS_MAX=1.5;   // music bus ceiling at 100% volume — reaches SFX loudness so the player has real range
+let musGain=null; const MUS={mood:null,next:0,step:0,timer:null}; const MUS_MAX=4.0;   // music bus ceiling at 100% volume — well above SFX loudness so the slider has big, obvious range (audio graph has ample headroom before clipping)
 function musVol(){ return MUS_MAX * clamp((SETTINGS.musicVol==null?75:SETTINGS.musicVol),0,100)/100; }   // current music bus level from the settings slider
 function applyMusicVol(){ if(!actx||!musGain) return; musGain.gain.cancelScheduledValues(actx.currentTime); musGain.gain.setTargetAtTime(MUS.mood?musVol():0, actx.currentTime, 0.15); }   // live-apply while the slider moves
 const nfreq=s=>220*Math.pow(2,s/12);   // semitones from A3
