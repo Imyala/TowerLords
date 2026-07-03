@@ -1222,7 +1222,9 @@ function toggleMute(){ G.muted=!G.muted; if(master)master.gain.value=G.muted?0:0
 // roots), 'climb' (tense minor ostinato), 'boss' (driving bass with a tritone snarl + hats).
 // 16-step lookahead scheduler; per-bar randomized lead notes so nothing loops exactly.
 // Fades between moods; owns a gain under `master` so the mute button governs it too.
-let musGain=null; const MUS={mood:null,next:0,step:0,timer:null}; const MUS_VOL=0.5;   // music bus level — audible background under SFX (was 0.12, effectively inaudible)
+let musGain=null; const MUS={mood:null,next:0,step:0,timer:null}; const MUS_MAX=1.5;   // music bus ceiling at 100% volume — reaches SFX loudness so the player has real range
+function musVol(){ return MUS_MAX * clamp((SETTINGS.musicVol==null?75:SETTINGS.musicVol),0,100)/100; }   // current music bus level from the settings slider
+function applyMusicVol(){ if(!actx||!musGain) return; musGain.gain.cancelScheduledValues(actx.currentTime); musGain.gain.setTargetAtTime(MUS.mood?musVol():0, actx.currentTime, 0.15); }   // live-apply while the slider moves
 const nfreq=s=>220*Math.pow(2,s/12);   // semitones from A3
 const MUS_DEFS={
   // --- CALM (safe zones / sanctuary): warm, unhurried arps over slow roots ---
@@ -1275,7 +1277,7 @@ function setMusic(mood){ MUS.desired=mood; if(mood && !SETTINGS.music) mood=null
   if(!actx) return;
   if(!musGain){ musGain=actx.createGain(); musGain.gain.value=0; musGain.connect(master); }
   musGain.gain.cancelScheduledValues(actx.currentTime);
-  musGain.gain.setTargetAtTime(mood?MUS_VOL:0, actx.currentTime, 0.7);
+  musGain.gain.setTargetAtTime(mood?musVol():0, actx.currentTime, 0.7);
   if(mood){ MUS.step=0; MUS.next=actx.currentTime+0.12; if(!MUS.timer) MUS.timer=setInterval(musTick,60); }
   else if(MUS.timer){ setTimeout(()=>{ if(!MUS.mood&&MUS.timer){ clearInterval(MUS.timer); MUS.timer=null; } },2500); }
 }
@@ -1517,8 +1519,8 @@ function makeSkillGem(floor, idForce){ const id=idForce||pick(SKILL_IDS), sk=SKI
     value:60+tier*40+floor*3, desc:`Active skill · bind to 1–9 bar${tier>1?` · +${(tier-1)*15}% power`:''}`}; }
 // ---- user settings (persist across sessions) ----
 const SETTINGS_KEY='towerlords_settings_v1';
-const SETTINGS={ bigNumbers:true, moveMode:'keyboard', tips:true, autoSalvage:true, music:true, junkMaxRarity:1, camSway:true };   // autoSalvage: grey/common drops auto-sell for gold · junkMaxRarity: highest rarity index eligible for bulk feed/sell · camSway: directional camera lean
-function loadSettings(){ try{ const s=localStorage.getItem(SETTINGS_KEY); if(s){ const o=JSON.parse(s); if(typeof o.bigNumbers==='boolean')SETTINGS.bigNumbers=o.bigNumbers; if(o.moveMode==='keyboard'||o.moveMode==='mouse')SETTINGS.moveMode=o.moveMode; if(typeof o.tips==='boolean')SETTINGS.tips=o.tips; if(typeof o.autoSalvage==='boolean')SETTINGS.autoSalvage=o.autoSalvage; if(typeof o.music==='boolean')SETTINGS.music=o.music; if(typeof o.junkMaxRarity==='number')SETTINGS.junkMaxRarity=clamp(o.junkMaxRarity|0,0,3); if(typeof o.camSway==='boolean')SETTINGS.camSway=o.camSway; } }catch(e){} }
+const SETTINGS={ bigNumbers:true, moveMode:'keyboard', tips:true, autoSalvage:true, music:true, musicVol:75, junkMaxRarity:1, camSway:true };   // autoSalvage: grey/common drops auto-sell for gold · musicVol: music loudness 0-100 (player-set) · junkMaxRarity: highest rarity index eligible for bulk feed/sell · camSway: directional camera lean
+function loadSettings(){ try{ const s=localStorage.getItem(SETTINGS_KEY); if(s){ const o=JSON.parse(s); if(typeof o.bigNumbers==='boolean')SETTINGS.bigNumbers=o.bigNumbers; if(o.moveMode==='keyboard'||o.moveMode==='mouse')SETTINGS.moveMode=o.moveMode; if(typeof o.tips==='boolean')SETTINGS.tips=o.tips; if(typeof o.autoSalvage==='boolean')SETTINGS.autoSalvage=o.autoSalvage; if(typeof o.music==='boolean')SETTINGS.music=o.music; if(typeof o.musicVol==='number')SETTINGS.musicVol=clamp(o.musicVol|0,0,100); if(typeof o.junkMaxRarity==='number')SETTINGS.junkMaxRarity=clamp(o.junkMaxRarity|0,0,3); if(typeof o.camSway==='boolean')SETTINGS.camSway=o.camSway; } }catch(e){} }
 // bulk feed/sell "junk" = anything at or below the chosen quality that isn't a special item or locked
 function junkThreshold(){ return clamp(SETTINGS.junkMaxRarity|0,0,4); }
 function isBulkJunk(it){ return it && !it.isPet && !it.isPot && !it.isFlask && !it.isSkillGem && !it.locked && RARITY.indexOf(it.rarity)<=junkThreshold(); }
@@ -5672,6 +5674,10 @@ function renderSettings(){
       <div class="tog${SETTINGS.autoSalvage?' on':''}" id="togSalv"><div class="knob"></div></div></div>
     <div class="setRow"><div class="lbl">Music<small>Procedural mood loops — calm hub, tense climb, driving boss fights</small></div>
       <div class="tog${SETTINGS.music?' on':''}" id="togMusic"><div class="knob"></div></div></div>
+    <div class="setRow" id="musVolRow" style="${SETTINGS.music?'':'opacity:.45;pointer-events:none'}"><div class="lbl">Music volume<small>How loud the soundtrack plays</small></div>
+      <div style="display:flex;align-items:center;gap:10px;min-width:150px">
+        <input type="range" min="0" max="100" step="1" value="${SETTINGS.musicVol}" id="musVol" style="flex:1;accent-color:#3ad18a">
+        <span id="musVolVal" style="width:38px;text-align:right;font-variant-numeric:tabular-nums;opacity:.8">${SETTINGS.musicVol}%</span></div></div>
     <div class="setRow"><div class="lbl">Camera sway<small>The view leans as you move &amp; springs on direction changes — more kinetic, less stiff</small></div>
       <div class="tog${SETTINGS.camSway?' on':''}" id="togSway"><div class="knob"></div></div></div>
     <div style="margin:16px 16px 6px;font-size:11px;opacity:.6;letter-spacing:1px;text-transform:uppercase">Movement</div>
@@ -5692,6 +5698,9 @@ function renderSettings(){
     log(SETTINGS.autoSalvage?'♻ Auto-salvage on — grey drops become gold.':'Auto-salvage off — all drops go to your bag.'); };
   $('togMusic').onclick=()=>{ SETTINGS.music=!SETTINGS.music; saveSettings(); renderSettings();
     if(SETTINGS.music){ setMusic(MUS.desired||null); log('🎵 Music on.'); } else { const d=MUS.desired; setMusic(null); MUS.desired=d; log('Music off.'); } };
+  { const mv=$('musVol'); if(mv){
+      mv.oninput=()=>{ SETTINGS.musicVol=clamp(mv.value|0,0,100); const vv=$('musVolVal'); if(vv)vv.textContent=SETTINGS.musicVol+'%'; initAudio(); applyMusicVol(); };   // live while dragging
+      mv.onchange=()=>{ SETTINGS.musicVol=clamp(mv.value|0,0,100); saveSettings(); log('🎵 Music volume '+SETTINGS.musicVol+'%.'); }; } }   // persist on release
   $('togSway').onclick=()=>{ SETTINGS.camSway=!SETTINGS.camSway; saveSettings(); renderSettings(); log(SETTINGS.camSway?'🎥 Camera sway on.':'Camera sway off.'); };
   { const eb=$('extractBtn'); if(eb) eb.onclick=extractToMenu; }
   b.querySelectorAll('[data-mm]').forEach(el=>el.onclick=()=>{ SETTINGS.moveMode=el.dataset.mm; saveSettings(); renderSettings();
