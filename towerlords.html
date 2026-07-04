@@ -941,6 +941,27 @@
   html.touch #tutStep{top:13%;}
   /* during the tutorial, hide floor-objective clutter so the prompts read clean */
   html.tut #clearTxt,html.tut #bountyTxt,html.tut #modTxt,html.tut #shiftTxt,html.tut #rampage{display:none!important;}
+
+  /* ---- milestones ladder ---- */
+  #milestonePanel{width:min(560px,94vw);z-index:60;top:50%;left:50%;transform:translate(-50%,-50%);}
+  #milestoneBody{margin:0 16px;max-height:60vh;overflow-y:auto;display:flex;flex-direction:column;gap:8px;padding:4px 2px;}
+  #msSummary{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;margin:2px 0 10px;font-size:12px;color:#c3d2ee;}
+  #msSummary .msStat{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:8px;padding:5px 12px;}
+  #msSummary .msStat b{color:var(--gold);font-size:15px;}
+  #msSummary .msTitle{background:rgba(255,206,77,.12);border-color:rgba(255,206,77,.4);color:#ffe6a3;}
+  .msRow{display:flex;align-items:center;gap:12px;padding:9px 12px;border-radius:11px;border:1px solid rgba(255,255,255,.1);
+    background:rgba(10,14,26,.6);transition:.15s;}
+  .msRow.got{border-color:rgba(109,255,140,.45);background:rgba(20,40,28,.5);box-shadow:0 0 14px rgba(109,255,140,.1);}
+  .msRow .msIc{font-size:24px;width:34px;text-align:center;flex:none;filter:grayscale(1) brightness(.7);}
+  .msRow.got .msIc{filter:none;}
+  .msRow .msMid{flex:1;min-width:0;}
+  .msRow .msT{font-size:14px;font-weight:bold;color:#eaf2ff;}
+  .msRow.got .msT{color:#bfffdd;}
+  .msRow .msR{font-size:11.5px;color:#9fb0cc;}
+  .msRow .msTrack{margin-top:5px;height:5px;border-radius:3px;background:rgba(255,255,255,.09);overflow:hidden;}
+  .msRow .msTrackFill{height:100%;background:linear-gradient(90deg,var(--neon),var(--xp));border-radius:3px;}
+  .msRow .msProg{font-size:11px;color:#8aa0c0;flex:none;font-variant-numeric:tabular-nums;min-width:64px;text-align:right;}
+  .msRow.got .msProg{color:var(--green);}
 </style>
 </head>
 <body>
@@ -1122,6 +1143,13 @@
     <div class="hint">your record for this character · resets on a new character</div>
   </div>
 
+  <!-- Milestones (permanent, account-wide unlock ladder) -->
+  <div id="milestonePanel" class="panel hidden">
+    <h3>🎖 MILESTONES</h3><div class="closeX" data-close="milestonePanel">✕</div>
+    <div id="milestoneBody"></div>
+    <div class="hint">permanent, account-wide — progress carries across every run &amp; character</div>
+  </div>
+
   <div id="codexPanel" class="panel hidden">
     <h3>📖 BESTIARY</h3><div class="closeX" data-close="codexPanel">✕ <span style="font-size:11px;opacity:.6">(B)</span></div>
     <div id="codexBody"></div>
@@ -1142,6 +1170,7 @@
       <button class="btn hidden" id="menuContinue" style="background:linear-gradient(180deg,#1a3a2e,#0f241c);border-color:#3ad18a;color:#bfffdd;box-shadow:0 0 22px rgba(58,209,138,.25)">▶ Continue</button>
       <button class="btn" id="menuClimb">⛰ Climb the Tower</button>
       <button class="btn" id="menuDaily">🌅 Daily Climb</button>
+      <button class="btn" id="menuMilestones">🎖 Milestones</button>
       <button class="btn" id="menuBoard">🏆 Leaderboard</button>
       <button class="btn" id="menuCoop">🎮 Local Co-op</button>
       <button class="btn" id="menuOnline">🌐 Online Co-op</button>
@@ -1151,6 +1180,7 @@
     </div>
     <div id="climbScreen" class="menuCol hidden">
       <div class="modeSel">
+        <div class="modeBtn" id="modeCasual"><b>CASUAL</b><span>Relaxed — foes hit softer, you regen fast, and death costs you nothing. Perfect for short sessions</span></div>
         <div class="modeBtn sel" id="modeNormal"><b>NORMAL</b><span>2nd death wipes your stash — but you keep your character and restart the tower</span></div>
         <div class="modeBtn" id="modeHardcore"><b>HARDCORE</b><span>2nd death is permanent — your character is wiped and you start over from scratch</span></div>
       </div>
@@ -1701,8 +1731,8 @@ const FEATS=[
   {id:'f100',     nm:'Centurion',    ds:'Reach Floor 100',                fame:12000},
   {id:'ng',       nm:'Eternal',      ds:'Enter the Endless Ascent (NG+)', fame:6000},
 ];
-let META={fame:0, feats:[], invRows:0, stashSlots:0, petTier:0, petSlots:0, codex:{}, ascMax:0, tips:{}, victories:0, grudges:{}, daily:null, playerName:'', playerId:'', voiceSeen:{}, tutDone:0, unlocks:{}};
-function loadMeta(){ try{ const s=localStorage.getItem(META_KEY); if(s){ const m=JSON.parse(s); META={fame:m.fame||0, feats:m.feats||[], invRows:Math.min(5,m.invRows||0), stashSlots:(m.stashSlots!=null?m.stashSlots:Math.min(25,(m.stashRows||0)*10)), petTier:m.petTier||0, petSlots:m.petSlots||0, codex:m.codex||{}, ascMax:m.ascMax||0, tips:m.tips||{}, victories:m.victories||0, grudges:m.grudges||{}, daily:m.daily||null, playerName:m.playerName||'', playerId:m.playerId||'', voiceSeen:m.voiceSeen||{}, tutDone:m.tutDone||0, unlocks:m.unlocks||{}}; } }catch(e){} }
+let META={fame:0, feats:[], invRows:0, stashSlots:0, petTier:0, petSlots:0, codex:{}, ascMax:0, tips:{}, victories:0, grudges:{}, daily:null, playerName:'', playerId:'', voiceSeen:{}, tutDone:0, unlocks:{}, stats:{kills:0,runs:0,bosses:0,deepest:0}};
+function loadMeta(){ try{ const s=localStorage.getItem(META_KEY); if(s){ const m=JSON.parse(s); META={fame:m.fame||0, feats:m.feats||[], invRows:Math.min(5,m.invRows||0), stashSlots:(m.stashSlots!=null?m.stashSlots:Math.min(25,(m.stashRows||0)*10)), petTier:m.petTier||0, petSlots:m.petSlots||0, codex:m.codex||{}, ascMax:m.ascMax||0, tips:m.tips||{}, victories:m.victories||0, grudges:m.grudges||{}, daily:m.daily||null, playerName:m.playerName||'', playerId:m.playerId||'', voiceSeen:m.voiceSeen||{}, tutDone:m.tutDone||0, unlocks:m.unlocks||{}, stats:Object.assign({kills:0,runs:0,bosses:0,deepest:0}, m.stats||{})}; } }catch(e){} }
 // ---------------- GLOBAL LEADERBOARD (optional backend) ----------------
 // Set LEADERBOARD_URL to a deployed copy of leaderboard-worker.js (free Cloudflare Worker —
 // see LEADERBOARD_SETUP.md next to this file). Leave null for local-only boards: the game
@@ -1730,6 +1760,49 @@ function dailySeedInt(){ const s='TOWERLORDS-'+dailyKey(); let h=2166136261; for
 function dailyState(){ const d=META.daily; return (d&&d.date===dailyKey())?d:null; }   // null = not attempted today
 function saveMeta(){ try{ localStorage.setItem(META_KEY, JSON.stringify(META)); }catch(e){} }
 function discover(key){ if(!META.codex) META.codex={}; if(!META.codex[key]){ META.codex[key]=true; saveMeta(); } }   // bestiary: record a first encounter
+
+// ============================================================ MILESTONES (visible, permanent, account-wide progression)
+// A clear ladder the player can see and chase between runs. Rewards are convenience/cosmetic (titles + a small
+// starting kit) — never scaling power — so they stay true to the "fame = skill, no power creep" design.
+const MILESTONES=[
+  {id:'run1',   ic:'🧗', stat:'runs',    need:1,    t:'First Climb',    r:'Title · “Climber”'},
+  {id:'f5',     ic:'⛰',  stat:'deepest', need:5,    t:'Foothold',       r:'Start each run with 50 gold',      reward:'gold50'},
+  {id:'k250',   ic:'⚔',  stat:'kills',   need:250,  t:'Centurion',      r:'Title · “Centurion”'},
+  {id:'f10',    ic:'🗼', stat:'deepest', need:10,   t:'Ascendant',      r:'+1 belt flask at the start',       reward:'flask3'},
+  {id:'boss5',  ic:'💀', stat:'bosses',  need:5,    t:'Lord-Slayer',    r:'Title · “Lord-Slayer”'},
+  {id:'runs10', ic:'🔁', stat:'runs',    need:10,   t:'Persistent',     r:'Start with a 2nd skill gem',       reward:'skill2'},
+  {id:'f25',    ic:'🏔', stat:'deepest', need:25,   t:'Tower-Breaker',  r:'Title · “Tower-Breaker”'},
+  {id:'k2000',  ic:'☠',  stat:'kills',   need:2000, t:'Butcher',        r:'Title · “Butcher”'},
+  {id:'boss25', ic:'👑', stat:'bosses',  need:25,   t:'Kingslayer',     r:'Title · “Kingslayer”'},
+  {id:'f50',    ic:'🌌', stat:'deepest', need:50,   t:'Summit-Touched', r:'Title · “Summit-Touched”'},
+];
+function mStat(k){ return (META.stats&&META.stats[k])||0; }
+function bumpStat(k,n){ if(!META.stats) META.stats={kills:0,runs:0,bosses:0,deepest:0}; META.stats[k]=Math.max(META.stats[k]||0,(k==='deepest')?(n||0):((META.stats[k]||0)+(n||1))); }
+function checkMilestones(quiet){ let any=false;
+  for(const m of MILESTONES){ if(!META.unlocks[m.id] && mStat(m.stat)>=m.need){ META.unlocks[m.id]=1; any=true;
+    if(!quiet){ banner('🎖 MILESTONE · '+m.t, m.r); log('🎖 Milestone unlocked — '+m.t+': '+m.r+'.'); if(sfx.evolve)sfx.evolve(); } } }
+  if(any) saveMeta(); return any; }
+function playerTitle(){ let title=''; for(const m of MILESTONES){ if(META.unlocks[m.id] && /Title · “([^”]+)”/.test(m.r)) title=RegExp.$1; } return title; }
+function hasUnlock(reward){ for(const m of MILESTONES){ if(m.reward===reward && META.unlocks[m.id]) return true; } return false; }
+function renderMilestones(){
+  const b=$('milestoneBody'); if(!b) return; const s=META.stats||{}; const title=playerTitle();
+  const gotN=MILESTONES.filter(m=>META.unlocks[m.id]).length;
+  let html=`<div id="msSummary">
+    <span class="msStat">🎖 <b>${gotN}</b>/${MILESTONES.length} unlocked</span>
+    <span class="msStat">🗼 Deepest <b>${s.deepest||0}</b></span>
+    <span class="msStat">⚔ Kills <b>${(s.kills||0).toLocaleString()}</b></span>
+    <span class="msStat">💀 Lords <b>${s.bosses||0}</b></span>
+    <span class="msStat">🔁 Runs <b>${s.runs||0}</b></span>
+    ${title?`<span class="msStat msTitle">★ “${title}”</span>`:''}
+  </div>`;
+  for(const m of MILESTONES){ const cur=mStat(m.stat), got=!!META.unlocks[m.id], pct=Math.min(100,cur/m.need*100);
+    html+=`<div class="msRow${got?' got':''}"><div class="msIc">${m.ic}</div><div class="msMid">
+      <div class="msT">${m.t}${got?' ✓':''}</div><div class="msR">${m.r}</div>
+      ${got?'':`<div class="msTrack"><div class="msTrackFill" style="width:${pct}%"></div></div>`}</div>
+      <div class="msProg">${got?'DONE':cur.toLocaleString()+' / '+m.need.toLocaleString()}</div></div>`;
+  }
+  b.innerHTML=html;
+}
 // ============================================================ SESSION SAVE / RESUME — jump in and out; continue from the floor you were on
 // A full single-player snapshot (character + which floor / sanctuary). Autosaves on every floor change and on tab close, so
 // closing the game and coming back later just works. Co-op / daily / practice are never saved (they're transient / one-shot).
@@ -1738,7 +1811,7 @@ function canSaveSession(){ return _G.running && !_G.splitscreen && !NET.role && 
 function serializeSession(){
   const p=_G.players[0]; if(!p||!p.player) return null;
   try{ return { v:1, ts:Date.now(),
-    floor:G.floor|0, inTown:!!G.inTown, returnFloor:_G.returnFloor|0, asc:_G.asc||0, hardcore:!!G.hardcore, seed:_G.seed|0, maxFloor:_G.maxFloor||50,
+    floor:G.floor|0, inTown:!!G.inTown, returnFloor:_G.returnFloor|0, asc:_G.asc||0, hardcore:!!G.hardcore, casual:!!G.casual, seed:_G.seed|0, maxFloor:_G.maxFloor||50,
     name:p.name, gold:p.gold|0, level:p.level|0, xp:p.xp, xpNeed:p.xpNeed, xpMode:p.xpMode||'use',
     attrPts:p.attrPts|0, skillPts:p.skillPts|0, skillGranted:p.skillGranted|0, evolves:p.evolves|0,
     attr:p.attr, alloc:p.alloc,
@@ -1759,7 +1832,7 @@ function resumeSession(){
   _G.asc=clamp(s.asc|0,0,99); _G.ascEff=ascEffects(_G.asc);
   _G.seed=(s.seed|0)||randi(0,9999); _G.maxFloor=s.maxFloor||50; _G.returnFloor=s.returnFloor|0; _G.recallGo=false;
   G.running=true; G.paused=false; G.hitstop=0; G.permadead=false;
-  G.floorMod=null; G.bounty=null; G.practice=false; G.dailyRun=false; G.hardcore=!!s.hardcore;
+  G.floorMod=null; G.bounty=null; G.practice=false; G.dailyRun=false; G.hardcore=!!s.hardcore; G.casual=!!s.casual;
   _G.nemesis=makeNemesis();   // per-run nemesis isn't saved (has function refs) — a fresh cast greets your return; grudges (META) persist
   _G.players.length=1; const p=_G.players[0]; p.joined=true; p.color=PLAYER_COLORS[0]; p.input=p.input||makeKbmInput();
   _G.cur=0; _G.splitscreen=false; $('hud').classList.remove('cohide');
@@ -2771,8 +2844,10 @@ function repositionParty(x,z){ joinedPlayers().forEach((p,i)=>{ if(p.player){ co
 
 $('startBtn').onclick=startGame;
 $('coachX').onclick=dismissCoach;
-$('modeNormal').onclick=()=>{ G.hardcore=false; $('modeNormal').classList.add('sel'); $('modeHardcore').classList.remove('sel'); };
-$('modeHardcore').onclick=()=>{ G.hardcore=true; $('modeHardcore').classList.add('sel'); $('modeNormal').classList.remove('sel'); };
+function selMode(el){ ['modeCasual','modeNormal','modeHardcore'].forEach(id=>$(id)&&$(id).classList.toggle('sel',id===el)); }
+$('modeCasual').onclick=()=>{ G.casual=true; G.hardcore=false; selMode('modeCasual'); };
+$('modeNormal').onclick=()=>{ G.casual=false; G.hardcore=false; selMode('modeNormal'); };
+$('modeHardcore').onclick=()=>{ G.casual=false; G.hardcore=true; selMode('modeHardcore'); };
 // ---- ascension selector ----
 let selAsc=0;
 function renderAscSel(){
@@ -2817,7 +2892,7 @@ loadMeta(); refreshDailyBtn(); refreshContinueBtn();   // reflect today's daily 
 $('menuDaily').onclick=()=>{
   loadMeta(); const d=dailyState();
   if(d&&d.done){ log('🌅 Today’s Daily is scored — a new tower rises at midnight UTC.'); return; }
-  selAsc=0; G.hardcore=false;             // level playing field: no ascension mods, no hardcore
+  selAsc=0; G.hardcore=false; G.casual=false;             // level playing field: no ascension mods, no hardcore
   startGame();
   G.seed=dailySeedInt(); G.dailyRun=true; // startGame rolled a random seed — the daily overrides it
   banner('🌅 DAILY CLIMB — '+dailyKey(),'one attempt · the whole world races this tower');
@@ -2828,7 +2903,7 @@ $('climbBack').onclick=showMenu;
 let coopLobbyOpen=false, lobbyPads=[], lobbyPrev={};
 function showCoopLobby(){ ['tutorial','deathlog'].forEach(id=>$(id).classList.add('hidden')); $('start').classList.remove('hidden');
   $('menuMain').classList.add('hidden'); $('climbScreen').classList.add('hidden'); $('coopLobby').classList.remove('hidden');
-  lobbyPads=[]; lobbyPrev={}; coopLobbyOpen=true; G.hardcore=false;
+  lobbyPads=[]; lobbyPrev={}; coopLobbyOpen=true; G.hardcore=false; G.casual=false;
   $('coModeNormal').classList.add('sel'); $('coModeHardcore').classList.remove('sel'); renderCoopLobby(); }
 function renderCoopLobby(){ const host=$('coopSlots'); if(!host) return; host.innerHTML='';
   const slots=[{on:true,p:'P1',i:'⌨',d:'Keyboard · READY',col:PLAYER_TINT[0]}];
@@ -2890,6 +2965,7 @@ $('coModeNormal').onclick=()=>{ G.hardcore=false; $('coModeNormal').classList.ad
 $('coModeHardcore').onclick=()=>{ G.hardcore=true; $('coModeHardcore').classList.add('sel'); $('coModeNormal').classList.remove('sel'); };
 $('menuTutorial').onclick=()=>{ loadSettings(); tutPage=0; $('start').classList.add('hidden'); $('tutorial').classList.remove('hidden'); renderTut(); };
 $('menuSettings').onclick=()=>{ loadSettings(); $('settingsPanel').classList.remove('hidden'); renderSettings(); };
+$('menuMilestones').onclick=()=>{ loadMeta(); checkMilestones(true); $('milestonePanel').classList.remove('hidden'); renderMilestones(); };
 $('menuDeaths').onclick=()=>{ $('start').classList.add('hidden'); $('deathlog').classList.remove('hidden'); renderDeathLog(); };
 $('deathlogBack').onclick=showMenu;
 // ---- leaderboard panel: three boards, global when LEADERBOARD_URL is set, honest about local-only otherwise ----
@@ -4670,6 +4746,7 @@ function killEnemy(e){
   if(e.bomb){ telegraphAoE(e.mesh.position.x,e.mesh.position.z,5,0.45,Math.max(8,e.dmg*2.2),0xff7a3d); floatText(e.mesh.position.x,e.mesh.position.z,'☢ BOMB','hurt',e.scale*1.5+1.2); }
   if(e.split && G.enemies.length<54){ const sw=ETYPES.find(t=>t.id==='swarm')||ETYPES[1]; for(let i=0;i<2;i++) spawnEnemy(G.floor,{x:e.mesh.position.x+rand(-2,2),z:e.mesh.position.z+rand(-2,2)},sw); }
   if(e.lastSrc==='pet') G.run.assists++; else G.run.kills++;
+  if(!G.practice && !TUT.active){ bumpStat('kills',1); if(e.boss){ bumpStat('bosses',1); checkMilestones(); } }   // lifetime tallies feed the milestone ladder
   sfx.kill();
   bountyKill(e.elite);
   spawnPickup(e.mesh.position.x,e.mesh.position.z,'gem',e.xp);   // shared XP crystal (anyone may grab)
@@ -4860,8 +4937,8 @@ const TUT_STEPS = [
   { key:'move', ic:'🕹', t:'Move', d:()=> TOUCH.on
       ? 'Touch and drag anywhere on the <b>left half</b> of the screen to move.'
       : 'Use <b>W A S D</b> to move around the room.',
-    enter(){ const p=G.player.position; TUT.lastX=p.x; TUT.lastZ=p.z; TUT.moveAcc=0; },
-    prog(){ const p=G.player.position; TUT.moveAcc+=Math.hypot(p.x-TUT.lastX,p.z-TUT.lastZ); TUT.lastX=p.x; TUT.lastZ=p.z; return clamp(TUT.moveAcc/8,0,1); } },
+    enter(){ TUT.moveT=0; },
+    prog(dt){ const inp=_G.players[_G.cur].in; if(inp && (Math.abs(inp.mx)>0.01||Math.abs(inp.mz)>0.01)) TUT.moveT=(TUT.moveT||0)+(dt||0.016); return clamp((TUT.moveT||0)/1.0,0,1); } },   // completes on ~1s of movement input — wall-proof
   { key:'shoot', ic:'🎯', t:'Aim & Fire', d:()=> TOUCH.on
       ? 'A training dummy appeared. Drag the <b>right half</b> to aim &amp; fire — destroy it.'
       : 'A training dummy appeared. <b>Aim with the mouse</b> and <b>hold left-click</b> to fire — destroy it.',
@@ -4880,7 +4957,7 @@ const TUT_STEPS = [
 ];
 function tutSpawnGrunt(ox,oz){ const p=G.player.position; spawnEnemy(1,{x:p.x+ox,z:p.z+oz},ETYPES[0],false);
   const e=G.enemies[G.enemies.length-1];
-  if(e){ e.hp=e.maxhp=18; e.speed=Math.min(e.speed,4.5); e.dmg=0; e.aggro=true; e.tut=true; } }   // weak · slow · harmless
+  if(e){ e.hp=e.maxhp=6; e.speed=Math.min(e.speed,4.5); e.dmg=0; e.aggro=true; e.tut=true; } }   // one-hit weak · slow · harmless training target
 function startTutorial(){
   TUT.active=true; TUT.step=0; TUT.doneStep=false; TUT.doneT=0; TUT.didDash=false; TUT.didSkill=false;
   G.tutorial=true; G.inTown=false; G.practice=false; G.floor=1;
@@ -4893,7 +4970,7 @@ function startTutorial(){
   tutBegin(0);
   log('👋 Welcome to TOWERLORDS — a quick hands-on tutorial. Follow the prompts.');
 }
-function tutBegin(i){ TUT.step=i; TUT.doneStep=false; TUT.doneT=0;
+function tutBegin(i){ TUT.step=i; TUT.doneStep=false; TUT.doneT=0; TUT.stepStart=performance.now();
   const s=TUT_STEPS[i], card=$('tutStep'); if(!card)return;
   card.classList.remove('done'); card.classList.add('show');
   $('tsNum').textContent='STEP '+(i+1)+' / '+TUT_STEPS.length; $('tsIc').textContent=s.ic; $('tsT').textContent=s.t;
@@ -4904,8 +4981,9 @@ function tutTick(dt){
   if(!TUT.active) return;
   const s=TUT_STEPS[TUT.step]; if(!s) return;
   if(!TUT.doneStep){
-    const pr=clamp(s.prog(),0,1); $('tsFill').style.width=(pr*100)+'%';
-    if(pr>=1){ TUT.doneStep=true; TUT.doneT=0; $('tutStep').classList.add('done'); $('tsFill').style.width='100%'; if(sfx.evolve)sfx.evolve(); }
+    const pr=clamp(s.prog(dt),0,1); $('tsFill').style.width=(pr*100)+'%';
+    const stalled=(performance.now()-(TUT.stepStart||0))>16000;   // 16s real-time safety net so a confused player never hard-stalls
+    if(pr>=1 || stalled){ TUT.doneStep=true; TUT.doneT=0; $('tutStep').classList.add('done'); $('tsFill').style.width='100%'; if(sfx.evolve)sfx.evolve(); }
   } else {
     TUT.doneT+=dt;
     if(TUT.doneT>1.1){ if(TUT.step<TUT_STEPS.length-1) tutBegin(TUT.step+1); else tutFinish(); }
@@ -5823,7 +5901,8 @@ function ascend(){ bountyAscendCheck(); const prevNg=ngLevel(G.floor); G.floor++
   const pg=G.greed||1; G.greed=Math.min(GREED_MAX,pg+GREED_STEP);   // pushing deeper without banking raises the stakes
   G.run.greedPeak=Math.max(G.run.greedPeak||1, G.greed);   // run highlight: highest greed reached
   if(pg<2 && G.greed>=2 && G.inv.length) banner('💰 GREED ×'+G.greed.toFixed(1),'rich haul at risk — bank it at a safe zone');
-  $('stashPanel').classList.add('hidden'); syncPause(); log('Ascending to Floor '+G.floor+'…'); dailyScoreTick(); generateFloor(); G.hp=Math.min(G.maxhp,G.hp+G.maxhp*0.12); }
+  $('stashPanel').classList.add('hidden'); syncPause(); log('Ascending to Floor '+G.floor+'…'); dailyScoreTick(); generateFloor(); G.hp=Math.min(G.maxhp,G.hp+G.maxhp*0.12);
+  if(!G.practice && !G.dailyRun){ bumpStat('deepest',G.floor); checkMilestones(); } }   // deepest floor reached → milestone ladder
 
 // ============================================================ DEATH
 // --- killer tracking (what felled the player, for the death log) ---
@@ -5840,6 +5919,11 @@ function runScore(r){ return (r.floor||0)*100000 + (r.kills||0)*100 + Math.floor
 function die(){ if(G.dead)return;
   if(G.practice){ G.hp=G.maxhp; G.invuln=1; return; }   // no death in the practice arena
   if(_G.victoryPending||G.victoryOpen){ G.hp=Math.max(1,G.hp); G.invuln=2; return; }   // the tower fell first — victory outranks a stray bullet
+  if(G.casual && !G.hardcore){   // CASUAL: death costs nothing — you retreat to the Sanctuary with every item intact
+    G.greed=1; banner('✦ RECOVERED','Casual mode — you fall back to the Sanctuary. Nothing lost.');
+    log('✦ Casual — nothing is lost. You retreat to the Sanctuary to regroup, then climb again when ready.');
+    returnToTown(); G.invuln=3; try{ saveSession(); }catch(e){} return;
+  }
   G.dead=true; G.running=false; G.recallT=0; _G.returnFloor=0;   // death ends the descent — no recalled depth to return to
   PANELS.forEach(p=>$(p).classList.add('hidden'));
   setMusic(null);   // the tower goes quiet for you
@@ -6132,7 +6216,7 @@ function enterPractice(){
   G.floorMod=null; G.bounty=null;
   if(G.petMesh){ scene.remove(G.petMesh); G.petMesh=null; } G.pet=null; G.pets=[]; G.petMagnet=0;
   G.run={kills:0,assists:0,healSelf:0,healOthers:0,xp:0,floorTime:0,totalTime:0,floorsCleared:0,boons:[]};
-  G.practice=true; G.inTown=false; G.hardcore=false; G.seed=randi(0,9999);
+  G.practice=true; G.inTown=false; G.hardcore=false; G.casual=false; G.seed=randi(0,9999);
   _G.asc=0; _G.ascEff=ascEffects(0);   // the practice arena is never ascended
   initAudio(); startAmbient();
   recompute(); G.hp=G.maxhp; G.mana=G.maxmana;
@@ -6309,6 +6393,10 @@ function initPlayerChar(){
   G.inv=[];G.stash=[];G.stashStrikes=0; G.dead=false; G.downed=false; G.downT=0; G.fervor=0; G.selGem=null; G.greed=1;
   G.dashCd=0; G.dashT=0; G.flowT=0;
   G.belt=[makeFlask(1,'life'), makeFlask(1,'mana'), null, null, null]; G.charge=0; G.sigSlot=null; G.sigCd=0; G.swiftT=0; G.petErrand=null;
+  // ---- milestone starting-kit unlocks (permanent, account-wide) ----
+  if(hasUnlock('gold50')) G.gold=50;
+  if(hasUnlock('flask3')) G.belt[2]=makeFlask(1,'swift');
+  if(hasUnlock('skill2')) G.slots[1]=makeSkillGem(1,'gFrost');
   if(G.petMesh){ scene.remove(G.petMesh); G.petMesh=null; } G.pet=null; G.pets=[]; G.petMagnet=0;
   G.run={kills:0,assists:0,healSelf:0,healOthers:0,xp:0,floorTime:0,totalTime:0,floorsCleared:0,boons:[]};
   recompute(); G.hp=G.maxhp; G.mana=G.maxmana;
@@ -6319,6 +6407,7 @@ function startGame(){
   clearSession();   // a fresh character supersedes any saved run
   $('start').classList.add('hidden'); $('hud').classList.remove('hidden');
   loadMeta(); loadSettings();
+  bumpStat('runs',1); checkMilestones(true);   // every fresh climb counts toward the milestone ladder (quiet — banners land once in-world)
   _G.asc=clamp(selAsc|0, 0, META.ascMax||0); _G.ascEff=ascEffects(_G.asc);   // lock in the chosen ascension for this climb
   if(_G.asc>0) log('⛧ Ascension '+_G.asc+' — '+ASC_MODS.slice(0,_G.asc).map(m=>m.nm).join(', ')+'. Fame ×'+ascFameMult().toFixed(2)+'.');
   // shared run state
@@ -6746,7 +6835,7 @@ function updatePlayerStep(dt){
   adaptTick(dt); const stunned=G.stunT>0;   // enemy stun-lock (counter to tank builds)
   tickRecall(dt);                            // quick-recall channel (H) → teleport to the sanctuary
   for(const fl of G.belt){ if(fl&&fl.cd>0) fl.cd-=dt; }
-  if(G.hp<G.maxhp){ const h=Math.min(G.S.lifeRegen*healScale()*dt,G.maxhp-G.hp); G.hp+=h; G.run.healSelf+=h; }
+  if(G.hp<G.maxhp){ const h=Math.min((G.S.lifeRegen+(G.casual?G.maxhp*0.03:0))*healScale()*dt,G.maxhp-G.hp); G.hp+=h; G.run.healSelf+=h; }   // Casual: strong passive regen
   G.mana=Math.min(G.maxmana,G.mana+G.S.manaRegen*dt);
   if(G.fervor>0){ G.fervorT-=dt; if(G.fervorT<=0){ G.fervor=Math.max(0,G.fervor-dt*30); } }
   // face the aim point
@@ -7052,6 +7141,7 @@ function hurtFlash(strong){ const v=$('vignette'); if(!v)return; v.classList.rem
 function hurtPlayer(dmg, opts){ if(G.invuln>0 || G.tutorial)return; opts=opts||{}; const heavy=!!opts.heavy; bountyFail();
   // recall is non-interruptable — taking a hit no longer cancels the channel; ride it out and you still teleport home
   let real=dmg*(1-dr())*ascEff().dmgTaken;
+  if(G.casual) real*=0.45;   // Casual: foes hit much softer
   if(G.S.manaShield && G.mana>0){ const absorb=Math.min(G.mana, real*0.6); G.mana-=absorb; real-=absorb; }   // Mana Bulwark: mana soaks 60% while it lasts
   G.hp-=real; G.invuln=heavy?0.62:0.5;
   shakeCam(heavy?1.15:.4);
