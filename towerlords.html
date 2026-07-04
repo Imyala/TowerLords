@@ -654,9 +654,9 @@
   .overlay{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;
     background:rgba(4,5,12,.92);backdrop-filter:blur(4px);text-align:center;pointer-events:auto;z-index:50;
     overflow-y:auto;padding:18px 0;}   /* tall menus (climb setup, tutorial) scroll instead of clipping on short screens */
-  h1{font-size:58px;letter-spacing:10px;background:linear-gradient(90deg,#56e0ff,#b06bff,#ff9a3d);
+  h1{font-size:clamp(30px,10vw,58px);letter-spacing:clamp(3px,2vw,10px);max-width:100%;background:linear-gradient(90deg,#56e0ff,#b06bff,#ff9a3d);
     -webkit-background-clip:text;background-clip:text;color:transparent;text-shadow:0 0 50px rgba(176,107,255,.3);}
-  .tag{opacity:.7;font-size:14px;letter-spacing:4px;margin:10px 0 28px;}
+  .tag{opacity:.7;font-size:clamp(11px,3vw,14px);letter-spacing:clamp(2px,1vw,4px);margin:10px 0 28px;padding:0 12px;max-width:100%;}
   .btn{cursor:pointer;border:1px solid var(--neon);color:var(--neon);background:rgba(86,224,255,.06);
     padding:13px 36px;border-radius:10px;font-size:18px;letter-spacing:3px;font-weight:bold;text-transform:uppercase;transition:.15s;}
   .btn:hover{background:var(--neon);color:#04111a;box-shadow:0 0 30px var(--neon);transform:translateY(-2px);}
@@ -713,14 +713,23 @@
   .dlRow .dl-when{font-size:10px;opacity:.45;text-align:right;white-space:nowrap;}
   .help{margin-top:28px;font-size:12px;opacity:.55;line-height:2;}
   .help kbd{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);border-radius:4px;padding:1px 7px;font-family:inherit;font-size:11px;}
-  .modeSel{display:flex;gap:14px;margin:6px 0 26px;}
-  .modeBtn{cursor:pointer;width:230px;padding:13px 16px;border-radius:11px;border:1px solid rgba(255,255,255,.16);
+  .modeSel{display:flex;flex-wrap:wrap;justify-content:center;gap:14px;margin:6px 0 26px;max-width:100%;}
+  .modeBtn{cursor:pointer;width:230px;max-width:calc(100vw - 32px);padding:13px 16px;border-radius:11px;border:1px solid rgba(255,255,255,.16);
     background:rgba(255,255,255,.03);text-align:center;transition:.15s;}
   .modeBtn b{display:block;font-size:16px;letter-spacing:2px;}
   .modeBtn span{display:block;font-size:10px;opacity:.6;margin-top:5px;line-height:1.4;}
   .modeBtn.sel{border-color:var(--neon);background:rgba(86,224,255,.1);box-shadow:0 0 22px rgba(86,224,255,.2);}
   #modeHardcore.sel{border-color:var(--hp);background:rgba(255,77,109,.1);box-shadow:0 0 22px rgba(255,77,109,.25);}
   #modeHardcore.sel b{color:var(--hp);}
+  /* --- mobile / narrow-screen menu fit --- */
+  @media (max-width:560px){
+    .overlay{padding:20px 14px;}                 /* keep the title & cards off the screen edges */
+    h1{font-size:clamp(26px,8.5vw,50px);letter-spacing:clamp(1px,1vw,7px);}  /* TOWERLORDS must fit on one line */
+    .modeSel{gap:12px;margin:4px 0 20px;}
+    .modeBtn{width:min(320px,100%);}             /* NORMAL/HARDCORE stack full-width instead of clipping */
+    .btn{font-size:16px;padding:12px 24px;}
+    .btn.ghost,#menuClimb{width:min(300px,86vw);}
+  }
   /* ---- ascension selector (climb setup) ---- */
   #ascBox{width:476px;max-width:90vw;margin:0 0 22px;padding:14px 18px 16px;border-radius:13px;
     border:1px solid rgba(176,107,255,.34);background:linear-gradient(170deg,rgba(20,14,30,.7),rgba(10,8,18,.7));box-shadow:0 0 26px rgba(176,107,255,.12);}
