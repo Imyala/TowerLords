@@ -719,8 +719,10 @@
   .modeBtn b{display:block;font-size:16px;letter-spacing:2px;}
   .modeBtn span{display:block;font-size:10px;opacity:.6;margin-top:5px;line-height:1.4;}
   .modeBtn.sel{border-color:var(--neon);background:rgba(86,224,255,.1);box-shadow:0 0 22px rgba(86,224,255,.2);}
-  #modeHardcore.sel{border-color:var(--hp);background:rgba(255,77,109,.1);box-shadow:0 0 22px rgba(255,77,109,.25);}
-  #modeHardcore.sel b{color:var(--hp);}
+  #modeCasual.sel,#coModeCasual.sel{border-color:#6dff8c;background:rgba(109,255,140,.1);box-shadow:0 0 22px rgba(109,255,140,.22);}
+  #modeCasual.sel b,#coModeCasual.sel b{color:#6dff8c;}
+  #modeHard.sel,#coModeHard.sel{border-color:var(--hp);background:rgba(255,77,109,.1);box-shadow:0 0 22px rgba(255,77,109,.25);}
+  #modeHard.sel b,#coModeHard.sel b{color:var(--hp);}
   /* --- mobile / narrow-screen menu fit --- */
   @media (max-width:560px){
     .overlay{padding:20px 14px;}                 /* keep the title & cards off the screen edges */
@@ -1028,8 +1030,9 @@
     </div>
     <div id="climbScreen" class="menuCol hidden">
       <div class="modeSel">
-        <div class="modeBtn sel" id="modeNormal"><b>NORMAL</b><span>2nd death wipes your stash — but you keep your character and restart the tower</span></div>
-        <div class="modeBtn" id="modeHardcore"><b>HARDCORE</b><span>2nd death is permanent — your character is wiped and you start over from scratch</span></div>
+        <div class="modeBtn" id="modeCasual"><b>CASUAL</b><span>easiest foes · death costs nothing — keep your gear, items &amp; stash · no permadeath</span></div>
+        <div class="modeBtn sel" id="modeNormal"><b>NORMAL</b><span>a fair fight · death drops your gear &amp; items · a 2nd death wipes your stash · character survives</span></div>
+        <div class="modeBtn" id="modeHard"><b>HARD</b><span>toughest foes · death drops your gear &amp; items · a 2nd death is permanent</span></div>
       </div>
       <div id="ascBox">
         <div class="ascHead"><span class="ascStep" id="ascDown">◀</span><div class="ascTitle" id="ascTitle">⛧ ASCENSION 0</div><span class="ascStep" id="ascUp">▶</span></div>
@@ -1044,8 +1047,9 @@
       <div style="font-size:13px;letter-spacing:3px;opacity:.7;margin-bottom:2px">🎮 LOCAL CO-OP · UP TO 4 PLAYERS</div>
       <div id="coopSlots"></div>
       <div class="modeSel" style="margin-top:18px">
-        <div class="modeBtn sel" id="coModeNormal"><b>NORMAL</b><span>keep your character on a 2nd death</span></div>
-        <div class="modeBtn" id="coModeHardcore"><b>HARDCORE</b><span>2nd death wipes the character</span></div>
+        <div class="modeBtn" id="coModeCasual"><b>CASUAL</b><span>easiest · keep gear &amp; items on death · no permadeath</span></div>
+        <div class="modeBtn sel" id="coModeNormal"><b>NORMAL</b><span>a fair fight · lose items on death · character survives</span></div>
+        <div class="modeBtn" id="coModeHard"><b>HARD</b><span>toughest · lose items · a 2nd death is permanent</span></div>
       </div>
       <button class="btn" id="coopStartBtn">▶ START CO-OP CLIMB</button>
       <button class="btn ghost small" id="coopBack">← Back to menu</button>
@@ -1615,7 +1619,7 @@ function canSaveSession(){ return _G.running && !_G.splitscreen && !NET.role && 
 function serializeSession(){
   const p=_G.players[0]; if(!p||!p.player) return null;
   try{ return { v:1, ts:Date.now(),
-    floor:G.floor|0, inTown:!!G.inTown, returnFloor:_G.returnFloor|0, asc:_G.asc||0, hardcore:!!G.hardcore, seed:_G.seed|0, maxFloor:_G.maxFloor||50,
+    floor:G.floor|0, inTown:!!G.inTown, returnFloor:_G.returnFloor|0, asc:_G.asc||0, hardcore:!!G.hardcore, diff:G.diff||'normal', seed:_G.seed|0, maxFloor:_G.maxFloor||50,
     name:p.name, gold:p.gold|0, level:p.level|0, xp:p.xp, xpNeed:p.xpNeed, xpMode:p.xpMode||'use',
     attrPts:p.attrPts|0, skillPts:p.skillPts|0, skillGranted:p.skillGranted|0, evolves:p.evolves|0,
     attr:p.attr, alloc:p.alloc,
@@ -1636,7 +1640,7 @@ function resumeSession(){
   _G.asc=clamp(s.asc|0,0,99); _G.ascEff=ascEffects(_G.asc);
   _G.seed=(s.seed|0)||randi(0,9999); _G.maxFloor=s.maxFloor||50; _G.returnFloor=s.returnFloor|0; _G.recallGo=false;
   G.running=true; G.paused=false; G.hitstop=0; G.permadead=false;
-  G.floorMod=null; G.bounty=null; G.practice=false; G.dailyRun=false; G.hardcore=!!s.hardcore;
+  G.floorMod=null; G.bounty=null; G.practice=false; G.dailyRun=false; G.hardcore=!!s.hardcore; G.diff=s.diff||(s.hardcore?'hard':'normal');
   _G.nemesis=makeNemesis();   // per-run nemesis isn't saved (has function refs) — a fresh cast greets your return; grudges (META) persist
   _G.players.length=1; const p=_G.players[0]; p.joined=true; p.color=PLAYER_COLORS[0]; p.input=p.input||makeKbmInput();
   _G.cur=0; _G.splitscreen=false; $('hud').classList.remove('cohide');
@@ -2304,7 +2308,7 @@ const _G = {
   portal:null, stashStation:null, vendorStation:null, scoreStation:null, goblin:null,
   rects:[], rooms:[], obstacles:[], camps:[], respawns:[], bounds:140,
   shiftT:0, shiftWarned:false, layoutSalt:0, hitstop:0, floorMod:null, bounty:null,
-  hardcore:false, permadead:false, inTown:false, muted:false, practice:false,
+  hardcore:false, diff:'normal', permadead:false, inTown:false, muted:false, practice:false,
   players:[], cur:0, nPlayers:1, splitscreen:false,
   menuOwner:0, menuPanel:null, menuPrev:{}, focusIdx:0,   // per-player co-op menus
   returnFloor:0, recallGo:false,   // recall-to-sanctuary: returnFloor = the depth to drop back to via the town portal; recallGo = a channel finished, teleport next tick
@@ -2540,8 +2544,11 @@ function repositionParty(x,z){ joinedPlayers().forEach((p,i)=>{ if(p.player){ co
 
 $('startBtn').onclick=startGame;
 $('coachX').onclick=dismissCoach;
-$('modeNormal').onclick=()=>{ G.hardcore=false; $('modeNormal').classList.add('sel'); $('modeHardcore').classList.remove('sel'); };
-$('modeHardcore').onclick=()=>{ G.hardcore=true; $('modeHardcore').classList.add('sel'); $('modeNormal').classList.remove('sel'); };
+function setDiff(d){ G.diff=d; G.hardcore=(d==='hard');
+  ['Casual','Normal','Hard'].forEach(k=>{ const el=$('mode'+k); if(el) el.classList.toggle('sel', k.toLowerCase()===d); }); }
+$('modeCasual').onclick=()=>setDiff('casual');
+$('modeNormal').onclick=()=>setDiff('normal');
+$('modeHard').onclick=()=>setDiff('hard');
 // ---- ascension selector ----
 let selAsc=0;
 function renderAscSel(){
@@ -2586,7 +2593,7 @@ loadMeta(); refreshDailyBtn(); refreshContinueBtn();   // reflect today's daily 
 $('menuDaily').onclick=()=>{
   loadMeta(); const d=dailyState();
   if(d&&d.done){ log('🌅 Today’s Daily is scored — a new tower rises at midnight UTC.'); return; }
-  selAsc=0; G.hardcore=false;             // level playing field: no ascension mods, no hardcore
+  selAsc=0; G.hardcore=false; G.diff='normal';             // level playing field: no ascension mods, standard difficulty
   startGame();
   G.seed=dailySeedInt(); G.dailyRun=true; // startGame rolled a random seed — the daily overrides it
   banner('🌅 DAILY CLIMB — '+dailyKey(),'one attempt · the whole world races this tower');
@@ -2597,8 +2604,8 @@ $('climbBack').onclick=showMenu;
 let coopLobbyOpen=false, lobbyPads=[], lobbyPrev={};
 function showCoopLobby(){ ['tutorial','deathlog'].forEach(id=>$(id).classList.add('hidden')); $('start').classList.remove('hidden');
   $('menuMain').classList.add('hidden'); $('climbScreen').classList.add('hidden'); $('coopLobby').classList.remove('hidden');
-  lobbyPads=[]; lobbyPrev={}; coopLobbyOpen=true; G.hardcore=false;
-  $('coModeNormal').classList.add('sel'); $('coModeHardcore').classList.remove('sel'); renderCoopLobby(); }
+  lobbyPads=[]; lobbyPrev={}; coopLobbyOpen=true; G.hardcore=false; G.diff='normal';
+  ['Casual','Normal','Hard'].forEach(k=>{ const el=$('coMode'+k); if(el) el.classList.toggle('sel', k==='Normal'); }); renderCoopLobby(); }
 function renderCoopLobby(){ const host=$('coopSlots'); if(!host) return; host.innerHTML='';
   const slots=[{on:true,p:'P1',i:'⌨',d:'Keyboard · READY',col:PLAYER_TINT[0]}];
   for(let k=0;k<3;k++){ if(k<lobbyPads.length) slots.push({on:true,p:'P'+(k+2),i:'🎮',d:'Controller · READY',col:PLAYER_TINT[k+1]});
@@ -2655,8 +2662,11 @@ $('onGenAnsBtn').onclick=async()=>{ const o=$('onOfferIn').value.trim(); if(!o){
   $('onJoinStatus').textContent='Generating answer…'; try{ const ans=await netAcceptInvite(o); $('onAnsOut').value=ans; $('onJoinStatus').textContent='Answer ready — send it back to the host. You’ll connect automatically.'; }
   catch(e){ $('onJoinStatus').textContent='⚠ '+e.message; } };
 $('onCopyAns').onclick=()=>onlineCopy('onAnsOut');
-$('coModeNormal').onclick=()=>{ G.hardcore=false; $('coModeNormal').classList.add('sel'); $('coModeHardcore').classList.remove('sel'); };
-$('coModeHardcore').onclick=()=>{ G.hardcore=true; $('coModeHardcore').classList.add('sel'); $('coModeNormal').classList.remove('sel'); };
+function setCoDiff(d){ G.diff=d; G.hardcore=(d==='hard');
+  ['Casual','Normal','Hard'].forEach(k=>{ const el=$('coMode'+k); if(el) el.classList.toggle('sel', k.toLowerCase()===d); }); }
+$('coModeCasual').onclick=()=>setCoDiff('casual');
+$('coModeNormal').onclick=()=>setCoDiff('normal');
+$('coModeHard').onclick=()=>setCoDiff('hard');
 $('menuTutorial').onclick=()=>{ loadSettings(); tutPage=0; $('start').classList.add('hidden'); $('tutorial').classList.remove('hidden'); renderTut(); };
 $('menuSettings').onclick=()=>{ loadSettings(); $('settingsPanel').classList.remove('hidden'); renderSettings(); };
 $('menuDeaths').onclick=()=>{ $('start').classList.add('hidden'); $('deathlog').classList.remove('hidden'); renderDeathLog(); };
@@ -3141,6 +3151,15 @@ function floorType(f){ if(f%5===0)return 'BOSS'; if(f%5===1 && f>1)return 'SAFE'
 // ---------------- Endless Ascent / New Game+ : past the floor-50 summit the Tower rebuilds, deadlier and richer ----------------
 function ngLevel(f){ return Math.floor(((f||G.floor)-1)/SUMMIT_FLOOR); }
 function ngMult(){ return 1 + ngLevel(G.floor)*0.7; }
+// ---------------- DIFFICULTY: chosen at the climb screen (separate from ascension) ----------------
+// ehp/edmg scale enemy hp & damage · dmgTaken scales how hard their hits land on you
+// keepItems = death costs you nothing (CASUAL) · perma = a 2nd death is permanent (HARD)
+const DIFFS = {
+  casual: { key:'casual', name:'CASUAL', ehp:0.80, edmg:0.62, dmgTaken:0.70, keepItems:true,  perma:false },
+  normal: { key:'normal', name:'NORMAL', ehp:1.00, edmg:1.00, dmgTaken:1.00, keepItems:false, perma:false },
+  hard:   { key:'hard',   name:'HARD',   ehp:1.32, edmg:1.35, dmgTaken:1.28, keepItems:false, perma:true  },
+};
+function diffCfg(){ return DIFFS[G.diff] || DIFFS.normal; }
 // ---------------- ASCENSION: opt-in stacking difficulty (fame = skill, so harder climbs pay more fame — no power creep) ----------------
 // Cumulative: choosing Ascension N applies every modifier 1..N. Clear a guardian at your highest level to unlock the next.
 const ASC_MODS=[
@@ -3389,7 +3408,7 @@ function spawnEnemy(floor,home,forceType,forceElite){
     coach('elite','💠','Elite foe','The ringed enemy is an <b>Elite</b> — it has <b>affixes</b> (special powers shown by its colour) and is guaranteed to <b>drop a themed item</b>. Tougher, but worth hunting.'); }
   else if(floor>=3 && Math.random()<0.06*_ae.champMul){ applyAffixes(e,1); e.champion=true; e.hp*=1.4; e.dmg*=1.15; e.xp*=1.7; }   // occasional "champion" normal — run-to-run variety
   // New Game+ scaling
-  const ng=ngMult(); e.hp*=ng*_ae.ehp; e.dmg*=ng*_ae.edmg; e.maxhp=e.hp;   // ascension piles on enemy HP/damage
+  const ng=ngMult(), _d=diffCfg(); e.hp*=ng*_ae.ehp*_d.ehp; e.dmg*=ng*_ae.edmg*_d.edmg; e.maxhp=e.hp;   // ascension + difficulty pile on enemy HP/damage
   { const fl=playerBigHit()*(e.elite?4.5:0.28); if(e.hp<fl){ e.hp=e.maxhp=fl; } }   // foes firm up with your gear: elites survive several big hits, trash a few basics — never trivial one-taps
   // floor-modifier effects
   const mod=G.floorMod; if(mod){ if(mod.espd)e.speed*=mod.espd; if(mod.edmg)e.dmg*=mod.edmg; if(mod.ehp){e.hp*=mod.ehp;} if(mod.xpm)e.xp*=mod.xpm; }
@@ -5507,21 +5526,26 @@ function die(){ if(G.dead)return;
   G.dead=true; G.running=false; G.recallT=0; _G.returnFloor=0;   // death ends the descent — no recalled depth to return to
   PANELS.forEach(p=>$(p).classList.add('hidden'));
   setMusic(null);   // the tower goes quiet for you
-  G.stashStrikes++;
-  const carried=G.inv.length; G.inv=[]; G.selGem=null;
-  // death is high-stakes: everything ON your body is lost too — equipped gear AND belt flasks (locked items only guard against accidental feed/sell, not death)
-  const gearLost=Object.values(G.equip).filter(Boolean).length + G.belt.filter(Boolean).length;
-  G.equip={weapon:null,helm:null,chest:null,gloves:null,boots:null,ring:null};
-  G.belt=[null,null,null,null,null];
+  const _soft=diffCfg().keepItems;   // CASUAL: death costs nothing — keep gear, items, stash & greed
+  let carried=0, gearLost=0;
+  if(_soft){ G.stashStrikes=0; }
+  else {
+    G.stashStrikes++;
+    carried=G.inv.length; G.inv=[]; G.selGem=null;
+    // death is high-stakes: everything ON your body is lost too — equipped gear AND belt flasks (locked items only guard against accidental feed/sell, not death)
+    gearLost=Object.values(G.equip).filter(Boolean).length + G.belt.filter(Boolean).length;
+    G.equip={weapon:null,helm:null,chest:null,gloves:null,boots:null,ring:null};
+    G.belt=[null,null,null,null,null];
+  }
   recompute(); if(G.hp>G.maxhp)G.hp=G.maxhp; if(G.mana>G.maxmana)G.mana=G.maxmana;
-  const greedLost = (G.greed>1.05 && carried>0) ? G.greed : 0; G.greed=1;   // dying forfeits the unbanked greed haul
+  const greedLost = (!_soft && G.greed>1.05 && carried>0) ? G.greed : 0; if(!_soft) G.greed=1;   // dying forfeits the unbanked greed haul
   // fame is a skill rating now — earn a meaningful chunk per run (scales with depth, kills, level)
   const fameEarned=Math.max(50, Math.floor((G.floor*160 + G.run.kills*6 + G.level*40)*ascFameMult())); META.fame+=fameEarned; saveMeta();
-  const secondDeath = G.stashStrikes>=2;
+  const secondDeath = !_soft && G.stashStrikes>=2;
   let msg='';
   if(secondDeath && G.stash.length>0){ const lost=G.stash.length; G.stash=[]; msg+=`<span style="color:var(--hp)">Your stash of ${lost} item(s) was WIPED.</span><br>`; }
   // record this death (with killer + full run stats) and compare against the all-time best run
-  const deathRec={ floor:G.floor, level:G.level, kills:G.run.kills, gold:G.gold, time:Math.floor(G.run.totalTime), hardcore:G.hardcore, permadead:(G.hardcore&&secondDeath), fame:fameEarned, asc:(_G.asc||0), when:Date.now(), killer:lastKiller, run:Object.assign({},G.run) };
+  const deathRec={ floor:G.floor, level:G.level, kills:G.run.kills, gold:G.gold, time:Math.floor(G.run.totalTime), hardcore:G.hardcore, diff:G.diff, permadead:(G.hardcore&&secondDeath), fame:fameEarned, asc:(_G.asc||0), when:Date.now(), killer:lastKiller, run:Object.assign({},G.run) };
   const best=loadBest(); G._newBest = !best || runScore(deathRec)>runScore(best); if(G._newBest) saveBest(deathRec);
   // ---- the grudge deepens: a guardian that kills you REMEMBERS (and gloats on your death screen) ----
   let killQuote='';
@@ -5533,7 +5557,11 @@ function die(){ if(G.dead)return;
   const ascBadge = (_G.asc||0)>0 ? `<span style="color:#d9b6ff">⛧ Ascension ${_G.asc}</span><br>` : '';
   msg = ascBadge + (G._newBest?`<span style="color:var(--gold)">★ NEW BEST RUN!</span><br>`:'') + `<span style="opacity:.85">Felled by <b style="color:var(--hp)">${lastKiller}</b>.</span><br>` + killQuote + msg;
   const h1=$('death').querySelector('h1');
-  if(G.hardcore && secondDeath){
+  if(_soft){
+    G.permadead=false; h1.textContent='YOU FELL';
+    $('deathStats').innerHTML=`${msg}Reached <b>Floor ${G.floor}</b> · Level <b>${G.level}</b> · <b>${G.gold}</b> gold.<br><span style="color:var(--xp)">CASUAL — your gear, items &amp; stash are safe. Dust yourself off and climb again.</span>`;
+    $('reviveBtn').textContent='🏛 RETURN TO SANCTUARY';
+  } else if(G.hardcore && secondDeath){
     G.permadead=true; h1.textContent='PERMADEATH';
     $('deathStats').innerHTML=`${msg}Your character is lost for good.<br>Reached <b>Floor ${G.floor}</b> · Level <b>${G.level}</b> · <b>${G.gold}</b> gold.<br><span style="color:var(--hp)">HARDCORE — there is no return.</span>`;
     $('reviveBtn').textContent='⚔ NEW CHARACTER';
@@ -5787,7 +5815,7 @@ function enterPractice(){
   G.floorMod=null; G.bounty=null;
   if(G.petMesh){ scene.remove(G.petMesh); G.petMesh=null; } G.pet=null; G.pets=[]; G.petMagnet=0;
   G.run={kills:0,assists:0,healSelf:0,healOthers:0,xp:0,floorTime:0,totalTime:0,floorsCleared:0,boons:[]};
-  G.practice=true; G.inTown=false; G.hardcore=false; G.seed=randi(0,9999);
+  G.practice=true; G.inTown=false; G.hardcore=false; G.diff='normal'; G.seed=randi(0,9999);
   _G.asc=0; _G.ascEff=ascEffects(0);   // the practice arena is never ascended
   initAudio(); startAmbient();
   recompute(); G.hp=G.maxhp; G.mana=G.maxmana;
@@ -6692,7 +6720,7 @@ let _hurtFlashT;
 function hurtFlash(strong){ const v=$('vignette'); if(!v)return; v.classList.remove('hit','hitBig'); void v.offsetWidth; v.classList.add(strong?'hitBig':'hit'); clearTimeout(_hurtFlashT); _hurtFlashT=setTimeout(()=>v.classList.remove('hit','hitBig'), strong?360:220); }
 function hurtPlayer(dmg, opts){ if(G.invuln>0)return; opts=opts||{}; const heavy=!!opts.heavy; bountyFail();
   // recall is non-interruptable — taking a hit no longer cancels the channel; ride it out and you still teleport home
-  let real=dmg*(1-dr())*ascEff().dmgTaken;
+  let real=dmg*(1-dr())*ascEff().dmgTaken*diffCfg().dmgTaken;
   if(G.S.manaShield && G.mana>0){ const absorb=Math.min(G.mana, real*0.6); G.mana-=absorb; real-=absorb; }   // Mana Bulwark: mana soaks 60% while it lasts
   G.hp-=real; G.invuln=heavy?0.62:0.5;
   shakeCam(heavy?1.15:.4);
