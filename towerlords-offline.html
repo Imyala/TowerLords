@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"/>
 <title>TOWERLORDS — Prototype v2</title>
 <style>
   :root{
@@ -830,6 +830,75 @@
   #bossSpeech .bsName{display:block;font-size:11px;font-weight:bold;letter-spacing:2px;color:var(--gold);text-transform:uppercase;margin-bottom:3px;}
   #bossSpeech .bsLine{font-size:16px;line-height:1.4;color:#ffeec4;font-style:italic;text-shadow:0 2px 6px #000;}
   @keyframes bsIn{from{opacity:0;transform:translate(-50%,10px);}to{opacity:1;transform:translate(-50%,0);}}
+
+  /* ============================================================ TOUCH / MOBILE CONTROLS */
+  /* virtual thumbsticks (dynamic — spawn under the finger) + on-screen action buttons.
+     Everything here is hidden until <html> gets the .touch class (real touch device or forced on). */
+  #touchUI{position:absolute;inset:0;pointer-events:none;z-index:7;display:none;}
+  #touchBtns{position:absolute;inset:0;pointer-events:none;z-index:32;display:none;}   /* above the coach tip (z30) so buttons stay tappable */
+  html.touch.playing #touchUI,html.touch.playing #touchBtns{display:block;}
+  .joyBase{position:absolute;width:132px;height:132px;border-radius:50%;pointer-events:none;
+    border:2px solid rgba(120,200,255,.34);background:radial-gradient(circle,rgba(30,50,80,.16),rgba(10,18,34,.28));
+    transform:translate(-50%,-50%);opacity:0;transition:opacity .1s;box-shadow:0 0 22px rgba(0,0,0,.35) inset;}
+  .joyBase.on{opacity:.92;}
+  .joyKnob{position:absolute;left:50%;top:50%;width:60px;height:60px;border-radius:50%;pointer-events:none;
+    transform:translate(-50%,-50%);border:2px solid rgba(150,220,255,.75);
+    background:radial-gradient(circle,rgba(130,215,255,.55),rgba(40,85,145,.5));box-shadow:0 0 16px rgba(80,180,255,.55);}
+  #joyAim .joyBase{border-color:rgba(255,150,120,.36);}
+  #joyAim .joyKnob{border-color:rgba(255,150,120,.8);background:radial-gradient(circle,rgba(255,155,115,.55),rgba(150,55,42,.5));box-shadow:0 0 16px rgba(255,120,80,.55);}
+  .tBtn{position:absolute;pointer-events:auto;display:flex;align-items:center;justify-content:center;flex-direction:column;
+    border-radius:50%;font-weight:bold;line-height:1;text-align:center;user-select:none;-webkit-user-select:none;
+    -webkit-tap-highlight-color:transparent;touch-action:manipulation;
+    background:rgba(14,20,36,.74);border:2px solid rgba(255,255,255,.22);color:#eaf2ff;
+    box-shadow:0 3px 14px rgba(0,0,0,.5);text-shadow:0 1px 3px #000;}
+  .tBtn:active{transform:scale(.9);filter:brightness(1.25);}
+  .tBtn .tIc{font-size:24px;} .tBtn .tLbl{font-size:9px;letter-spacing:.5px;opacity:.85;margin-top:2px;text-transform:uppercase;}
+  #btnDash{width:66px;height:66px;font-size:26px;color:var(--neon);border-color:rgba(86,224,255,.55);
+    right:calc(18px + env(safe-area-inset-right));bottom:calc(152px + env(safe-area-inset-bottom));}
+  #btnDash.cooling{opacity:.45;}
+  #btnInteract{width:80px;height:80px;right:calc(100px + env(safe-area-inset-right));
+    bottom:calc(158px + env(safe-area-inset-bottom));border-color:var(--gold);color:#fff;
+    background:rgba(30,24,10,.85);box-shadow:0 0 22px rgba(255,206,77,.6);display:none;animation:tPulse 1.1s ease-in-out infinite;}
+  #btnInteract.show{display:flex;}
+  #btnInteract .tIc{font-size:28px;} #btnInteract .tLbl{font-size:11px;color:var(--gold);}
+  @keyframes tPulse{0%,100%{box-shadow:0 0 18px rgba(255,206,77,.5);}50%{box-shadow:0 0 30px rgba(255,206,77,.9);}}
+  html.touch{overscroll-behavior:none;}
+  /* suppress browser gestures on the play surfaces only — panels keep native scrolling */
+  html.touch canvas,html.touch #hud,html.touch #touchUI,html.touch #touchBtns{touch-action:none;}
+  /* dock skill/flask/dash/sig slots become tappable on touch devices */
+  html.touch #dock .slot,html.touch #dock .flask{pointer-events:auto;touch-action:manipulation;-webkit-tap-highlight-color:transparent;}
+  html.touch #dock .slot:active,html.touch #dock .flask:active{filter:brightness(1.3);}
+  /* rotate-to-landscape nudge (phones held upright) */
+  #rotateHint{position:absolute;inset:0;z-index:60;display:none;flex-direction:column;align-items:center;justify-content:center;
+    gap:14px;background:rgba(4,5,10,.92);color:#cfe0ff;text-align:center;padding:24px;pointer-events:auto;}
+  #rotateHint .rot{font-size:52px;animation:rotSpin 2.2s ease-in-out infinite;}
+  #rotateHint b{font-size:17px;letter-spacing:1px;} #rotateHint span{font-size:12px;opacity:.7;max-width:280px;}
+  @keyframes rotSpin{0%,40%{transform:rotate(0);}60%,100%{transform:rotate(90deg);}}
+  html.touch.portrait.playing #rotateHint{display:flex;}
+
+  /* ---- touch HUD layout: the top-left command menu becomes a slim horizontal icon bar so the
+     whole left/lower play area is free for the movement thumbstick ---- */
+  html.touch #stats{top:calc(4px + env(safe-area-inset-top));left:50%;transform:translateX(-50%);width:auto;max-width:97vw;
+    flex-direction:row;align-items:center;gap:3px;padding:4px 6px;border-radius:12px;flex-wrap:nowrap;overflow:visible;}
+  html.touch #stats .mHdr{flex-direction:column;align-items:flex-start;gap:0;padding:0 6px 0 2px;margin:0 2px 0 0;
+    border-bottom:none;border-right:1px solid rgba(255,255,255,.12);line-height:1.1;}
+  html.touch #stats .mHdr .mGold{margin-left:0;}
+  html.touch #stats .mLv b{font-size:15px;} html.touch #stats .mGold b{font-size:13px;}
+  html.touch #stats .mItem{flex-direction:column;gap:0;padding:6px 7px;position:relative;background:rgba(255,255,255,.035);}
+  html.touch #stats .mItem .mKey,html.touch #stats .mItem .mLbl{display:none;}
+  html.touch #stats .mItem .mIc{font-size:20px;width:auto;}
+  html.touch #stats .mItem .pip{position:absolute;top:2px;right:3px;margin:0;font-size:8px;}
+  html.touch #stats .mItem .mEnd{position:absolute;bottom:-1px;left:0;right:0;margin:0;text-align:center;font-size:8px;line-height:1;}
+  html.touch #stats #muteInd{font-size:15px;}
+  html.touch #towerInfo{transform:scale(.8);transform-origin:top right;top:calc(6px + env(safe-area-inset-top));}
+  html.touch #rampage{top:calc(52px + env(safe-area-inset-top));}
+  /* the whole dock sits low-centre; JS zooms it to fit narrow screens (see fitTouchDock) */
+  html.touch #dock{bottom:calc(8px + env(safe-area-inset-bottom));transform-origin:bottom center;}
+  html.touch #progressBars{bottom:112px;width:min(340px,52vw);}
+  html.touch #buffBar{bottom:158px;}
+  html.touch #log{font-size:11px;max-width:44vw;}
+  html.touch #floorBanner{top:calc(2px + env(safe-area-inset-top));}
+  html.touch #floorTitle{font-size:20px;} html.touch #floorType{font-size:9px;}
 </style>
 </head>
 <body>
@@ -886,6 +955,17 @@
     <div id="log" class="ui"></div>
   </div>
 
+  <!-- touch / mobile controls (shown only on touch devices) -->
+  <div id="touchUI">
+    <div id="joyMove"><div class="joyBase" id="joyMoveBase"><div class="joyKnob" id="joyMoveKnob"></div></div></div>
+    <div id="joyAim"><div class="joyBase" id="joyAimBase"><div class="joyKnob" id="joyAimKnob"></div></div></div>
+  </div>
+  <div id="touchBtns">
+    <div class="tBtn" id="btnDash"><span class="tIc">»</span></div>
+    <div class="tBtn" id="btnInteract"><span class="tIc" id="btnInteractIc">🗼</span><span class="tLbl" id="btnInteractLbl">CLIMB</span></div>
+  </div>
+  <div id="rotateHint"><div class="rot">📱</div><b>Rotate your device</b><span>TOWERLORDS plays best in landscape. Turn your phone sideways for the full HUD and controls.</span></div>
+
   <div id="fct"></div>
   <div id="worldLabels"></div>
   <div id="vignette"></div>
@@ -935,7 +1015,7 @@
     <div class="stashWarn" id="stashWarn"></div>
     <div class="invcol"><div><h4>Carried</h4><div id="invList"></div></div><div><h4>Stash</h4><div id="stashList"></div></div></div>
     <div class="stashBtns"><div class="sbtn" id="depositAll">DEPOSIT ALL »</div><div class="sbtn" id="retrieveAll">« RETRIEVE</div></div>
-    <div class="hint">walk away or press F to close</div>
+    <div class="hint">walk away or tap ✕ to close</div>
   </div>
 
   <!-- Inventory / equipment -->
@@ -969,7 +1049,7 @@
     <div id="gambleRow"></div>
     <h4 style="font-size:10px;opacity:.6;letter-spacing:1px;margin:0 16px 6px;text-transform:uppercase;">Carried — sell or reforge</h4>
     <div class="bagList" id="vendList" style="margin:0 16px;"></div>
-    <div class="hint">walk away or press F to close</div>
+    <div class="hint">walk away or tap ✕ to close</div>
   </div>
 
   <!-- Pet -->
@@ -1519,8 +1599,8 @@ function makeSkillGem(floor, idForce){ const id=idForce||pick(SKILL_IDS), sk=SKI
     value:60+tier*40+floor*3, desc:`Active skill · bind to 1–9 bar${tier>1?` · +${(tier-1)*15}% power`:''}`}; }
 // ---- user settings (persist across sessions) ----
 const SETTINGS_KEY='towerlords_settings_v1';
-const SETTINGS={ bigNumbers:true, moveMode:'keyboard', tips:true, autoSalvage:true, music:true, musicVol:75, junkMaxRarity:1, camSway:true };   // autoSalvage: grey/common drops auto-sell for gold · musicVol: music loudness 0-100 (player-set) · junkMaxRarity: highest rarity index eligible for bulk feed/sell · camSway: directional camera lean
-function loadSettings(){ try{ const s=localStorage.getItem(SETTINGS_KEY); if(s){ const o=JSON.parse(s); if(typeof o.bigNumbers==='boolean')SETTINGS.bigNumbers=o.bigNumbers; if(o.moveMode==='keyboard'||o.moveMode==='mouse')SETTINGS.moveMode=o.moveMode; if(typeof o.tips==='boolean')SETTINGS.tips=o.tips; if(typeof o.autoSalvage==='boolean')SETTINGS.autoSalvage=o.autoSalvage; if(typeof o.music==='boolean')SETTINGS.music=o.music; if(typeof o.musicVol==='number')SETTINGS.musicVol=clamp(o.musicVol|0,0,100); if(typeof o.junkMaxRarity==='number')SETTINGS.junkMaxRarity=clamp(o.junkMaxRarity|0,0,3); if(typeof o.camSway==='boolean')SETTINGS.camSway=o.camSway; } }catch(e){} }
+const SETTINGS={ bigNumbers:true, moveMode:'keyboard', tips:true, autoSalvage:true, music:true, musicVol:75, junkMaxRarity:1, camSway:true, touchControls:'auto' };   // touchControls: 'auto' (on for touch devices) | 'on' | 'off'   // autoSalvage: grey/common drops auto-sell for gold · musicVol: music loudness 0-100 (player-set) · junkMaxRarity: highest rarity index eligible for bulk feed/sell · camSway: directional camera lean
+function loadSettings(){ try{ const s=localStorage.getItem(SETTINGS_KEY); if(s){ const o=JSON.parse(s); if(typeof o.bigNumbers==='boolean')SETTINGS.bigNumbers=o.bigNumbers; if(o.moveMode==='keyboard'||o.moveMode==='mouse')SETTINGS.moveMode=o.moveMode; if(typeof o.tips==='boolean')SETTINGS.tips=o.tips; if(typeof o.autoSalvage==='boolean')SETTINGS.autoSalvage=o.autoSalvage; if(typeof o.music==='boolean')SETTINGS.music=o.music; if(typeof o.musicVol==='number')SETTINGS.musicVol=clamp(o.musicVol|0,0,100); if(typeof o.junkMaxRarity==='number')SETTINGS.junkMaxRarity=clamp(o.junkMaxRarity|0,0,3); if(typeof o.camSway==='boolean')SETTINGS.camSway=o.camSway; if(o.touchControls==='auto'||o.touchControls==='on'||o.touchControls==='off')SETTINGS.touchControls=o.touchControls; } }catch(e){} }
 // bulk feed/sell "junk" = anything at or below the chosen quality that isn't a special item or locked
 function junkThreshold(){ return clamp(SETTINGS.junkMaxRarity|0,0,4); }
 function isBulkJunk(it){ return it && !it.isPet && !it.isPot && !it.isFlask && !it.isSkillGem && !it.locked && RARITY.indexOf(it.rarity)<=junkThreshold(); }
@@ -2353,6 +2433,102 @@ addEventListener('mousedown',e=>{ if(anyPanelOpen())return; if(e.button===0) mou
 addEventListener('mouseup',e=>{ if(e.button===0) mouseDown=false; else if(e.button===2) mouseR=false; });
 addEventListener('contextmenu',e=>{ if(G.running && !anyPanelOpen()) e.preventDefault(); });
 
+// ============================================================ TOUCH / MOBILE CONTROLS
+// Twin-stick on-screen controls so the game is fully playable by tap on phones & tablets:
+//   left half of the screen = dynamic movement stick · right half = dynamic aim+fire stick
+//   dedicated Dash button + a context Interact button (replaces "press F") · dock slots are tappable.
+// Feeds the same p.in the keyboard/gamepad fill, so the sim is untouched.
+const IS_TOUCH = ('ontouchstart' in window) || (navigator.maxTouchPoints>0) || (navigator.msMaxTouchPoints>0);
+const TOUCH = { on:false };                                   // whether touch controls are active this session
+const touchMove = { active:false, x:0, z:0 };                 // normalized move vector from the left stick
+const touchFire = { active:false, x:0, z:1, mag:0 };          // aim vector + magnitude from the right stick
+function touchEnabled(){ return SETTINGS.touchControls==='on' || (SETTINGS.touchControls==='auto' && IS_TOUCH); }
+// device-aware interact prompts (keyboard shows "press F"; touch shows the on-screen ✦ button)
+function interactVerb(){ return TOUCH.on ? 'tap ✦' : 'press F'; }
+function interactTag(){ return TOUCH.on ? '(✦)' : '(F)'; }
+function applyTouchMode(){ TOUCH.on = touchEnabled(); document.documentElement.classList.toggle('touch', TOUCH.on); if(!TOUCH.on){ touchMove.active=false; touchFire.active=false; } refreshTouchUI(); }
+
+// one active finger per stick, tracked by pointerId
+const _touchPtr = { move:null, aim:null };
+const JOY_R = 58;   // max knob travel (px)
+function joyEls(side){ return side==='move'
+  ? { base:$('joyMoveBase'), knob:$('joyMoveKnob'), st:touchMove }
+  : { base:$('joyAimBase'),  knob:$('joyAimKnob'),  st:touchFire }; }
+function startStick(side,id,x,y){ const {base,knob,st}=joyEls(side); _touchPtr[side]=id;
+  base._cx=x; base._cy=y; base.style.left=x+'px'; base.style.top=y+'px'; base.classList.add('on');
+  knob.style.left='50%'; knob.style.top='50%'; st.active=true; st.x=0; st.z=(side==='move'?0:1); st.mag=0; }
+function moveStick(side,x,y){ const {base,knob,st}=joyEls(side); if(!base)return;
+  let dx=x-base._cx, dy=y-base._cy; const d=Math.hypot(dx,dy)||1; const cl=Math.min(d,JOY_R);
+  const nx=dx/d, ny=dy/d; knob.style.left=(50+ (nx*cl/JOY_R)*50)+'%'; knob.style.top=(50+ (ny*cl/JOY_R)*50)+'%';
+  const m=cl/JOY_R;                                   // 0..1 tilt
+  if(side==='move'){ st.x=nx*m; st.z=ny*m; }          // screen-down (y+) = world +z (forward), matches WASD 'S'
+  else { st.x=nx; st.z=ny; st.mag=m; }                // aim keeps full direction; magnitude gates auto-aim
+}
+function endStick(side){ const {base,knob,st}=joyEls(side); _touchPtr[side]=null; if(base)base.classList.remove('on'); st.active=false; st.x=0; st.z=(side==='move'?0:1); st.mag=0; }
+// route a touch to a stick unless it lands on a real UI control (buttons/dock/panels stay tappable)
+const _uiSel='.mItem,.slot,.flask,.tBtn,button,input,textarea,select,.panel,.overlay,.segBtn,.closeX,[data-close],a,#touchBtns,#rotateHint';
+function onTouchDown(e){ if(!TOUCH.on || !G.running || anyPanelOpen()) return;
+  if(e.target && e.target.closest && e.target.closest(_uiSel)) return;   // let genuine UI taps through
+  const side = e.clientX < innerWidth/2 ? 'move' : 'aim';
+  if(_touchPtr[side]!=null) return;                                      // that stick already has a finger
+  startStick(side, e.pointerId, e.clientX, e.clientY);
+  try{ e.target.setPointerCapture&&e.target.setPointerCapture(e.pointerId); }catch(_){}
+  e.preventDefault();
+}
+function onTouchMove(e){ if(!TOUCH.on)return; if(_touchPtr.move===e.pointerId){ moveStick('move',e.clientX,e.clientY); e.preventDefault(); }
+  else if(_touchPtr.aim===e.pointerId){ moveStick('aim',e.clientX,e.clientY); e.preventDefault(); } }
+function onTouchUp(e){ if(_touchPtr.move===e.pointerId) endStick('move'); else if(_touchPtr.aim===e.pointerId) endStick('aim'); }
+function initTouchControls(){
+  addEventListener('pointerdown', onTouchDown, {passive:false});
+  addEventListener('pointermove', onTouchMove, {passive:false});
+  addEventListener('pointerup', onTouchUp); addEventListener('pointercancel', onTouchUp);
+  const bd=$('btnDash'); if(bd){ const tap=e=>{ e.preventDefault(); if(G.running && !G.paused && !anyPanelOpen()) doDash(); };
+    bd.addEventListener('pointerdown',tap); }
+  const bi=$('btnInteract'); if(bi){ const tap=e=>{ e.preventDefault(); if(G.running && !anyPanelOpen()) interact(); };
+    bi.addEventListener('pointerdown',tap); }
+  addEventListener('resize', refreshTouchUI); addEventListener('orientationchange', ()=>setTimeout(refreshTouchUI,60));
+  applyTouchMode();
+}
+// keep the touch layer's visibility + portrait nudge in sync
+function refreshTouchUI(){
+  const playing = TOUCH.on && _G.running && !G.dead && !anyPanelOpen();
+  document.documentElement.classList.toggle('playing', !!playing);
+  const portrait = IS_TOUCH && innerHeight>innerWidth && Math.min(innerWidth,innerHeight)<560;
+  document.documentElement.classList.toggle('portrait', !!portrait);
+  if(!playing){ endStick('move'); endStick('aim'); } else fitTouchDock();
+}
+// shrink the action dock (via CSS zoom) so all skills/flasks/orbs fit any phone width — hit-testing stays accurate
+let _dockFitW=0;
+function fitTouchDock(){ if(!TOUCH.on) return; const d=$('dock'); if(!d) return;
+  if(innerWidth===_dockFitW) return;             // only recompute when the viewport width actually changes
+  _dockFitW=innerWidth; d.style.zoom='';
+  const w=d.offsetWidth||1, avail=innerWidth-12;
+  d.style.zoom = w>avail ? Math.max(0.5, avail/w) : '';
+}
+// context Interact button — mirrors what F does at the player's current spot
+function touchInteractInfo(){
+  if(!G.running) return null;
+  if(G.practice) return G.nearPortal?{ic:'🚪',lbl:'LEAVE'}:null;
+  if(G.inTown){
+    if(G.nearPortal) return {ic:'🗼',lbl:((_G.returnFloor|0)>1?'RETURN':'CLIMB')};
+    if(G.nearVendor) return {ic:'🛒',lbl:'SHOP'};
+    if(G.nearStash)  return {ic:'🗄',lbl:'STASH'};
+    if(G.nearScore)  return {ic:'📜',lbl:'RECORD'};
+    return null;
+  }
+  if(G.nearPortal && G.portal && G.portal.active) return {ic:'⬆',lbl:'ASCEND'};
+  if(G.nearVendor) return {ic:'🛒',lbl:'SHOP'};
+  if(G.nearStash)  return {ic:'🗄',lbl:'STASH'};
+  return null;
+}
+function updateTouchHud(){
+  if(!TOUCH.on) return;
+  const bi=$('btnInteract'); if(bi){ const info=touchInteractInfo();
+    if(info){ $('btnInteractIc').textContent=info.ic; $('btnInteractLbl').textContent=info.lbl; bi.classList.add('show'); }
+    else bi.classList.remove('show'); }
+  const bd=$('btnDash'); if(bd) bd.classList.toggle('cooling', (G.dashCd||0)>0.05);
+}
+
 // ============================================================ LOCAL CO-OP (split-screen, up to 4)
 const PLAYER_COLORS=[0x56e0ff,0xff5c78,0x6dff8c,0xffce4d];
 const PLAYER_TINT  =['#56e0ff','#ff5c78','#6dff8c','#ffce4d'];
@@ -2372,9 +2548,21 @@ function ndcForViewport(p,outx,outy){ // returns NDC for this player's mouse pos
 const _ndc=new THREE.Vector2();
 function makeKbmInput(){ return { kind:'kbm', pollActions:false, read(p){
   const inp=p.in; let mx=0,mz=0; if(keys['w'])mz-=1; if(keys['s'])mz+=1; if(keys['a'])mx-=1; if(keys['d'])mx+=1;
+  // touch: left thumbstick overrides WASD when engaged
+  if(TOUCH.on && touchMove.active && (touchMove.x||touchMove.z)){ mx=touchMove.x; mz=touchMove.z; }
   inp.mx=mx; inp.mz=mz;
+  // touch: right thumbstick is aim+fire (twin-stick). Falls back to mouse aim when the stick is idle.
+  if(TOUCH.on && touchFire.active){
+    const me=p.player?p.player.position:null;
+    let ax=touchFire.x, az=touchFire.z, mag=touchFire.mag||Math.hypot(ax,az);
+    if(mag<0.3 && me){ const t=nearestEnemyTo(me.x,me.z,64); if(t){ ax=t.mesh.position.x-me.x; az=t.mesh.position.z-me.z; mag=Math.hypot(ax,az)||1; } }
+    if(me && (ax||az)){ const l=Math.hypot(ax,az)||1; p.aim.set(me.x+ax/l*8,1,me.z+az/l*8); inp.hasAim=true; }
+    inp.atk = !anyPanelOpen(); inp.moveToCursor=false;
+    return;
+  }
   const nd=ndcForViewport(p); raycaster.setFromCamera(nd, p.cam||camera);
   if(raycaster.ray.intersectPlane(groundPlane,p.aim)) inp.hasAim=true;
+  // no fire stick down → fall back to mouse (real mouse on hybrid devices; a phone has no mouseDown so it simply holds fire)
   inp.atk = (SETTINGS.moveMode==='mouse'?mouseR:mouseDown) && !anyPanelOpen();
   inp.moveToCursor = SETTINGS.moveMode==='mouse' && mouseDown && !anyPanelOpen();
 }};}
@@ -2694,6 +2882,9 @@ $('openCodexBtn').onclick=()=>togglePanel('codexPanel');
 $('openSettingsBtn').onclick=()=>togglePanel('settingsPanel');
 $('recallBtn').onclick=()=>startRecall();
 $('muteInd').onclick=(e)=>{ e.stopPropagation(); toggleMute(); };
+// dock dash / signature slots are tappable on touch
+$('dashSlot').addEventListener('pointerdown',e=>{ if(TOUCH.on){ e.preventDefault(); if(G.running && !G.paused && !anyPanelOpen()) doDash(); } });
+$('sigSlot').addEventListener('pointerdown',e=>{ if(TOUCH.on){ e.preventDefault(); if(G.running && !G.paused && !anyPanelOpen()) useSignature(); } });
 document.querySelectorAll('.closeX').forEach(x=>x.onclick=()=>{ $(x.dataset.close).classList.add('hidden'); syncPause(); refreshMenuState(); });
 $('depositAll').onclick=()=>{ if(G.inv?.length){ const n=stashPushMany(G.inv); G.inv=G.inv.slice(n); G.stashStrikes=0; bankCashIn(n); log(n?('Deposited '+n+' item(s)'+(G.inv.length?' — stash full, '+G.inv.length+' left in bag':'')):'Stash full — buy a stash row.'); renderStash();} };
 $('retrieveAll').onclick=()=>{ if(G.stash?.length){G.inv.push(...G.stash);G.stash=[];G.stashStrikes=0;log('Stash retrieved.');renderStash();} };
@@ -3094,7 +3285,9 @@ function generateTown(){
 }
 function enterTower(){ const f=(_G.returnFloor|0)>1?(_G.returnFloor|0):1; _G.returnFloor=0;   // a recall remembers your depth → the portal drops you back there, not floor 1
   G.inTown=false; G.floor=f; G.run.floorTime=0; PANELS.forEach(p=>$(p).classList.add('hidden')); syncPause(); sfx.dash(); log(f>1?('Returning to the Tower — Floor '+f+'…'):'Descending into the Tower…'); dailyScoreTick(); generateFloor();
-  coach('move','🎮','Climbing begins','Move with <b>WASD</b>, aim with the <b>mouse</b>, hold <b>click</b> to attack. Press <b>Space to dash</b> — you\'re invulnerable mid-dash, your best defence.'); }
+  coach('move','🎮','Climbing begins', TOUCH.on
+    ? 'Move with the <b>left thumbstick</b>, aim &amp; fire with the <b>right thumbstick</b>. Tap <b>»</b> to dash — you\'re invulnerable mid-dash, your best defence.'
+    : 'Move with <b>WASD</b>, aim with the <b>mouse</b>, hold <b>click</b> to attack. Press <b>Space to dash</b> — you\'re invulnerable mid-dash, your best defence.'); }
 function returnToTown(){ _G.running=true; _G.paused=false;
   for(const pl of joinedPlayers()){ withPlayer(pl.id,()=>{ G.dead=false; G.downed=false; G.downT=0; G.hp=G.maxhp; G.mana=G.maxmana; G.invuln=1; G.fervor=0; G.charge=0; G.swiftT=0; G.recallT=0; G.petErrand=null; refillFlasks(100); if(G.petMesh)G.petMesh.visible=true; }); }
   _G.cur=0; clock.getDelta(); renderActionbar(); updatePips(); generateTown(); }
@@ -4461,7 +4654,7 @@ function killEnemy(e){
   // clear-gate: putting down the floor's population opens the portal
   if(!e.boss && floorType(G.floor)==='NORMAL' && G.portal && !G.portal.active){
     G.floorKills=(G.floorKills||0)+1;
-    if(G.floorKills>=(G.killGoal||999)){ G.portal.active=true; G.shiftT=portalShiftT(); G.shiftWarned=false; banner('✦ PORTAL OPEN','press F to ascend whenever you are ready'); log('✦ Floor cleared — the portal is open and stays open. The layout reshuffles every minute, but the portal remains.'); if(sfx.evolve)sfx.evolve();
+    if(G.floorKills>=(G.killGoal||999)){ G.portal.active=true; G.shiftT=portalShiftT(); G.shiftWarned=false; banner('✦ PORTAL OPEN',interactVerb()+' to ascend whenever you are ready'); log('✦ Floor cleared — the portal is open and stays open. The layout reshuffles every minute, but the portal remains.'); if(sfx.evolve)sfx.evolve();
       coach('portal','✦','Floor cleared','Stand on the glowing <b>portal</b> and press <b>F</b> to descend. It stays open — but the floor <b>reshuffles</b> if you linger too long, so loot up and move on.'); }
   }
   burst(e.mesh.position.x,e.mesh.position.z,e.color);
@@ -5017,13 +5210,16 @@ function renderActionbar(){
   const bar=$('actionbar'); bar.innerHTML='';
   for(let i=0;i<9;i++){ const slot=G.slots[i], sk=slot?SKILLS[slot.skillId]:null; const d=document.createElement('div'); d.className='slot'+(sk?'':' empty');
     d.innerHTML=`<span class="key">${SLOT_LABEL[i]}</span><span class="ic">${sk?sk.ic:'·'}</span><span class="nm">${sk?sk.nm:'—'}</span>${sk?`<span class="mc">${Math.round(sk.mana*(G.S.manaCostMult||1))}</span>`:''}<div class="cd" id="cd${i}"></div>`;
+    if(sk){ const si=i; d.addEventListener('pointerdown',e=>{ if(TOUCH.on){ e.preventDefault(); if(G.running && !G.paused && !anyPanelOpen()) useSlot(si); } }); }
     bar.appendChild(d); }
   renderBelt(); renderSig();
+  if(TOUCH.on){ _dockFitW=0; fitTouchDock(); }   // dock width changed → re-fit to screen
 }
 function renderBelt(){ const b=$('belt'); if(!b)return; b.innerHTML='';
   for(let i=0;i<5;i++){ const fl=G.belt[i]; const d=document.createElement('div'); d.className='flask'+(fl?'':' empty'); d.id='flask'+i;
     const col=fl?FLASKS[fl.flaskId].col:'#888';
     d.innerHTML=`<span class="key">${FLASK_LABEL[i]}</span><span class="ic">${fl?fl.ic:'·'}</span><div class="chg" id="flchg${i}" style="background:${col}"></div>`;
+    if(fl){ const fi=i; d.addEventListener('pointerdown',e=>{ if(TOUCH.on){ e.preventDefault(); if(G.running && !G.paused && !anyPanelOpen()) useFlask(fi); } }); }
     b.appendChild(d); }
 }
 function renderSig(){ const s=$('sigSlot'); if(!s)return; const gem=G.sigSlot, sk=gem?SKILLS[gem.skillId]:null;
@@ -5684,7 +5880,14 @@ function renderSettings(){
     <div style="display:flex;gap:8px;margin:0 16px 14px;">
       <div class="segBtn${mm==='keyboard'?' sel':''}" data-mm="keyboard">⌨ Keyboard<small>WASD to move · cursor to aim · L-click attack</small></div>
       <div class="segBtn${mm==='mouse'?' sel':''}" data-mm="mouse">🖱 Mouse / Click-move<small>Hold L-click to move to cursor · R-click attack</small></div>
-    </div>`
+    </div>
+    <div style="margin:6px 16px;font-size:11px;opacity:.6;letter-spacing:1px;text-transform:uppercase">Touch controls</div>
+    <div style="display:flex;gap:8px;margin:0 16px 4px;">
+      <div class="segBtn${SETTINGS.touchControls==='auto'?' sel':''}" data-tc="auto">Auto<small>On for touchscreens</small></div>
+      <div class="segBtn${SETTINGS.touchControls==='on'?' sel':''}" data-tc="on">On<small>Always show sticks</small></div>
+      <div class="segBtn${SETTINGS.touchControls==='off'?' sel':''}" data-tc="off">Off<small>Keyboard / pad only</small></div>
+    </div>
+    <div style="margin:0 16px 14px;font-size:10px;opacity:.55">Left stick moves · right stick aims &amp; fires · tap skill / flask icons · big ✦ button = interact.</div>`
     +(G.running && !_G.splitscreen && !NET.role && !G.dailyRun && !G.practice
       ? `<div style="margin:6px 16px 14px;border-top:1px solid rgba(255,255,255,.08);padding-top:14px">
            <button class="btn" id="extractBtn" style="width:100%;background:linear-gradient(180deg,#1a3a2e,#0f241c);border-color:#3ad18a;color:#bfffdd">🚪 Save &amp; Leave to Menu</button>
@@ -5705,6 +5908,8 @@ function renderSettings(){
   { const eb=$('extractBtn'); if(eb) eb.onclick=extractToMenu; }
   b.querySelectorAll('[data-mm]').forEach(el=>el.onclick=()=>{ SETTINGS.moveMode=el.dataset.mm; saveSettings(); renderSettings();
     log(SETTINGS.moveMode==='mouse'?'🖱 Mouse-move: hold left-click to move, right-click to attack.':'⌨ Keyboard: WASD to move, left-click to attack.'); });
+  b.querySelectorAll('[data-tc]').forEach(el=>el.onclick=()=>{ SETTINGS.touchControls=el.dataset.tc; saveSettings(); applyTouchMode(); renderSettings();
+    log(TOUCH.on?'📱 Touch controls on — left stick move · right stick aim/fire.':'Touch controls off.'); });
 }
 // ============================================================ TUTORIAL (menu only — never interrupts a run)
 const TUT_PAGES=[
@@ -5991,7 +6196,9 @@ function startGame(){
 function showFirstRunHints(){
   const d=document.createElement('div'); d.id='frHints';
   d.style.cssText='position:fixed;left:50%;bottom:130px;transform:translateX(-50%);z-index:60;background:#0d1320ee;border:1px solid #2a8f77;border-radius:12px;padding:14px 26px;font-size:16px;letter-spacing:1px;color:#e8edf7;text-align:center;box-shadow:0 0 24px #8effd922;transition:opacity 1.2s';
-  d.innerHTML='<b style="color:#8effd9">⌨ WASD</b> move &nbsp;·&nbsp; <b style="color:#8effd9">🖱 MOUSE</b> aim &nbsp;·&nbsp; <b style="color:#8effd9">HOLD CLICK</b> shoot &nbsp;·&nbsp; <b style="color:#ffe14d">SPACE</b> dash — you are <b>invulnerable</b> mid-dash';
+  d.innerHTML = TOUCH.on
+    ? '<b style="color:#8effd9">◐ LEFT STICK</b> move &nbsp;·&nbsp; <b style="color:#8effd9">◑ RIGHT STICK</b> aim &amp; fire &nbsp;·&nbsp; <b style="color:#ffe14d">» BUTTON</b> dash — you are <b>invulnerable</b> mid-dash'
+    : '<b style="color:#8effd9">⌨ WASD</b> move &nbsp;·&nbsp; <b style="color:#8effd9">🖱 MOUSE</b> aim &nbsp;·&nbsp; <b style="color:#8effd9">HOLD CLICK</b> shoot &nbsp;·&nbsp; <b style="color:#ffe14d">SPACE</b> dash — you are <b>invulnerable</b> mid-dash';
   document.body.appendChild(d);
   setTimeout(()=>{ d.style.opacity='0'; setTimeout(()=>d.remove(),1400); },11000);
 }
@@ -6003,10 +6210,11 @@ function updateWorldLabels(){
   const IDS=['lblStash','lblVendor','lblScore','lblPortal'];
   if(_G.splitscreen || !_G.running){ host.style.display='none'; return; } host.style.display='block';
   const items=[];
-  if(G.stashStation) items.push(['lblStash','🗄 STASH — bank loot (F)',G.stashStation.x,G.stashStation.z]);
-  if(G.vendorStation) items.push(['lblVendor','💰 VENDOR — sell · gamble · reforge (F)',G.vendorStation.x,G.vendorStation.z]);
-  if(G.scoreStation) items.push(['lblScore','📜 RECORD (F)',G.scoreStation.x,G.scoreStation.z]);
-  if(G.portal && (G.inTown||G.portal.active)) items.push(['lblPortal', G.inTown?((_G.returnFloor|0)>1?('⛰ Return to Floor '+_G.returnFloor+' (F)'):'⛰ Climb the Tower (F)'):'⛰ Ascend (F)',G.portal.x,G.portal.z]);
+  const IT=interactTag();
+  if(G.stashStation) items.push(['lblStash','🗄 STASH — bank loot '+IT,G.stashStation.x,G.stashStation.z]);
+  if(G.vendorStation) items.push(['lblVendor','💰 VENDOR — sell · gamble · reforge '+IT,G.vendorStation.x,G.vendorStation.z]);
+  if(G.scoreStation) items.push(['lblScore','📜 RECORD '+IT,G.scoreStation.x,G.scoreStation.z]);
+  if(G.portal && (G.inTown||G.portal.active)) items.push(['lblPortal', G.inTown?((_G.returnFloor|0)>1?('⛰ Return to Floor '+_G.returnFloor+' '+IT):'⛰ Climb the Tower '+IT):'⛰ Ascend '+IT,G.portal.x,G.portal.z]);
   const seen=new Set();
   for(const [id,txt,x,z] of items){ seen.add(id); const e=ensureLabel(id,txt);
     _proj.set(x,3.4,z).project(camera);
@@ -6310,6 +6518,7 @@ function frameBody(){
   // overhead beacon bob for every player
   for(const pl of joinedPlayers()){ const mk=pl.player&&pl.player.userData.marker; if(mk){ mk.position.y=3.0+Math.sin(performance.now()*0.005)*0.18; mk.rotation.y+=dt*2; } }
   updateWorldLabels();
+  if(TOUCH.on){ refreshTouchUI(); updateTouchHud(); }
 
   if(!_G.splitscreen){
     const pl=_G.players[0];
@@ -6456,13 +6665,13 @@ function updatePlayerStations(dt){
   const p=G.player.position, isP0=(_G.cur===0);
   if(G.portal){ if(isP0){ G.portal.mesh.children[0].rotation.z+=dt*1.5; G.portal.mesh.visible=G.portal.active; G.portal.mesh.children[0].material.emissiveIntensity=1.5; }
     const d=Math.hypot(p.x-G.portal.x,p.z-G.portal.z); G.nearPortal=d<3.8 && G.portal.active;
-    if(G.nearPortal){ if(!G._ph){ log(G.practice?'▣ Press F to leave the practice arena':G.inTown?((_G.returnFloor|0)>1?'▣ Press F to return to Floor '+_G.returnFloor:'▣ Press F to enter the Tower'):'▣ Press F to ascend'); G._ph=true; } } else G._ph=false; }
+    if(G.nearPortal){ if(!G._ph){ const V='▣ '+interactVerb().replace(/^./,c=>c.toUpperCase()); log(G.practice?V+' to leave the practice arena':G.inTown?((_G.returnFloor|0)>1?V+' to return to Floor '+_G.returnFloor:V+' to enter the Tower'):V+' to ascend'); G._ph=true; } } else G._ph=false; }
   if(G.stashStation){ if(isP0) G.stashStation.mesh.children[1].rotation.y+=dt; const d=Math.hypot(p.x-G.stashStation.x,p.z-G.stashStation.z);
     const near=d<4.2; if(isP0){ if(near && !G.nearStash && !G.inTown && $('stashPanel').classList.contains('hidden')) togglePanel('stashPanel'); if(!near && G.nearStash && !$('stashPanel').classList.contains('hidden')){ $('stashPanel').classList.add('hidden'); syncPause(); } } G.nearStash=near; } else G.nearStash=false;
   if(G.vendorStation){ if(isP0) G.vendorStation.mesh.children[1].rotation.y+=dt*1.5; const d=Math.hypot(p.x-G.vendorStation.x,p.z-G.vendorStation.z);
     const near=d<4.4; if(isP0){ if(near && !G.nearVendor && !G.inTown && $('vendorPanel').classList.contains('hidden')) togglePanel('vendorPanel'); if(!near && G.nearVendor && !$('vendorPanel').classList.contains('hidden')){ $('vendorPanel').classList.add('hidden'); syncPause(); } } G.nearVendor=near; } else G.nearVendor=false;
   if(G.scoreStation){ if(isP0) G.scoreStation.mesh.rotation.y+=dt*0.6; const d=Math.hypot(p.x-G.scoreStation.x,p.z-G.scoreStation.z); G.nearScore=d<4.4;
-    if(G.nearScore){ if(!G._sh){ log('▣ Press F to view your record'); G._sh=true; } } else G._sh=false; } else G.nearScore=false;
+    if(G.nearScore){ if(!G._sh){ log('▣ '+interactVerb().replace(/^./,c=>c.toUpperCase())+' to view your record'); G._sh=true; } } else G._sh=false; } else G.nearScore=false;
 }
 
 // idle enemies roam their room (so they don't all clump in one corner)
@@ -6809,7 +7018,7 @@ function updateBossBar(){
   }
 }
 
-try { init(); }
+try { init(); initTouchControls(); }
 catch(err){ $('loadErr').style.display='flex'; $('loadErr').innerHTML='⚠ Failed to start the 3D engine.<br>'+err.message+'<br><br>(Three.js loads from a CDN — needs an internet connection.)'; console.error(err); }
 </script>
 </body>
