@@ -89,6 +89,25 @@
   .slot.dash{border-color:rgba(86,224,255,.6);margin-right:4px;}
   .slot.dash .ic{color:var(--neon);font-size:30px;font-weight:bold;}
 
+  /* ---- mobile touch controls (hidden unless body.touch-on) ---- */
+  #touchUI{position:absolute;inset:0;pointer-events:none;z-index:7;display:none;}
+  body.touch-on #hud:not(.hidden) #touchUI{display:block;}
+  #tMove,#tAim{position:absolute;top:118px;bottom:104px;width:46%;pointer-events:auto;touch-action:none;z-index:7;}
+  #tMove{left:0;} #tAim{right:0;display:none;}
+  body.touch-twin #hud:not(.hidden) #tAim{display:block;}
+  .tstick{position:absolute;width:132px;height:132px;margin:-66px 0 0 -66px;border-radius:50%;
+    border:2px solid rgba(255,255,255,.16);background:radial-gradient(circle,rgba(86,224,255,.08),rgba(255,255,255,.015));
+    opacity:0;transition:opacity .1s;pointer-events:none;}
+  #tAim .tstick{border-color:rgba(255,120,150,.24);background:radial-gradient(circle,rgba(255,120,150,.09),rgba(255,255,255,.015));}
+  .tstick.on{opacity:.92;}
+  .tknob{position:absolute;left:50%;top:50%;width:58px;height:58px;margin:-29px 0 0 -29px;border-radius:50%;
+    background:rgba(86,224,255,.42);border:2px solid rgba(255,255,255,.55);box-shadow:0 2px 12px rgba(0,0,0,.5);}
+  #tAim .tknob{background:rgba(255,120,150,.5);}
+  /* touch: the dock buttons become tap targets */
+  body.touch-on #dock{z-index:8;}
+  body.touch-on #dock .slot,body.touch-on #dock .flask{pointer-events:auto;cursor:pointer;-webkit-tap-highlight-color:transparent;}
+  body.touch-on #dock .slot:active,body.touch-on #dock .flask:active{filter:brightness(1.35);transform:translateY(1px);}
+
   /* bottom progress bars — blue character XP + gold Fame (Torchlight-style stacked pair) */
   /* bottom-centre progress widget: readable XP + Fame bars (level / next-level progress) */
   #progressBars{position:absolute;bottom:122px;left:50%;transform:translateX(-50%);width:min(440px,44vw);display:flex;flex-direction:column;gap:5px;pointer-events:none;z-index:5;}
@@ -737,7 +756,15 @@
     .modeSel{gap:10px;margin:2px 0 16px;}
     .modeBtn{width:min(340px,100%);padding:11px 14px;}
     .modeBtn b{font-size:15px;}
+    /* in-game HUD: compact the left nav so it doesn't eat the screen / block the stick */
+    #stats{width:158px;padding:6px;}
+    .mItem{font-size:11.5px;padding:5px 7px;gap:6px;}
+    .mHdr{padding:2px 5px 6px;margin-bottom:2px;} .mLv b{font-size:16px;}
+    .mIc{font-size:13px;width:16px;}
   }
+  /* touchscreens: the keyboard key-badges in the nav are useless — hide them for a tighter menu */
+  body.touch-on #stats .mKey{display:none;}
+  body.touch-on #stats{width:150px;}
   /* ---- ascension selector (climb setup) ---- */
   #ascBox{width:476px;max-width:90vw;margin:0 0 22px;padding:14px 18px 16px;border-radius:13px;
     border:1px solid rgba(176,107,255,.34);background:linear-gradient(170deg,rgba(20,14,30,.7),rgba(10,8,18,.7));box-shadow:0 0 26px rgba(176,107,255,.12);}
@@ -894,6 +921,10 @@
       <div class="slot sig" id="sigSlot"><span class="key">⇧</span><span class="ic">✦</span><span class="nm">Signature</span><div class="chg" id="sigChg"></div></div>
       <div class="orb mana"><div class="fill" id="manaFill"></div><div class="gloss"></div>
         <div class="txt" id="manaTxt">60<small>MANA</small></div></div>
+    </div>
+    <div id="touchUI">
+      <div id="tMove"><div class="tstick"><div class="tknob"></div></div></div>
+      <div id="tAim"><div class="tstick"><div class="tknob"></div></div></div>
     </div>
     <div id="progressBars" class="ui">
       <div id="xpStrip"><div id="xpStripFill"></div><span class="barCap" id="xpCap">LV 1 · 0 / 20</span></div>
@@ -1538,8 +1569,8 @@ function makeSkillGem(floor, idForce){ const id=idForce||pick(SKILL_IDS), sk=SKI
     value:60+tier*40+floor*3, desc:`Active skill · bind to 1–9 bar${tier>1?` · +${(tier-1)*15}% power`:''}`}; }
 // ---- user settings (persist across sessions) ----
 const SETTINGS_KEY='towerlords_settings_v1';
-const SETTINGS={ bigNumbers:true, moveMode:'keyboard', tips:true, autoSalvage:true, music:true, musicVol:75, junkMaxRarity:1, camSway:true };   // autoSalvage: grey/common drops auto-sell for gold · musicVol: music loudness 0-100 (player-set) · junkMaxRarity: highest rarity index eligible for bulk feed/sell · camSway: directional camera lean
-function loadSettings(){ try{ const s=localStorage.getItem(SETTINGS_KEY); if(s){ const o=JSON.parse(s); if(typeof o.bigNumbers==='boolean')SETTINGS.bigNumbers=o.bigNumbers; if(o.moveMode==='keyboard'||o.moveMode==='mouse')SETTINGS.moveMode=o.moveMode; if(typeof o.tips==='boolean')SETTINGS.tips=o.tips; if(typeof o.autoSalvage==='boolean')SETTINGS.autoSalvage=o.autoSalvage; if(typeof o.music==='boolean')SETTINGS.music=o.music; if(typeof o.musicVol==='number')SETTINGS.musicVol=clamp(o.musicVol|0,0,100); if(typeof o.junkMaxRarity==='number')SETTINGS.junkMaxRarity=clamp(o.junkMaxRarity|0,0,3); if(typeof o.camSway==='boolean')SETTINGS.camSway=o.camSway; } }catch(e){} }
+const SETTINGS={ bigNumbers:true, moveMode:'keyboard', tips:true, autoSalvage:true, music:true, musicVol:75, junkMaxRarity:1, camSway:true, touch:'auto', touchAim:'auto' };   // autoSalvage: grey/common drops auto-sell for gold · musicVol: music loudness 0-100 (player-set) · junkMaxRarity: highest rarity index eligible for bulk feed/sell · camSway: directional camera lean · touch: mobile on-screen controls (auto/on/off) · touchAim: auto-aim vs twin-stick
+function loadSettings(){ try{ const s=localStorage.getItem(SETTINGS_KEY); if(s){ const o=JSON.parse(s); if(typeof o.bigNumbers==='boolean')SETTINGS.bigNumbers=o.bigNumbers; if(o.moveMode==='keyboard'||o.moveMode==='mouse')SETTINGS.moveMode=o.moveMode; if(typeof o.tips==='boolean')SETTINGS.tips=o.tips; if(typeof o.autoSalvage==='boolean')SETTINGS.autoSalvage=o.autoSalvage; if(typeof o.music==='boolean')SETTINGS.music=o.music; if(typeof o.musicVol==='number')SETTINGS.musicVol=clamp(o.musicVol|0,0,100); if(typeof o.junkMaxRarity==='number')SETTINGS.junkMaxRarity=clamp(o.junkMaxRarity|0,0,3); if(typeof o.camSway==='boolean')SETTINGS.camSway=o.camSway; if(o.touch==='auto'||o.touch==='on'||o.touch==='off')SETTINGS.touch=o.touch; if(o.touchAim==='auto'||o.touchAim==='twin')SETTINGS.touchAim=o.touchAim; } }catch(e){} }
 // bulk feed/sell "junk" = anything at or below the chosen quality that isn't a special item or locked
 function junkThreshold(){ return clamp(SETTINGS.junkMaxRarity|0,0,4); }
 function isBulkJunk(it){ return it && !it.isPet && !it.isPot && !it.isFlask && !it.isSkillGem && !it.locked && RARITY.indexOf(it.rarity)<=junkThreshold(); }
@@ -2389,9 +2420,62 @@ function ndcForViewport(p,outx,outy){ // returns NDC for this player's mouse pos
   const v=p.viewport; _ndc.x=((mouseCX-v.x)/v.w)*2-1; _ndc.y=-((mouseCY-v.y)/v.h)*2+1; return _ndc;
 }
 const _ndc=new THREE.Vector2();
+// ---- MOBILE TOUCH: on-screen sticks feed the same p.in fields the gamepad uses ----
+const TOUCH={ on:false, move:{id:-1,mx:0,mz:0,ox:0,oy:0}, aim:{id:-1,ax:0,az:1,active:false,ox:0,oy:0} };
+function touchAimMode(){ return SETTINGS.touchAim==='twin'?'twin':'auto'; }
+function touchWanted(){ return SETTINGS.touch==='on' || (SETTINGS.touch!=='off' && typeof matchMedia==='function' && matchMedia('(pointer:coarse)').matches); }
+function applyTouchMode(){ TOUCH.on=touchWanted();
+  document.body.classList.toggle('touch-on', TOUCH.on);
+  document.body.classList.toggle('touch-twin', TOUCH.on && touchAimMode()==='twin');
+  if(!TOUCH.on){ TOUCH.move.id=-1; TOUCH.move.mx=0; TOUCH.move.mz=0; TOUCH.aim.id=-1; TOUCH.aim.active=false; } }
+function bindStick(zoneId, st, isAim){
+  const zone=$(zoneId); if(!zone) return;
+  const stick=zone.querySelector('.tstick'), knob=zone.querySelector('.tknob'), R=52;
+  const setKnob=(dx,dz)=>{ knob.style.transform='translate('+dx+'px,'+dz+'px)'; };
+  zone.addEventListener('pointerdown',e=>{ if(st.id!==-1) return; st.id=e.pointerId;
+    try{ zone.setPointerCapture(e.pointerId); }catch(_){}
+    const r=zone.getBoundingClientRect(); st.ox=e.clientX-r.left; st.oy=e.clientY-r.top;
+    stick.style.left=st.ox+'px'; stick.style.top=st.oy+'px'; stick.classList.add('on'); setKnob(0,0);
+    if(isAim) st.active=true; e.preventDefault(); });
+  zone.addEventListener('pointermove',e=>{ if(e.pointerId!==st.id) return;
+    const r=zone.getBoundingClientRect(); let nx=(e.clientX-r.left-st.ox)/R, ny=(e.clientY-r.top-st.oy)/R;
+    const l=Math.hypot(nx,ny); if(l>1){ nx/=l; ny/=l; } setKnob(nx*R,ny*R);
+    if(isAim){ const al=Math.hypot(nx,ny); if(al>0.28){ st.ax=nx/al; st.az=ny/al; st.active=true; } }
+    else { st.mx=nx; st.mz=ny; } e.preventDefault(); });
+  const end=e=>{ if(e.pointerId!==st.id) return; st.id=-1; stick.classList.remove('on');
+    if(isAim) st.active=false; else { st.mx=0; st.mz=0; } };
+  zone.addEventListener('pointerup',end); zone.addEventListener('pointercancel',end);
+}
+function setupTouchControls(){
+  bindStick('tMove', TOUCH.move, false);
+  bindStick('tAim', TOUCH.aim, true);
+  const dock=$('dock'), bar=$('actionbar'), belt=$('belt');
+  if(dock) dock.addEventListener('pointerdown',e=>{ if(!TOUCH.on) return;
+    const el=e.target.closest('.slot,.flask'); if(!el) return;
+    if(el.id==='dashSlot') doDash();
+    else if(el.id==='sigSlot') useSignature();
+    else if(el.classList.contains('flask')){ const i=[].indexOf.call(belt.children,el); if(i>=0) useFlask(i); }
+    else if(el.parentNode===bar){ const i=[].indexOf.call(bar.children,el); if(i>=0) useSlot(i); }
+    e.preventDefault(); }, {passive:false});
+}
 function makeKbmInput(){ return { kind:'kbm', pollActions:false, read(p){
   const inp=p.in; let mx=0,mz=0; if(keys['w'])mz-=1; if(keys['s'])mz+=1; if(keys['a'])mx-=1; if(keys['d'])mx+=1;
+  if(TOUCH.on && (TOUCH.move.mx||TOUCH.move.mz) && !anyPanelOpen()){ mx=TOUCH.move.mx; mz=TOUCH.move.mz; }   // touch stick overrides WASD
   inp.mx=mx; inp.mz=mz;
+  if(TOUCH.on){   // touch aiming replaces the mouse raycast entirely
+    inp.moveToCursor=false; const pl=p.player, panel=anyPanelOpen();
+    if(touchAimMode()==='twin'){
+      if(TOUCH.aim.active && !panel){ inp.ax=TOUCH.aim.ax; inp.az=TOUCH.aim.az; inp.hasAim=true;
+        if(pl) p.aim.set(pl.position.x+inp.ax*8,1,pl.position.z+inp.az*8); inp.atk=true; }
+      else { inp.hasAim=false; inp.atk=false; }
+    } else {   // auto-aim: lock the nearest foe and auto-fire
+      const tgt=(pl && !panel) ? nearestEnemyTo(pl.position.x,pl.position.z,26) : null;
+      if(tgt){ const dx=tgt.mesh.position.x-pl.position.x, dz=tgt.mesh.position.z-pl.position.z, dl=Math.hypot(dx,dz)||1;
+        inp.ax=dx/dl; inp.az=dz/dl; inp.hasAim=true; p.aim.set(pl.position.x+inp.ax*8,1,pl.position.z+inp.az*8); inp.atk=true; }
+      else { inp.hasAim=false; inp.atk=false; }
+    }
+    return;
+  }
   const nd=ndcForViewport(p); raycaster.setFromCamera(nd, p.cam||camera);
   if(raycaster.ray.intersectPlane(groundPlane,p.aim)) inp.hasAim=true;
   inp.atk = (SETTINGS.moveMode==='mouse'?mouseR:mouseDown) && !anyPanelOpen();
@@ -2555,6 +2639,7 @@ function setDiff(d){ G.diff=d; G.hardcore=(d==='hard');
 $('modeCasual').onclick=()=>setDiff('casual');
 $('modeNormal').onclick=()=>setDiff('normal');
 $('modeHard').onclick=()=>setDiff('hard');
+loadSettings(); setupTouchControls(); applyTouchMode();   // mobile: build on-screen sticks & show them on touchscreens
 // ---- ascension selector ----
 let selAsc=0;
 function renderAscSel(){
@@ -5727,6 +5812,16 @@ function renderSettings(){
     <div style="display:flex;gap:8px;margin:0 16px 14px;">
       <div class="segBtn${mm==='keyboard'?' sel':''}" data-mm="keyboard">⌨ Keyboard<small>WASD to move · cursor to aim · L-click attack</small></div>
       <div class="segBtn${mm==='mouse'?' sel':''}" data-mm="mouse">🖱 Mouse / Click-move<small>Hold L-click to move to cursor · R-click attack</small></div>
+    </div>
+    <div style="margin:16px 16px 6px;font-size:11px;opacity:.6;letter-spacing:1px;text-transform:uppercase">Touch controls (mobile)</div>
+    <div style="display:flex;gap:8px;margin:0 16px 10px;">
+      <div class="segBtn${SETTINGS.touch==='auto'?' sel':''}" data-tc="auto">Auto<small>on for touchscreens</small></div>
+      <div class="segBtn${SETTINGS.touch==='on'?' sel':''}" data-tc="on">On<small>always show</small></div>
+      <div class="segBtn${SETTINGS.touch==='off'?' sel':''}" data-tc="off">Off<small>hide</small></div>
+    </div>
+    <div style="display:flex;gap:8px;margin:0 16px 14px;">
+      <div class="segBtn${SETTINGS.touchAim==='auto'?' sel':''}" data-ta="auto">🎯 Auto-aim<small>left stick moves · auto-fire at nearest foe</small></div>
+      <div class="segBtn${SETTINGS.touchAim==='twin'?' sel':''}" data-ta="twin">🕹 Twin-stick<small>left moves · right aims &amp; fires</small></div>
     </div>`
     +(G.running && !_G.splitscreen && !NET.role && !G.dailyRun && !G.practice
       ? `<div style="margin:6px 16px 14px;border-top:1px solid rgba(255,255,255,.08);padding-top:14px">
@@ -5748,6 +5843,10 @@ function renderSettings(){
   { const eb=$('extractBtn'); if(eb) eb.onclick=extractToMenu; }
   b.querySelectorAll('[data-mm]').forEach(el=>el.onclick=()=>{ SETTINGS.moveMode=el.dataset.mm; saveSettings(); renderSettings();
     log(SETTINGS.moveMode==='mouse'?'🖱 Mouse-move: hold left-click to move, right-click to attack.':'⌨ Keyboard: WASD to move, left-click to attack.'); });
+  b.querySelectorAll('[data-tc]').forEach(el=>el.onclick=()=>{ SETTINGS.touch=el.dataset.tc; saveSettings(); applyTouchMode(); renderSettings();
+    log(TOUCH.on?'📱 Touch controls on — left stick moves; use Settings to pick auto-aim or twin-stick.':'Touch controls off.'); });
+  b.querySelectorAll('[data-ta]').forEach(el=>el.onclick=()=>{ SETTINGS.touchAim=el.dataset.ta; saveSettings(); applyTouchMode(); renderSettings();
+    log(SETTINGS.touchAim==='twin'?'🕹 Twin-stick: right stick aims & fires.':'🎯 Auto-aim: auto-fire at the nearest foe.'); });
 }
 // ============================================================ TUTORIAL (menu only — never interrupts a run)
 const TUT_PAGES=[
@@ -6034,7 +6133,11 @@ function startGame(){
 function showFirstRunHints(){
   const d=document.createElement('div'); d.id='frHints';
   d.style.cssText='position:fixed;left:50%;bottom:130px;transform:translateX(-50%);z-index:60;background:#0d1320ee;border:1px solid #2a8f77;border-radius:12px;padding:14px 26px;font-size:16px;letter-spacing:1px;color:#e8edf7;text-align:center;box-shadow:0 0 24px #8effd922;transition:opacity 1.2s';
-  d.innerHTML='<b style="color:#8effd9">⌨ WASD</b> move &nbsp;·&nbsp; <b style="color:#8effd9">🖱 MOUSE</b> aim &nbsp;·&nbsp; <b style="color:#8effd9">HOLD CLICK</b> shoot &nbsp;·&nbsp; <b style="color:#ffe14d">SPACE</b> dash — you are <b>invulnerable</b> mid-dash';
+  d.innerHTML = TOUCH.on
+    ? (touchAimMode()==='twin'
+        ? '<b style="color:#8effd9">◕ LEFT STICK</b> move &nbsp;·&nbsp; <b style="color:#8effd9">◑ RIGHT STICK</b> aim &amp; fire &nbsp;·&nbsp; tap <b style="color:#8effd9">skills</b> &amp; <b style="color:#ffe14d">DASH</b> below'
+        : '<b style="color:#8effd9">◕ LEFT STICK</b> move &nbsp;·&nbsp; you auto-fire at the nearest foe &nbsp;·&nbsp; tap <b style="color:#8effd9">skills</b> &amp; <b style="color:#ffe14d">DASH</b> below')
+    : '<b style="color:#8effd9">⌨ WASD</b> move &nbsp;·&nbsp; <b style="color:#8effd9">🖱 MOUSE</b> aim &nbsp;·&nbsp; <b style="color:#8effd9">HOLD CLICK</b> shoot &nbsp;·&nbsp; <b style="color:#ffe14d">SPACE</b> dash — you are <b>invulnerable</b> mid-dash';
   document.body.appendChild(d);
   setTimeout(()=>{ d.style.opacity='0'; setTimeout(()=>d.remove(),1400); },11000);
 }
