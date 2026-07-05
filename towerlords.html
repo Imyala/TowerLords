@@ -90,9 +90,11 @@
   .slot.dash .ic{color:var(--neon);font-size:30px;font-weight:bold;}
 
   /* ---- mobile touch controls (hidden unless body.touch-on) ---- */
-  #touchUI{position:absolute;inset:0;pointer-events:none;z-index:7;display:none;}
+  /* the stick zones sit just above the 3D canvas but BELOW every interactive HUD
+     element (nav, dock, panels), so tapping menus/skills always wins over the stick */
+  #touchUI{position:absolute;inset:0;pointer-events:none;z-index:2;display:none;}
   body.touch-on #hud:not(.hidden) #touchUI{display:block;}
-  #tMove,#tAim{position:absolute;top:118px;bottom:104px;width:46%;pointer-events:auto;touch-action:none;z-index:7;}
+  #tMove,#tAim{position:absolute;top:118px;bottom:104px;width:46%;pointer-events:auto;touch-action:none;z-index:2;}
   #tMove{left:0;} #tAim{right:0;display:none;}
   body.touch-twin #hud:not(.hidden) #tAim{display:block;}
   .tstick{position:absolute;width:132px;height:132px;margin:-66px 0 0 -66px;border-radius:50%;
@@ -103,7 +105,8 @@
   .tknob{position:absolute;left:50%;top:50%;width:58px;height:58px;margin:-29px 0 0 -29px;border-radius:50%;
     background:rgba(86,224,255,.42);border:2px solid rgba(255,255,255,.55);box-shadow:0 2px 12px rgba(0,0,0,.5);}
   #tAim .tknob{background:rgba(255,120,150,.5);}
-  /* touch: the dock buttons become tap targets */
+  /* touch: lift the interactive HUD above the stick zones so their taps win */
+  body.touch-on #stats{z-index:9;}
   body.touch-on #dock{z-index:8;}
   body.touch-on #dock .slot,body.touch-on #dock .flask{pointer-events:auto;cursor:pointer;-webkit-tap-highlight-color:transparent;}
   body.touch-on #dock .slot:active,body.touch-on #dock .flask:active{filter:brightness(1.35);transform:translateY(1px);}
