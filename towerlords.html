@@ -723,14 +723,20 @@
   #modeCasual.sel b,#coModeCasual.sel b{color:#6dff8c;}
   #modeHard.sel,#coModeHard.sel{border-color:var(--hp);background:rgba(255,77,109,.1);box-shadow:0 0 22px rgba(255,77,109,.25);}
   #modeHard.sel b,#coModeHard.sel b{color:var(--hp);}
-  /* --- mobile / narrow-screen menu fit --- */
-  @media (max-width:560px){
-    .overlay{padding:20px 14px;}                 /* keep the title & cards off the screen edges */
-    h1{font-size:clamp(26px,8.5vw,50px);letter-spacing:clamp(1px,1vw,7px);}  /* TOWERLORDS must fit on one line */
-    .modeSel{gap:12px;margin:4px 0 20px;}
-    .modeBtn{width:min(320px,100%);}             /* NORMAL/HARDCORE stack full-width instead of clipping */
-    .btn{font-size:16px;padding:12px 24px;}
-    .btn.ghost,#menuClimb{width:min(300px,86vw);}
+  /* --- mobile / narrow-screen menu fit: smaller, tighter, nothing clips --- */
+  @media (max-width:640px){
+    .overlay{padding:16px 12px;}                 /* keep the title & cards off the screen edges */
+    h1{font-size:clamp(22px,7vw,42px);letter-spacing:clamp(1px,.7vw,5px);}   /* TOWERLORDS fits on one line */
+    .tag{font-size:clamp(10px,2.6vw,12px);letter-spacing:clamp(1px,.6vw,3px);margin:8px 0 16px;}
+    .menuCol{gap:9px;}
+    .btn{font-size:14px;letter-spacing:1.2px;padding:11px 16px;border-radius:9px;}
+    .btn.ghost{font-size:12.5px;padding:9px 14px;}
+    /* one uniform, comfortable width for every menu button */
+    #menuMain .btn,.btn.ghost:not(.small),#menuClimb{width:min(340px,92vw);}
+    .btn.small{width:auto;padding:8px 16px;}
+    .modeSel{gap:10px;margin:2px 0 16px;}
+    .modeBtn{width:min(340px,100%);padding:11px 14px;}
+    .modeBtn b{font-size:15px;}
   }
   /* ---- ascension selector (climb setup) ---- */
   #ascBox{width:476px;max-width:90vw;margin:0 0 22px;padding:14px 18px 16px;border-radius:13px;
