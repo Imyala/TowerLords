@@ -767,7 +767,17 @@
   }
   /* touchscreens: the keyboard key-badges in the nav are useless — hide them for a tighter menu */
   body.touch-on #stats .mKey{display:none;}
-  body.touch-on #stats{width:150px;}
+  /* touch: collapse the nav behind a ☰ button so it stops eating the screen */
+  #navToggle{display:none;}
+  body.touch-on #navToggle{display:flex;align-items:center;justify-content:center;width:32px;height:32px;flex:none;
+    border-radius:8px;border:1px solid rgba(86,224,255,.42);background:rgba(86,224,255,.12);color:var(--neon);
+    font-size:18px;line-height:1;cursor:pointer;pointer-events:auto;margin-right:6px;}
+  body.touch-on #navToggle:active{background:rgba(86,224,255,.28);}
+  body.touch-on #stats{width:max-content;min-width:0;}      /* collapsed: shrink to just the header pill */
+  body.touch-on #stats.open{width:174px;}
+  body.touch-on #stats .mItem{display:none;}
+  body.touch-on #stats.open .mItem{display:flex;}
+  body.touch-on #stats:not(.open) .mHdr{border-bottom:none;margin-bottom:0;padding-bottom:2px;}
   /* ---- ascension selector (climb setup) ---- */
   #ascBox{width:476px;max-width:90vw;margin:0 0 22px;padding:14px 18px 16px;border-radius:13px;
     border:1px solid rgba(176,107,255,.34);background:linear-gradient(170deg,rgba(20,14,30,.7),rgba(10,8,18,.7));box-shadow:0 0 26px rgba(176,107,255,.12);}
@@ -888,6 +898,7 @@
 
     <div id="stats" class="ui">
       <div class="mHdr">
+        <div id="navToggle" title="Menu">☰</div>
         <span class="mLv">LV <b id="lvlNum">1</b><span class="xpmini" id="xpTxt">0/20</span></span>
         <span class="mGold">🪙 <b id="goldNum">0</b></span>
       </div>
@@ -2460,6 +2471,10 @@ function setupTouchControls(){
     else if(el.classList.contains('flask')){ const i=[].indexOf.call(belt.children,el); if(i>=0) useFlask(i); }
     else if(el.parentNode===bar){ const i=[].indexOf.call(bar.children,el); if(i>=0) useSlot(i); }
     e.preventDefault(); }, {passive:false});
+  // collapsible nav: ☰ toggles the list; picking any item closes it again
+  const nav=$('navToggle'), stats=$('stats');
+  if(nav) nav.addEventListener('click',()=>{ stats.classList.toggle('open'); });
+  if(stats) stats.addEventListener('click',e=>{ if(TOUCH.on && e.target.closest('.mItem')) stats.classList.remove('open'); });
 }
 function makeKbmInput(){ return { kind:'kbm', pollActions:false, read(p){
   const inp=p.in; let mx=0,mz=0; if(keys['w'])mz-=1; if(keys['s'])mz+=1; if(keys['a'])mx-=1; if(keys['d'])mx+=1;
