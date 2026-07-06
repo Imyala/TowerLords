@@ -2457,7 +2457,7 @@ const _ndc=new THREE.Vector2();
 // ---- MOBILE TOUCH: on-screen sticks feed the same p.in fields the gamepad uses ----
 const TOUCH={ on:false, move:{id:-1,mx:0,mz:0,ox:0,oy:0}, aim:{id:-1,ax:0,az:1,active:false,ox:0,oy:0} };
 function touchAimMode(){ return SETTINGS.touchAim==='twin'?'twin':'auto'; }
-function touchWanted(){ return SETTINGS.touch==='on' || (SETTINGS.touch!=='off' && typeof matchMedia==='function' && matchMedia('(pointer:coarse)').matches); }
+function touchWanted(){ return SETTINGS.touch==='on'; }   // DESKTOP BUILD: never auto-switches to touch mode — use the dedicated mobile build (towerlords-mobile.html) on phones
 function applyTouchMode(){ TOUCH.on=touchWanted();
   document.body.classList.toggle('touch-on', TOUCH.on);
   document.body.classList.toggle('touch-twin', TOUCH.on && touchAimMode()==='twin');
