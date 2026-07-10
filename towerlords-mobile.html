@@ -7,7 +7,7 @@
 <style>
   :root{
     --ink:#eef2ff; --neon:#56e0ff; --gold:#ffce4d; --hp:#ff4d6d; --mana:#4aa8ff; --xp:#9d7bff;
-    --rare:#4da6ff; --epic:#b06bff; --legend:#ff9a3d; --common:#cfd6e6; --unique:#ff6a3d;
+    --rare:#4da6ff; --epic:#b06bff; --legend:#ff9a3d; --common:#cfd6e6; --unique:#ff6a3d; --mythos:#ff5ec7;
     --str:#ff6b6b; --dex:#6dff8c; --int:#56e0ff; --vit:#ff9a3d; --will:#b06bff;
   }
   *{box-sizing:border-box;margin:0;padding:0;}
@@ -499,7 +499,7 @@
   .equipCol{width:236px;} .bagCol{flex:1;min-width:0;}
   .invGrid h4{font-size:10px;opacity:.7;letter-spacing:1.5px;margin-bottom:8px;text-transform:uppercase;color:var(--neon);}
   /* ---- ARPG item cards: rarity glow + icon tile (Torchlight/Diablo-style) ---- */
-  .r-common{--rc:var(--common);} .r-rare{--rc:var(--rare);} .r-epic{--rc:var(--epic);} .r-legend{--rc:var(--legend);} .r-unique{--rc:var(--unique);}
+  .r-common{--rc:var(--common);} .r-rare{--rc:var(--rare);} .r-epic{--rc:var(--epic);} .r-legend{--rc:var(--legend);} .r-unique{--rc:var(--unique);} .r-mythos{--rc:var(--mythos);}
   .gearSlot,.bagItem{position:relative;border:1px solid var(--rc,rgba(255,255,255,.12));border-left:3px solid var(--rc,rgba(255,255,255,.22));
     border-radius:8px;padding:7px 9px 7px 11px;margin-bottom:7px;cursor:pointer;overflow:hidden;
     background:rgba(255,255,255,.03);
@@ -539,7 +539,7 @@
     background:linear-gradient(180deg,rgba(0,0,0,.44),rgba(0,0,0,.24));box-shadow:inset 0 2px 10px rgba(0,0,0,.5);}
   .eqGrid{display:grid;grid-template-columns:1fr 1fr;gap:7px;}
   .slotRow{display:flex;gap:7px;} .slotRow .tile{flex:1;min-width:0;}
-  .r-common{--rc:var(--common);} .r-rare{--rc:var(--rare);} .r-epic{--rc:var(--epic);} .r-legend{--rc:var(--legend);} .r-unique{--rc:var(--unique);}
+  .r-common{--rc:var(--common);} .r-rare{--rc:var(--rare);} .r-epic{--rc:var(--epic);} .r-legend{--rc:var(--legend);} .r-unique{--rc:var(--unique);} .r-mythos{--rc:var(--mythos);}
   /* a square item slot-box */
   .tile{position:relative;aspect-ratio:1/1;border-radius:7px;border:1px solid var(--rc,rgba(255,255,255,.18));
     background:linear-gradient(155deg,color-mix(in srgb,var(--rc,#5a6478) 32%,transparent),rgba(6,10,18,.86));
@@ -646,6 +646,12 @@
   /* pet yard */
   #petPanel{top:50%;left:50%;transform:translate(-50%,-50%);width:680px;max-height:92vh;display:flex;flex-direction:column;padding-bottom:16px;border-color:rgba(255,174,61,.3);}
   #petPanel h3{color:#ffae3d;}
+  #petYardPanel{top:50%;left:50%;transform:translate(-50%,-50%);width:760px;max-width:96vw;max-height:90vh;display:flex;flex-direction:column;padding-bottom:14px;border-color:rgba(255,174,61,.3);}
+  #petYardPanel h3{color:#ffae3d;}
+  #petYardPanel #petFuse{overflow-y:auto;flex:1;margin:0 16px;grid-template-columns:repeat(auto-fill,minmax(168px,1fr));}
+  #petYardPanel #petFuse::-webkit-scrollbar{width:9px;} #petYardPanel #petFuse::-webkit-scrollbar-thumb{background:rgba(255,174,61,.3);border-radius:5px;}
+  .petCard .pcAb{margin-right:3px;} .petCard .pcAb.lk{opacity:.32;filter:grayscale(1);}
+  .r-mythos .pcNm,.petHero.r-mythos .petName{text-shadow:0 0 10px var(--mythos);} .petHero.r-mythos{box-shadow:0 0 0 1px color-mix(in srgb,var(--mythos) 60%,transparent),0 0 26px -6px var(--mythos);}
   #petScroll{overflow-y:auto;overflow-x:hidden;padding:0 2px;}
   #petScroll::-webkit-scrollbar{width:9px;} #petScroll::-webkit-scrollbar-thumb{background:rgba(255,174,61,.3);border-radius:5px;}
   .petSec{margin:18px 18px 0;}
@@ -1150,13 +1156,21 @@
 
   <!-- Pet -->
   <div id="petPanel" class="panel hidden">
-    <h3>🐾 PET YARD</h3><div class="closeX" data-close="petPanel">✕ <span style="font-size:11px;opacity:.6">(P)</span></div>
+    <h3>🐾 COMPANION</h3><div class="closeX" data-close="petPanel">✕ <span style="font-size:11px;opacity:.6">(P)</span></div>
     <div id="petScroll">
       <div id="petBody"></div>
       <div class="petSec"><div class="petSecHd"><h4>Feed — loot becomes pet XP</h4><span id="petFeedTools"></span></div><div id="petFeed"></div></div>
-      <div class="petSec"><div class="petSecHd"><h4>Your Yard — set active · fuse · sell</h4><span id="petYardTools"></span></div><div id="petFuse"></div></div>
+      <div style="margin:18px 18px 0"><button class="btn" id="openYardBtn" style="width:100%;font-size:13px;padding:12px;border-color:var(--gold);color:var(--gold)">🏡 Open Pet Yard</button></div>
     </div>
-    <div class="hint">feed loot to level your active pet (capped by rarity, up to Lv 255) · fuse yard pets into it to raise rarity, unlock ability slots &amp; smash the cap</div>
+    <div class="hint">feed loot to level your active pet · equip, fuse &amp; sell pets in the Pet Yard</div>
+  </div>
+
+  <!-- Pet Yard — the ONLY place to equip / fuse / sell pets -->
+  <div id="petYardPanel" class="panel hidden">
+    <h3>🏡 PET YARD</h3><div class="closeX" data-close="petYardPanel">✕</div>
+    <div class="petSecHd" style="margin:14px 18px 8px"><h4>Your pets — equip · fuse · sell</h4><span id="petYardTools"></span></div>
+    <div id="petFuse" class="petGrid"></div>
+    <div class="hint">click <b>Equip</b> to set your active companion · <b>Fuse</b> a same-rarity pet to rank up (2 of one tier → the next) · ✦ Divine + Divine → Mythos</div>
   </div>
 
   <!-- Run score -->
@@ -2743,7 +2757,7 @@ const ATTR_INFO=[
 const keys={}; const mouse=new THREE.Vector2(); let mouseDown=false; let mouseR=false;
 const aimPoint=new THREE.Vector3(); const raycaster=new THREE.Raycaster();
 const groundPlane=new THREE.Plane(new THREE.Vector3(0,1,0),0);
-const PANELS=['charPanel','treePanel','stashPanel','invPanel','vendorPanel','petPanel','scorePanel','codexPanel','settingsPanel','lootPanel','craftPanel'];
+const PANELS=['charPanel','treePanel','stashPanel','invPanel','vendorPanel','petPanel','petYardPanel','scorePanel','codexPanel','settingsPanel','lootPanel','craftPanel'];
 function anyPanelOpen(){ return _G.modalOpen || _G.draftOpen || PANELS.some(p=>!$(p).classList.contains('hidden')); }
 function syncPause(){ G.paused=false; }   // menus never pause gameplay — the world keeps running while you browse (mouse-attack stays suppressed via anyPanelOpen so clicking UI won't fire your weapon)
 
@@ -3220,7 +3234,7 @@ function togglePanel(id){
   if(id!=='stashPanel'){ /* allow stacking char+tree? keep simple: close others */ }
   el.classList.toggle('hidden');
   clearPin();   // a fresh panel open/close starts with nothing selected (avoids a stale pin from a prior screen)
-  if(willOpen){ if(id==='charPanel')renderChar(); else if(id==='treePanel')renderTree(); else if(id==='stashPanel')renderStash(); else if(id==='invPanel')renderInv(); else if(id==='vendorPanel')renderVendor(); else if(id==='petPanel')renderPet(); else if(id==='scorePanel')renderScore(); else if(id==='codexPanel')renderCodex(); else if(id==='settingsPanel')renderSettings(); else if(id==='lootPanel')renderLoot(); else if(id==='craftPanel')renderCraft(); }
+  if(willOpen){ if(id==='charPanel')renderChar(); else if(id==='treePanel')renderTree(); else if(id==='stashPanel')renderStash(); else if(id==='invPanel')renderInv(); else if(id==='vendorPanel')renderVendor(); else if(id==='petPanel')renderPet(); else if(id==='petYardPanel')renderPetYard(); else if(id==='scorePanel')renderScore(); else if(id==='codexPanel')renderCodex(); else if(id==='settingsPanel')renderSettings(); else if(id==='lootPanel')renderLoot(); else if(id==='craftPanel')renderCraft(); }
   syncPause(); refreshMenuState();
 }
 // ============================================================ PER-PLAYER CO-OP MENUS
@@ -3352,13 +3366,15 @@ function recompute(){
   const E={ str:A.str+attrItem.str, dex:A.dex+attrItem.dex, int:A.int+attrItem.int, vit:A.vit+attrItem.vit, will:A.will+attrItem.will };
   if(special.igniteBoost) igniteMult=2;
   if(special.dashCdr) dashCdr=0.6;
-  if(G.pet){ const pl=G.pet.level;   // active-pet ability auras (each scales with pet level)
-    if(hasAbil(G.pet,'heal'))   talLifeRegen += petAbilVal('heal',pl);   // pet heal aura counts as an unlocked ability (skill-like), not passive gear regen
-    if(hasAbil(G.pet,'mana'))   talManaRegen += petAbilVal('mana',pl);
-    if(hasAbil(G.pet,'savage')) m.dmgPct    += petAbilVal('savage',pl);
-    if(hasAbil(G.pet,'guard'))  m.lifePct   += petAbilVal('guard',pl);
+  if(G.pet){ const pl=G.pet.level;   // active-pet ability auras — ONLY unlocked abilities apply, each scales with pet level
+    for(const a of activeAbilities(G.pet)){ const d=AB_DEF[a.type]; if(!d) continue; const v=petAbilVal(a.type,pl);
+      if(d.regen==='life') talLifeRegen+=v;
+      else if(d.regen==='mana') talManaRegen+=v;
+      else if(d.attr) addMod(d.attr, v);
+      else if(d.mod) addMod(d.mod, d.neg? -v : v);
+    }
   }
-  G.petMagnet = G.pet ? (7 + (hasAbil(G.pet,'magnet')?petAbilVal('magnet',G.pet.level):0)) : 0;
+  G.petMagnet = G.pet ? (7 + petMagnetVal(G.pet)) : 0;
   // (fame no longer grants any combat power — it's a pure skill rating)
   const S={};
   S.attrBase=A; S.attrItem=attrItem; S.attrEff=E;   // exposed so the Character screen can show base (+gear)
@@ -5132,35 +5148,35 @@ function levelUpFx(lvl, grant){
   shakeCam(.6); G.hitstop=Math.max(G.hitstop||0,.12);
 }
 // ============================================================ PETS (RotMG-style yard, families, abilities, fusion)
-const PET_YARD_CAP=16;   // absolute hard cap on yard size
-// ---- pet yard TIERS: the yard opens at the lowest tier (Common only, 2 slots); spend fame to rank the yard up (own rarer pets) and to buy extra slots ----
-const PET_TIER_BASE_SLOTS=2;                                   // Common yard = 2 slots
-function petYardTier(){ return clamp(META.petTier||0,0,4); }   // index into PET_RARITY — the highest pet rarity this yard may hold
-function petTierMaxSlots(){ return Math.min(PET_YARD_CAP, PET_TIER_BASE_SLOTS + petYardTier()*2); }   // each tier raises the slot ceiling by 2 (2→4→6→8→10)
+const PET_YARD_CAP=50;   // absolute hard cap on yard size (enough to grind Commons all the way up to a Mythos)
+// ---- pet yard TIERS: spend fame to rank the yard up (own rarer pets) and to buy extra slots ----
+const PET_TIER_BASE_SLOTS=10;                                  // yard opens at 10 slots
+function petYardTier(){ return clamp(META.petTier||0,0,5); }   // index into PET_RARITY — the highest pet rarity this yard may hold (up to Mythos)
+function petTierMaxSlots(){ return Math.min(PET_YARD_CAP, PET_TIER_BASE_SLOTS + petYardTier()*8); }   // each tier raises the ceiling by 8 (10→18→26→34→42→50)
 function petYardCap(){ return Math.min(petTierMaxSlots(), PET_TIER_BASE_SLOTS + (META.petSlots||0)); }
 function petTierUpCost(){ return 2500*(petYardTier()+1); }                 // fame to unlock the next rarity tier
 function petSlotCost(){ return 1200 + (META.petSlots||0)*600; }           // fame per extra pet slot
 function petSellValue(p){ return Math.round(60*(p.rarity+1) + p.level*8); }
 function buyPetTier(){
-  if(petYardTier()>=4){ log('🐾 Pet yard is at its highest tier (Divine).'); return; }
+  if(petYardTier()>=5){ log('🐾 Pet yard is at its highest tier (Mythos).'); return; }
   const c=petTierUpCost(); if(META.fame<c){ log('Not enough fame to rank up the yard — need '+c.toLocaleString()+'.'); sfx.deny&&sfx.deny(); return; }
   META.fame-=c; META.petTier=petYardTier()+1; saveMeta();
   log('🐾 Pet yard ranked up → can now hold '+PET_RARITY[petYardTier()].nm+' pets (−'+c.toLocaleString()+' fame).'); sfx.evolve&&sfx.evolve();
-  if(!$('petPanel').classList.contains('hidden'))renderPet(); updateHUD();
+  refreshPetUI(); updateHUD();
 }
 function buyPetSlot(){
   if(petYardCap()>=petTierMaxSlots()){ log('🐾 This tier is maxed at '+petTierMaxSlots()+' slots — rank the yard up for more.'); return; }
   const c=petSlotCost(); if(META.fame<c){ log('Not enough fame for a pet slot — need '+c.toLocaleString()+'.'); sfx.deny&&sfx.deny(); return; }
   META.fame-=c; META.petSlots=(META.petSlots||0)+1; saveMeta();
   log('🐾 +1 pet slot (−'+c.toLocaleString()+' fame) · yard now '+petYardCap()+' slots.'); sfx.gold&&sfx.gold();
-  if(!$('petPanel').classList.contains('hidden'))renderPet(); updateHUD();
+  refreshPetUI(); updateHUD();
 }
 function sellPet(p){
   if(!p) return;
   if(p===G.pet){ log('Set another pet active before selling your active companion.'); return; }
   const v=petSellValue(p); G.pets=G.pets.filter(x=>x!==p); G.gold+=v; flashGold();
   log('🐾 Sold '+petName(p)+' for +'+v+'g.'); sfx.gold&&sfx.gold();
-  renderPet(); if(!$('vendorPanel').classList.contains('hidden'))renderVendor();
+  refreshPetUI(); if(!$('vendorPanel').classList.contains('hidden'))renderVendor();
 }
 const PET_FAMILIES={
   sprite:{nm:'Sprite', ic:'🧚', col:0x7fd0ff, shape:'ico',   nm3:{cu:['Sprite Star','Blue Thing','Mini Tornado'],rl:['Guiding Spirit','Angelic Blossom','Fizzy Drink','Pink Heart'],dv:['Auroral Sprite God','Air Spirit','Water Spirit','Seraphim']}},
@@ -5174,45 +5190,96 @@ const FAM_KEYS=Object.keys(PET_FAMILIES);
 // rarity gates ability-slot count AND the level cap — fuse up to push past a cap
 const PET_RARITY=[
   {nm:'Common',    css:'common', slots:1, maxlvl:60 },
-  {nm:'Uncommon',  css:'rare',   slots:2, maxlvl:110},
-  {nm:'Rare',      css:'epic',   slots:3, maxlvl:170},
-  {nm:'Legendary', css:'legend', slots:4, maxlvl:220},
-  {nm:'Divine',    css:'unique', slots:5, maxlvl:255},
+  {nm:'Uncommon',  css:'rare',   slots:1, maxlvl:110},
+  {nm:'Rare',      css:'epic',   slots:2, maxlvl:170},
+  {nm:'Legendary', css:'legend', slots:2, maxlvl:220},
+  {nm:'Divine',    css:'unique', slots:3, maxlvl:255},
+  {nm:'Mythos',    css:'mythos', slots:3, maxlvl:350},
 ];
-// all of a pet's abilities scale together with its level (capped by rarity)
-const PET_ABILITIES={
-  attack:{nm:'Attack', ic:'⚔', ds:l=>`fires bolts (~${Math.round(petAbilVal('attack',l))} dmg)`},
-  heal:  {nm:'Heal',   ic:'❤', ds:l=>`+${petAbilVal('heal',l).toFixed(1)} life regen/s`},
-  mana:  {nm:'Magic',  ic:'🔵', ds:l=>`+${petAbilVal('mana',l).toFixed(1)} mana regen/s`},
-  magnet:{nm:'Magnet', ic:'🧲', ds:l=>`+${petAbilVal('magnet',l).toFixed(1)} pickup range`},
-  savage:{nm:'Savage', ic:'🔥', ds:l=>`+${Math.round(petAbilVal('savage',l))}% your damage`},
-  guard: {nm:'Guard',  ic:'🛡', ds:l=>`+${Math.round(petAbilVal('guard',l))}% your max life`},
-};
-const ABIL_KEYS=Object.keys(PET_ABILITIES);
-const ABIL_COLOR={attack:'#ff6b6b',heal:'#6dff8c',mana:'#4aa8ff',magnet:'#ffce4d',savage:'#ff9a3d',guard:'#56e0ff'};
-function petAbilVal(type,l){ switch(type){
-  case 'attack': return 3 + l*1.0;
-  case 'heal':   return l*0.06;
-  case 'mana':   return l*0.08;
-  case 'magnet': return 3 + l*0.05;
-  case 'savage': return l*0.10;   // → +25.5% at lv255
-  case 'guard':  return l*0.10;
-  default: return 0; } }
+const PET_SLOT_UNLOCK=[0,2,4];   // ability slot i unlocks at this rarity index: slot0 Common, slot1 Rare, slot2 Divine
+// ---- 50 COMPANION ABILITIES ---- every pet is born with 3 (drawn from this pool); they unlock one at a time as rarity climbs
+const PET_AB_DEFS=[
+  {id:'attack',    nm:'Attack',       ic:'⚔', col:'#ff6b6b', kind:'attack'},
+  {id:'heal',      nm:'Heal',         ic:'❤', col:'#6dff8c', regen:'life', s:0.06, u:'life regen/s', d:1},
+  {id:'mana',      nm:'Magic',        ic:'🔵', col:'#4aa8ff', regen:'mana', s:0.08, u:'mana regen/s', d:1},
+  {id:'magnet',    nm:'Magnet',       ic:'🧲', col:'#ffce4d', kind:'magnet', base:3, s:0.05, u:'pickup range', d:1},
+  {id:'savage',    nm:'Savage',       ic:'🔥', col:'#ff9a3d', mod:'dmgPct', s:0.10, pct:true, u:'your damage'},
+  {id:'guard',     nm:'Guard',        ic:'🛡', col:'#56e0ff', mod:'lifePct', s:0.10, pct:true, u:'max life'},
+  {id:'swift',     nm:'Swiftness',    ic:'💨', col:'#8effd9', mod:'asPct', s:0.08, pct:true, u:'attack speed'},
+  {id:'keen',      nm:'Keen Eye',     ic:'🎯', col:'#ffe14d', mod:'crit', s:0.04, pct:true, u:'crit chance'},
+  {id:'brutal',    nm:'Brutality',    ic:'💢', col:'#ff5470', mod:'critMultPct', s:0.12, pct:true, u:'crit damage'},
+  {id:'fleet',     nm:'Fleetfoot',    ic:'👟', col:'#8effd9', mod:'movePct', s:0.05, pct:true, u:'move speed'},
+  {id:'ironhide',  nm:'Ironhide',     ic:'🪨', col:'#b0a08f', mod:'armor', s:0.6, u:'armour'},
+  {id:'volley',    nm:'Volley',       ic:'🏹', col:'#ffb37a', mod:'proj', step:110, u:'projectiles'},
+  {id:'pierce',    nm:'Piercing',     ic:'📌', col:'#bfe9ff', mod:'pierce', step:110, u:'pierce'},
+  {id:'blast',     nm:'Blastwave',    ic:'💥', col:'#ff9a4d', mod:'area', s:0.10, pct:true, u:'area'},
+  {id:'focus',     nm:'Focus',        ic:'✨', col:'#c89bff', mod:'skillDmgPct', s:0.10, pct:true, u:'skill damage'},
+  {id:'leech',     nm:'Lifeleech',    ic:'🩸', col:'#ff5470', mod:'lifesteal', s:0.03, pct:true, u:'lifesteal'},
+  {id:'vampire',   nm:'Vampiric',     ic:'🦇', col:'#c0303a', mod:'lifeOnHit', s:0.06, u:'life on hit'},
+  {id:'thrift',    nm:'Efficiency',   ic:'🔷', col:'#4aa8ff', mod:'manaCostPct', s:0.05, neg:true, pct:true, u:'mana cost'},
+  {id:'haste',     nm:'Haste',        ic:'⏱', col:'#8effd9', mod:'cdrPct', s:0.06, red:true, pct:true, u:'cooldowns'},
+  {id:'exec',      nm:'Executioner',  ic:'⚰', col:'#ff5470', mod:'execPct', s:0.08, pct:true, u:'execute damage'},
+  {id:'elem',      nm:'Elementalist', ic:'🌈', col:'#b06bff', mod:'elemDmgPct', s:0.10, pct:true, u:'elemental damage'},
+  {id:'desperado', nm:'Desperado',    ic:'🎲', col:'#ff9a3d', mod:'lowHpDmgPct', s:0.10, pct:true, u:'damage while low'},
+  {id:'reaper',    nm:'Reaper',       ic:'💀', col:'#8aa0c0', mod:'lifeOnKill', s:0.10, u:'life on kill'},
+  {id:'siphon',    nm:'Siphon',       ic:'🌀', col:'#4aa8ff', mod:'manaOnKill', s:0.06, u:'mana on kill'},
+  {id:'thorns',    nm:'Thornmail',    ic:'🌵', col:'#6dff8c', mod:'reflectPct', s:0.06, pct:true, u:'damage reflected'},
+  {id:'zeal',      nm:'Zealotry',     ic:'😤', col:'#ff7a3d', mod:'fervorRatePct', s:0.10, pct:true, u:'fervor gain'},
+  {id:'dynamo',    nm:'Dynamo',       ic:'⚡', col:'#ffe14d', mod:'chargeRatePct', s:0.10, pct:true, u:'charge gain'},
+  {id:'scholar',   nm:'Scholar',      ic:'📘', col:'#9d7bff', mod:'xpPct', s:0.12, pct:true, u:'XP gained'},
+  {id:'fortune',   nm:'Fortune',      ic:'💰', col:'#ffce4d', mod:'goldPct', s:0.14, pct:true, u:'gold found'},
+  {id:'plague',    nm:'Plaguebearer', ic:'☠', col:'#7fdf7f', mod:'ailDmgPct', s:0.12, pct:true, u:'ailment damage'},
+  {id:'warbeast',  nm:'Warbeast',     ic:'🐾', col:'#ff9a3d', mod:'petDmgPct', s:0.15, pct:true, u:'pet damage'},
+  {id:'phantom',   nm:'Phantom Step', ic:'👻', col:'#c89bff', mod:'dashCdrPct', s:0.10, red:true, pct:true, u:'dash cooldown'},
+  {id:'mighty',    nm:'Mighty',       ic:'💪', col:'#ff8a5c', attr:'str', s:0.10, u:'Strength'},
+  {id:'nimble',    nm:'Nimble',       ic:'🤸', col:'#8effd9', attr:'dex', s:0.10, u:'Dexterity'},
+  {id:'brilliant', nm:'Brilliant',    ic:'🧠', col:'#4aa8ff', attr:'int', s:0.10, u:'Intelligence'},
+  {id:'hearty',    nm:'Hearty',       ic:'💗', col:'#ff5c78', attr:'vit', s:0.10, u:'Vitality'},
+  {id:'willful',   nm:'Willful',      ic:'🔆', col:'#ffe14d', attr:'will', s:0.10, u:'Willpower'},
+  {id:'bulwark',   nm:'Bulwark',      ic:'🧱', col:'#b0a08f', mod:'lifeFlat', s:0.9, u:'life'},
+  {id:'wellspring',nm:'Wellspring',   ic:'⛲', col:'#4aa8ff', mod:'manaFlat', s:0.7, u:'mana'},
+  {id:'vigor',     nm:'Vigor',        ic:'🌿', col:'#6dff8c', mod:'lifePct', s:0.06, pct:true, u:'max life'},
+  {id:'sorcery',   nm:'Sorcery',      ic:'🔯', col:'#9d7bff', mod:'manaPct', s:0.08, pct:true, u:'max mana'},
+  {id:'juggernaut',nm:'Juggernaut',   ic:'🐗', col:'#ff9a3d', mod:'dmgPct', s:0.07, pct:true, u:'your damage'},
+  {id:'sharpshooter',nm:'Sharpshooter',ic:'🔭', col:'#ffe14d', mod:'crit', s:0.03, pct:true, u:'crit chance'},
+  {id:'overwhelm', nm:'Overwhelm',    ic:'🌊', col:'#4aa8ff', mod:'critMultPct', s:0.10, pct:true, u:'crit damage'},
+  {id:'quicksilver',nm:'Quicksilver', ic:'🥈', col:'#bfe9ff', mod:'asPct', s:0.06, pct:true, u:'attack speed'},
+  {id:'marathon',  nm:'Marathon',     ic:'🏃', col:'#8effd9', mod:'movePct', s:0.04, pct:true, u:'move speed'},
+  {id:'bastion',   nm:'Bastion',      ic:'🏰', col:'#b0a08f', mod:'armor', s:0.5, u:'armour'},
+  {id:'wrath',     nm:'Wrath',        ic:'😡', col:'#ff5470', mod:'dmgPct', s:0.08, pct:true, u:'your damage'},
+  {id:'sniper',    nm:'Sniper',       ic:'🔫', col:'#ffb37a', mod:'proj', step:150, u:'projectiles'},
+  {id:'greed',     nm:'Greed',        ic:'🪙', col:'#ffce4d', mod:'goldPct', s:0.10, pct:true, u:'gold found'},
+];
+const AB_DEF={}; PET_AB_DEFS.forEach(d=>{ AB_DEF[d.id]=d; });
+const PET_ABILITIES={}; PET_AB_DEFS.forEach(d=>{ PET_ABILITIES[d.id]={nm:d.nm, ic:d.ic, ds:l=>abilDesc(d.id,l)}; });
+const ABIL_KEYS=PET_AB_DEFS.map(d=>d.id);
+const ABIL_COLOR={}; PET_AB_DEFS.forEach(d=>{ ABIL_COLOR[d.id]=d.col; });
+function petAbilVal(type,l){ const d=AB_DEF[type]; if(!d) return 0;
+  if(d.kind==='attack') return 3 + l*1.0;
+  if(d.step) return Math.floor(l/d.step);
+  return (d.base||0) + l*(d.s||0); }
+function abilDesc(id,l){ const d=AB_DEF[id]; if(!d) return '';
+  if(d.kind==='attack') return 'fires bolts (~'+Math.round(petAbilVal(id,l))+' dmg)';
+  const v=petAbilVal(id,l), dec=(d.d==null?0:d.d), nv=dec?v.toFixed(dec):Math.round(v), sign=(d.neg||d.red)?'−':'+';
+  return sign+nv+(d.pct?'%':'')+' '+d.u; }
+function petMagnetVal(p){ let v=0; for(const a of activeAbilities(p)){ const d=AB_DEF[a.type]; if(d&&d.kind==='magnet') v+=petAbilVal(a.type,p.level); } return v; }
 function petLevelCap(p){ return PET_RARITY[p.rarity].maxlvl; }
 function petXpNeed(lv){ return 20+lv*6; }                       // steep-ish; high levels come mostly from fusing
-function hasAbil(p,t){ return p && p.abilities.some(a=>a.type===t); }
-// fill a pet's ability slots up to its rarity's count, KEEPING every ability it already has
-// (so fusing never strips the main pet's skills). `prefer` (e.g. the fodder's types) fills first.
-function ensurePetAbilities(p, prefer){ if(!p||!p.abilities) return;
-  const want=PET_RARITY[clamp(p.rarity||0,0,4)].slots, has=new Set(p.abilities.map(a=>a.type));
-  for(const ty of (prefer||[]).concat(ABIL_KEYS)){ if(p.abilities.length>=want) break; if(!has.has(ty)){ has.add(ty); p.abilities.push({type:ty}); } } }
+function petActiveCount(p){ return PET_RARITY[clamp(p?(p.rarity||0):0,0,PET_RARITY.length-1)].slots; }   // how many of the pet's 3 abilities are unlocked
+function activeAbilities(p){ return (p&&p.abilities)?p.abilities.slice(0, petActiveCount(p)):[]; }
+function hasAbil(p,t){ return p && activeAbilities(p).some(a=>a.type===t); }   // only UNLOCKED abilities affect gameplay
+// every pet is born with EXACTLY 3 abilities (from the 50-pool); repair legacy pets to 3
+function ensurePetAbilities(p){ if(!p||!p.abilities) return;
+  const has=new Set(p.abilities.map(a=>a.type));
+  while(p.abilities.length<3){ const pool=ABIL_KEYS.filter(t=>!has.has(t)); if(!pool.length) break; const t=pick(pool); has.add(t); p.abilities.push({type:t}); }
+  if(p.abilities.length>3) p.abilities.length=3; }
 function feedXp(it){ return Math.round((it.value||0)*0.5 + (RARITY.indexOf(it.rarity)+1)*10); }
 function makePet(opts){ opts=opts||{};
   const family=opts.family||pick(FAM_KEYS);
   let rarity=opts.rarity!=null?clamp(opts.rarity,0,4):(Math.random()<0.6?0:Math.random()<0.7?1:Math.random()<0.7?2:3);
-  const slots=PET_RARITY[rarity].slots, abilities=[], chosen=new Set();
-  const seed=opts.firstAbil||pick(['attack','heal','attack']); abilities.push({type:seed}); chosen.add(seed);
-  while(abilities.length<slots){ const t=pick(ABIL_KEYS); if(!chosen.has(t)){ chosen.add(t); abilities.push({type:t}); } }
+  const abilities=[], chosen=new Set();   // born with EXACTLY 3 abilities from the 50-pool; unlocked one at a time as rarity climbs
+  const seed=opts.firstAbil||pick(['attack','attack','heal','savage','guard']); abilities.push({type:seed}); chosen.add(seed);
+  while(abilities.length<3){ const t=pick(ABIL_KEYS); if(!chosen.has(t)){ chosen.add(t); abilities.push({type:t}); } }
   return { family, rarity, nameIdx:(opts.nameIdx!=null?opts.nameIdx:randi(0,9999)), level:clamp(opts.level||1,1,PET_RARITY[rarity].maxlvl), xp:0, abilities, hp:undefined, maxhp:undefined, down:0, atkCd:0 };
 }
 function petTierBand(r){ return r<=1?'cu':(r<=3?'rl':'dv'); }
@@ -5230,7 +5297,7 @@ function setActivePet(p){
   if(G.petMesh){ scene.remove(G.petMesh); G.petMesh=null; }
   G.pet=p||null; if(G.pet) ensurePetAbilities(G.pet);
   if(p){ if(p.maxhp===undefined){ p.maxhp=petMaxHp(p); p.hp=p.maxhp; p.down=0; } G.petMesh=buildPetMesh(p); scene.add(G.petMesh); }
-  recompute(); if(!$('petPanel').classList.contains('hidden'))renderPet();
+  recompute(); refreshPetUI();
 }
 function hatchPet(egg){
   if(!G.pets) G.pets=[];
@@ -5243,7 +5310,7 @@ function hatchPet(egg){
   G.pets.push(p);
   if(!G.pet){ setActivePet(p); banner('🐾 COMPANION HATCHED', petName(p)+' joins you — press P'); log('🐾 '+petName(p)+' hatched! Press P to manage your pet yard.'); }
   else { banner('🥚 PET HATCHED', petName(p)+' added to your yard'); log('🥚 '+petName(p)+' added to the yard (P) — set it active or fuse it.'); }
-  if(!$('petPanel').classList.contains('hidden'))renderPet();
+  refreshPetUI();
   return true;
 }
 function petLevelUp(p){ const cap=petLevelCap(p);
@@ -5253,24 +5320,25 @@ function petLevelUp(p){ const cap=petLevelCap(p);
   if(p===G.pet) recompute();
 }
 function feedPet(item){ if(!G.pet)return;
-  if(item._ambrosia){ G.inv=G.inv.filter(x=>x!==item); G.pet.rarity=4; ensurePetAbilities(G.pet); G.pet.level=petLevelCap(G.pet); G.pet.xp=0; recompute(); renderPet(); refreshItemPanels(); log('🍯 Ambrosia — your companion is instantly MAXED to Lv '+G.pet.level+'. (dev)'); return; }
+  if(item._ambrosia){ G.inv=G.inv.filter(x=>x!==item); G.pet.rarity=PET_RARITY.length-1; ensurePetAbilities(G.pet); if(G.petMesh){ scene.remove(G.petMesh); G.petMesh=buildPetMesh(G.pet); scene.add(G.petMesh); } G.pet.level=petLevelCap(G.pet); G.pet.xp=0; recompute(); refreshPetUI(); refreshItemPanels(); log('🍯 Ambrosia — your companion is instantly MAXED to '+PET_RARITY[G.pet.rarity].nm+' Lv '+G.pet.level+'. (dev)'); return; }
   if(item.locked){ log('🔒 '+item.name+' is locked — unlock it first to feed it.'); return; } if(G.pet.level>=petLevelCap(G.pet)){ log('Active pet is at its rarity cap ('+petLevelCap(G.pet)+') — fuse to raise its rarity & cap.'); return; }
-  G.inv=G.inv.filter(x=>x!==item); G.pet.xp+=feedXp(item); petLevelUp(G.pet); renderPet(); refreshItemPanels(); }
+  G.inv=G.inv.filter(x=>x!==item); G.pet.xp+=feedXp(item); petLevelUp(G.pet); refreshPetUI(); refreshItemPanels(); }
 function fusePet(fodder){ // fuse a yard pet INTO the active pet
   if(!G.pet||fodder===G.pet){ log('Pick a different pet from the yard to fuse into your active pet.'); return; }
   G.pets=G.pets.filter(x=>x!==fodder);
   const t=G.pet, xpGain=fodder.level*120 + (fodder.rarity+1)*400;
   t.xp+=xpGain; petLevelUp(t);
   let msg='+'+xpGain.toLocaleString()+' pet XP';
-  // chance to raise rarity (better fodder = better odds) → bigger cap + maybe a new ability slot — but never above the yard's unlocked tier
-  if(t.rarity<Math.min(4,petYardTier())){ const odds=clamp(0.25 + fodder.rarity*0.15 + (fodder.rarity>=t.rarity?0.2:0), 0, 0.95);
-    if(Math.random()<odds){ t.rarity++;
-      ensurePetAbilities(t, fodder.abilities.map(a=>a.type));   // keep the MAIN pet's skills; new slots prefer the fodder's abilities
-      msg+=' · ★ RARITY UP → '+PET_RARITY[t.rarity].nm; sfx.evolve(); unlockFeat('evolve');
-      if(G.petMesh) floatText(G.petMesh.position.x,G.petMesh.position.z,'RARITY UP!','big',2.2);
-    } }
+  // rank up: fusing a pet of the SAME (or higher) rarity raises your active pet one tier — up to Mythos
+  // (2 Commons → Uncommon, 2 Uncommons → Rare, … 2 Divines → Mythos). Lower-rarity fodder just gives XP.
+  if(t.rarity<PET_RARITY.length-1 && fodder.rarity>=t.rarity){ t.rarity++;
+    ensurePetAbilities(t);   // still 3 fixed abilities — a higher rarity just UNLOCKS the next one
+    msg+=' · ★ RANK UP → '+PET_RARITY[t.rarity].nm; sfx.evolve&&sfx.evolve(); unlockFeat('evolve');
+    if(G.petMesh){ scene.remove(G.petMesh); G.petMesh=buildPetMesh(t); scene.add(G.petMesh); }   // rarity changes appearance
+    if(G.petMesh) floatText(G.petMesh.position.x,G.petMesh.position.z,'RANK UP!','big',2.2);
+  }
   recompute(); banner('🔗 FUSED', msg); log('🔗 Fused '+petName(fodder)+' into '+petName(t)+' — '+msg+'.');
-  renderPet(); refreshItemPanels();
+  refreshPetUI(); refreshItemPanels();
 }
 function applyStatPot(it){ G.attr[it.attr]=Math.min(ATTR_CAP,(G.attr[it.attr]||0)+2); recompute(); G.hp=G.maxhp; G.mana=G.maxmana;
   banner('✦ +2 '+it.attrNm.toUpperCase()+' ✦','PERMANENT — drunk forever');
@@ -5286,7 +5354,7 @@ function updatePet(dt){
     if(G.petErrand.t<=0){ const er=G.petErrand; G.petErrand=null; G.gold+=er.gold; flashGold();
       banner('🐾 SELL-RUN DONE','+'+er.gold+' gold'); log(`🐾 Companion returned — sold ${er.items} item(s) for +${er.gold}g.`); unlockFeat('sellrun');
       if(G.petMesh){ G.petMesh.visible=true; G.petMesh.position.set(G.player.position.x,1.2,G.player.position.z+1.5); }
-      if(!$('vendorPanel').classList.contains('hidden'))renderVendor(); if(!$('petPanel').classList.contains('hidden'))renderPet(); }
+      if(!$('vendorPanel').classList.contains('hidden'))renderVendor(); refreshPetUI(); }
     return; }
   if(!G.petMesh)return; G.petMesh.visible=true; const p=G.player.position, pm=G.petMesh;
   if(pet.maxhp===undefined){ pet.maxhp=petMaxHp(pet); pet.hp=pet.maxhp; pet.down=0; }
@@ -5305,9 +5373,9 @@ function updatePet(dt){
     if(pet.atkCd<=0){ let best=null,bd=16; for(const e of G.enemies){ const dd=Math.hypot(e.mesh.position.x-pm.position.x,e.mesh.position.z-pm.position.z); if(dd<bd){bd=dd;best=e;} }
       if(best){ pet.atkCd=Math.max(0.3,0.9-pet.level*0.0024); const dx=best.mesh.position.x-pm.position.x, dz=best.mesh.position.z-pm.position.z, l=Math.hypot(dx,dz)||1;
         const m=new THREE.Mesh(new THREE.SphereGeometry(.22,6,6),M.petBolt); m.position.set(pm.position.x,1.2,pm.position.z); scene.add(m);
-        G.projectiles.push({mesh:m,vx:dx/l*40,vz:dz/l*40,dmg:petAbilVal('attack',pet.level),life:1.0,crit:false,pierce:0,hit:null,element:'phys',src:'pet'}); } } }
+        G.projectiles.push({mesh:m,vx:dx/l*40,vz:dz/l*40,dmg:petAbilVal('attack',pet.level)*(1+(G.S.petDmg||0)),life:1.0,crit:false,pierce:0,hit:null,element:'phys',src:'pet'}); } } }
 }
-function refreshItemPanels(){ if(!$('invPanel').classList.contains('hidden'))renderInv(); if(!$('stashPanel').classList.contains('hidden'))renderStash(); if(!$('petPanel').classList.contains('hidden'))renderPet(); }
+function refreshItemPanels(){ if(!$('invPanel').classList.contains('hidden'))renderInv(); if(!$('stashPanel').classList.contains('hidden'))renderStash(); if(!$('petPanel').classList.contains('hidden'))renderPet(); if($('petYardPanel')&&!$('petYardPanel').classList.contains('hidden'))renderPetYard(); }
 function feedAllJunk(){
   if(!G.pet){ log('No active pet to feed.'); return; }
   if(G.pet.level>=petLevelCap(G.pet)){ log('Pet at its cap — fuse a yard pet to raise it.'); return; }
@@ -5317,21 +5385,20 @@ function feedAllJunk(){
   const set=new Set(junk); G.inv=G.inv.filter(it=>!set.has(it)); if(G.selGem&&set.has(G.selGem))G.selGem=null;
   G.pet.xp+=xp; petLevelUp(G.pet);
   banner('🍖 FED','+'+xp.toLocaleString()+' pet XP'); log('🍖 Fed '+junk.length+' junk item(s) → +'+xp.toLocaleString()+' pet XP.'); sfx.gold&&sfx.gold();
-  renderPet(); refreshItemPanels();
+  refreshPetUI(); refreshItemPanels();
 }
 function renderPetYardTools(){
   const yt=$('petYardTools'); if(!yt) return;
   const tier=petYardTier(), cap=petYardCap(), tmax=petTierMaxSlots();
-  const tierUp = tier<4 ? `<span class="buyRow${META.fame>=petTierUpCost()?'':' cant'}" id="petTierBtn" title="Rank the yard up to hold ${PET_RARITY[tier+1].nm} pets">▲ Tier: ${PET_RARITY[tier+1].nm} · ${petTierUpCost().toLocaleString()} ✦</span>` : `<span class="buyRow maxed">✦ Divine tier</span>`;
-  const slotBuy = cap<tmax ? `<span class="buyRow${META.fame>=petSlotCost()?'':' cant'}" id="petSlotBtn" title="Buy one more pet slot">＋ Slot · ${petSlotCost().toLocaleString()} ✦</span>` : (tier<4?`<span class="buyRow maxed">＋ Slot · rank up</span>`:`<span class="buyRow maxed">＋ Slot · MAX</span>`);
+  const tierUp = tier<5 ? `<span class="buyRow${META.fame>=petTierUpCost()?'':' cant'}" id="petTierBtn" title="Rank the yard up to hold ${PET_RARITY[tier+1].nm} pets">▲ Tier: ${PET_RARITY[tier+1].nm} · ${petTierUpCost().toLocaleString()} ✦</span>` : `<span class="buyRow maxed">✦ Mythos tier</span>`;
+  const slotBuy = cap<tmax ? `<span class="buyRow${META.fame>=petSlotCost()?'':' cant'}" id="petSlotBtn" title="Buy one more pet slot">＋ Slot · ${petSlotCost().toLocaleString()} ✦</span>` : (tier<5?`<span class="buyRow maxed">＋ Slot · rank up</span>`:`<span class="buyRow maxed">＋ Slot · MAX</span>`);
   yt.innerHTML=`<span class="yardLbl">${PET_RARITY[tier].nm} yard · ${(G.pets||[]).length}/${cap} slots</span>${tierUp}${slotBuy}`;
   const tb=$('petTierBtn'); if(tb) tb.onclick=buyPetTier;
   const sb=$('petSlotBtn'); if(sb) sb.onclick=buyPetSlot;
 }
 function renderPet(){
   const body=$('petBody'); if(!G.pets) G.pets=[];
-  if(G.pet) ensurePetAbilities(G.pet); G.pets.forEach(p=>ensurePetAbilities(p));   // repair pets that predate the ability-slot fix
-  renderPetYardTools();
+  if(G.pet) ensurePetAbilities(G.pet); G.pets.forEach(p=>ensurePetAbilities(p));   // repair legacy pets to exactly 3 abilities
   const ft=$('petFeedTools'); if(ft) ft.innerHTML='';
   if(!G.pet && !G.pets.length){
     body.innerHTML=`<div class="petHero petHeroEmpty" style="--rc:#ffd479">
@@ -5356,19 +5423,21 @@ function renderPet(){
       </div></div>`;
     const ft0=$('petFeedTools'); if(ft0) ft0.innerHTML='';
     const fe=$('petFeed'); fe.className=''; fe.innerHTML='<div class="petEmpty"><span class="peIc">🍖</span><span class="peTtl">Nothing to feed yet</span><span class="peSub">Hatch a pet first, then drop loot here — every item you feed becomes pet XP.</span></div>';
-    const ye=$('petFuse'); ye.className=''; ye.innerHTML='<div class="petEmpty"><span class="peIc">🥚</span><span class="peTtl">Your yard is empty</span><span class="peSub">Eggs you find or buy hatch into pet cards here — set one active and fuse the rest to rank it up.</span></div>';
+    const yb=$('openYardBtn'); if(yb){ yb.textContent='🏡 Open Pet Yard · 0/'+petYardCap()+' pets'; yb.onclick=openPetYard; }
     return;
   }
   // ---- active-pet hero card ----
   if(G.pet){ const pet=G.pet, rr=PET_RARITY[pet.rarity], cap=petLevelCap(pet), atCap=pet.level>=cap;
     const xpPct=atCap?100:Math.round(pet.xp/petXpNeed(pet.level)*100);
     const mhp=petMaxHp(pet), hp=Math.round(pet.hp!=null?pet.hp:mhp), hpPct=clamp(hp/mhp*100,0,100);
-    let slots=''; for(let i=0;i<rr.slots;i++){ const a=pet.abilities[i];
-      if(a){ const ab=PET_ABILITIES[a.type]; slots+=`<div class="petAbSlot fill" style="--ac:${ABIL_COLOR[a.type]||'#ffae3d'}"><span class="abic">${ab.ic}</span><div class="abtx"><b>${ab.nm}</b><span>${ab.ds(pet.level)}</span></div></div>`; }
-      else slots+=`<div class="petAbSlot lk"><span class="abic">🔒</span><div class="abtx"><b>Locked slot</b><span>unlocks at higher rarity</span></div></div>`; }
+    ensurePetAbilities(pet); const actN=petActiveCount(pet);
+    let slots=''; for(let i=0;i<3;i++){ const a=pet.abilities[i], ab=a?PET_ABILITIES[a.type]:null, unlocked=i<actN;
+      if(ab&&unlocked){ slots+=`<div class="petAbSlot fill" style="--ac:${ABIL_COLOR[a.type]||'#ffae3d'}"><span class="abic">${ab.ic}</span><div class="abtx"><b>${ab.nm}</b><span>${ab.ds(pet.level)}</span></div></div>`; }
+      else if(ab){ const ur=PET_RARITY[PET_SLOT_UNLOCK[i]]; slots+=`<div class="petAbSlot lk" style="--ac:${ABIL_COLOR[a.type]||'#888'}"><span class="abic">${ab.ic}</span><div class="abtx"><b>${ab.nm}</b><span>🔒 unlocks at ${ur.nm}</span></div></div>`; }
+      else slots+=`<div class="petAbSlot lk"><span class="abic">🔒</span><div class="abtx"><b>Locked</b><span>—</span></div></div>`; }
     const capHint = atCap
-      ? (pet.rarity<4 ? `<span style="color:var(--gold)">★ Lv ${cap} cap reached — fuse a yard pet to rank up to <b>${PET_RARITY[pet.rarity+1].nm}</b> (higher cap${PET_RARITY[pet.rarity+1].slots>rr.slots?' + a new ability slot':''}).</span>` : `<span style="color:var(--gold)">✦ DIVINE · Lv 255 — fully maxed!</span>`)
-      : `Feed loot to level up; fuse yard pets to rank up rarity (cap ${cap}).`;
+      ? (pet.rarity<PET_RARITY.length-1 ? `<span style="color:var(--gold)">★ Lv ${cap} cap reached — fuse a <b>same-rarity</b> pet in the Pet Yard to rank up to <b>${PET_RARITY[pet.rarity+1].nm}</b>${PET_RARITY[pet.rarity+1].slots>rr.slots?' (unlocks its next ability)':''}.</span>` : `<span style="color:var(--gold)">✦ MYTHOS · Lv ${cap} — the pinnacle!</span>`)
+      : `Feed loot to level up; fuse a same-rarity pet in the Pet Yard to rank up (cap ${cap}).`;
     body.innerHTML=`<div class="petHero r-${rr.css}">
       <div class="petPortrait"><span class="pIc">${PET_FAMILIES[pet.family].ic}</span><span class="pFam">${PET_FAMILIES[pet.family].nm}</span><span class="pLvB">LV ${pet.level}</span></div>
       <div class="petHinfo">
@@ -5386,7 +5455,7 @@ function renderPet(){
     if(G.petErrand) sr=`<div class="petSell"><span class="pst" style="color:var(--gold)">🏪 Away selling ${G.petErrand.items} item(s) → +${G.petErrand.gold}g · back in ${Math.ceil(G.petErrand.t)}s</span></div>`;
     else sr=`<div class="petSell"><span class="pst">🏪 <b>Sell-run</b> — send your pet to cash in ${sellable.length} junk item(s) → ~${sgold}g (~${et}s) while you fight.</span><button class="vbtn gold" id="petErrandBtn"${sellable.length?'':' disabled'}>Send</button></div>`;
     body.insertAdjacentHTML('beforeend', sr); const eb=$('petErrandBtn'); if(eb) eb.onclick=()=>sendPetErrand();
-  } else body.innerHTML='<div class="bagEmpty" style="margin:14px 16px">No active pet — pick one from your yard below.</div>';
+  } else body.innerHTML='<div class="bagEmpty" style="margin:14px 16px">No active pet — open the Pet Yard to equip one.</div>';
   // ---- feed (icon grid; click a tile to feed; "feed junk" batches commons & rares) ----
   const feed=$('petFeed'); feed.innerHTML='';
   const feedable=G.inv.filter(it=>!it.isPet&&!it.isPot&&!it.isFlask&&!it.isSkillGem);
@@ -5395,35 +5464,46 @@ function renderPet(){
     const sel=`<span class="junkSel" title="Highest quality that counts as junk for bulk feed &amp; sell-runs">Junk ≤ ${RARITY.slice(0,4).map((r,i)=>`<b class="jq${thr===i?' on':''}" data-jq="${i}" style="--jc:var(--${r.css})">${r.nm}</b>`).join('')}</span>`;
     ft.innerHTML=sel+(G.pet&&junk.length?`<button class="vbtn gold" id="feedJunkBtn" style="font-size:10px;padding:4px 10px">🍖 Feed junk ×${junk.length} · +${jxp.toLocaleString()} XP</button>`:'');
     ft.querySelectorAll('.jq').forEach(b=>b.onclick=()=>{ SETTINGS.junkMaxRarity=+b.dataset.jq; saveSettings(); renderPet(); }); }
-  if(!G.pet){ feed.className=''; feed.innerHTML='<div class="petEmpty"><span class="peIc">🐾</span><span class="peTtl">No active pet</span><span class="peSub">Set a pet active from your yard below, then feed it loot to turn it into pet XP.</span></div>'; }
+  if(!G.pet){ feed.className=''; feed.innerHTML='<div class="petEmpty"><span class="peIc">🐾</span><span class="peTtl">No active pet</span><span class="peSub">Set a pet active in the Pet Yard, then feed it loot to turn it into pet XP.</span></div>'; }
   else if(!feedable.length){ feed.className=''; feed.innerHTML='<div class="petEmpty"><span class="peIc">🍖</span><span class="peTtl">Nothing to feed right now</span><span class="peSub">Pick up gear &amp; gems while you climb — drop them here and each becomes pet XP.</span></div>'; }
   else { feed.className='petFeedG'; feedable.forEach(it=>{ const rc=it.rarity?it.rarity.css:'common', xp=feedXp(it);
     feed.appendChild(itemTile(it,{ctx:null, badge:'+'+xp,
       tip:`<div class="gt-nm" style="color:var(--${rc})">${it.slotIc||it.ic||'❔'} ${it.name}</div>${it.rarity?it.rarity.nm+' · ':''}feed to your pet for <span class="gt-xp">+${xp} XP</span>`,
       onclick:()=>feedPet(it)})); }); }
   const fj=$('feedJunkBtn'); if(fj) fj.onclick=feedAllJunk;
+  const yb=$('openYardBtn'); if(yb){ yb.textContent='🏡 Open Pet Yard · '+((G.pets||[]).length)+'/'+petYardCap()+' pets'; yb.onclick=openPetYard; }
+}
+// ---- PET YARD: the only place to equip / fuse / sell pets ----
+function renderPetYard(){
+  if(!G.pets) G.pets=[];
   renderPetYardTools();
-  // ---- the yard: a card per owned pet; set active, fuse into the active one, or sell for gold ----
-  const yard=$('petFuse'); yard.className='petGrid'; yard.innerHTML='';
-  if((G.pets||[]).length>=petYardCap()) yard.insertAdjacentHTML('beforeend','<div class="bagEmpty" style="grid-column:1/-1;color:#ffce4d;border-color:#ffce4d66;font-weight:bold">🐾 PET YARD FULL — '+petYardCap()+'/'+petYardCap()+' slots. Fuse or sell a pet to make room.</div>');
-  if(!G.pets.length) yard.innerHTML='<div class="bagEmpty" style="grid-column:1/-1">Yard empty — hatch an egg (find or buy one) to fill it.</div>';
-  else G.pets.forEach(pt=>{ const rr=PET_RARITY[pt.rarity], active=(pt===G.pet);
+  const yard=$('petFuse'); if(!yard) return; yard.className='petGrid'; yard.innerHTML='';
+  if(G.pets.length>=petYardCap()) yard.insertAdjacentHTML('beforeend','<div class="bagEmpty" style="grid-column:1/-1;color:#ffce4d;border-color:#ffce4d66;font-weight:bold">🐾 PET YARD FULL — '+petYardCap()+'/'+petYardCap()+' slots. Fuse or sell a pet to make room.</div>');
+  if(!G.pets.length){ yard.insertAdjacentHTML('beforeend','<div class="bagEmpty" style="grid-column:1/-1">Yard empty — hatch an egg (find or buy one) to fill it.</div>'); return; }
+  G.pets.forEach(pt=>{ ensurePetAbilities(pt); const rr=PET_RARITY[pt.rarity], active=(pt===G.pet);
     const card=document.createElement('div'); card.className='petCard r-'+rr.css+(active?' active':'');
-    const lvPct=Math.round(pt.level/petLevelCap(pt)*100);
+    const lvPct=Math.round(pt.level/petLevelCap(pt)*100), actN=petActiveCount(pt);
+    const abs=pt.abilities.map((a,i)=>`<span class="pcAb${i<actN?'':' lk'}" title="${PET_ABILITIES[a.type].nm}${i<actN?'':' — unlocks at '+PET_RARITY[PET_SLOT_UNLOCK[i]].nm}">${PET_ABILITIES[a.type].ic}</span>`).join('');
     card.innerHTML=`<div class="pcTop"><div class="pcPort">${PET_FAMILIES[pt.family].ic}</div>`+
       `<div style="min-width:0"><div class="pcNm" style="color:var(--${rr.css})">${petName(pt)}</div><div class="pcMeta">Lv ${pt.level}/${petLevelCap(pt)} · ${rr.nm}</div></div></div>`+
       `<div class="pcLv"><i style="width:${lvPct}%"></i></div>`+
-      `<div class="pcAbs">${pt.abilities.map(a=>PET_ABILITIES[a.type].ic).join(' ')}</div>`;
+      `<div class="pcAbs">${abs}</div>`;
     const btns=document.createElement('div'); btns.className='pcBtns';
     if(active){ card.insertAdjacentHTML('beforeend','<div class="pcActive">★ ACTIVE</div>'); }
     else {
-      const sa=document.createElement('div'); sa.className='bindBtn'; sa.textContent='Active'; sa.onclick=()=>setActivePet(pt); btns.appendChild(sa);
-      const fb=document.createElement('div'); fb.className='bindBtn'; fb.style.borderColor='var(--gold)'; fb.style.color='var(--gold)'; fb.textContent='Fuse ▸'; fb.title='Fuse (feed) this pet INTO your active pet — consumes it for XP & rarity-up chance'; fb.onclick=()=>fusePet(pt); btns.appendChild(fb);
+      const sa=document.createElement('div'); sa.className='bindBtn'; sa.textContent='Equip'; sa.title='Set this pet as your active companion'; sa.onclick=()=>setActivePet(pt); btns.appendChild(sa);
+      const canUp = G.pet && pt.rarity>=G.pet.rarity && G.pet.rarity<PET_RARITY.length-1;
+      const fb=document.createElement('div'); fb.className='bindBtn'+(G.pet?'':' dim'); fb.style.borderColor='var(--gold)'; fb.style.color='var(--gold)';
+      fb.textContent=canUp?('Fuse ▸ '+PET_RARITY[G.pet.rarity+1].nm):'Fuse ▸';
+      fb.title=G.pet?(pt.rarity>=G.pet.rarity?('Fuse into your active pet → rank up'+(G.pet.rarity<PET_RARITY.length-1?' to '+PET_RARITY[G.pet.rarity+1].nm:' (already max)')):('Just XP — fodder must be at least '+PET_RARITY[G.pet.rarity].nm+' to rank up your active pet')):'Equip a pet first';
+      fb.onclick=()=>fusePet(pt); btns.appendChild(fb);
       const se=document.createElement('div'); se.className='bindBtn'; se.style.borderColor='rgba(255,120,140,.5)'; se.style.color='#ff8a9c'; se.textContent='Sell '+petSellValue(pt)+'g'; se.title='Sell this pet for gold'; se.onclick=()=>sellPet(pt); btns.appendChild(se);
       card.appendChild(btns);
     }
     yard.appendChild(card); });
 }
+function openPetYard(){ $('petPanel').classList.add('hidden'); if($('petYardPanel').classList.contains('hidden')) togglePanel('petYardPanel'); }
+function refreshPetUI(){ if(!$('petPanel').classList.contains('hidden')) renderPet(); if($('petYardPanel')&&!$('petYardPanel').classList.contains('hidden')) renderPetYard(); }
 function doFloorShift(){
   if(G.inTown || floorType(G.floor)!=='NORMAL'){ G.shiftT=999; return; }   // SAFE zones & town are rest areas — never reshuffle / never kick the player out
   const wasOpen=G.portal && G.portal.active;   // remember the portal was already unlocked so the reshuffle doesn't make you re-clear
@@ -5745,7 +5825,8 @@ function quickUse(it){
   if(it.isGem){ const tgt=firstSocketTarget(); if(tgt) socketGemInto(it,tgt); else log('No item has a free socket right now.'); }
   else if(it.isSkillGem){ if(G.slots.includes(it)||G.sigSlot===it) return; if(G.slots.indexOf(null)>=0){ autoBind(it); log('✦ Bound '+it.name); refreshItemPanels(); } else log('Skill bar full — unbind one first.'); }
   else if(it.isFlask){ if(G.belt.includes(it)) return; if(G.belt.indexOf(null)>=0){ autoBeltFlask(it); log('🧪 Equipped '+it.name); refreshItemPanels(); } else log('Belt full — unbind a flask first.'); }
-  else if(it.isPot||it.isPet){ showItemDetail(it,{kind:'bag'}); }   // don't consume these on a right-click; open their controls instead
+  else if(it.isPot){ if(it._ambrosia){ if(G.pet){ feedPet(it); } else log('No active pet — equip one in the Pet Yard (P) first.'); } else { G.inv=G.inv.filter(x=>x!==it); applyStatPot(it); refreshItemPanels(); } }   // right-click a potion → drink it
+  else if(it.isPet){ if((G.pets?G.pets.length:0)<petYardCap()){ G.inv=G.inv.filter(x=>x!==it); hatchPet(it); refreshItemPanels(); } else log('🥚 Pet yard full ('+petYardCap()+') — make room in the Pet Yard (P).'); }   // right-click an egg → hatch it
   else if(it.slotKey){ equipItem(it); }
 }
 let _dragGem=null;   // gem currently being dragged onto a socketed item
@@ -5902,7 +5983,7 @@ function showItemDetail(it, ctx){ ctx=ctx||{}; const dp=$('itemDetail'); if(!dp)
     else if(a==='stash'){ if(stashPush(it)){ G.inv=G.inv.filter(x=>x!==it); G.stashStrikes=0; bankCashIn(1); } renderInv(); }
     else if(a==='takeback'){ if(G.inv.length>=G.invCap){ log('🎒 Bag full — make room first.'); return; } G.stash=G.stash.filter(x=>x!==it); G.inv.push(it); renderInv(); }
     else if(a==='hatch'){ if((G.pets?G.pets.length:0)<petYardCap()){ G.inv=G.inv.filter(x=>x!==it); hatchPet(it); renderInv(); } else log('🥚 Pet yard full ('+petYardCap()+' slots) — sell/fuse a pet or buy a slot in the Pet Yard (P).'); }
-    else if(a==='usepot'){ G.inv=G.inv.filter(x=>x!==it); applyStatPot(it); renderInv(); }
+    else if(a==='usepot'){ if(it._ambrosia){ if(G.pet){ feedPet(it); renderInv(); } else log('No active pet — equip one in the Pet Yard (P) first.'); } else { G.inv=G.inv.filter(x=>x!==it); applyStatPot(it); renderInv(); } }
     else if(a==='fusestart'){ _fuseA=it; showItemDetail(it,ctx); }
     else if(a==='fusecancel'){ _fuseA=null; showItemDetail(it,ctx); }
     else if(a==='fuseconfirm'){ doFuse(_fuseA, it); }
