@@ -5486,9 +5486,9 @@ function drawPlayerRing(){
     ctx.lineCap='round'; ctx.lineWidth=w; ctx.shadowBlur=0;
     ctx.strokeStyle='rgba(2,6,14,0.55)'; ctx.beginPath(); ctx.arc(cx,cy,R,a0r,a1r,anti); ctx.stroke();
     if(frac>0.004){ ctx.strokeStyle=col; ctx.shadowColor=col; ctx.shadowBlur=8; ctx.beginPath(); ctx.arc(cx,cy,R,a0r,afr,anti); ctx.stroke(); ctx.shadowBlur=0; } }
-  seg(100,160,hpF,'#ff4d6d',7);    // HP — left arc (fills lower-left → upper-left)
-  seg(80,-160,mpF,'#4aa8ff',7);    // MANA — right arc (fills lower-right → upper-right)
-  seg(248,44,dF,'#ffce4d',6);      // DASH cooldown — top arc (empty right after a dash, refills as it recharges)
+  seg(112,76,hpF,'#ff4d6d',7);     // HP — lower-left arc
+  seg(68,-76,mpF,'#4aa8ff',7);     // MANA — lower-right arc (mirrors HP)
+  seg(232,76,dF,'#ffce4d',7);      // DASH cooldown — top arc, same size as the others (empty after a dash, refills)
 }
 
 // ---- loot bag tooltip (hover shows the item's full info) ----
@@ -6677,8 +6677,8 @@ function createPlayer(){ const grp=new THREE.Group();
   const nose=new THREE.Mesh(new THREE.ConeGeometry(.32,.7,12), new THREE.MeshStandardMaterial({color:0xffffff,emissive:0x56e0ff,emissiveIntensity:.8})); nose.rotation.x=Math.PI/2; nose.position.set(0,1.1,.9); grp.add(nose);
   // always-visible silhouette (renders through walls so you never lose the hero)
   const sil=new THREE.Mesh(new THREE.CapsuleGeometry(.62,1,4,8), new THREE.MeshBasicMaterial({color:0x9be7ff,transparent:true,opacity:.32,depthTest:false})); sil.position.y=1.1; sil.renderOrder=998; grp.add(sil);
-  // overhead beacon — visible above walls, points down at the hero
-  const mk=new THREE.Mesh(new THREE.ConeGeometry(.4,.8,4), new THREE.MeshBasicMaterial({color:0x56e0ff,depthTest:false,transparent:true,opacity:.95})); mk.position.y=3; mk.rotation.x=Math.PI; mk.renderOrder=999; grp.add(mk); grp.userData.marker=mk;
+  // overhead beacon removed — the on-player ring shows dash cooldown; the see-through silhouette still marks the hero behind walls
+  grp.userData.marker=null;
   scene.add(grp); return grp;
 }
 function hitsObstacle(x,z,r){ for(const o of G.obstacles){ if(Math.hypot(x-o.x,z-o.z) < o.r+r) return true; } return false; }
