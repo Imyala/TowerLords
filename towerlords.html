@@ -597,6 +597,21 @@
   .vbtn.gold{border-color:var(--gold);color:var(--gold);background:rgba(255,206,77,.07);}
   .vbtn.gold:hover{background:var(--gold);color:#1a1405;}
   #gambleRow{margin:0 16px 12px;padding-bottom:12px;border-bottom:1px solid rgba(255,255,255,.1);}
+  /* prominent fame rank badge (HUD + menu) */
+  .mRank{display:flex;align-items:center;justify-content:center;gap:8px;margin:1px 6px 7px;padding:5px 8px;border-radius:9px;
+    background:linear-gradient(90deg,rgba(255,206,77,.07),rgba(86,224,255,.05));border:1px solid rgba(255,255,255,.13);box-shadow:inset 0 0 14px rgba(0,0,0,.35);}
+  .mRank .mrk-stars{font-size:14px;letter-spacing:1px;font-weight:bold;line-height:1;}
+  .mRank .mrk-tier{font-size:9.5px;letter-spacing:1.5px;text-transform:uppercase;font-weight:bold;opacity:.92;}
+  .menuRank{display:flex;flex-direction:column;align-items:center;gap:3px;margin:-16px 0 22px;}
+  .menuRank .mnrk-stars{font-size:26px;letter-spacing:3px;font-weight:bold;line-height:1;filter:drop-shadow(0 0 8px rgba(0,0,0,.5));}
+  .menuRank .mnrk-tier{font-size:12px;letter-spacing:2px;text-transform:uppercase;font-weight:bold;}
+  .menuRank .mnrk-fame{font-size:11px;opacity:.65;letter-spacing:1px;color:var(--gold);}
+  /* vendor: compact carried grid + action bar (no inner scroll) */
+  .vendGrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(46px,1fr));gap:6px;margin-bottom:10px;}
+  .vendAct{border-top:1px solid rgba(255,255,255,.09);padding-top:9px;min-height:62px;}
+  .vendAct .vaName{font-size:12.5px;margin-bottom:7px;color:#dfe7ff;}
+  .vendAct .vaName b{color:var(--rc,#fff);}
+  .vendAct .vaHint{font-size:11.5px;opacity:.5;text-align:center;padding:12px 0;}
   .vendGold{font-size:12px;margin:0 16px 10px;} .vendGold b{color:var(--gold);}
   /* pet yard */
   #petPanel{top:50%;left:50%;transform:translate(-50%,-50%);width:680px;max-height:92vh;display:flex;flex-direction:column;padding-bottom:16px;border-color:rgba(255,174,61,.3);}
@@ -964,6 +979,7 @@
         <span class="mLv">LV <b id="lvlNum">1</b><span class="xpmini" id="xpTxt">0/20</span></span>
         <span class="mGold">🪙 <b id="goldNum">0</b></span>
       </div>
+      <div id="rankHud" class="mRank" title="Your fame rank — earn stars to climb the ladder"></div>
       <div class="mItem" id="openCharBtn"><span class="mKey">C</span><span class="mIc">🧬</span><span class="mLbl">Character</span><span class="pip" id="pipChar">●</span></div>
       <div class="mItem" id="openTreeBtn"><span class="mKey">T</span><span class="mIc">🌳</span><span class="mLbl">Skill Tree</span><span class="pip" id="pipTree">●</span></div>
       <div class="mItem" id="openInvBtn"><span class="mKey">I</span><span class="mIc">🎒</span><span class="mLbl">Inventory</span></div>
@@ -1092,7 +1108,7 @@
     <div class="vendGold">Gold: <b id="vendGoldNum">0</b></div>
     <div id="gambleRow"></div>
     <h4 style="font-size:10px;opacity:.6;letter-spacing:1px;margin:0 16px 6px;text-transform:uppercase;">Carried — sell or reforge</h4>
-    <div class="bagList" id="vendList" style="margin:0 16px;"></div>
+    <div id="vendList" style="margin:0 16px;padding-bottom:2px;"></div>
     <div class="hint">walk away or press F to close</div>
   </div>
 
@@ -1149,6 +1165,7 @@
   <div id="start" class="overlay">
     <h1>TOWERLORDS</h1>
     <div class="tag">ASCEND · BUILD · RAMPAGE · KNOW WHEN TO RETREAT</div>
+    <div id="menuRank" class="menuRank hidden"></div>
     <div id="menuMain" class="menuCol">
       <button class="btn hidden" id="menuContinue" style="background:linear-gradient(180deg,#1a3a2e,#0f241c);border-color:#3ad18a;color:#bfffdd;box-shadow:0 0 22px rgba(58,209,138,.25)">▶ Continue</button>
       <button class="btn" id="menuClimb">⛰ Climb the Tower</button>
@@ -1703,6 +1720,12 @@ function fameRank(fame){
 function rankStars(stars){ return '★'.repeat(stars)+'☆'.repeat(7-stars); }
 function rankBadgeHTML(fame,sm){ const r=fameRank(fame); const fs=sm?'11px':'14px';
   return `<span style="color:${r.col};font-weight:bold;letter-spacing:1px;font-size:${fs};text-shadow:0 0 8px ${r.col}66">${rankStars(r.stars)}</span>`; }
+function rankHudHTML(){ const r=fameRank(META.fame);
+  return `<span class="mrk-stars" style="color:${r.col};text-shadow:0 0 10px ${r.col}">${rankStars(r.stars)}</span><span class="mrk-tier" style="color:${r.col}">${r.name}</span>`; }
+function refreshMenuRank(){ const mr=$('menuRank'); if(!mr) return; const r=fameRank(META.fame); mr.classList.remove('hidden');
+  mr.innerHTML=`<span class="mnrk-stars" style="color:${r.col};text-shadow:0 0 16px ${r.col}">${rankStars(r.stars)}</span>`
+    +`<span class="mnrk-tier" style="color:${r.col}">${r.name} Tier · ${r.stars}/7★</span>`
+    +`<span class="mnrk-fame">✦ ${Math.round(META.fame).toLocaleString()} fame</span>`; }
 const FEATS=[
   {id:'firstboss',nm:'Giant Slayer', ds:'Slay a floor guardian',          fame:600},
   {id:'react',    nm:'Alchemist',    ds:'Trigger an elemental reaction',  fame:300},
@@ -2829,14 +2852,19 @@ function applyPacket(p){
   inp.btn=pkt.btn||{};
 }
 function makeNetInput(){ return { kind:'net', pollActions:true, prev:{}, read(p){ applyPacket(p); } }; }
-function makeBotInput(){ let t=0, last=performance.now();
+function makeBotInput(){
   return { kind:'bot', pollActions:true, prev:{}, read(p){
-    const now=performance.now(); t+=Math.min(0.05,(now-last)/1000); last=now;
-    // scripted demo behaviour: orbit, aim along travel, fire in bursts, dash occasionally.
-    const mx=Math.sin(t*0.8), mz=Math.cos(t*0.8);
-    p.netPacket={ mx, mz, ax:mx, az:mz,
-      atk:(t%2.4)<1.4,                          // ~1.4s on / 1s off attack bursts
-      btn:{ dash:(t%4)<0.03 } };                // a one-frame rising edge ≈ every 4s
+    const me=p.player; if(!me){ p.netPacket={mx:0,mz:0,ax:0,az:1,atk:false,btn:{}}; applyPacket(p); return; }
+    const lead=(_G.players[0]&&_G.players[0].player&&_G.players[0]!==p)?_G.players[0].player:null;
+    let best=null,bd=1e9; for(const e of (_G.enemies||[])){ if(e.dead||!e.mesh)continue; const dx=e.mesh.position.x-me.position.x,dz=e.mesh.position.z-me.position.z,dd=Math.hypot(dx,dz); if(dd<bd){bd=dd;best=e;} }
+    let ax=0,az=1,hasAim=false,atk=false; if(best){ ax=best.mesh.position.x-me.position.x; az=best.mesh.position.z-me.position.z; const l=Math.hypot(ax,az)||1; ax/=l; az/=l; hasAim=true; atk=bd<20; }
+    let mx=0,mz=0;
+    if(lead){ const dx=lead.position.x-me.position.x, dz=lead.position.z-me.position.z, d=Math.hypot(dx,dz);
+      if(d>5){ mx=dx; mz=dz; }                    // catch up to the human
+      else if(best && bd<6){ mx=-az; mz=ax; }     // strafe a close foe
+      else if(best && bd>9){ mx=best.mesh.position.x-me.position.x; mz=best.mesh.position.z-me.position.z; }   // close in to fire
+      const ml=Math.hypot(mx,mz); if(ml>0.0001){ mx/=ml; mz/=ml; } }
+    p.netPacket={ mx, mz, ax, az, hasAim, atk, btn:{} };
     applyPacket(p);
   }};
 }
@@ -2975,7 +3003,7 @@ $('shareDeathBtn').onclick=()=>shareCard('death');
 $('shareVictBtn').onclick=()=>shareCard('victory');
 // ---- main menu navigation ----
 function showMenu(){ try{ closeGameModal(); }catch(_){} ['hud','tutorial','deathlog','death'].forEach(id=>$(id).classList.add('hidden')); PANELS.forEach(p=>$(p).classList.add('hidden'));
-  $('start').classList.remove('hidden'); $('menuMain').classList.remove('hidden'); $('climbScreen').classList.add('hidden'); $('coopLobby').classList.add('hidden'); $('onlineLobby').classList.add('hidden'); coopLobbyOpen=false; G.running=false; G.practice=false; G.tutorial=false; loadMeta(); refreshDailyBtn(); refreshContinueBtn(); syncPause(); }
+  $('start').classList.remove('hidden'); $('menuMain').classList.remove('hidden'); $('climbScreen').classList.add('hidden'); $('coopLobby').classList.add('hidden'); $('onlineLobby').classList.add('hidden'); coopLobbyOpen=false; G.running=false; G.practice=false; G.tutorial=false; loadMeta(); refreshDailyBtn(); refreshContinueBtn(); refreshMenuRank(); syncPause(); }
 // ESC while playing (no panels open) → confirm a return to the main menu, auto-saving first
 function promptExitToMenu(){ if(!G.running) return;
   gameConfirm('Return to the main menu?', 'Your progress is auto-saved — pick <b class="gm-hl">▶ Continue</b> on the menu to resume this run.', ()=>{
@@ -2997,7 +3025,7 @@ function refreshDailyBtn(){ const b=$('menuDaily'); if(!b)return; const d=dailyS
 function dailyScoreTick(){ if(!G.dailyRun)return;
   const rec={date:dailyKey(), done:true, floor:G.floor, kills:G.run.kills||0, score:runScore({floor:G.floor,kills:G.run.kills||0,time:G.run.totalTime||0})};
   const cur=dailyState(); META.daily=(cur&&(cur.score||0)>rec.score)?cur:rec; saveMeta(); }
-loadMeta(); refreshDailyBtn(); refreshContinueBtn();   // reflect today's daily state + any saved climb on the menu at boot
+loadMeta(); refreshDailyBtn(); refreshContinueBtn(); refreshMenuRank();   // reflect today's daily state + any saved climb on the menu at boot
 { const _md=$('menuDaily'); if(_md) _md.onclick=()=>{
   loadMeta(); const d=dailyState();
   if(d&&d.done){ log('🌅 Today’s Daily is scored — a new tower rises at midnight UTC.'); return; }
@@ -3009,17 +3037,22 @@ loadMeta(); refreshDailyBtn(); refreshContinueBtn();   // reflect today's daily 
 }; }
 $('climbBack').onclick=showMenu;
 // ---- local co-op lobby: claim slots with controllers, then start together ----
-let coopLobbyOpen=false, lobbyPads=[], lobbyPrev={};
+let coopLobbyOpen=false, lobbyPads=[], lobbyPrev={}, lobbyBots=0;
 function showCoopLobby(){ ['tutorial','deathlog'].forEach(id=>$(id).classList.add('hidden')); $('start').classList.remove('hidden');
   $('menuMain').classList.add('hidden'); $('climbScreen').classList.add('hidden'); $('coopLobby').classList.remove('hidden');
-  lobbyPads=[]; lobbyPrev={}; coopLobbyOpen=true; G.hardcore=false; G.diff='normal';
+  lobbyPads=[]; lobbyPrev={}; lobbyBots=0; coopLobbyOpen=true; G.hardcore=false; G.diff='normal';
   ['Casual','Normal','Hard'].forEach(k=>{ const el=$('coMode'+k); if(el) el.classList.toggle('sel', k==='Normal'); }); renderCoopLobby(); }
 function renderCoopLobby(){ const host=$('coopSlots'); if(!host) return; host.innerHTML='';
-  const slots=[{on:true,p:'P1',i:'⌨',d:'Keyboard · READY',col:PLAYER_TINT[0]}];
-  for(let k=0;k<3;k++){ if(k<lobbyPads.length) slots.push({on:true,p:'P'+(k+2),i:'🎮',d:'Controller · READY',col:PLAYER_TINT[k+1]});
-    else slots.push({on:false,p:'P'+(k+2),i:'➕',d:'press START to join',col:'#7a8499'}); }
+  const slots=[{on:true,p:'P1',i:'⌨',d:'Keyboard · READY',col:PLAYER_TINT[0],kind:'p1'}];
+  let idx=1;
+  for(const pad of lobbyPads){ slots.push({on:true,p:'P'+(idx+1),i:'🎮',d:'Controller · READY',col:PLAYER_TINT[idx],kind:'pad'}); idx++; }
+  for(let b=0;b<lobbyBots;b++){ slots.push({on:true,p:'P'+(idx+1),i:'🤖',d:'AI Ally · READY (click ✕)',col:PLAYER_TINT[idx],kind:'bot'}); idx++; }
+  while(idx<4){ slots.push({on:false,p:'P'+(idx+1),i:'➕',d:'controller START · or click for AI ally',col:'#7a8499',kind:'empty'}); idx++; }
   for(const s of slots){ const d=document.createElement('div'); d.className='coopSlot'+(s.on?' on':''); d.style.setProperty('--pc',s.col);
-    d.innerHTML=`<div class="cs-p" style="color:${s.col}">${s.p}</div><div class="cs-i">${s.i}</div><div class="cs-d">${s.d}</div>`; host.appendChild(d); } }
+    d.innerHTML=`<div class="cs-p" style="color:${s.col}">${s.p}</div><div class="cs-i">${s.i}</div><div class="cs-d">${s.d}</div>`;
+    if(s.kind==='empty'){ d.style.cursor='pointer'; d.onclick=()=>{ if(lobbyPads.length+lobbyBots<3){ lobbyBots++; renderCoopLobby(); if(sfx.tick)sfx.tick(); } }; }
+    else if(s.kind==='bot'){ d.style.cursor='pointer'; d.title='Click to remove this AI ally'; d.onclick=()=>{ if(lobbyBots>0){ lobbyBots--; renderCoopLobby(); if(sfx.tick)sfx.tick(); } }; }
+    host.appendChild(d); } }
 function pollLobbyJoins(){ if(!coopLobbyOpen) return; const pads=navigator.getGamepads?navigator.getGamepads():[]; let changed=false;
   for(let i=0;i<pads.length;i++){ const gp=pads[i]; if(!gp)continue;
     const start=!!((gp.buttons[PAD.START]&&gp.buttons[PAD.START].pressed)||(gp.buttons[PAD.A]&&gp.buttons[PAD.A].pressed));
@@ -3028,11 +3061,13 @@ function pollLobbyJoins(){ if(!coopLobbyOpen) return; const pads=navigator.getGa
     if(b&&!prev.b){ const idx=lobbyPads.indexOf(i); if(idx>=0){ lobbyPads.splice(idx,1); changed=true; } }
     lobbyPrev[i]={start,b}; }
   if(changed) renderCoopLobby(); }
-function startCoop(){ const pads=lobbyPads.slice(); coopLobbyOpen=false; $('coopLobby').classList.add('hidden');
+function startCoop(){ const pads=lobbyPads.slice(), bots=lobbyBots; coopLobbyOpen=false; $('coopLobby').classList.add('hidden');
   startGame(()=>{
     for(const pad of pads){ if(_G.players.length<4) joinPlayer(pad); }
-    if(pads.length) log('🎮 '+(pads.length+1)+'-player co-op underway! Each player has their own view, build & menus (press Back/Select on your controller).');
-    else log('No controllers joined — starting solo. Plug in a controller and press START anytime to drop in.'); }); }
+    for(let b=0;b<bots;b++){ if(_G.players.length<4) joinBotPlayer(); }
+    const extra=pads.length+bots;
+    if(extra) log('🎮 '+(extra+1)+'-player co-op underway! Controllers get their own view & menus; AI allies fight at your side.');
+    else log('No extra players — starting solo. Plug in a controller and press START, or click a slot for an AI ally.'); }); }
 $('menuCoop').onclick=showCoopLobby;
 $('coopBack').onclick=showMenu;
 $('coopStartBtn').onclick=startCoop;
@@ -5083,12 +5118,12 @@ function sellPet(p){
   renderPet(); if(!$('vendorPanel').classList.contains('hidden'))renderVendor();
 }
 const PET_FAMILIES={
-  sprite:{nm:'Sprite', ic:'🧚', col:0x7fd0ff, shape:'ico'},
-  drake: {nm:'Drake',  ic:'🐉', col:0xff7a3d, shape:'tetra'},
-  golem: {nm:'Golem',  ic:'🗿', col:0xb0a08f, shape:'box'},
-  wisp:  {nm:'Wisp',   ic:'🔮', col:0xb06bff, shape:'oct'},
-  beast: {nm:'Beast',  ic:'🐺', col:0x8effd9, shape:'dodec'},
-  imp:   {nm:'Imp',    ic:'😈', col:0xff5470, shape:'cone'},
+  sprite:{nm:'Sprite', ic:'🧚', col:0x7fd0ff, shape:'ico',   nm3:{cu:['Sprite Star','Blue Thing','Mini Tornado'],rl:['Guiding Spirit','Angelic Blossom','Fizzy Drink','Pink Heart'],dv:['Auroral Sprite God','Air Spirit','Water Spirit','Seraphim']}},
+  drake: {nm:'Drake',  ic:'🐉', col:0xff7a3d, shape:'tetra', nm3:{cu:['Dino','Chameleon','Tomb Snake'],rl:['Baby Dragon','Red Dragon','Desert Cobra','Frilled Lizard'],dv:['Infernal Archdragon','Chinese Dragon','Poison Drake','Silver Sky Serpent','Vermilion Dragon']}},
+  golem: {nm:'Golem',  ic:'🗿', col:0xb0a08f, shape:'box',   nm3:{cu:['Helmbot','Robobuddy'],rl:['Healbot','Hoverbot','Robo Brain','UFO Bot'],dv:['Fusion Golem','Titanium Rex','Cylindron','Spiderbot','Battlebot MK1']}},
+  wisp:  {nm:'Wisp',   ic:'🔮', col:0xb06bff, shape:'oct',   nm3:{cu:["Lil' Ghost",'Spirit','Bat'],rl:['Evil Ghost','Flying Eyeball','Mini Beholder','Sugar Skull'],dv:['Champion Spirit','Glowing Skull','Reaper','Vicious Phantom']}},
+  beast: {nm:'Beast',  ic:'🐺', col:0x8effd9, shape:'dodec', nm3:{cu:['Grey Wolf','Brown Fox','Grey Pup'],rl:['Black Wolf','Dingo','Husky','Shiba Inu'],dv:['Shadow Wolf','Void Hound','Golden Hyena','Zodiac Dog']}},
+  imp:   {nm:'Imp',    ic:'😈', col:0xff5470, shape:'cone',  nm3:{cu:['Baby','Elf'],rl:['Leprechaun','Mini Djinn','Mermaid','Sir Wumple'],dv:['Marid','Centaur','Battle God','Forest Harpy','Phantom Ghost']}},
 };
 const FAM_KEYS=Object.keys(PET_FAMILIES);
 // rarity gates ability-slot count AND the level cap — fuse up to push past a cap
@@ -5096,8 +5131,8 @@ const PET_RARITY=[
   {nm:'Common',    css:'common', slots:1, maxlvl:60 },
   {nm:'Uncommon',  css:'rare',   slots:2, maxlvl:110},
   {nm:'Rare',      css:'epic',   slots:3, maxlvl:170},
-  {nm:'Legendary', css:'legend', slots:3, maxlvl:220},
-  {nm:'Divine',    css:'unique', slots:3, maxlvl:255},
+  {nm:'Legendary', css:'legend', slots:4, maxlvl:220},
+  {nm:'Divine',    css:'unique', slots:5, maxlvl:255},
 ];
 // all of a pet's abilities scale together with its level (capped by rarity)
 const PET_ABILITIES={
@@ -5121,6 +5156,11 @@ function petAbilVal(type,l){ switch(type){
 function petLevelCap(p){ return PET_RARITY[p.rarity].maxlvl; }
 function petXpNeed(lv){ return 20+lv*6; }                       // steep-ish; high levels come mostly from fusing
 function hasAbil(p,t){ return p && p.abilities.some(a=>a.type===t); }
+// fill a pet's ability slots up to its rarity's count, KEEPING every ability it already has
+// (so fusing never strips the main pet's skills). `prefer` (e.g. the fodder's types) fills first.
+function ensurePetAbilities(p, prefer){ if(!p||!p.abilities) return;
+  const want=PET_RARITY[clamp(p.rarity||0,0,4)].slots, has=new Set(p.abilities.map(a=>a.type));
+  for(const ty of (prefer||[]).concat(ABIL_KEYS)){ if(p.abilities.length>=want) break; if(!has.has(ty)){ has.add(ty); p.abilities.push({type:ty}); } } }
 function feedXp(it){ return Math.round((it.value||0)*0.5 + (RARITY.indexOf(it.rarity)+1)*10); }
 function makePet(opts){ opts=opts||{};
   const family=opts.family||pick(FAM_KEYS);
@@ -5128,19 +5168,22 @@ function makePet(opts){ opts=opts||{};
   const slots=PET_RARITY[rarity].slots, abilities=[], chosen=new Set();
   const seed=opts.firstAbil||pick(['attack','heal','attack']); abilities.push({type:seed}); chosen.add(seed);
   while(abilities.length<slots){ const t=pick(ABIL_KEYS); if(!chosen.has(t)){ chosen.add(t); abilities.push({type:t}); } }
-  return { family, rarity, level:clamp(opts.level||1,1,PET_RARITY[rarity].maxlvl), xp:0, abilities, hp:undefined, maxhp:undefined, down:0, atkCd:0 };
+  return { family, rarity, nameIdx:(opts.nameIdx!=null?opts.nameIdx:randi(0,9999)), level:clamp(opts.level||1,1,PET_RARITY[rarity].maxlvl), xp:0, abilities, hp:undefined, maxhp:undefined, down:0, atkCd:0 };
 }
-function petName(p){ return PET_RARITY[p.rarity].nm+' '+PET_FAMILIES[p.family].nm; }
+function petTierBand(r){ return r<=1?'cu':(r<=3?'rl':'dv'); }
+function petName(p){ const f=PET_FAMILIES[p.family]; const band=f&&f.nm3&&f.nm3[petTierBand(p.rarity)];
+  if(band&&band.length){ return band[(p.nameIdx||0)%band.length]; }
+  return PET_RARITY[p.rarity].nm+' '+(f?f.nm:'Pet'); }
 function buildPetMesh(p){ const f=PET_FAMILIES[p.family];
-  const grp=new THREE.Group();
-  const body=new THREE.Mesh(enemyGeo(f.shape,0.55), new THREE.MeshStandardMaterial({color:f.col,emissive:f.col,emissiveIntensity:.7,roughness:.5,flatShading:true}));
+  const grp=new THREE.Group(); const rz=clamp(p.rarity||0,0,4);
+  const body=new THREE.Mesh(enemyGeo(f.shape,0.5+rz*0.06), new THREE.MeshStandardMaterial({color:f.col,emissive:f.col,emissiveIntensity:.58+rz*0.16,roughness:.5,flatShading:true}));
   body.castShadow=true; grp.add(body); grp.userData.body=body;
   if(G.player) grp.position.set(G.player.position.x, 1.2, G.player.position.z+1.5);
   return grp;
 }
 function setActivePet(p){
   if(G.petMesh){ scene.remove(G.petMesh); G.petMesh=null; }
-  G.pet=p||null;
+  G.pet=p||null; if(G.pet) ensurePetAbilities(G.pet);
   if(p){ if(p.maxhp===undefined){ p.maxhp=petMaxHp(p); p.hp=p.maxhp; p.down=0; } G.petMesh=buildPetMesh(p); scene.add(G.petMesh); }
   recompute(); if(!$('petPanel').classList.contains('hidden'))renderPet();
 }
@@ -5165,7 +5208,7 @@ function petLevelUp(p){ const cap=petLevelCap(p);
   if(p===G.pet) recompute();
 }
 function feedPet(item){ if(!G.pet)return;
-  if(item._ambrosia){ G.inv=G.inv.filter(x=>x!==item); G.pet.rarity=4; G.pet.level=petLevelCap(G.pet); G.pet.xp=0; recompute(); renderPet(); refreshItemPanels(); log('🍯 Ambrosia — your companion is instantly MAXED to Lv '+G.pet.level+'. (dev)'); return; }
+  if(item._ambrosia){ G.inv=G.inv.filter(x=>x!==item); G.pet.rarity=4; ensurePetAbilities(G.pet); G.pet.level=petLevelCap(G.pet); G.pet.xp=0; recompute(); renderPet(); refreshItemPanels(); log('🍯 Ambrosia — your companion is instantly MAXED to Lv '+G.pet.level+'. (dev)'); return; }
   if(item.locked){ log('🔒 '+item.name+' is locked — unlock it first to feed it.'); return; } if(G.pet.level>=petLevelCap(G.pet)){ log('Active pet is at its rarity cap ('+petLevelCap(G.pet)+') — fuse to raise its rarity & cap.'); return; }
   G.inv=G.inv.filter(x=>x!==item); G.pet.xp+=feedXp(item); petLevelUp(G.pet); renderPet(); refreshItemPanels(); }
 function fusePet(fodder){ // fuse a yard pet INTO the active pet
@@ -5177,10 +5220,7 @@ function fusePet(fodder){ // fuse a yard pet INTO the active pet
   // chance to raise rarity (better fodder = better odds) → bigger cap + maybe a new ability slot — but never above the yard's unlocked tier
   if(t.rarity<Math.min(4,petYardTier())){ const odds=clamp(0.25 + fodder.rarity*0.15 + (fodder.rarity>=t.rarity?0.2:0), 0, 0.95);
     if(Math.random()<odds){ t.rarity++;
-      const want=PET_RARITY[t.rarity].slots;
-      while(t.abilities.length<want){ // prefer an ability the fodder had that we lack, else random
-        const cand=fodder.abilities.map(a=>a.type).find(ty=>!hasAbil(t,ty)) || pick(ABIL_KEYS.filter(ty=>!hasAbil(t,ty)));
-        if(!cand)break; t.abilities.push({type:cand}); }
+      ensurePetAbilities(t, fodder.abilities.map(a=>a.type));   // keep the MAIN pet's skills; new slots prefer the fodder's abilities
       msg+=' · ★ RARITY UP → '+PET_RARITY[t.rarity].nm; sfx.evolve(); unlockFeat('evolve');
       if(G.petMesh) floatText(G.petMesh.position.x,G.petMesh.position.z,'RARITY UP!','big',2.2);
     } }
@@ -5245,6 +5285,7 @@ function renderPetYardTools(){
 }
 function renderPet(){
   const body=$('petBody'); if(!G.pets) G.pets=[];
+  if(G.pet) ensurePetAbilities(G.pet); G.pets.forEach(p=>ensurePetAbilities(p));   // repair pets that predate the ability-slot fix
   renderPetYardTools();
   const ft=$('petFeedTools'); if(ft) ft.innerHTML='';
   if(!G.pet && !G.pets.length){
@@ -5277,7 +5318,7 @@ function renderPet(){
   if(G.pet){ const pet=G.pet, rr=PET_RARITY[pet.rarity], cap=petLevelCap(pet), atCap=pet.level>=cap;
     const xpPct=atCap?100:Math.round(pet.xp/petXpNeed(pet.level)*100);
     const mhp=petMaxHp(pet), hp=Math.round(pet.hp!=null?pet.hp:mhp), hpPct=clamp(hp/mhp*100,0,100);
-    let slots=''; for(let i=0;i<3;i++){ const a=pet.abilities[i];
+    let slots=''; for(let i=0;i<rr.slots;i++){ const a=pet.abilities[i];
       if(a){ const ab=PET_ABILITIES[a.type]; slots+=`<div class="petAbSlot fill" style="--ac:${ABIL_COLOR[a.type]||'#ffae3d'}"><span class="abic">${ab.ic}</span><div class="abtx"><b>${ab.nm}</b><span>${ab.ds(pet.level)}</span></div></div>`; }
       else slots+=`<div class="petAbSlot lk"><span class="abic">🔒</span><div class="abtx"><b>Locked slot</b><span>unlocks at higher rarity</span></div></div>`; }
     const capHint = atCap
@@ -5904,6 +5945,7 @@ function renderInv(){
   refreshPinSel();   // re-apply the selected-tile highlight after the grid rebuilt
 }
 // ---------------- vendor (gold sink) ----------------
+let _vendSel=null;
 function renderVendor(){
   $('vendGoldNum').textContent=G.gold;
   const gr=$('gambleRow');
@@ -5925,17 +5967,29 @@ function renderVendor(){
     G.gold-=eggCost(); const e=makeEgg(G.floor,1); G.inv.push(e); log('🥚 Bought a pet egg — Hatch it from your Inventory (I) or Pet Yard (P).'); renderVendor(); refreshItemPanels(); };
   $('respecBtn2').onclick=()=>respec();
   const list=$('vendList'); list.innerHTML='';
-  if(!G.inv.length){ list.innerHTML='<div class="bagEmpty">Nothing carried to sell.</div>'; return; }
-  G.inv.forEach(it=>{ const d=itemRow(it,'bagItem'); const r=document.createElement('div'); r.className='vendRow'; r.style.marginTop='5px';
-    const canReforge = it.slotKey && !it.isGem && !it.unique && !it.isSkillGem && !it.isFlask && !it.isPet && !it.isPot;
-    r.innerHTML=`<button class="vbtn gold sellBtn"${it.locked?' disabled':''}>${it.locked?'🔒 Locked':'Sell +'+it.value+'g'}</button>${canReforge?`<button class="vbtn reforgeBtn">Reforge ${reforgeCost()}g</button>`:''}<button class="vbtn lockBtn"${it.locked?' style="color:var(--gold);border-color:rgba(255,206,77,.5)"':''}>${it.locked?'🔓':'🔒'}</button>`;
-    r.querySelector('.sellBtn').onclick=()=>{ if(it.locked){ log('🔒 Locked — unlock to sell.'); return; } G.gold+=it.value; G.inv=G.inv.filter(x=>x!==it); if(G.selGem===it)G.selGem=null; flashGold(); log('Sold '+it.name+' (+'+it.value+'g)'); renderVendor(); };
-    r.querySelector('.lockBtn').onclick=()=>{ it.locked=!it.locked; renderVendor(); };
-    if(canReforge) r.querySelector('.reforgeBtn').onclick=()=>{ if(G.gold<reforgeCost()){log('Not enough gold to reforge.');return;} G.gold-=reforgeCost(); const f=makeItem(Math.max(it.floor,G.floor),it.slotKey,it.rarity); it.affixes=f.affixes; it.value=f.value;
-      // reforge re-rolls affixes but keeps the weapon's archetype — rename within its own type
+  if(!G.inv.length){ list.innerHTML='<div class="bagEmpty">Nothing carried to sell.</div>'; _vendSel=null; return; }
+  if(_vendSel && !G.inv.includes(_vendSel)) _vendSel=null;
+  const grid=document.createElement('div'); grid.className='vendGrid';
+  G.inv.forEach(it=>{ const t=itemTile(it,{ctx:null,sel:_vendSel===it}); t.title=it.name+(it.rarity?' · '+it.rarity.nm:'');
+    t.addEventListener('click',()=>{ _vendSel=it; renderVendor(); });
+    t.addEventListener('contextmenu',e=>{ e.preventDefault(); if(it.locked){ log('🔒 Locked — unlock to sell.'); return; } G.gold+=it.value; G.inv=G.inv.filter(x=>x!==it); if(G.selGem===it)G.selGem=null; if(_vendSel===it)_vendSel=null; flashGold(); log('Sold '+it.name+' (+'+it.value+'g)'); renderVendor(); });
+    grid.appendChild(t); });
+  list.appendChild(grid);
+  const act=document.createElement('div'); act.className='vendAct';
+  if(_vendSel){ const it=_vendSel; const canReforge = it.slotKey && !it.isGem && !it.unique && !it.isSkillGem && !it.isFlask && !it.isPet && !it.isPot;
+    const rc=it.rarity?('#'+(it.rarity.col>>>0).toString(16).padStart(6,'0')):'#fff';
+    act.innerHTML=`<div class="vaName" style="--rc:${rc}">${it.slotIc||it.ic||''} <b>${it.name}</b> · ${it.rarity?it.rarity.nm:''}</div>`
+      +`<div class="vendRow"><button class="vbtn gold" id="vaSell"${it.locked?' disabled':''}>${it.locked?'🔒 Locked':'Sell +'+it.value+'g'}</button>`
+      +`${canReforge?`<button class="vbtn" id="vaReforge">Reforge ${reforgeCost()}g</button>`:''}`
+      +`<button class="vbtn" id="vaLock">${it.locked?'🔓 Unlock':'🔒 Lock'}</button></div>`;
+  } else { act.innerHTML='<div class="vaHint">Select a carried item to sell, reforge or lock · right-click a tile to sell it fast.</div>'; }
+  list.appendChild(act);
+  if(_vendSel){ const it=_vendSel;
+    const sb=$('vaSell'); if(sb) sb.onclick=()=>{ if(it.locked){ log('🔒 Locked — unlock to sell.'); return; } G.gold+=it.value; G.inv=G.inv.filter(x=>x!==it); if(G.selGem===it)G.selGem=null; _vendSel=null; flashGold(); log('Sold '+it.name+' (+'+it.value+'g)'); renderVendor(); };
+    const lb=$('vaLock'); if(lb) lb.onclick=()=>{ it.locked=!it.locked; renderVendor(); };
+    const rb=$('vaReforge'); if(rb) rb.onclick=()=>{ if(G.gold<reforgeCost()){log('Not enough gold to reforge.');return;} G.gold-=reforgeCost(); const f=makeItem(Math.max(it.floor,G.floor),it.slotKey,it.rarity); it.affixes=f.affixes; it.value=f.value;
       it.name = (it.slotKey==='weapon' && it.arch && WEAPON_ARCHETYPES[it.arch]) ? `${it.rarity.nm==='Common'?'':it.rarity.nm+' '}${pick(WEAPON_ARCHETYPES[it.arch].names)}` : f.name;
-      recompute(); log('Reforged '+it.name); renderVendor(); };
-    d.style.cursor='default'; d.appendChild(r); list.appendChild(d); });
+      recompute(); log('Reforged '+it.name); renderVendor(); }; }
 }
 function gemCost(){ return 80 + G.floor*15; }
 function eggCost(){ return 120 + G.floor*20; }
@@ -6527,15 +6581,18 @@ function showFirstRunHints(){
 function ensureLabel(id,txt){ let e=document.getElementById(id); if(!e){ e=document.createElement('div'); e.id=id; e.className='worldLabel'; document.getElementById('worldLabels').appendChild(e); } if(e.textContent!==txt) e.textContent=txt; return e; }
 function updateWorldLabels(){
   const host=document.getElementById('worldLabels'); if(!host) return;
-  const IDS=['lblStash','lblVendor','lblScore','lblPortal'];
+  const IDS=['lblStash','lblVendor','lblScore','lblPortal','lblCraft'];
   if(_G.splitscreen || !_G.running){ host.style.display='none'; return; } host.style.display='block';
   const items=[];
   if(G.stashStation) items.push(['lblStash','🗄 STASH — bank loot (F)',G.stashStation.x,G.stashStation.z]);
   if(G.vendorStation) items.push(['lblVendor','💰 VENDOR — sell · gamble · reforge (F)',G.vendorStation.x,G.vendorStation.z]);
   if(G.scoreStation) items.push(['lblScore','📜 RECORD (F)',G.scoreStation.x,G.scoreStation.z]);
   if(G.portal && (G.inTown||G.portal.active)) items.push(['lblPortal', G.inTown?((_G.returnFloor|0)>1?('⛰ Return to Floor '+_G.returnFloor+' (F)'):'⛰ Climb the Tower (F)'):'⛰ Ascend (F)',G.portal.x,G.portal.z]);
-  const seen=new Set();
-  for(const [id,txt,x,z] of items){ seen.add(id); const e=ensureLabel(id,txt);
+  if(G.craftStation) items.push(['lblCraft','⚒ CRAFTING BENCH',G.craftStation.x,G.craftStation.z]);
+  const seen=new Set(), _pp=(G.player?G.player.position:{x:0,z:0}), LBL_R=8;
+  for(const [id,txt,x,z] of items){ seen.add(id);
+    if(id!=='lblPortal' && Math.hypot(_pp.x-x,_pp.z-z)>LBL_R){ const eo=document.getElementById(id); if(eo)eo.style.display='none'; continue; }   // only show a station's tag when the player is nearby
+    const e=ensureLabel(id,txt);
     _proj.set(x,3.4,z).project(camera);
     if(_proj.z>1){ e.style.display='none'; continue; }
     e.style.display='block'; e.style.left=((_proj.x*.5+.5)*innerWidth)+'px'; e.style.top=((-_proj.y*.5+.5)*innerHeight)+'px'; }
@@ -7538,6 +7595,7 @@ function renderBuffs(){
 function updateHUD(){
   $('lvlNum').textContent=G.level; $('xpTxt').textContent=Math.floor(G.xp)+'/'+G.xpNeed; $('goldNum').textContent=G.gold;
   { const rc=$('rankChip'); if(rc) rc.innerHTML=rankBadgeHTML(META.fame,true); }
+  { const rh=$('rankHud'); if(rh) rh.innerHTML=rankHudHTML(); }
   $('hpFill').style.height=clamp(G.hp/G.maxhp*100,0,100)+'%'; $('hpTxt').innerHTML='<span class="num">'+Math.ceil(G.hp)+'</span><small>LIFE</small>';
   $('manaFill').style.height=clamp(G.mana/G.maxmana*100,0,100)+'%'; $('manaTxt').innerHTML='<span class="num">'+Math.ceil(G.mana)+'</span><small>MANA</small>';
   $('xpStripFill').style.width=Math.min(100,G.xp/G.xpNeed*100)+'%';   // collect-mode XP can exceed a level — cap the bar
