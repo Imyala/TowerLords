@@ -276,7 +276,8 @@
   .gm-reward .gr-ds{font-size:12px;opacity:.75;margin-top:3px;line-height:1.4;}
   .gm-streak{font-size:11px;opacity:.6;letter-spacing:1px;text-transform:uppercase;text-align:center;margin-top:2px;}
   /* loot bag + crafting panels */
-  #lootPanel{top:50%;left:50%;transform:translate(-50%,-50%);width:340px;padding-bottom:14px;border-color:rgba(141,255,217,.35);}
+  #lootPanel{top:30%;right:20px;width:288px;padding-bottom:12px;border-color:rgba(141,255,217,.35);}   /* off-centre so it never blocks the action */
+  #playerRing{position:absolute;pointer-events:none;z-index:6;display:none;}
   #lootPanel h3{color:#8effd9;}
   #craftPanel{top:50%;left:50%;transform:translate(-50%,-50%);width:470px;padding-bottom:16px;border-color:rgba(200,155,255,.35);}
   #craftPanel h3{color:#c89bff;}
@@ -962,7 +963,7 @@
   #bossArrow .baIc{font-size:14px;}
   @keyframes baPulse{0%,100%{opacity:.8;transform:translate(-50%,-50%) scale(1);}50%{opacity:1;transform:translate(-50%,-50%) scale(1.08);}}
   /* ---- boss speech subtitle ---- */
-  #bossSpeech{position:absolute;bottom:23%;left:50%;transform:translateX(-50%);z-index:9;pointer-events:none;
+  #bossSpeech{position:absolute;top:74px;left:50%;transform:translateX(-50%);z-index:9;pointer-events:none;
     max-width:min(680px,80vw);text-align:center;padding:10px 20px;border-radius:12px;
     background:linear-gradient(180deg,rgba(12,10,20,.9),rgba(8,6,14,.86));border:1px solid rgba(255,206,77,.4);
     box-shadow:0 8px 30px rgba(0,0,0,.6);opacity:0;}
@@ -1030,6 +1031,7 @@
     </div>
 
     <div id="log" class="ui"></div>
+    <canvas id="playerRing"></canvas>
   </div>
 
   <div id="fct"></div>
@@ -2670,7 +2672,7 @@ function makePlayer(idx){ return {
   attackCd:0, invuln:0, dead:false, fervor:0, fervorT:0, rootT:0,
   stunT:0, slowT:0, weakT:0, healCutT:0,   // enemy counter-play debuffs: stun-lock tanks, slow speedsters, weaken bruisers, mortal-wound healers
   adaptWarned:false, recallT:0,            // recallT: channel timer for the quick teleport back to the sanctuary
-  nearStash:false, nearVendor:false, nearPortal:false, nearScore:false, nearChest:null, nearLoot:false, nearCraft:false, _ph:false, _sh:false,
+  nearStash:false, nearVendor:false, nearPortal:false, nearScore:false, nearChest:null, nearLoot:false, nearCraft:false, nearYard:false, _ph:false, _sh:false,
   aim:new THREE.Vector3(),
   in:{mx:0,mz:0,ax:0,az:1,hasAim:false,atk:false,prev:{}},   // per-frame input snapshot (filled by input source)
   downed:false, downT:0, reviveT:0,                          // co-op: downed (revivable) + revive progress
@@ -2681,14 +2683,14 @@ const PF = new Set(['id','name','input','cam','viewport','color','joined','playe
   'stashStrikes','selGem','greed','run','pet','pets','petMesh','petMagnet','petErrand','belt','charge','chargeMax','sigSlot','sigCd',
   'swiftT','perfectT','dashRewarded','dashCd','dashCdMax','dashT','dashDir','flowT','attackCd','invuln','dead','rootT',
   'stunT','slowT','weakT','healCutT','adaptWarned','recallT',
-  'fervor','fervorT','nearStash','nearVendor','nearPortal','nearScore','nearChest','nearLoot','nearCraft','_ph','_sh','aim','in','downed','downT','reviveT']);
+  'fervor','fervorT','nearStash','nearVendor','nearPortal','nearScore','nearChest','nearLoot','nearCraft','nearYard','_ph','_sh','aim','in','downed','downT','reviveT']);
 const _G = {
   running:false, paused:false, floor:1, maxFloor:50, seed:0,
-  enemies:[], projectiles:[], eProjectiles:[], pickups:[], decals:[], scenery:[], timed:[], netDeaths:[], chests:[],
-  portal:null, stashStation:null, vendorStation:null, scoreStation:null, goblin:null, craftStation:null,
+  enemies:[], projectiles:[], eProjectiles:[], pickups:[], decals:[], scenery:[], timed:[], netDeaths:[], chests:[], yardPets:[],
+  portal:null, stashStation:null, vendorStation:null, scoreStation:null, goblin:null, craftStation:null, yardStation:null,
   rects:[], rooms:[], obstacles:[], camps:[], respawns:[], bounds:140,
   shiftT:0, shiftWarned:false, layoutSalt:0, hitstop:0, floorMod:null, bounty:null,
-  hardcore:false, diff:'normal', permadead:false, inTown:false, muted:false, practice:false, tutorial:false, modalOpen:false,
+  hardcore:false, diff:'normal', permadead:false, inTown:false, muted:false, practice:false, tutorial:false, modalOpen:false, inYard:false, nearYardPet:null,
   players:[], cur:0, nPlayers:1, splitscreen:false,
   menuOwner:0, menuPanel:null, menuPrev:{}, focusIdx:0,   // per-player co-op menus
   returnFloor:0, recallGo:false,   // recall-to-sanctuary: returnFloor = the depth to drop back to via the town portal; recallGo = a channel finished, teleport next tick
@@ -2720,7 +2722,7 @@ const ATTR_INFO=[
 const keys={}; const mouse=new THREE.Vector2(); let mouseDown=false; let mouseR=false;
 const aimPoint=new THREE.Vector3(); const raycaster=new THREE.Raycaster();
 const groundPlane=new THREE.Plane(new THREE.Vector3(0,1,0),0);
-const PANELS=['charPanel','treePanel','stashPanel','invPanel','vendorPanel','petPanel','petYardPanel','scorePanel','codexPanel','settingsPanel','lootPanel','craftPanel'];
+const PANELS=['charPanel','treePanel','stashPanel','invPanel','vendorPanel','petPanel','petYardPanel','scorePanel','codexPanel','settingsPanel','craftPanel'];
 function anyPanelOpen(){ return _G.modalOpen || _G.draftOpen || PANELS.some(p=>!$(p).classList.contains('hidden')); }
 function syncPause(){ G.paused=false; }   // menus never pause gameplay — the world keeps running while you browse (mouse-attack stays suppressed via anyPanelOpen so clicking UI won't fire your weapon)
 
@@ -3408,9 +3410,11 @@ function clearWorld(){
   if(G.goblin) scene.remove(G.goblin.mesh);
   if(G.chests) for(const c of G.chests) scene.remove(c.mesh);
   if(G.craftStation) scene.remove(G.craftStation.mesh);
+  if(G.yardStation) scene.remove(G.yardStation.mesh);
+  if(_G.yardPets) for(const yp of _G.yardPets){ if(yp.mesh) scene.remove(yp.mesh); } _G.yardPets=[];
   G.enemies=[];G.projectiles=[];G.eProjectiles=[];G.pickups=[];G.decals=[];G.scenery=[];G.timed=[];G.chests=[];
   G.obstacles=[];G.camps=[];G.respawns=[];G.traps=[];
-  G.portal=null;G.stashStation=null;G.vendorStation=null;G.scoreStation=null;G.goblin=null;G.grid=null;G.craftStation=null;
+  G.portal=null;G.stashStation=null;G.vendorStation=null;G.scoreStation=null;G.goblin=null;G.grid=null;G.craftStation=null;G.yardStation=null;
 }
 // ---- unified walkable grid: collision AND walls both derive from this, so they always match
 // (fixes invisible-wall-stuck spots and messy overlapping wall corners) ----
@@ -3576,6 +3580,9 @@ function generateTown(){
   // crafting bench
   const cg=new THREE.Group(); const cb=new THREE.Mesh(new THREE.CylinderGeometry(2.6,3,.5,6), new THREE.MeshStandardMaterial({color:0x1a2436,emissive:0x3a2a5a,emissiveIntensity:.4,metalness:.4})); const ct=new THREE.Mesh(new THREE.TorusKnotGeometry(0.85,0.26,60,8), new THREE.MeshStandardMaterial({color:0xc89bff,emissive:0xc89bff,emissiveIntensity:.6,flatShading:true})); ct.position.y=1.9; ct.castShadow=true; cg.add(cb,ct);
   cg.position.set(23,.25,-4); scene.add(cg); G.craftStation={mesh:cg,x:23,z:-4};
+  // pet yard gate — walk in to a garden where your companions roam
+  const yg=new THREE.Group(); const yarch=new THREE.Mesh(new THREE.TorusGeometry(1.9,0.28,10,24), new THREE.MeshStandardMaterial({color:0x2a5a2a,emissive:0x3aff8a,emissiveIntensity:.5,flatShading:true})); yarch.position.y=2.1; const ypaw=new THREE.Mesh(new THREE.IcosahedronGeometry(1.0,0), new THREE.MeshStandardMaterial({color:0x8effd9,emissive:0x2effb0,emissiveIntensity:.6,flatShading:true})); ypaw.position.y=1.1; yg.add(yarch,ypaw);
+  yg.position.set(-23,.25,-4); scene.add(yg); G.yardStation={mesh:yg,x:-23,z:-4};
   // score obelisk
   const og=new THREE.Group(); const ob=new THREE.Mesh(new THREE.CylinderGeometry(1.1,1.4,5,6), new THREE.MeshStandardMaterial({color:0x223a55,emissive:0x56e0ff,emissiveIntensity:.4,flatShading:true})); ob.position.y=2.5; ob.castShadow=true; og.add(ob);
   og.position.set(0,0,-8); scene.add(og); G.scoreStation={mesh:og,x:0,z:-8};
@@ -5303,6 +5310,7 @@ function applyStatPot(it){ G.attr[it.attr]=Math.min(ATTR_CAP,(G.attr[it.attr]||0
 }
 function petMaxHp(p){ return 40 + (p?p.level:1)*5; }
 function updatePet(dt){
+  if(_G.inYard){ if(G.petMesh)G.petMesh.visible=false; return; }
   if(!G.pet)return; const pet=G.pet;
   // sell-run errand: pet is away in town, fights nothing, returns with gold
   if(G.petErrand){ G.petErrand.t-=dt; if(G.petMesh) G.petMesh.visible=false;
@@ -5457,8 +5465,111 @@ function renderPetYard(){
     }
     yard.appendChild(card); });
 }
-function openPetYard(){ $('petPanel').classList.add('hidden'); if($('petYardPanel').classList.contains('hidden')) togglePanel('petYardPanel'); }
+function openPetYard(){ $('petPanel').classList.add('hidden'); syncPause(); refreshMenuState(); enterPetYard(); }
 function refreshPetUI(){ if(!$('petPanel').classList.contains('hidden')) renderPet(); if($('petYardPanel')&&!$('petYardPanel').classList.contains('hidden')) renderPetYard(); }
+// ============================================================ PLAYER-CENTRED RING HUD + PET-YARD AREA
+// hp (red, left) · mana (blue, right) · dash cooldown (gold, top) drawn right on the player so you never look away
+const _ringV=new THREE.Vector3();
+function drawPlayerRing(){
+  const cv=$('playerRing'); if(!cv) return;
+  const pl=_G.players[0];
+  if(!_G.running || _G.splitscreen || _G.modalOpen || anyPanelOpen() || !pl || !pl.player){ cv.style.display='none'; return; }
+  _ringV.set(pl.player.position.x,1.3,pl.player.position.z).project(camera);
+  if(_ringV.z>1){ cv.style.display='none'; return; }
+  const SZ=156; if(cv.width!==SZ){ cv.width=SZ; cv.height=SZ; }
+  const sx=(_ringV.x*.5+.5)*innerWidth, sy=(-_ringV.y*.5+.5)*innerHeight;
+  cv.style.display='block'; cv.style.left=(sx-SZ/2)+'px'; cv.style.top=(sy-SZ/2)+'px';
+  const ctx=cv._c||(cv._c=cv.getContext('2d')); ctx.clearRect(0,0,SZ,SZ);
+  const cx=SZ/2, cy=SZ/2, R=52, D=Math.PI/180;
+  const hpF=clamp(pl.hp/(pl.maxhp||1),0,1), mpF=clamp(pl.mana/(pl.maxmana||1),0,1), dF=clamp(1-((pl.dashCd||0)/(pl.dashCdMax||1)),0,1);
+  function seg(a0,sweep,frac,col,w){ const anti=sweep<0, a0r=a0*D, a1r=(a0+sweep)*D, afr=(a0+sweep*frac)*D;
+    ctx.lineCap='round'; ctx.lineWidth=w; ctx.shadowBlur=0;
+    ctx.strokeStyle='rgba(2,6,14,0.55)'; ctx.beginPath(); ctx.arc(cx,cy,R,a0r,a1r,anti); ctx.stroke();
+    if(frac>0.004){ ctx.strokeStyle=col; ctx.shadowColor=col; ctx.shadowBlur=8; ctx.beginPath(); ctx.arc(cx,cy,R,a0r,afr,anti); ctx.stroke(); ctx.shadowBlur=0; } }
+  seg(100,160,hpF,'#ff4d6d',7);    // HP — left arc (fills lower-left → upper-left)
+  seg(80,-160,mpF,'#4aa8ff',7);    // MANA — right arc (fills lower-right → upper-right)
+  seg(248,44,dF,'#ffce4d',6);      // DASH cooldown — top arc (empty right after a dash, refills as it recharges)
+}
+
+// ---- loot bag tooltip (hover shows the item's full info) ----
+function lootTip(it){ const rc=it.rarity?it.rarity.css:'common';
+  let s=`<div class="gt-nm" style="color:var(--${rc})">${it.slotIc||it.ic||'❔'} ${it.name}</div>`;
+  s+=`<div style="font-size:11px;opacity:.72;margin-bottom:4px">${it.rarity?it.rarity.nm:''}${it.slotNm?' · '+it.slotNm:''}</div>`;
+  if(it.affixes&&it.affixes.length) s+=it.affixes.map(a=>`<div style="font-size:11.5px;color:#bfe9ff">${affixLine(a)}</div>`).join('');
+  if(it.element) s+=`<div style="font-size:11px;color:#ff9a4d">Element: ${it.element}</div>`;
+  if(it.sockets) s+=`<div style="font-size:11px;opacity:.7">${it.sockets} socket${it.sockets>1?'s':''}</div>`;
+  if(it.isPot) s+='<div style="font-size:11px;color:#ffce4d">Permanent stat potion — drink from your bag</div>';
+  else if(it.isPet) s+='<div style="font-size:11px;color:#ffce4d">Pet egg — hatch it (right-click)</div>';
+  else if(it.isSkillGem) s+='<div style="font-size:11px;color:#c89bff">Active skill gem</div>';
+  else if(it.isFlask) s+='<div style="font-size:11px;color:#6dff8c">Belt flask</div>';
+  else if(it.isGem) s+='<div style="font-size:11px;color:#56e0ff">Socket gem</div>';
+  if(it.desc) s+=`<div style="font-size:11px;opacity:.7;margin-top:3px">${it.desc}</div>`;
+  return s; }
+
+// ---- PET YARD: a walkable sanctuary-style area where every pet you own roams ----
+function enterPetYard(){
+  if(!G.pets) G.pets=[];
+  if(!G.inTown && !_G.inYard){ log('🏡 Visit the Pet Yard from the Sanctuary — press H to recall there first.'); return; }
+  PANELS.forEach(p=>$(p).classList.add('hidden')); syncPause(); refreshMenuState();
+  clearWorld(); _G.inYard=true; G.inTown=false; setMusicSet('calm');
+  G.floorMod=null; G.bounty=null; G.shiftT=999; G.shiftWarned=false;
+  biome=BIOMES[4];
+  scene.background=new THREE.Color(biome.fog); scene.fog=new THREE.Fog(biome.fog,46,150); hemi.groundColor.setHex(biome.fog);
+  const room={cx:0,cz:0,rw:52,rh:46,x0:-26,x1:26,z0:-23,z1:23}; G.bounds=64;
+  G.rooms=[room]; G.rects=[{x0:room.x0,x1:room.x1,z0:room.z0,z1:room.z1}];
+  buildFloorMeshes(); buildWalls();
+  if(G.player){ repositionParty(0,17); }
+  const pg=new THREE.Group();
+  const ring=new THREE.Mesh(new THREE.TorusGeometry(2.4,.35,12,32), new THREE.MeshStandardMaterial({color:0xff9a3d,emissive:0xff9a3d,emissiveIntensity:1.6})); ring.rotation.x=Math.PI/2; ring.position.y=2.4;
+  const beam=new THREE.Mesh(new THREE.CylinderGeometry(2,2,9,24,1,true), new THREE.MeshBasicMaterial({color:0xff9a3d,transparent:true,opacity:.14,side:THREE.DoubleSide,depthWrite:false})); beam.position.y=4.5;
+  pg.add(ring,beam); pg.position.set(0,0,-18); scene.add(pg); G.portal={mesh:pg,x:0,z:-18,active:true,yard:true};
+  buildYardMeshes();
+  $('floorTitle').textContent='PET YARD'; $('floorType').textContent='🏡 SANCTUARY'; $('floorBig').innerHTML='🏡';
+  $('threatTxt').textContent='SAFE'; $('modTxt').innerHTML=''; $('bountyTxt').innerHTML=''; $('shiftTxt').textContent=''; $('clearTxt').textContent='';
+  log('🏡 PET YARD — your '+G.pets.length+' companion'+(G.pets.length===1?'':'s')+' roam here. Walk up to one and press F to Equip · Fuse · Sell. Step in the portal to return.');
+  clock.getDelta();
+}
+function buildYardMeshes(){
+  if(_G.yardPets) for(const yp of _G.yardPets){ if(yp.mesh) scene.remove(yp.mesh); }
+  _G.yardPets=[];
+  const pets=G.pets||[], n=Math.max(1,pets.length);
+  pets.forEach((pt,i)=>{ ensurePetAbilities(pt); const m=buildPetMesh(pt);
+    const a=i/n*Math.PI*2, rad=6+(i%4)*3.2, rx=clamp(Math.cos(a)*rad,-23,23), rz=clamp(Math.sin(a)*rad*0.8-2,-20,18);
+    m.position.set(rx,1.2,rz); scene.add(m);
+    _G.yardPets.push({pet:pt, mesh:m, wanderT:rand(0,2), tx:rx, tz:rz}); });
+}
+function updatePetYard(dt){
+  if(!_G.inYard) return; const pl=_G.players[0]; if(!pl||!pl.player) return; const p=pl.player.position;
+  let near=null, nd=1e9;
+  for(const yp of (_G.yardPets||[])){ const m=yp.mesh; if(!m) continue;
+    yp.wanderT-=dt; if(yp.wanderT<=0){ yp.wanderT=rand(2.2,4.8); yp.tx=clamp(m.position.x+rand(-9,9),-23,23); yp.tz=clamp(m.position.z+rand(-9,9),-20,17); }
+    m.position.x+=(yp.tx-m.position.x)*Math.min(1,dt*1.1); m.position.z+=(yp.tz-m.position.z)*Math.min(1,dt*1.1);
+    m.position.y=1.2+Math.sin(performance.now()*0.004+m.position.x)*0.14; if(m.userData.body) m.userData.body.rotation.y+=dt*1.6;
+    const d=Math.hypot(p.x-m.position.x,p.z-m.position.z); if(d<nd){ nd=d; near=yp; } }
+  _G.nearYardPet=(near && nd<3.0)?near:null;
+  if(_G.nearYardPet){ if(!_G._pyh){ log('🐾 '+petName(_G.nearYardPet.pet)+' — press F to manage (Equip · Fuse · Sell).'); _G._pyh=true; } } else _G._pyh=false;
+}
+function exitPetYard(){ _G.inYard=false; _G.nearYardPet=null;
+  if(_G.yardPets) for(const yp of _G.yardPets){ if(yp.mesh) scene.remove(yp.mesh); } _G.yardPets=[];
+  generateTown(); }
+function openPetAction(yp){ if(!yp) return; const pet=yp.pet; const gm=$('gameModal'), c=$('gmCard'); if(!gm||!c) return;
+  const rr=PET_RARITY[pet.rarity], active=(pet===G.pet), abs=activeAbilities(pet).map(a=>PET_ABILITIES[a.type].ic+' '+PET_ABILITIES[a.type].nm).join(' · ');
+  c.innerHTML='<div class="gm-ic">'+PET_FAMILIES[pet.family].ic+'</div>'
+    +'<div class="gm-title" style="color:var(--'+rr.css+')">'+petName(pet)+'</div>'
+    +'<div class="gm-body">Lv '+pet.level+'/'+petLevelCap(pet)+' · '+rr.nm+(active?' · <b style="color:var(--gold)">ACTIVE</b>':'')+'<br><span style="opacity:.85">'+(abs||'—')+'</span></div>'
+    +'<div class="gm-actions">'
+      +(active?'':'<button class="gm-btn" id="pyEquip">Equip</button>')
+      +(active?'':'<button class="gm-btn ghost" id="pyFuse">Fuse</button>')
+      +(active?'':'<button class="gm-btn ghost" id="pySell">Sell '+petSellValue(pet)+'g</button>')
+      +'<button class="gm-btn ghost" id="pyClose">Close</button>'
+    +'</div>';
+  if(G.running){ _gmPrevInvuln=G.invuln||0; G.invuln=1e9; } _G.modalOpen=true; gm.classList.add('show'); if(sfx.tick)sfx.tick();
+  const eq=$('pyEquip'); if(eq) eq.onclick=()=>{ setActivePet(pet); log('🐾 '+petName(pet)+' equipped as your companion.'); closeGameModal(); buildYardMeshes(); };
+  const fu=$('pyFuse'); if(fu) fu.onclick=()=>{ if(!G.pet||G.pet===pet){ log('Equip a different pet first, then fuse this one into it.'); closeGameModal(); return; } fusePet(pet); closeGameModal(); buildYardMeshes(); };
+  const se=$('pySell'); if(se) se.onclick=()=>{ sellPet(pet); closeGameModal(); buildYardMeshes(); };
+  $('pyClose').onclick=()=>closeGameModal();
+}
+
 function doFloorShift(){
   if(G.inTown || floorType(G.floor)!=='NORMAL'){ G.shiftT=999; return; }   // SAFE zones & town are rest areas — never reshuffle / never kick the player out
   const wasOpen=G.portal && G.portal.active;   // remember the portal was already unlocked so the reshuffle doesn't make you re-clear
@@ -6089,11 +6200,12 @@ function coopGateAtPortal(){
   return false;
 }
 function interact(){
+  if(_G.inYard){ if(_G.nearYardPet) return openPetAction(_G.nearYardPet); if(G.nearPortal) return exitPetYard(); return; }
   if(G.tutorial){ if(G.nearChest) return openChest(G.nearChest); if(G.nearLoot) return openLootBag(); if(G.nearPortal) return finishTutorial(); return; }
   if(G.practice){ if(G.nearLoot) return openLootBag(); if(G.nearPortal) exitPractice(); return; }
   if(G.nearChest){ return openChest(G.nearChest); }
   if(G.nearLoot){ return openLootBag(); }
-  if(G.inTown){ if(G.nearPortal){ if(coopGateAtPortal()) enterTower(); } else if(G.nearCraft) togglePanel('craftPanel'); else if(G.nearVendor) togglePanel('vendorPanel'); else if(G.nearStash) togglePanel('stashPanel'); else if(G.nearScore) togglePanel('scorePanel'); return; }
+  if(G.inTown){ if(G.nearPortal){ if(coopGateAtPortal()) enterTower(); } else if(G.nearYard) enterPetYard(); else if(G.nearCraft) togglePanel('craftPanel'); else if(G.nearVendor) togglePanel('vendorPanel'); else if(G.nearStash) togglePanel('stashPanel'); else if(G.nearScore) togglePanel('scorePanel'); return; }
   if(G.nearPortal && G.portal.active){ if(coopGateAtPortal()) ascend(); } else if(G.nearVendor) togglePanel('vendorPanel'); else if(G.nearStash) togglePanel('stashPanel');
 }
 function ascend(){ bountyAscendCheck(); const prevNg=ngLevel(G.floor); G.floor++; const ng=ngLevel(G.floor);
@@ -7010,6 +7122,7 @@ function frameBody(){
     }
     renderer.setScissorTest(false); renderer.setViewport(0,0,innerWidth,innerHeight);
     renderer.render(scene,camera);
+    drawPlayerRing();
     return;
   }
   // ----- split-screen: render the shared scene once per player viewport -----
@@ -7041,6 +7154,7 @@ function update(dt){
   // 2) shared world pass (enemies, projectiles, spawning, decals) — runs once
   lerpSnapPrev(G.enemies); lerpSnapPrev(G.projectiles); lerpSnapPrev(G.eProjectiles);   // remember pre-step positions for render interpolation
   updateWorld(dt);
+  if(_G.inYard) updatePetYard(dt);
   lerpSnapCurr(G.enemies); lerpSnapCurr(G.projectiles); lerpSnapCurr(G.eProjectiles); lerpSnapCurr(G.pickups);   // …and post-step, so frame() can glide between them (newly spawned pickups snap, never slide in)
   // 3) co-op revives, then restore P1 context (keydown-driven actions read the active player)
   updateRevives(dt);
@@ -7120,8 +7234,8 @@ function updatePlayerPickups(dt){
   }
   if(isP0){
     G.nearLoot=nearLoot;
-    if(nearLoot){ if(!_lootHint){ log('🎁 Loot on the ground — press F to open the bag.'); _lootHint=true; } }
-    else { _lootHint=false; if(!$('lootPanel').classList.contains('hidden') && !nearbyLootBags().length){ $('lootPanel').classList.add('hidden'); refreshMenuState(); } }
+    if(nearLoot && !anyPanelOpen() && !_G.modalOpen && $('lootPanel').classList.contains('hidden')){ $('lootPanel').classList.remove('hidden'); renderLoot(); }   // auto-open the bag when you walk over loot
+    else if(!nearLoot && !$('lootPanel').classList.contains('hidden') && !nearbyLootBags().length){ $('lootPanel').classList.add('hidden'); }
     if(!$('lootPanel').classList.contains('hidden')) renderLoot();
   }
   cleanDeadPickups();
@@ -7142,6 +7256,9 @@ function updatePlayerStations(dt){
   // crafting bench (sanctuary)
   if(G.craftStation){ if(isP0) G.craftStation.mesh.children[1].rotation.y+=dt*0.9; const d=Math.hypot(p.x-G.craftStation.x,p.z-G.craftStation.z); G.nearCraft=d<4.2;
     if(isP0){ if(G.nearCraft){ if(!_G._crh){ log('⚒ Press F at the bench to craft.'); _G._crh=true; } } else _G._crh=false; } } else G.nearCraft=false;
+  // pet yard gate (sanctuary)
+  if(G.yardStation){ if(isP0) G.yardStation.mesh.children[1].rotation.y+=dt*0.9; const d=Math.hypot(p.x-G.yardStation.x,p.z-G.yardStation.z); G.nearYard=d<4.2;
+    if(isP0){ if(G.nearYard){ if(!_G._pyg){ log('🏡 Press F to enter the Pet Yard.'); _G._pyg=true; } } else _G._pyg=false; } } else G.nearYard=false;
   // nearest unopened chest
   let _nc=null,_ncd=1e9;
   if(G.chests) for(const c of G.chests){ if(c.opened)continue; if(isP0 && c.lid){ c.lid.rotation.x=Math.sin(performance.now()*0.002+c.x)*0.06; } const cd=Math.hypot(p.x-c.x,p.z-c.z); if(cd<_ncd){ _ncd=cd; _nc=c; } }
@@ -7241,7 +7358,7 @@ function renderLoot(){ const grid=$('lootGrid'); if(!grid) return;
   const bags=nearbyLootBags();
   if(!bags.length){ if(!$('lootPanel').classList.contains('hidden')){ $('lootPanel').classList.add('hidden'); refreshMenuState(); } return; }
   grid.innerHTML='';
-  bags.forEach(pk=>{ const t=itemTile(pk.item,{ctx:null}); t.title=pk.item.name+(pk.item.rarity?' · '+pk.item.rarity.nm:'')+' · click to take';
+  bags.forEach(pk=>{ const t=itemTile(pk.item,{ctx:null, tip:lootTip(pk.item)});
     t.addEventListener('click',()=>{ takeLoot(pk); renderLoot(); });
     t.addEventListener('contextmenu',e=>{ e.preventDefault(); takeLoot(pk); renderLoot(); });   // right-click → straight to bag
     grid.appendChild(t); });
@@ -7451,12 +7568,14 @@ function updateWorld(dt){
       if(floorType(G.floor)==='NORMAL') G.respawns.push({t:0.5, room:e.room}); }
     // movement intent
     let mode=null;
-    if(e.boss){ if(e.keep>0){ if(d<e.keep*0.8)mode='away'; else if(d>e.keep*1.2)mode='toward'; } else if(d>e.r+1.4)mode='toward'; }
+    if(e.boss){ if(e.roaming){ e.roamT=(e.roamT||0)+dt; if(d>e.r+1.6) mode='toward'; }   // roaming lords relentlessly hunt you, closing in as the chase drags on
+      else if(e.keep>0){ if(d<e.keep*0.8)mode='away'; else if(d>e.keep*1.2)mode='toward'; } else if(d>e.r+1.4)mode='toward'; }
     else if(!e.aggro){ mode='wander'; }
     else if(e.range){ if(d<e.range*0.55)mode='away'; else if(d>e.range*0.9)mode='toward'; }
     else if(e.windup<=0 && d>atkRange) mode='toward';
     const chase = (!e.range && e.aggro)?1.35:1;        // aggro'd melee are FASTER than the player → stress to kill them quickly
-    if(mode==='toward') moveEntity(e.mesh.position, cx+dx*espd*chase*dt, cz+dz*espd*chase*dt, e.r*0.55);
+    const bossClose=(e.boss&&e.roaming)?(1+Math.min(0.9,(e.roamT||0)*0.02)):1;   // a roaming lord speeds up the longer it hunts — you cannot outrun it forever
+    if(mode==='toward') moveEntity(e.mesh.position, cx+dx*espd*chase*bossClose*dt, cz+dz*espd*chase*bossClose*dt, e.r*0.55);
     else if(mode==='away') moveEntity(e.mesh.position, cx-dx*espd*0.8*dt, cz-dz*espd*0.8*dt, e.r*0.55);
     else if(mode==='wander') wanderEnemy(e, ex, ez, espd, dt);
     // apply knockback / dash through collision so they don't pass walls
