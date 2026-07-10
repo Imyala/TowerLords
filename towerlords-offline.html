@@ -6348,6 +6348,7 @@ function enterPractice(){
   if(G.petMesh){ scene.remove(G.petMesh); G.petMesh=null; } G.pet=null; G.pets=[]; G.petMagnet=0;
   G.run={kills:0,assists:0,healSelf:0,healOthers:0,xp:0,floorTime:0,totalTime:0,floorsCleared:0,boons:[]};
   G.practice=true; G.inTown=false; G.hardcore=false; G.diff='normal'; G.seed=randi(0,9999);
+  _G.players.length=1; const _p0=_G.players[0]; _p0.joined=true; _p0.color=PLAYER_COLORS[0]; _p0.input=_p0.input||makeKbmInput(); _G.cur=0; _G.splitscreen=false;   // ensure P1 has an input source so the player can actually move
   _G.asc=0; _G.ascEff=ascEffects(0);   // the practice arena is never ascended
   initAudio(); startAmbient();
   recompute(); G.hp=G.maxhp; G.mana=G.maxmana;
@@ -7257,6 +7258,7 @@ function enterTutorialFloor(){
   if(G.petMesh){ scene.remove(G.petMesh); G.petMesh=null; } G.pet=null; G.pets=[]; G.petMagnet=0;
   G.run={kills:0,assists:0,healSelf:0,healOthers:0,xp:0,floorTime:0,totalTime:0,floorsCleared:0,boons:[]};
   G.practice=true; G.tutorial=true; G.inTown=false; G.hardcore=false; G.diff='normal'; G.seed=randi(0,9999);
+  _G.players.length=1; const _p0=_G.players[0]; _p0.joined=true; _p0.color=PLAYER_COLORS[0]; _p0.input=_p0.input||makeKbmInput(); _G.cur=0; _G.splitscreen=false;   // ensure P1 has an input source so the player can actually move
   _G.asc=0; _G.ascEff=ascEffects(0);
   initAudio(); startAmbient();
   recompute(); G.hp=G.maxhp; G.mana=G.maxmana;
