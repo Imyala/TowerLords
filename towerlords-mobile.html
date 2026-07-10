@@ -960,6 +960,8 @@
       <div class="mItem" id="openCodexBtn"><span class="mKey">B</span><span class="mIc">📖</span><span class="mLbl">Bestiary</span></div>
       <div class="mItem" id="recallBtn"><span class="mKey">H</span><span class="mIc">🏛</span><span class="mLbl">Recall to Sanctuary</span></div>
       <div class="mItem" id="openSettingsBtn"><span class="mKey">O</span><span class="mIc">⚙</span><span class="mLbl">Settings</span><span class="mEnd" id="muteInd" style="cursor:pointer">🔊</span></div>
+      <div class="mItem" id="openMenuBtn"><span class="mKey"></span><span class="mIc">🏳</span><span class="mLbl">Main Menu</span></div>
+      <div class="mItem" id="openCheatBtn"><span class="mKey"></span><span class="mIc">🐛</span><span class="mLbl">Dev Console (test)</span></div>
     </div>
 
     <div id="towerInfo" class="ui">
@@ -1172,6 +1174,9 @@
         <div style="font-size:12px;opacity:.7;margin:4px 0">Share this <b>room code</b> — friends pick <i>Join a Game</i> and type it in:</div>
         <div id="onRoomCode" style="font-size:44px;letter-spacing:12px;font-weight:700;color:#8effd9;margin:10px 0;user-select:all">·····</div>
         <button class="btn ghost small" id="onCopyCode">📋 Copy code</button>
+        <div style="font-size:12px;opacity:.7;margin:12px 0 4px">…or send this <b>one-click join link</b>:</div>
+        <div id="onRoomLink" style="font-size:12px;color:#67c4ff;margin:4px 0;word-break:break-all;user-select:all">—</div>
+        <button class="btn ghost small" id="onCopyLink" style="display:none">🔗 Copy join link</button>
         <div id="onHostStatus" style="font-size:11px;opacity:.6;margin-top:8px"></div>
         <div id="onHostPeers" style="font-size:12px;margin-top:6px;color:#8effd9"></div>
         <details style="margin-top:14px;font-size:11px;opacity:.75"><summary style="cursor:pointer">Manual connect (fallback — no broker needed)</summary>
@@ -1431,7 +1436,7 @@ const RARITY = [
 ];
 const SLOTS = [
   {k:'weapon', nm:'Weapon', ic:'⚔', primary:'dmgPct',  names:['Blade','Wand','Maul','Scepter','Cleaver','Spike']},
-  {k:'helm',   nm:'Helm',   ic:'⛑', primary:'lifeFlat', names:['Helm','Crown','Visor','Hood','Circlet']},
+  {k:'helm',   nm:'Helm',   ic:'⛑', primary:'lifePct', names:['Helm','Crown','Visor','Hood','Circlet']},
   {k:'chest',  nm:'Chest',  ic:'🛡', primary:'armor',    names:['Plate','Vest','Robe','Carapace','Aegis']},
   {k:'gloves', nm:'Gloves', ic:'🧤', primary:'asPct',    names:['Gauntlets','Grips','Claws','Wraps']},
   {k:'boots',  nm:'Boots',  ic:'👢', primary:'movePct',  names:['Greaves','Treads','Striders','Boots']},
@@ -1544,6 +1549,7 @@ function rollAffixVal(a,floor){
 }
 const SOCKETS_BY_RARITY={Common:0, Rare:1, Epic:2, Legendary:3};
 function makeItem(floor, slotKey, rarityForce, uniqueChance){
+  if(!rarityForce && !slotKey){ const ab=maybeAbnormal(floor); if(ab) return ab; }   // rare chance at an abnormal-status drop
   if(!rarityForce && !slotKey && Math.random() < (uniqueChance!=null?uniqueChance:(0.015+floor*0.0025))) return makeUnique(floor);
   const slot = slotKey?SLOTMAP[slotKey]:pick(SLOTS);
   let rar=rarityForce;
@@ -1580,7 +1586,7 @@ const GEMS = [
   {gemType:'ruby',     nm:'Ruby',     ic:'🔥', element:'fire',  ailChance:12, mods:{dmgPct:6}},
   {gemType:'sapphire', nm:'Sapphire', ic:'❄', element:'cold',  ailChance:12, mods:{dmgPct:5,armor:8}},
   {gemType:'topaz',    nm:'Topaz',    ic:'⚡', element:'light', ailChance:12, mods:{crit:4}},
-  {gemType:'emerald',  nm:'Emerald',  ic:'💚', mods:{lifeFlat:18}},
+  {gemType:'emerald',  nm:'Emerald',  ic:'💚', mods:{lifePct:3}},
   {gemType:'amethyst', nm:'Amethyst', ic:'🔮', mods:{manaFlat:16,skillDmgPct:6}},
   {gemType:'diamond',  nm:'Diamond',  ic:'💎', mods:{crit:5,critMultPct:10}},
   {gemType:'onyx',     nm:'Onyx',     ic:'🖤', mods:{asPct:7}},
@@ -1634,7 +1640,7 @@ function makeFlask(floor, idForce){ const id=idForce||pick(FLASK_IDS), f=FLASKS[
 function makeSkillGem(floor, idForce){ const id=idForce||pick(SKILL_IDS), sk=SKILLS[id], tier=clamp(1+Math.floor(floor/14),1,5);
   return {isSkillGem:true, skillId:id, ic:sk.ic, slotIc:sk.ic, slotNm:'Skill Gem', tier, affixes:[],
     rarity: tier>=4?RARITY[3]:tier>=2?RARITY[2]:RARITY[1], name:`${sk.nm}${tier>1?' '+ROMAN[tier]:''}`,
-    value:60+tier*40+floor*3, desc:`Active skill · bind to 1–9 bar${tier>1?` · +${(tier-1)*15}% power`:''}`}; }
+    value:60+tier*40+floor*3, desc:(sk.toggle?`Toggle aura · bind to slots 5–9 · ${sk.mps} mana/sec while active`:`Active skill · bind to slots 1–4${tier>1?` · +${(tier-1)*15}% power`:''}`)}; }
 // ---- user settings (persist across sessions) ----
 const SETTINGS_KEY='towerlords_settings_v1';
 const SETTINGS={ bigNumbers:true, moveMode:'keyboard', tips:true, autoSalvage:true, music:true, musicVol:75, junkMaxRarity:1, camSway:true, touch:'auto', touchAim:'auto' };   // autoSalvage: grey/common drops auto-sell for gold · musicVol: music loudness 0-100 (player-set) · junkMaxRarity: highest rarity index eligible for bulk feed/sell · camSway: directional camera lean · touch: mobile on-screen controls (auto/on/off) · touchAim: auto-aim vs twin-stick
@@ -1843,7 +1849,7 @@ const FLOOR_MODS=[
 const GREED_STEP=0.16, GREED_MAX=2.6;   // +0.16 per floor since last bank, up to ×2.6
 function greedMult(){ return clamp(G.greed||1, 1, GREED_MAX); }
 function lootMult(){ return fortuneMult() * (G.floorMod?.loot||1) * greedMult(); }
-function goldMult(){ return fortuneMult() * (G.floorMod?.gold||1) * greedMult() * (1+((G.S&&G.S.goldBonus)||0)/100); }
+function goldMult(){ return fortuneMult() * (G.floorMod?.gold||1) * greedMult() * (1+((G.S&&G.S.goldBonus)||0)/100) * (auraOn('tGreed')?1.3:1); }
 // banking carried loot "cashes in" the greed you've built — a fame payout scaled by how far you pushed — then resets the stakes
 function bankCashIn(n){
   if(!((G.greed||1)>1.02) || !n || n<=0){ G.greed=1; return; }
@@ -1930,6 +1936,214 @@ const SKILL_DESC={
 for(const id in SKILLS){ if(SKILL_DESC[id]) SKILLS[id].ds=SKILL_DESC[id]; }
 const SLOT_KEYS=['1','2','3','4','5','6','7','8','9']; const SLOT_LABEL=['1','2','3','4','5','6','7','8','9'];   // 9-skill bar (Torchlight-style)
 const FLASK_KEYS=['q','e','r','z','x']; const FLASK_LABEL=['Q','E','R','Z','X'];   // 5 belt flasks
+
+// ============================================================ TOGGLE AURAS + ABNORMAL EFFECTS + DEV CHEATS
+// Slots 1–4 (index 0–3) are press-to-cast ACTIVE skills; slots 5–9 (index 4–8) hold TOGGLE auras:
+// press once to switch on, they stay passively active and drain mana every second until you toggle
+// them off or run dry. G.auras[skillId] === true while an aura is running.
+Object.assign(SKILLS,{
+  tAegis: {nm:'Aegis Field',   ic:'🛡️', toggle:true, mps:5, mana:0, cd:0, ds:'TOGGLE aura — deflect 50% of incoming damage. Drains 5 mana/sec.'},
+  tFervor:{nm:'Bloodlust',     ic:'😤', toggle:true, mps:6, mana:0, cd:0, ds:'TOGGLE aura — +30% damage dealt. Drains 6 mana/sec.'},
+  tGale:  {nm:'Windrunner',    ic:'💨', toggle:true, mps:4, mana:0, cd:0, ds:'TOGGLE aura — +25% move & attack speed. Drains 4 mana/sec.'},
+  tThorns:{nm:'Spike Ward',    ic:'🌵', toggle:true, mps:4, mana:0, cd:0, ds:'TOGGLE aura — reflect 50% of damage taken back at your attackers. Drains 4 mana/sec.'},
+  tSiphon:{nm:'Sanguine Aura', ic:'🩸', toggle:true, mps:5, mana:0, cd:0, ds:'TOGGLE aura — heal for 10% of the damage you deal. Drains 5 mana/sec.'},
+  tRime:  {nm:'Rime Aura',     ic:'❄️', toggle:true, mps:4, mana:0, cd:0, ds:'TOGGLE aura — nearby enemies are slowed. Drains 4 mana/sec.'},
+  tGreed: {nm:'Avarice Field', ic:'🤑', toggle:true, mps:3, mana:0, cd:0, ds:'TOGGLE aura — +30% gold gained. Drains 3 mana/sec.'},
+});
+const TOGGLE_IDS=['tAegis','tFervor','tGale','tThorns','tSiphon','tRime','tGreed'];
+function isToggleId(id){ return !!(SKILLS[id]&&SKILLS[id].toggle); }
+function auraOn(id){ return !!(G.auras&&G.auras[id]); }
+function toggleAura(i){
+  const slot=G.slots[i]; if(!slot) return; const sk=SKILLS[slot.skillId]; if(!sk||!sk.toggle) return;
+  const p=G.player&&G.player.position; G.auras=G.auras||{};
+  if(G.auras[slot.skillId]){ delete G.auras[slot.skillId]; if(p) floatText(p.x,p.z,'✕ '+sk.nm,'mana',2.4); }
+  else { if(G.mana < sk.mps){ if(p) floatText(p.x,p.z,'no mana','mana',2.4); return; } G.auras[slot.skillId]=true; if(p){ floatText(p.x,p.z,sk.ic+' '+sk.nm,'heal',2.6); ringFx(p.x,p.z,3,0x8effd9); } }
+  if(typeof renderActionbar==='function') renderActionbar();
+}
+
+// ---- ABNORMAL EFFECTS: quirky, "fun-first" item powers. Effects are keyed flags collected onto
+//      G.S.abn (a Set) in recompute() from any equipped item's .abn field, then read at hot hook points.
+//      Item tooltips only ever read "Abnormal status effect." — the actual behaviour is a surprise.
+function abnHas(k){ const s=G.S&&G.S.abn; return !!(s&&s.has&&s.has(k)); }
+let _abnBusy=false;
+// on firing the basic attack — tweak the projectiles we just spawned / add bonus shots
+function abnFire(shots){
+  const p=G.player.position, arr=G.projectiles, tail=arr.slice(Math.max(0,arr.length-shots));
+  if(abnHas('drunkShots')) for(const b of tail){ const s=Math.hypot(b.vx,b.vz)||1; b.wave={amp:2.4,freq:16,t:0,hx:b.vx/s,hz:b.vz/s,spd:s,ox:b.mesh.position.x,oz:b.mesh.position.z}; }
+  if(abnHas('homingHate')) for(const b of tail){ b.homing=6; }
+  if(abnHas('bouncyShots')) for(const b of tail){ b.bounce=(b.bounce||0)+2; }
+  if(abnHas('boomerangs')) for(const b of tail){ b.boom={out:0.4,spd:Math.hypot(b.vx,b.vz),t:0}; b.pierce=Math.max(b.pierce,99); }
+  if(abnHas('giantBolts')) for(const b of tail){ b.dmg*=1.6; b.vx*=0.68; b.vz*=0.68; b.life+=0.6; try{ b.mesh.scale.setScalar(2.2); }catch(_){} }
+  const ba=Math.atan2(aimPoint.x-p.x,aimPoint.z-p.z), bd=(G.S.dmgBase||6)*((G.S.wpn&&G.S.wpn.dmgMult)||1);
+  if(abnHas('backfire')){ const dx=-Math.sin(ba),dz=-Math.cos(ba); try{ fireBolt(p.x+dx,p.z+dz,dx,dz,bd,false,G.S.pierce||0,(G.S.wpn&&G.S.wpn.size)||0.4,(G.S.wpn&&G.S.wpn.speed)||30,G.S.element,(G.S.wpn&&G.S.wpn.life)||1.2,{}); }catch(_){} }
+  if(abnHas('splitshot')) for(const off of [-0.35,0.35]){ const a=ba+off,dx=Math.sin(a),dz=Math.cos(a); try{ fireBolt(p.x+dx,p.z+dz,dx,dz,bd*0.7,false,G.S.pierce||0,(G.S.wpn&&G.S.wpn.size)||0.4,(G.S.wpn&&G.S.wpn.speed)||30,G.S.element,(G.S.wpn&&G.S.wpn.life)||1.2,{}); }catch(_){} }
+}
+// on dealing damage to an enemy (player source only) — returns the (possibly modified) damage
+function abnHitEnemy(e,dmg,crit,element){
+  if(auraOn('tFervor')) dmg*=1.3;
+  if(abnHas('lowHpBonus')) dmg*=1+(1-G.hp/G.maxhp)*0.6;
+  if(_abnBusy) return dmg; _abnBusy=true;
+  try{ const x=e.mesh.position.x, z=e.mesh.position.z;
+    if(abnHas('vampShot')&&G.hp<G.maxhp){ const h=Math.min(dmg*0.12,G.maxhp-G.hp); G.hp+=h; G.run.healSelf+=h; }
+    if(auraOn('tSiphon')&&G.hp<G.maxhp){ const h=Math.min(dmg*0.10,G.maxhp-G.hp); G.hp+=h; G.run.healSelf+=h; }
+    if(abnHas('critHeal')&&crit&&G.hp<G.maxhp){ const h=Math.min(G.maxhp*0.03,G.maxhp-G.hp); G.hp+=h; floatText(x,z,'♥','heal',2); }
+    if(abnHas('knockup')){ const dx=x-G.player.position.x,dz=z-G.player.position.z,d=Math.hypot(dx,dz)||1; e.kx=dx/d*0.55; e.kz=dz/d*0.55; }
+    if(abnHas('goldHit')&&Math.random()<0.08){ G.gold=(G.gold||0)+1; }
+    if(abnHas('marked')&&Math.random()<0.25&&!e.dead) applyAilment(e,'shock',dmg);
+    if(abnHas('chainSpark')&&Math.random()<0.16){ const t=nearestEnemyTo(x,z,10); if(t&&t!==e&&!t.dead) hurtEnemy(t,dmg*0.5,false,'light','player'); }
+  }catch(_){}
+  _abnBusy=false; return dmg;
+}
+// on killing an enemy
+function abnKill(e){ const x=e.mesh.position.x, z=e.mesh.position.z;
+  if(abnHas('explodeKill')){ ringFx(x,z,4,0xff7a3d); burst(x,z,0xff7a3d); hitRadius(x,z,4,Math.max(6,(G.S.dmgBase||6)*2),120,'fire'); }
+  if(abnHas('freezeKill')) for(const o of G.enemies){ if(o===e||o.dead)continue; if(Math.hypot(o.mesh.position.x-x,o.mesh.position.z-z)<5) o.chill=Math.max(o.chill||0,2); }
+  if(abnHas('bananaKill')) for(const o of G.enemies){ if(o===e||o.dead)continue; if(Math.hypot(o.mesh.position.x-x,o.mesh.position.z-z)<4) o.chill=Math.max(o.chill||0,1); }
+  if(abnHas('goldBurst')){ G.gold=(G.gold||0)+Math.round(2+(G.floor||1)*0.5); }
+  if(abnHas('healKill')&&G.hp<G.maxhp){ G.hp=Math.min(G.maxhp,G.hp+G.maxhp*0.02); }
+  if(abnHas('xpKill')&&typeof gainXP==='function') gainXP(Math.max(1,Math.round((e.xp||1)*0.5)));
+  if(abnHas('manaKill')) G.mana=Math.min(G.maxmana,G.mana+8);
+  if(abnHas('ammoKill')) refillFlasks(4);
+  if(abnHas('souljar')){ G._souls=(G._souls||0)+1; if(G._souls%12===0){ G.hp=Math.min(G.maxhp,G.hp+G.maxhp*0.25); floatText(x,z,'✦ SOUL','heal',3); } }
+}
+// on the player taking damage — mutate o.real before it lands
+function abnTakeDamage(o){
+  const p=G.player&&G.player.position;
+  if(auraOn('tAegis')) o.real*=0.5;
+  if(abnHas('mirrorDodge')&&Math.random()<0.3){ o.real=0; if(p) floatText(p.x,p.z,'MIRROR','heal',2.6); }
+  if(abnHas('manaBuffer')&&G.mana>0){ const ab=Math.min(G.mana,o.real*0.5); G.mana-=ab; o.real-=ab; }
+  if(abnHas('secondWind')&&!G._swUsed&&o.real>=G.hp){ o.real=0; G._swUsed=true; G.hp=Math.max(G.hp,G.maxhp*0.4); if(p){ floatText(p.x,p.z,'✦ SECOND WIND','heal',3.4); ringFx(p.x,p.z,4,0xffce4d); } }
+  if((abnHas('thornmail')||auraOn('tThorns'))&&p){ hitRadius(p.x,p.z,5,o.real*(auraOn('tThorns')?0.5:0.4),80,G.S.element); }
+  if(abnHas('rubberband')&&p){ for(const e of G.enemies){ if(e.dead)continue; const dx=e.mesh.position.x-p.x,dz=e.mesh.position.z-p.z,d=Math.hypot(dx,dz)||1; if(d<6){ e.kx=dx/d*0.8; e.kz=dz/d*0.8; } } }
+  if(abnHas('painToGold')) G.gold=(G.gold||0)+Math.round(o.real);
+}
+// per-frame — aura mana drain + continuous abnormal effects
+function abnTick(dt){
+  const p=G.player&&G.player.position; if(!p) return;
+  if(G.auras){ for(const id in G.auras){ const sk=SKILLS[id]; if(!sk){ delete G.auras[id]; continue; } const c=(sk.mps||0)*dt;
+    if(G.mana<c){ delete G.auras[id]; floatText(p.x,p.z,'✕ '+sk.nm,'mana',2.2); if(typeof renderActionbar==='function') renderActionbar(); } else G.mana-=c; } }
+  if(auraOn('tRime')) for(const e of G.enemies){ if(e.dead)continue; if(Math.hypot(e.mesh.position.x-p.x,e.mesh.position.z-p.z)<9) e.chill=Math.max(e.chill||0,0.6); }
+  if(abnHas('featherfall')) G.dashCd=Math.min(G.dashCd,0.15);
+  if(abnHas('juggernaut')){ G.slowT=0; G.rootT=0; }
+  if(abnHas('panicHeal')&&G.hp<G.maxhp*0.25) G.hp=Math.min(G.maxhp,G.hp+G.maxhp*0.08*dt);
+  if(abnHas('secondWind')&&G.hp>=G.maxhp*0.9) G._swUsed=false;
+  if(abnHas('doubleTap')&&Math.random()<0.12) G.attackCd=0;
+  if(abnHas('discoPulse')){ G._disco=(G._disco||0)+dt; if(G._disco>=2.4){ G._disco=0; ringFx(p.x,p.z,6,0xff3ea5);
+    for(const e of G.enemies){ if(e.dead)continue; if(Math.hypot(e.mesh.position.x-p.x,e.mesh.position.z-p.z)<6) hurtEnemy(e,Math.max(4,(G.S.dmgBase||6)*1.2),false,'light','player'); } } }
+  if(abnHas('magnetize')){ try{ const arr=G.pickups||G.loot||G.drops||[]; for(const pk of arr){ const m=pk.mesh||pk; if(!m||!m.position)continue; const dx=p.x-m.position.x,dz=p.z-m.position.z,d=Math.hypot(dx,dz); if(d<18&&d>0.6){ m.position.x+=dx/d*10*dt; m.position.z+=dz/d*10*dt; } } }catch(_){} }
+}
+// first time we see an enemy projectile — abnormal bullet manipulation
+function abnEnemyBulletSpawn(b){
+  if(abnHas('slowBullets')){ b.vx*=0.6; b.vz*=0.6; }
+  if(abnHas('popBullets')&&Math.random()<0.22){ b.dead=true; try{ ringFx(b.mesh.position.x,b.mesh.position.z,0.6,0xffe14d); }catch(_){} return; }
+  if(abnHas('heartbreaker')&&Math.random()<0.5){ b._heart=true; b.dmg=0; try{ b.mesh.material.color&&b.mesh.material.color.setHex(0xff5c9a); b.mesh.material.emissive&&b.mesh.material.emissive.setHex(0xff2d6a); }catch(_){} return; }
+  if(abnHas('reflectBullets')&&Math.random()<0.25){ const t=nearestEnemyTo(b.mesh.position.x,b.mesh.position.z,60);
+    if(t){ const dx=t.mesh.position.x-b.mesh.position.x,dz=t.mesh.position.z-b.mesh.position.z,d=Math.hypot(dx,dz)||1; try{ fireBolt(b.mesh.position.x,b.mesh.position.z,dx/d,dz/d,Math.max(6,(G.S.dmgBase||6)*1.5),false,1,0.4,26,G.S.element,1.4,{}); }catch(_){} } b.dead=true; }
+}
+
+// ---- ABNORMAL ITEMS: 40 abnormal weapons + 40 abnormal items (one weapon + one wearable per effect) ----
+const ABN_RAR={nm:'Abnormal', col:0x00e5b0, css:'unique', mult:8, affixes:0};
+const ABN_FX=[
+  {key:'reverseRun',    wnm:'Backpedal Blaster',   inm:'Contrarian Cloak'},
+  {key:'backfire',      wnm:'Recoil Repeater',     inm:'Kickback Mantle'},
+  {key:'splitshot',     wnm:'Fork-Tongue Bow',     inm:'Twinned Circlet'},
+  {key:'drunkShots',    wnm:'Tipsy Tommygun',      inm:'Wobble Waistcoat'},
+  {key:'homingHate',    wnm:'Grudge Launcher',     inm:"Stalker's Signet"},
+  {key:'bouncyShots',   wnm:'Rubber Rifle',        inm:'Trampoline Treads'},
+  {key:'giantBolts',    wnm:'Boulder Bazooka',     inm:"Titan's Gauntlets"},
+  {key:'boomerangs',    wnm:'Comeback Chakram',    inm:'Returning Ring'},
+  {key:'doubleTap',     wnm:'Itchy-Trigger Pistol',inm:'Twitch Bracers'},
+  {key:'vampShot',      wnm:'Leech Lance',         inm:'Bloodbank Band'},
+  {key:'lowHpBonus',    wnm:"Deadman's Derringer", inm:'Last-Stand Cuirass'},
+  {key:'critHeal',      wnm:"Surgeon's Scattergun",inm:"Mender's Mask"},
+  {key:'knockup',       wnm:'Uppercut Ordnance',   inm:'Springheel Boots'},
+  {key:'goldHit',       wnm:'Midas Musket',        inm:'Coinpurse Cowl'},
+  {key:'marked',        wnm:'Static Slinger',      el:'light', inm:"Conductor's Coif"},
+  {key:'chainSpark',    wnm:'Arcbolt Autogun',     el:'light', inm:'Tesla Torc'},
+  {key:'explodeKill',   wnm:'Demolition Driver',   el:'fire',  inm:'Blastproof Vest'},
+  {key:'freezeKill',    wnm:'Cryo Carbine',        el:'cold',  inm:'Frostwake Boots'},
+  {key:'bananaKill',    wnm:'Slapstick Scepter',   inm:"Jester's Slippers"},
+  {key:'goldBurst',     wnm:'Bullion Blunderbuss', inm:"Tycoon's Tiara"},
+  {key:'healKill',      wnm:"Reaper's Recompense",  inm:'Lifedrinker Locket'},
+  {key:'xpKill',        wnm:"Scholar's Scattergun", inm:'Prodigy Pauldrons'},
+  {key:'manaKill',      wnm:'Wellspring Wand',      inm:'Aether Amice'},
+  {key:'ammoKill',      wnm:"Quartermaster's Cannon",inm:'Bandolier Bracers'},
+  {key:'souljar',       wnm:'Soulcatcher Staff',   inm:'Reliquary Ring'},
+  {key:'mirrorDodge',   wnm:"Illusionist's Iron",  inm:'Mirage Mantle'},
+  {key:'manaBuffer',    wnm:'Warding Wand',        inm:'Aetherweave Robe'},
+  {key:'secondWind',    wnm:'Phoenix Piece',       el:'fire',  inm:'Undying Vest'},
+  {key:'thornmail',     wnm:'Bramble Blaster',     inm:'Bramblemail'},
+  {key:'rubberband',    wnm:'Shockwave Shotgun',   inm:'Repulsor Ring'},
+  {key:'painToGold',    wnm:"Masochist's Musket",  inm:"Martyr's Mantle"},
+  {key:'heartbreaker',  wnm:"Cupid's Crossbow",    inm:'Sweetheart Shawl'},
+  {key:'slowBullets',   wnm:'Molasses Musket',     inm:"Sluggard's Girdle"},
+  {key:'popBullets',    wnm:'Bubblewrap Blaster',  inm:"Popper's Poncho"},
+  {key:'reflectBullets',wnm:'Returnfire Rifle',    inm:'Deflector Diadem'},
+  {key:'featherfall',   wnm:'Zephyr Zapper',       el:'light', inm:'Featherfall Boots'},
+  {key:'panicHeal',     wnm:'Adrenaline Autogun',  inm:'Panic Plate'},
+  {key:'discoPulse',    wnm:'Disco Destroyer',     el:'light', inm:'Groovy Garb'},
+  {key:'magnetize',     wnm:'Lodestone Launcher',  inm:'Magnetic Mitts'},
+  {key:'juggernaut',    wnm:'Bulldozer Blaster',   inm:'Juggernaut Cuirass'},
+];
+const ABN_ARCH=Object.keys(WEAPON_ARCHETYPES);
+const ABN_ISLOTS=['helm','chest','gloves','boots','ring'];
+function _abnAff(k,v){ const d=AFFIXMAP[k]; return {key:k,name:d?d.name:k,pct:d?d.pct:true,val:v}; }
+function _abnWearAff(slot,idx){ const a=[_abnAff('lifePct',8+idx%6)];
+  if(slot==='ring') a.push(_abnAff('crit',5)); else if(slot==='boots') a.push(_abnAff('movePct',8));
+  else if(slot==='gloves') a.push(_abnAff('asPct',8)); else a.push(_abnAff('armor',20+idx%16)); return a; }
+const ABNORMALS=[];
+ABN_FX.forEach((f,idx)=>{
+  ABNORMALS.push({key:f.key, nm:f.wnm, slot:'weapon', arch:ABN_ARCH[idx%ABN_ARCH.length], el:f.el||null,
+    aff:[_abnAff('dmgPct',14+idx%10), _abnAff('asPct',8)]});
+  const wslot=ABN_ISLOTS[idx%ABN_ISLOTS.length];
+  ABNORMALS.push({key:f.key, nm:f.inm, slot:wslot, arch:null, el:null, aff:_abnWearAff(wslot,idx)});
+});
+function makeAbnItem(d){ const slot=SLOTMAP[d.slot]||SLOTMAP.ring; const isW=d.slot==='weapon';
+  return { slotKey:d.slot, slotIc:slot.ic, slotNm:slot.nm, rarity:ABN_RAR, affixes:(d.aff||[]).slice(), sockets:0, socketed:[],
+    value:120+(G.floor||1)*4, floor:(G.floor||1), name:d.nm, arch:isW?(d.arch||ABN_ARCH[0]):null, element:d.el||null,
+    abn:d.key, unique:true, desc:'❔ Abnormal status effect.' }; }
+function makeAbnormal(slotFilter){ let pool=ABNORMALS;
+  if(slotFilter==='weapon') pool=ABNORMALS.filter(d=>d.slot==='weapon');
+  else if(slotFilter==='wear') pool=ABNORMALS.filter(d=>d.slot!=='weapon');
+  return makeAbnItem(pick(pool.length?pool:ABNORMALS)); }
+function maybeAbnormal(floor){ return (Math.random() < 0.02+(floor||0)*0.0016) ? makeAbnormal() : null; }
+
+// ---- DEV CHEAT CONSOLE (press ~ / backtick) — TESTING ONLY. TODO(dev): remove this whole block before release. ----
+const CHEAT_HELP='DEV commands (remove before release):\n  gold N · fame N · xp N · level N · heal · god [off]\n  petmax · petfeed · skills · abn [n|all] · items [n]';
+let _cheatEl=null;
+function toggleCheat(){
+  if(_cheatEl){ _cheatEl.remove(); _cheatEl=null; return; }
+  const box=document.createElement('div'); box.id='cheatConsole';
+  box.style.cssText='position:fixed;left:50%;top:12%;transform:translateX(-50%);z-index:99999;background:#0b1020ee;border:1px solid #ff5c78;border-radius:10px;padding:12px 14px;width:min(560px,92vw);box-shadow:0 0 30px #ff5c7844;font-family:monospace;color:#e8edf7';
+  box.innerHTML='<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px"><span style="color:#ff8a9c;font-size:12px;letter-spacing:1px">⚠ DEV CHEAT CONSOLE — testing only</span><button id="cheatClose" type="button" style="background:#2a1520;border:1px solid #ff5c78;color:#ff8a9c;border-radius:6px;font-size:14px;line-height:1;padding:4px 9px;cursor:pointer">✕</button></div>'+
+    '<input id="cheatIn" autocomplete="off" spellcheck="false" placeholder="e.g.  gold 5000  ·  abn all  ·  help" style="width:100%;box-sizing:border-box;background:#05070f;border:1px solid #2a3350;border-radius:6px;color:#8effd9;padding:8px;font-family:monospace;font-size:16px;outline:none">'+
+    '<div id="cheatOut" style="font-size:12px;color:#9fb0d0;margin-top:8px;white-space:pre-wrap;max-height:180px;overflow:auto"></div>';
+  document.body.appendChild(box); _cheatEl=box;
+  const inp=box.querySelector('#cheatIn'), out=box.querySelector('#cheatOut'); out.textContent=CHEAT_HELP;
+  box.querySelector('#cheatClose').onclick=()=>toggleCheat();
+  inp.addEventListener('keydown',ev=>{ ev.stopPropagation();
+    if(ev.key==='Enter'){ const v=inp.value.trim(); inp.value=''; if(v) out.textContent=(runCheat(v)||'ok')+'\n\n'+out.textContent; }
+    else if(ev.key==='Escape'||ev.code==='Backquote'){ toggleCheat(); } });
+  inp.addEventListener('keyup',ev=>ev.stopPropagation());
+  setTimeout(()=>inp.focus(),0);
+}
+function runCheat(cmd){ const a=cmd.split(/\s+/), c=a[0].toLowerCase(), n=parseInt(a[1]);
+  try{ switch(c){
+    case 'help': return CHEAT_HELP;
+    case 'gold': G.gold=(G.gold||0)+(n||1000); if(typeof flashGold==='function')flashGold(); return 'gold → '+G.gold;
+    case 'fame': META.fame=(META.fame||0)+(n||1000); if(typeof saveMeta==='function')saveMeta(); if(typeof updateFameBar==='function')updateFameBar(); return 'fame → '+Math.floor(META.fame);
+    case 'xp': if(typeof gainXP==='function')gainXP(n||1000); return 'xp +'+(n||1000)+' → Lv '+G.level;
+    case 'level': { const t=Math.max(1,n||10); let g=0; while(G.level<t&&g++<800){ if(typeof gainXP==='function')gainXP(G.xpNeed||100); else break; } return 'level → '+G.level; }
+    case 'heal': G.hp=G.maxhp; G.mana=G.maxmana; return 'full hp & mana';
+    case 'god': if(a[1]==='off'){ G.invuln=0; return 'god OFF'; } G.invuln=1e9; return 'god ON (invuln) — "god off" to clear';
+    case 'petmax': if(!G.pet) return 'no active pet — hatch one in the Pet panel first'; G.pet.rarity=4; G.pet.level=petLevelCap(G.pet); G.pet.xp=0; if(typeof recompute==='function')recompute(); if(typeof renderPet==='function')renderPet(); return 'active pet maxed → Lv '+G.pet.level;
+    case 'petfeed': G.inv.push(makeAmbrosia()); if(typeof refreshItemPanels==='function')refreshItemPanels(); return 'added ★ Ambrosia — feed it in the Pet panel (P) to MAX your pet';
+    case 'skills': { let k=0; for(const id in SKILLS){ G.inv.push(makeSkillGem(5,id)); k++; } if(typeof refreshItemPanels==='function')refreshItemPanels(); return 'granted '+k+' skill gems (incl. toggle auras) → inventory'; }
+    case 'abn': { if((a[1]||'').toLowerCase()==='all'){ for(const d of ABNORMALS) G.inv.push(makeAbnItem(d)); if(typeof refreshItemPanels==='function')refreshItemPanels(); return 'added all '+ABNORMALS.length+' abnormal items'; } const cnt=n||5; for(let i=0;i<cnt;i++) G.inv.push(makeAbnormal()); if(typeof refreshItemPanels==='function')refreshItemPanels(); return 'added '+cnt+' random abnormal items'; }
+    case 'items': { const cnt=n||5; for(let i=0;i<cnt;i++) G.inv.push(makeItem(G.floor||1)); if(typeof refreshItemPanels==='function')refreshItemPanels(); return 'added '+cnt+' random items'; }
+    default: return '? unknown "'+c+'" — type help';
+  } }catch(err){ return '⚠ '+(err&&err.message||err); } }
+function makeAmbrosia(){ return {isPot:true, _ambrosia:true, ic:'🍯', slotIc:'🍯', slotNm:'Treat', rarity:ABN_RAR, name:'★ Ambrosia', value:0, floor:1, affixes:[], desc:'Feed to your companion to instantly MAX its level. (dev item)'}; }
 
 // ============================================================ SKILL FUSION
 // Combine two skill gems into one. A predefined SYNERGY pair becomes a unique skill that's stronger than both;
@@ -2451,13 +2665,14 @@ function syncPause(){ G.paused=false; }   // menus never pause gameplay — the 
 
 addEventListener('keydown',e=>{
   const k=e.key.toLowerCase(); keys[k]=true;
+  if(e.code==='Backquote' && !(document.activeElement && /INPUT|TEXTAREA/.test(document.activeElement.tagName))){ toggleCheat(); e.preventDefault(); return; }   // ~ opens the DEV cheat console (testing only)
   if(!G.running) return;
   const pk={c:'charPanel',t:'treePanel',i:'invPanel',p:'petPanel',v:'scorePanel',b:'codexPanel',o:'settingsPanel'}[k];
   if(pk){ _G.menuOwner=0; _G.cur=0; togglePanel(pk); }   // P1's keyboard always manages P1
   else if(k==='m'){ toggleMute(); }
   else if(k==='f'){ interact(); }
   else if(k==='h'){ startRecall(); }   // quick recall to the sanctuary (RotMG nexus-style)
-  else if(k==='escape'){ PANELS.forEach(p=>$(p).classList.add('hidden')); syncPause(); refreshMenuState(); }
+  else if(k==='escape'){ if(anyPanelOpen()){ PANELS.forEach(p=>$(p).classList.add('hidden')); syncPause(); refreshMenuState(); } else { promptExitToMenu(); } }
   else if(k===' '){ if(!G.paused) doDash(); }
   else if(k==='shift'){ if(!G.paused) useSignature(); }
   else { const fi=FLASK_KEYS.indexOf(k); if(fi>=0){ if(!G.paused) useFlask(fi); }
@@ -2742,6 +2957,11 @@ $('shareVictBtn').onclick=()=>shareCard('victory');
 // ---- main menu navigation ----
 function showMenu(){ ['hud','tutorial','deathlog','death'].forEach(id=>$(id).classList.add('hidden')); PANELS.forEach(p=>$(p).classList.add('hidden'));
   $('start').classList.remove('hidden'); $('menuMain').classList.remove('hidden'); $('climbScreen').classList.add('hidden'); $('coopLobby').classList.add('hidden'); $('onlineLobby').classList.add('hidden'); coopLobbyOpen=false; G.running=false; G.practice=false; loadMeta(); refreshDailyBtn(); refreshContinueBtn(); syncPause(); }
+// ESC while playing (no panels open) → confirm a return to the main menu, auto-saving first
+function promptExitToMenu(){ if(!G.running) return;
+  if(confirm('Return to the main menu?\n\nYour progress is auto-saved — pick ▶ Continue on the menu to resume this run.')){
+    try{ if(typeof canSaveSession==='function' && canSaveSession()) saveSession(); }catch(_){}
+    showMenu(); } }
 function refreshContinueBtn(){ const c=$('menuContinue'); if(!c) return; const s=loadSession();
   if(s && s.level){ c.classList.remove('hidden'); c.innerHTML='▶ Continue — '+(s.inTown?'Sanctuary':'Floor '+s.floor)+' · Lv '+s.level+(s.evolves?' ✦×'+s.evolves:''); }
   else c.classList.add('hidden'); }
@@ -2810,9 +3030,18 @@ async function onlineCopy(id){ try{ await navigator.clipboard.writeText($(id).va
 $('onHostBtn').onclick=async()=>{ $('onlineChoose').classList.add('hidden'); $('onlineHost').classList.remove('hidden');
   $('onHostStatus').textContent='Opening room…'; $('onRoomCode').textContent='·····';
   try{ const code=await netRoomHost(s=>{ $('onHostStatus').textContent=s; }, n=>{ $('onHostPeers').textContent=n?('🌐 '+n+' friend'+(n>1?'s':'')+' connected'):''; });
-    $('onRoomCode').textContent=code; $('onHostStatus').textContent='Room open — waiting for friends. Keep this tab running; you are the world.'; }
+    $('onRoomCode').textContent=code;
+    const link=roomJoinLink(code); $('onRoomLink').textContent=link; $('onCopyLink').style.display=''; $('onCopyLink').dataset.link=link;
+    $('onHostStatus').textContent='Room open — waiting for friends. Keep this tab running; you are the world.'; }
   catch(e){ $('onRoomCode').textContent='—'; $('onHostStatus').textContent='⚠ '+(e&&e.message||'Broker unreachable — use Manual connect below.'); } };
-$('onCopyCode').onclick=async()=>{ const c=$('onRoomCode').textContent.trim(); try{ await navigator.clipboard.writeText(c); }catch(_){} };
+$('onCopyCode').onclick=async()=>{ const c=$('onRoomCode').textContent.trim(); try{ await navigator.clipboard.writeText(c); $('onHostStatus').textContent='📋 Code copied.'; }catch(_){} };
+// build a shareable one-click join link (friends open it and auto-join the room)
+function roomJoinLink(code){ try{ const u=new URL(location.href); u.hash=''; u.searchParams.set('room',code); return u.href; }catch(_){ return 'room code: '+code; } }
+$('onCopyLink').onclick=async(e)=>{ const l=e.currentTarget.dataset.link||''; try{ await navigator.clipboard.writeText(l); $('onHostStatus').textContent='🔗 Join link copied — send it to a friend.'; }catch(_){} };
+// deep-link: opening the game with ?room=CODE jumps straight to Join and auto-connects
+addEventListener('load',()=>{ try{ const m=/[?&]room=([A-Za-z0-9]{4,6})/i.exec(location.search); if(!m) return; const code=m[1].toUpperCase();
+  showOnlineLobby(); $('onJoinBtn').click(); $('onCodeIn').value=code; $('onJoinStatus').textContent='Auto-joining room '+code+'…';
+  setTimeout(()=>$('onCodeJoinBtn').click(), 700); }catch(_){} });
 $('onGenOffer').onclick=async()=>{ $('onHostStatus').textContent='Generating invite…';
   try{ const offer=await netCreateInvite(); $('onOfferOut').value=offer; $('onHostStatus').textContent='Invite ready — send it, then paste their answer below.'; }
   catch(e){ $('onHostStatus').textContent='⚠ '+e.message; } };
@@ -2881,6 +3110,8 @@ $('openScoreBtn').onclick=()=>togglePanel('scorePanel');
 $('openCodexBtn').onclick=()=>togglePanel('codexPanel');
 $('openSettingsBtn').onclick=()=>togglePanel('settingsPanel');
 $('recallBtn').onclick=()=>startRecall();
+$('openMenuBtn').onclick=()=>promptExitToMenu();   // mobile: no ESC key → return to main menu from the nav
+$('openCheatBtn').onclick=()=>toggleCheat();        // mobile: no ~ key → open the DEV cheat console from the nav
 $('muteInd').onclick=(e)=>{ e.stopPropagation(); toggleMute(); };
 document.querySelectorAll('.closeX').forEach(x=>x.onclick=()=>{ $(x.dataset.close).classList.add('hidden'); syncPause(); refreshMenuState(); });
 $('depositAll').onclick=()=>{ if(G.inv?.length){ const n=stashPushMany(G.inv); G.inv=G.inv.slice(n); G.stashStrikes=0; bankCashIn(n); log(n?('Deposited '+n+' item(s)'+(G.inv.length?' — stash full, '+G.inv.length+' left in bag':'')):'Stash full — buy a stash row.'); renderStash();} };
@@ -3003,12 +3234,14 @@ function recompute(){
   let talLifeRegen=0, talManaRegen=0;   // regen comes ONLY from skill-tree talents (+ pet abilities below) — never gear or base stats
   const flags={};   // build-defining keystone flags (blood magic, always-ailment, double-cast, mana shield)
   for(const id in G.alloc){ const t=TALENTMAP[id], rank=G.alloc[id]||0; if(rank>0&&t){ if(t.gives) flags[t.gives]=true; if(t.eff) for(const k in t.eff){ m[k]=(m[k]||0)+t.eff[k]*rank; if(k==='lifeRegen')talLifeRegen+=t.eff[k]*rank; else if(k==='manaRegen')talManaRegen+=t.eff[k]*rank; } } }
-  let elem='phys', ailBonus=0, special={}, igniteMult=1, dashCdr=1;
+  let elem='phys', ailBonus=0, special={}, igniteMult=1, dashCdr=1; const abnSet=new Set();
   for(const sk in G.equip){ const it=G.equip[sk]; if(!it)continue;
     for(const af of it.affixes) addMod(af.key, af.val);
     if(it.element){ if(sk==='weapon') elem=it.element; else if(elem==='phys') elem=it.element; }
     if(it.special){ special[it.special]=true; }
-    if(it.socketed) for(const g of it.socketed){ if(g.mods) for(const k in g.mods) addMod(k, g.mods[k]);
+    if(it.abn){ abnSet.add(it.abn); }
+    if(Array.isArray(it.socketed)) for(let gi=0; gi<it.sockets && gi<it.socketed.length; gi++){ const g=it.socketed[gi]; if(!g) continue;   // skip empty holes (unsocketing leaves nulls) & never apply gems past the socket count
+      if(g.mods) for(const k in g.mods) addMod(k, g.mods[k]);
       if(g.element){ if(sk==='weapon') elem=g.element; else if(elem==='phys') elem=g.element; }
       ailBonus += (g.ailChance||0); }
   }
@@ -3084,6 +3317,7 @@ function recompute(){
     const KIND={tk:'tank',st:'bruiser',mn:'zealot',wd:'mage',rg:'runner'};
     S.adaptKind = bestKw?KIND[bestKw]:null;
     S.adaptLvl = bestN>=45?3 : bestN>=28?2 : bestN>=14?1 : 0; }   // how hard foes counter, by how committed the build is
+  S.abn=abnSet;   // abnormal-effect flags collected from equipped gear (see ABNORMAL EFFECTS block)
   G.S=S;
   G.maxhp=S.maxhp; G.maxmana=S.maxmana;
   if(G.hp>G.maxhp)G.hp=G.maxhp; if(G.mana>G.maxmana)G.mana=G.maxmana;
@@ -3572,7 +3806,7 @@ function spawnEnemy(floor,home,forceType,forceElite){
     shootCd:rand(.8,2.2), atkCd:rand(.2,.8), windup:0, dashCd:rand(2,4), hitFlash:0, elite:false,
     aggro:false, home:home||{x:0,z:0} };
   const _ae=ascEff();
-  if(forceElite || Math.random()<(0.09+floor*0.006)*_ae.eliteMul){ e.elite=true; e.hp*=3.2; e.dmg*=1.6; e.scale*=1.35; e.r*=1.3; e.xp*=4; e.gold=true;
+  if(forceElite || Math.random()<Math.min(0.5,(0.09+floor*0.006)*_ae.eliteMul)){ e.elite=true;   // cap elite chance so deep/return floors can't turn ALL-elite e.hp*=3.2; e.dmg*=1.6; e.scale*=1.35; e.r*=1.3; e.xp*=4; e.gold=true;
     applyAffixes(e, 1+(floor>=10?1:0)+(floor>=26?1:0));   // 1-3 affixes, deeper = more
     coach('elite','💠','Elite foe','The ringed enemy is an <b>Elite</b> — it has <b>affixes</b> (special powers shown by its colour) and is guaranteed to <b>drop a themed item</b>. Tougher, but worth hunting.'); }
   else if(floor>=3 && Math.random()<0.06*_ae.champMul){ applyAffixes(e,1); e.champion=true; e.hp*=1.4; e.dmg*=1.15; e.xp*=1.7; }   // occasional "champion" normal — run-to-run variety
@@ -4272,6 +4506,7 @@ function basicAttack(){
     const o={imp:w.imp}; if(w.wave)o.wave=w.wave; if(w.boomerang)o.boomerang=w.boomerang; if(w.homing)o.homing=w.homing; if(w.accel)o.accel=w.accel; if(w.bounce)o.bounce=w.bounce;
     fireBolt(p.x+dx,p.z+dz,dx,dz,dmg,crit,G.S.pierce+w.pierce,w.size,w.speed,G.S.element,w.life,o);
   }
+  if(G.S.abn&&G.S.abn.size) abnFire(shots);   // abnormal weapon quirks tweak the shots we just fired
 }
 function fireBolt(x,z,dx,dz,dmg,crit,pierce,size,spd,element,life,o){
   element=element||'phys'; o=o||{};
@@ -4291,6 +4526,7 @@ function nearestEnemyTo(x,z,maxD){ let best=null,bd=maxD?maxD*maxD:1e9; for(cons
 function spendMana(c){ if(G.mana<c) return false; G.mana-=c; return true; }
 function useSlot(i){
   const slot=G.slots[i]; if(!slot) return; const sk=SKILLS[slot.skillId];
+  if(sk&&sk.toggle){ toggleAura(i); return; }   // slots 5–9 hold toggle auras — press to switch on/off (drains mana/sec)
   if((G.cd[i]||0)>0) return;
   const cost=Math.round(sk.mana*G.S.manaCostMult), p=G.player.position;
   if(G.S.bloodMagic){ const lc=Math.max(1,Math.round(cost*0.9)); if(G.hp<=lc){ floatText(p.x,p.z,'too weak','hurt',2.6); return; } G.hp-=lc; floatText(p.x,p.z,'-'+lc,'hurt',2.2); }   // Blood Magic: pay life
@@ -4320,7 +4556,7 @@ function useSignature(){
   banner('✦ SIGNATURE','unleashed');
   ringFx(p.x,p.z,areaR(11),0xffce4d); burst(p.x,p.z,0xffce4d);
   const pwr=3.2*(1+((gem&&gem.tier||1)-1)*0.15);
-  if(sk){ sk.cast(pwr); }   // empowered cast of the bound skill
+  if(sk&&sk.cast){ sk.cast(pwr); }   // empowered cast of the bound skill (toggle auras have no cast)
   // screen-clearing shockwave around the hero regardless of the gem
   hitRadius(p.x,p.z,areaR(13),skillDmg(2.6,pwr),520,G.S.element);
 }
@@ -4519,6 +4755,7 @@ function hurtEnemy(e,dmg,crit,element,src,owner){
   if(e.boss && isPlayerSrc){ const pr=e._prof||(e._prof={}); pr[element]=(pr[element]||0)+dmg; }   // he studies what hurts him
   if(isPlayerSrc){ if((G.S.exec||0)>0 && e.hp < e.maxhp*0.30) dmg*=(1+G.S.exec/100);          // execute low-HP foes
                    if((G.S.elemDmg||0)>0 && element!=='phys') dmg*=(1+G.S.elemDmg/100); }
+  if(isPlayerSrc) dmg=abnHitEnemy(e,dmg,crit,element);   // abnormal on-hit quirks + damage auras
   dmg=Math.max(1,dmg); e.hp-=dmg; e.hitFlash=.12; sfx.hit();
   if(isPlayerSrc) G.run.bigHit=Math.max(G.run.bigHit||0, Math.round(dmg));   // run highlight: biggest single hit
   const pid=(owner!=null?owner:(typeof src==='number'?src:_G.cur));   // attribute damage for soulbound loot
@@ -4608,6 +4845,7 @@ function pickBoon(b){
   updateHUD();
 }
 function killEnemy(e){
+  try{ abnKill(e); }catch(_){}   // abnormal on-kill quirks (explode/freeze/gold/heal/…)
   if(e.revive && !e.revived){ e.revived=true; e.dead=false; e.hp=e.maxhp*0.45; e.shieldT=1.2; ringFx(e.mesh.position.x,e.mesh.position.z,e.r+2,0xc0303a); floatText(e.mesh.position.x,e.mesh.position.z,'⟳ RISEN','hurt',e.r+2); const bb=e.mesh.userData.body; if(bb)bb.material.color.setHex(0x7a1a22); return; }   // revenant rises once
   if(e.volatile){ const x=e.mesh.position.x,z=e.mesh.position.z; telegraphAoE(x,z,5,0.4,e.dmg*1.8,0xff7a3d); ringFx(x,z,3,0xff7a3d); }   // volatile affix: explodes on death (brief dodge window)
   if((G.S.lifeOnKill||0)>0){ const h=Math.min(G.S.lifeOnKill,G.maxhp-G.hp); if(h>0){ G.hp+=h; G.run.healSelf+=h; } }
@@ -4898,7 +5136,9 @@ function petLevelUp(p){ const cap=petLevelCap(p);
   if(p.level>=cap) p.xp=Math.min(p.xp, petXpNeed(p.level));
   if(p===G.pet) recompute();
 }
-function feedPet(item){ if(!G.pet)return; if(item.locked){ log('🔒 '+item.name+' is locked — unlock it first to feed it.'); return; } if(G.pet.level>=petLevelCap(G.pet)){ log('Active pet is at its rarity cap ('+petLevelCap(G.pet)+') — fuse to raise its rarity & cap.'); return; }
+function feedPet(item){ if(!G.pet)return;
+  if(item._ambrosia){ G.inv=G.inv.filter(x=>x!==item); G.pet.rarity=4; G.pet.level=petLevelCap(G.pet); G.pet.xp=0; recompute(); renderPet(); refreshItemPanels(); log('🍯 Ambrosia — your companion is instantly MAXED to Lv '+G.pet.level+'. (dev)'); return; }
+  if(item.locked){ log('🔒 '+item.name+' is locked — unlock it first to feed it.'); return; } if(G.pet.level>=petLevelCap(G.pet)){ log('Active pet is at its rarity cap ('+petLevelCap(G.pet)+') — fuse to raise its rarity & cap.'); return; }
   G.inv=G.inv.filter(x=>x!==item); G.pet.xp+=feedXp(item); petLevelUp(G.pet); renderPet(); refreshItemPanels(); }
 function fusePet(fodder){ // fuse a yard pet INTO the active pet
   if(!G.pet||fodder===G.pet){ log('Pick a different pet from the yard to fuse into your active pet.'); return; }
@@ -5051,6 +5291,7 @@ function renderPet(){
   renderPetYardTools();
   // ---- the yard: a card per owned pet; set active, fuse into the active one, or sell for gold ----
   const yard=$('petFuse'); yard.className='petGrid'; yard.innerHTML='';
+  if((G.pets||[]).length>=petYardCap()) yard.insertAdjacentHTML('beforeend','<div class="bagEmpty" style="grid-column:1/-1;color:#ffce4d;border-color:#ffce4d66;font-weight:bold">🐾 PET YARD FULL — '+petYardCap()+'/'+petYardCap()+' slots. Fuse or sell a pet to make room.</div>');
   if(!G.pets.length) yard.innerHTML='<div class="bagEmpty" style="grid-column:1/-1">Yard empty — hatch an egg (find or buy one) to fill it.</div>';
   else G.pets.forEach(pt=>{ const rr=PET_RARITY[pt.rarity], active=(pt===G.pet);
     const card=document.createElement('div'); card.className='petCard r-'+rr.css+(active?' active':'');
@@ -5193,8 +5434,13 @@ function renderTree(){
     cont._built=true;
   } else { SPECS.forEach(refreshSpec); }   // reflect external changes (respec / new run) on re-open
 }
-function autoBind(item){ if(G.slots.includes(item))return; const i=G.slots.indexOf(null); if(i<0)return; G.inv=G.inv.filter(x=>x!==item); G.slots[i]=item; renderActionbar(); }
-function bindSkill(item,i){ if(!item.isSkillGem)return; G.inv=G.inv.filter(x=>x!==item); const ex=G.slots.indexOf(item); if(ex>=0)G.slots[ex]=null; if(G.sigSlot===item)G.sigSlot=null; if(G.slots[i])G.inv.push(G.slots[i]); G.slots[i]=item; renderActionbar(); refreshItemPanels(); }
+function autoBind(item){ if(G.slots.includes(item))return; const tog=item.isSkillGem&&isToggleId(item.skillId); const lo=tog?4:0, hi=tog?9:4;
+  let i=-1; for(let s=lo;s<hi;s++){ if(!G.slots[s]){ i=s; break; } } if(i<0)return; G.inv=G.inv.filter(x=>x!==item); G.slots[i]=item; renderActionbar(); }
+function bindSkill(item,i){ if(!item.isSkillGem)return;
+  const tog=isToggleId(item.skillId);
+  if(tog && i<4){ log('🌀 Toggle auras go in slots 5–9 (passive, drain mana). Active skills use 1–4.'); return; }
+  if(!tog && i>=4){ log('⚡ Active skills go in slots 1–4. Slots 5–9 are for toggle auras.'); return; }
+  G.inv=G.inv.filter(x=>x!==item); const ex=G.slots.indexOf(item); if(ex>=0)G.slots[ex]=null; if(G.sigSlot===item)G.sigSlot=null; if(G.slots[i])G.inv.push(G.slots[i]); G.slots[i]=item; renderActionbar(); refreshItemPanels(); }
 function unbindSkill(i){ if(!G.slots[i])return; if(G.inv.length>=G.invCap){log('Inventory full.');return;} G.inv.push(G.slots[i]); G.slots[i]=null; renderActionbar(); refreshItemPanels(); }
 function bindSig(item){ if(!item.isSkillGem)return; G.inv=G.inv.filter(x=>x!==item); const ex=G.slots.indexOf(item); if(ex>=0)G.slots[ex]=null; if(G.sigSlot)G.inv.push(G.sigSlot); G.sigSlot=item; renderActionbar(); refreshItemPanels(); }
 function unbindSig(){ if(!G.sigSlot)return; if(G.inv.length>=G.invCap){log('Inventory full.');return;} G.inv.push(G.sigSlot); G.sigSlot=null; renderActionbar(); refreshItemPanels(); }
@@ -5212,8 +5458,11 @@ function respec(){
 }
 function renderActionbar(){
   const bar=$('actionbar'); bar.innerHTML='';
-  for(let i=0;i<9;i++){ const slot=G.slots[i], sk=slot?SKILLS[slot.skillId]:null; const d=document.createElement('div'); d.className='slot'+(sk?'':' empty');
-    d.innerHTML=`<span class="key">${SLOT_LABEL[i]}</span><span class="ic">${sk?sk.ic:'·'}</span><span class="nm">${sk?sk.nm:'—'}</span>${sk?`<span class="mc">${Math.round(sk.mana*(G.S.manaCostMult||1))}</span>`:''}<div class="cd" id="cd${i}"></div>`;
+  for(let i=0;i<9;i++){ const slot=G.slots[i], sk=slot?SKILLS[slot.skillId]:null; const tog=!!(sk&&sk.toggle), on=tog&&auraOn(slot.skillId);
+    const d=document.createElement('div'); d.className='slot'+(sk?'':' empty')+(tog?' toggle':'')+(on?' auraOn':'');
+    if(on){ d.style.outline='2px solid #8effd9'; d.style.boxShadow='0 0 12px #8effd9aa'; }
+    const cost = sk ? (tog?`${sk.mps}/s`:`${Math.round(sk.mana*(G.S.manaCostMult||1))}`) : '';
+    d.innerHTML=`<span class="key">${SLOT_LABEL[i]}</span><span class="ic">${sk?sk.ic:'·'}</span><span class="nm">${sk?sk.nm:'—'}</span>${sk?`<span class="mc">${cost}</span>`:''}<div class="cd" id="cd${i}"></div>`;
     bar.appendChild(d); }
   renderBelt(); renderSig();
 }
@@ -5310,7 +5559,11 @@ function renderChar(){
 function renderStash(){
   const inv=$('invList'), st=$('stashList');
   const row=(it,from)=>{ const d=document.createElement('div'); d.className='islot'; d.style.color='var(--'+it.rarity.css+')'; d.textContent=`${it.slotIc||''} ${it.name} · ${it.value}g`;
-    d.onclick=()=>{ if(from==='inv'){ if(stashPush(it)){ G.inv=G.inv.filter(x=>x!==it); bankCashIn(1); } } else {G.stash=G.stash.filter(x=>x!==it);G.inv.push(it);} G.stashStrikes=0; renderStash(); }; return d; };
+    d.onclick=()=>{ if(from==='inv'){ if(stashPush(it)){ G.inv=G.inv.filter(x=>x!==it); bankCashIn(1); } } else {G.stash=G.stash.filter(x=>x!==it);G.inv.push(it);} G.stashStrikes=0; renderStash(); };
+    d.oncontextmenu=(e)=>{ e.preventDefault();
+      if(from==='inv'){ if(e.ctrlKey){ d.onclick(); } else { quickUse(it); renderStash(); } }   // bag: right-click equips/uses · Ctrl+right-click banks to stash
+      else { d.onclick(); } };   // stash: right-click retrieves to the bag
+    return d; };
   inv.innerHTML=''; st.innerHTML='';
   if(!G.inv.length) inv.innerHTML='<div class="islot empty">empty</div>'; else G.inv.forEach(it=>inv.appendChild(row(it,'inv')));
   if(!G.stash.length) st.innerHTML='<div class="islot empty">empty</div>'; else G.stash.forEach(it=>st.appendChild(row(it,'stash')));
@@ -5364,7 +5617,15 @@ function unsocketGem(item,si){ const g=item.socketed&&item.socketed[si]; if(!g) 
   META.fame-=UNSOCKET_FAME; saveMeta(); item.socketed[si]=null; G.inv.push(g);
   recompute(); log('⛏ Unsocketed '+g.name+' (−'+UNSOCKET_FAME+' ✦ fame).'); sfx.drop&&sfx.drop(2);
   renderInv(); if(!$('charPanel').classList.contains('hidden'))renderChar(); return true; }
+// pop a gem straight back to the bag — free, no fame cost (click a filled socket)
+function unsocketFree(item,si){ const g=item.socketed&&item.socketed[si]; if(!g) return false;
+  if(G.inv.length>=G.invCap){ log('🎒 Bag full — make room to pop a gem out.'); return false; }
+  item.socketed[si]=null; G.inv.push(g); recompute();
+  log('⛏ Removed '+g.name+' → bag.'); sfx.drop&&sfx.drop(2);
+  renderInv(); if(!$('charPanel').classList.contains('hidden'))renderChar(); return true; }
 // right-click an item in the bag → send it straight to its home (equip gear · bind skill/flask · auto-socket a gem)
+// send a bag item to the stash (Ctrl+right-click). Returns true on success.
+function stashFromBag(it){ if(!it) return false; if(stashPush(it)){ G.inv=G.inv.filter(x=>x!==it); G.stashStrikes=0; bankCashIn(1); refreshItemPanels(); return true; } return false; }
 function quickUse(it){
   if(!it) return;
   if(it.isGem){ const tgt=firstSocketTarget(); if(tgt) socketGemInto(it,tgt); else log('No item has a free socket right now.'); }
@@ -5407,7 +5668,8 @@ function itemTile(it, o){ o=o||{};
     d.addEventListener('mouseenter', ()=>showItemDetail(it, cx));                                  // hover = quick preview
     d.addEventListener('mouseleave', ()=>{ if(_pinItem) showItemDetail(_pinItem, _pinCtx); });     // …but snap back to the SELECTED item so its buttons stay reachable
     d.addEventListener('click', ()=>{ if(it.isGem) G.selGem=(G.selGem===it)?null:it; pinItem(it, cx); if(it.isGem) renderInv(); });  // click = select & lock to the inspect pane
-    if(cx.kind==='bag') d.addEventListener('contextmenu', e=>{ e.preventDefault(); quickUse(it); });   // right-click = auto-equip / bind / socket
+    if(cx.kind==='bag') d.addEventListener('contextmenu', e=>{ e.preventDefault(); if(e.ctrlKey){ stashFromBag(it); } else quickUse(it); });   // right-click = equip/bind/socket · Ctrl+right-click = send to stash
+    else if(cx.kind==='stash') d.addEventListener('contextmenu', e=>{ e.preventDefault(); if(G.inv.length>=G.invCap){ log('🎒 Bag full — make room first.'); return; } G.stash=G.stash.filter(x=>x!==it); G.inv.push(it); G.stashStrikes=0; refreshItemPanels(); });   // right-click a stashed item → back to the bag
   } else if(o.onclick) d.onclick=o.onclick;   // action tiles (e.g. pet feed) still act immediately on click
   return d;
 }
@@ -5443,9 +5705,9 @@ function showItemDetail(it, ctx){ ctx=ctx||{}; const dp=$('itemDetail'); if(!dp)
   if(comparable){ eqItem=G.equip[it.slotKey]; if(eqItem && eqItem!==it){ eqMap={}; for(const a of eqItem.affixes) eqMap[a.key]=(eqMap[a.key]||0)+a.val; } }
   if(it.affixes && it.affixes.length) h+=`<div class="dp-af">${it.affixes.map(af=>affixLineCmp(af,eqMap)).join('<br>')}</div>`;
   if(it.desc) h+=`<div class="dp-uniq">${it.desc}</div>`;
-  if(it.sockets){ const sel=G.selGem, hasEmpty=it.socketed&&it.socketed.some((g,i)=>!g&&i<it.sockets);
+  if(it.sockets){ const sel=G.selGem, filled=Array.isArray(it.socketed)?it.socketed.slice(0,it.sockets).filter(Boolean).length:0, hasEmpty=filled<it.sockets;
     const armed=!!sel && sel.isGem && hasEmpty;   // a stat gem is selected and this item has a free socket → show it as a live drop target
-    let s=`<div class="dp-socksLbl">${armed?'▼ click a glowing socket to set '+(sel.ic||'💠')+' '+sel.name:'Sockets'+(hasEmpty&&!sel?' — drag a gem here, or select one then click a socket':' — Ctrl+right-click a gem to remove it')}</div>`;
+    let s=`<div class="dp-socksLbl">${armed?'▼ click a glowing socket to set '+(sel.ic||'💠')+' '+sel.name:'Sockets ('+filled+'/'+it.sockets+')'+(hasEmpty&&!sel?' — drag a gem here, or select one then click a socket':' — click a gem to remove it')}</div>`;
     for(let i=0;i<it.sockets;i++){ const g=it.socketed&&it.socketed[i];
       s+=`<div class="ds ${g?'f':'empty'}" data-si="${i}" title="${g?g.name+' — click to pop it out':(sel?'set '+sel.name+' here':'empty socket')}">${g?g.ic:(armed?'＋':'◯')}</div>`; }
     h+=`<div class="dp-socks${armed?' armed':''}">${s}</div>`; }
@@ -5503,12 +5765,11 @@ function showItemDetail(it, ctx){ ctx=ctx||{}; const dp=$('itemDetail'); if(!dp)
   dp.innerHTML=h;
   dp.querySelectorAll('.ds').forEach(ch=>{ const si=+ch.dataset.si;
     ch.onclick=()=>{ const g=it.socketed&&it.socketed[si];
-      if(g){ log('🔧 Ctrl + right-click a socketed gem to pop it out ('+UNSOCKET_FAME+' ✦ fame).'); }
+      if(g){ if(unsocketFree(it,si)) showItemDetail(it,ctx); }   // click a filled socket → pop the gem back to your bag (free)
       else if(G.selGem){ if(socketGemInto(G.selGem,it)) showItemDetail(it,ctx); }
       else log('Select a stat gem in your bag, or just drag one onto the item.'); };
     ch.oncontextmenu=(ev)=>{ ev.preventDefault(); const g=it.socketed&&it.socketed[si]; if(!g) return;
-      if(ev.ctrlKey){ if(unsocketGem(it,si)) showItemDetail(it,ctx); }
-      else log('Hold Ctrl and right-click to unsocket '+g.name+' ('+UNSOCKET_FAME+' ✦ fame).'); };
+      if(unsocketFree(it,si)) showItemDetail(it,ctx); };   // right-click also pops the gem out (free)
     // let gems be dragged directly onto sockets in the inspect pane too
     ch.addEventListener('dragover', e=>{ if(_dragGem && !(it.socketed&&it.socketed[si])){ e.preventDefault(); ch.classList.add('sockhot'); } });
     ch.addEventListener('dragleave', ()=>ch.classList.remove('sockhot'));
@@ -5706,6 +5967,9 @@ function die(){ if(G.dead)return;
     G.equip={weapon:null,helm:null,chest:null,gloves:null,boots:null,ring:null};
     G.belt=[null,null,null,null,null];
   }
+  // CASUAL & NORMAL: your companion is bound for life — death never takes your pet or yard, and the active pet
+  // is revived ready to keep assisting. (Only a HARDCORE permadeath — a brand-new character — ever resets pets.)
+  if(!diffCfg().perma){ if(G.pet){ G.pet.down=0; if(G.pet.maxhp!==undefined) G.pet.hp=G.pet.maxhp; } }
   recompute(); if(G.hp>G.maxhp)G.hp=G.maxhp; if(G.mana>G.maxmana)G.mana=G.maxmana;
   const greedLost = (!_soft && G.greed>1.05 && carried>0) ? G.greed : 0; if(!_soft) G.greed=1;   // dying forfeits the unbanked greed haul
   // fame is a skill rating now — earn a meaningful chunk per run (scales with depth, kills, level)
@@ -5989,8 +6253,8 @@ function renderDeathLog(){ const a=loadDeathLog().slice().reverse(), b=$('deathl
 function enterPractice(){
   $('start').classList.add('hidden'); $('tutorial').classList.add('hidden'); $('hud').classList.remove('hidden');
   loadMeta(); loadSettings();
-  G.floor=1; G.gold=0; G.level=1; G.xp=0; G.xpNeed=20; G.attrPts=0; G.skillPts=0;
-  G.attr={str:5,dex:5,int:5,vit:5,will:5}; G.alloc={}; G.slots=[makeSkillGem(1,'gNova'),makeSkillGem(1,'gFrost'),makeSkillGem(1,'gChain'),null,null,null,null,null,null]; G.cd={};
+  G.floor=1; G.gold=100; G.level=1; G.xp=0; G.xpNeed=20; G.attrPts=0; G.skillPts=0;
+  G.attr={str:5,dex:5,int:5,vit:5,will:5}; G.alloc={}; G.slots=[makeSkillGem(1,'gNova'),makeSkillGem(1,'gFrost'),makeSkillGem(1,'gChain'),null,makeSkillGem(1,'tAegis'),makeSkillGem(1,'tGale'),makeSkillGem(1,'tFervor'),null,null]; G.cd={}; G.auras={};
   G.equip={weapon:null,helm:null,chest:null,gloves:null,boots:null,ring:null};
   G.inv=[]; G.stash=[]; G.stashStrikes=0; G.dead=false; G.running=true; G.paused=false; G.fervor=0; G.hitstop=0; G.greed=1;
   G.dashCd=0; G.dashT=0; G.flowT=0; G.permadead=false; G.selGem=null;
@@ -6169,8 +6433,9 @@ function moveEntity(pos,nx,nz,r){
 // ============================================================ START
 // per-player character setup (used by startGame for P1 and joinPlayer for co-op players)
 function initPlayerChar(){
-  G.gold=0; G.level=1; G.xp=0; G.xpNeed=xpForLevel(1); G.attrPts=0; G.skillPts=3; G.skillGranted=3; G.evolves=0;
-  G.attr={str:5,dex:5,int:5,vit:5,will:5}; G.alloc={}; G.slots=[makeSkillGem(1,'gNova'),null,null,null,null,null,null,null,null]; G.cd={};
+  G.gold=100; G.level=1; G.xp=0; G.xpNeed=xpForLevel(1); G.attrPts=0; G.skillPts=3; G.skillGranted=3; G.evolves=0;   // start with 100 gold
+  // slots 1–4 = active skills (press to cast); slots 5–9 = toggle auras (press to switch on; drain mana/sec). Start with one active + two auras to try.
+  G.attr={str:5,dex:5,int:5,vit:5,will:5}; G.alloc={}; G.slots=[makeSkillGem(1,'gNova'),null,null,null,makeSkillGem(1,'tAegis'),makeSkillGem(1,'tGale'),null,null,null]; G.cd={}; G.auras={};
   G.equip={weapon:null,helm:null,chest:null,gloves:null,boots:null,ring:null};
   G.inv=[];G.stash=[];G.stashStrikes=0; G.dead=false; G.downed=false; G.downT=0; G.fervor=0; G.selGem=null; G.greed=1;
   G.dashCd=0; G.dashT=0; G.flowT=0;
@@ -6272,14 +6537,25 @@ window._dev={ get G(){ return _G; }, get meta(){ return META; }, get nem(){ retu
 // Builds directly on the Phase-0 packet seam (netPacket / makeNetInput).
 const NET={ role:null, host:null, peer:null, localId:0, sendAcc:0, snapHz:18 };
 let _nid=1;   // lazily-assigned stable network ids for streamed enemies/projectiles
-const NET_ICE={ iceServers:[{urls:'stun:stun.l.google.com:19302'}] };
+// STUN for NAT discovery + free public TURN relays so peers behind strict/symmetric NATs (most
+// mobile & many home networks) can still connect. Without TURN, a large fraction of joins silently
+// fail ICE. openrelay.metered.ca is a free community TURN service.
+const NET_ICE={ iceServers:[
+  {urls:'stun:stun.l.google.com:19302'},
+  {urls:'stun:stun1.l.google.com:19302'},
+  {urls:'turn:openrelay.metered.ca:80', username:'openrelayproject', credential:'openrelayproject'},
+  {urls:'turn:openrelay.metered.ca:443', username:'openrelayproject', credential:'openrelayproject'},
+  {urls:'turn:openrelay.metered.ca:443?transport=tcp', username:'openrelayproject', credential:'openrelayproject'},
+] };
 // wait until ICE gathering finishes so the pasted SDP is self-contained (no trickle channel)
 function netIceDone(pc){ return new Promise(res=>{ if(pc.iceGatheringState==='complete')return res();
   const f=()=>{ if(pc.iceGatheringState==='complete'){ pc.removeEventListener('icegatheringstatechange',f); res(); } };
   pc.addEventListener('icegatheringstatechange',f); setTimeout(res,2600); }); }   // fall through after 2.6s
 
 // ---- HOST: authoritative; one connection per friend ----
-function netStartHost(){ if(NET.role==='peer')return null; NET.role='host'; NET.host=NET.host||{ conns:[] }; if(!_G.running) startGame(); return NET.host; }
+function netStartHost(){ if(NET.role==='peer')return null;
+  if(!_G.running){ startGame(); if(!_G.running) return null; }   // start a run first; if the "new climb?" prompt was cancelled, DON'T advertise a broken room
+  NET.role='host'; NET.host=NET.host||{ conns:[] }; return NET.host; }
 // shared "friend fully connected" step — used by both the room-code path and the manual-paste path.
 // rec.ch / rec.evt just need {send(), readyState} (raw RTCDataChannels or PeerJS shims both qualify).
 function netHostReady(rec){ if(rec._ready) return; if(rec.ch.readyState!=='open'||rec.evt.readyState!=='open') return;   // wait for BOTH channels
@@ -6342,7 +6618,7 @@ function loadPeerJS(){ if(window.Peer) return Promise.resolve(); if(_pjLoad) ret
 function pjChan(conn){ return { send:d=>conn.send(d), get readyState(){ return conn.open?'open':'connecting'; } }; }
 async function netRoomHost(status,onPeers){
   await loadPeerJS();
-  const h=netStartHost(); if(!h) throw new Error('Already joined a game as a guest.');
+  const h=netStartHost(); if(!h) throw new Error(NET.role==='peer'?'Already joined a game as a guest.':'Start (or continue) a run first — hosting was cancelled.');
   h.onPeers=onPeers||null;
   if(h.room) return h.room.code;                      // room already open — reuse (host pressed Back and returned)
   const open=(tries)=>new Promise((res,rej)=>{
@@ -6634,6 +6910,7 @@ function updatePlayerStep(dt){
   for(const fl of G.belt){ if(fl&&fl.cd>0) fl.cd-=dt; }
   if(G.hp<G.maxhp){ const h=Math.min(G.S.lifeRegen*healScale()*dt,G.maxhp-G.hp); G.hp+=h; G.run.healSelf+=h; }
   G.mana=Math.min(G.maxmana,G.mana+G.S.manaRegen*dt);
+  abnTick(dt);   // toggle-aura mana drain + continuous abnormal effects
   if(G.fervor>0){ G.fervorT-=dt; if(G.fervorT<=0){ G.fervor=Math.max(0,G.fervor-dt*30); } }
   // face the aim point
   G.player.rotation.y=Math.atan2(aimPoint.x-p.x,aimPoint.z-p.z);
@@ -6649,13 +6926,14 @@ function updatePlayerStep(dt){
       if(ad>0.7){ mx=ax/ad; mz=az/ad; }   // click-to-move (kbm only)
     }
     if((mx||mz) && !stunned){ const l=Math.hypot(mx,mz); mx/=l; mz/=l;
+      if(pObj.in.atk && abnHas('reverseRun')){ mx=-mx; mz=-mz; }   // abnormal: firing sends you the OTHER way
       const rooted=((pObj.in.atk||G.rootT>0) && !anyPanelOpen() && G.S.wpn.moveMult<1) ? G.S.wpn.moveMult : 1;   // heavy weapons slow you for the whole firing cycle
-      const spd=G.S.move*(G.swiftT>0?1.4:1)*rooted*playerMoveMul(); moveEntity(p, p.x+mx*spd*dt, p.z+mz*spd*dt, 0.7); }
+      const spd=G.S.move*(G.swiftT>0?1.4:1)*(auraOn('tGale')?1.25:1)*(abnHas('juggernaut')?1.15:1)*rooted*playerMoveMul(); moveEntity(p, p.x+mx*spd*dt, p.z+mz*spd*dt, 0.7); }
   }
   p.y=1;
   const pmk=G.player.userData.marker; if(pmk) pmk.material.color.setHex(G.flowT>0?0xffce4d:(pObj.color||0x56e0ff));
   // attack (held)
-  if(pObj.in.atk && !anyPanelOpen() && G.attackCd<=0 && !stunned){ basicAttack(); G.attackCd=Math.max(0.05, 0.36/G.S.wpn.asMult/G.S.asFactor/fervorAS());
+  if(pObj.in.atk && !anyPanelOpen() && G.attackCd<=0 && !stunned){ basicAttack(); G.attackCd=Math.max(0.05, 0.36/G.S.wpn.asMult/G.S.asFactor/fervorAS()/(auraOn('tGale')?1.25:1));
     if(G.S.wpn.moveMult<1) G.rootT=Math.max(G.rootT||0, G.attackCd*0.92); }   // heavy weapons root you for the firing cycle, even on a single tap
   // gamepad action edges (keyboard P1 fires these from the keydown handler instead)
   if(pObj.input && pObj.input.pollActions && !G.paused){ const inp=pObj.in;
@@ -6833,8 +7111,10 @@ function updateWorld(dt){
       nemTryAssist(e,d); }
     // melee wind-up strike → damage the targeted player
     if(!e.boss && !e.range){
-      if(e.windup>0){ e.windup-=dt; if(e.windup<=0){ if(d<atkRange+0.7){ withPlayer(tp.id,()=>{ if(G.invuln<=0){ setKiller(enemyName(e)); hurtPlayer(e.dmg); } else if(G.perfectT>0) perfectDodge(); }); if(e.vampiric){ e.hp=Math.min(e.maxhp,e.hp+e.maxhp*0.06); ringFx(cx,cz,e.r+1,0xff3b6b); } } e.atkCd=rand(0.8,1.3); } }
-      else { e.atkCd=Math.max(0,e.atkCd-dt); if(e.atkCd<=0 && d<atkRange+0.4 && e.aggro){ e.windup=0.34; aimTell(e,0xff4d4d); } }   // red lock-on = a melee blow is coming
+      if(e.windup>0){ e.windup-=dt; if(e.windup<=0){ if(d<atkRange+0.7){ withPlayer(tp.id,()=>{ if(G.invuln<=0){ setKiller(enemyName(e)); const _hp0=G.hp; hurtPlayer(e.dmg);
+              if(G.hp<_hp0){ const pp=G.player.position; ringFx(pp.x,pp.z,e.r+2.4,0xff2d3d); ringFx(cx,cz,e.r+1.2,0xff5c5c); burst(pp.x,pp.z,0xff4d4d); shakeCam(0.85); if(typeof hurtFlash==='function')hurtFlash(false); }   // clear melee-impact flash so you SEE the blow land
+            } else if(G.perfectT>0) perfectDodge(); }); if(e.vampiric){ e.hp=Math.min(e.maxhp,e.hp+e.maxhp*0.06); ringFx(cx,cz,e.r+1,0xff3b6b); } } e.atkCd=rand(0.8,1.3); } }
+      else { e.atkCd=Math.max(0,e.atkCd-dt); if(e.atkCd<=0 && d<atkRange+0.4 && e.aggro){ e.windup=0.44; aimTell(e,0xff2d3d); ringFx(cx,cz,e.r+1.5,0xff4d4d); } }   // brighter, longer red lock-on + flare = a melee blow is winding up
     }
     if(e.boss && d<e.r+1.4){ withPlayer(tp.id,()=>{ if(G.invuln<=0){ setKiller(enemyName(e)); hurtPlayer(e.dmg*0.95, {heavy:true, kx:dx*1.9, kz:dz*1.9}); } }); e.kx=-dx*0.4; e.kz=-dz*0.4; }
   }
@@ -6842,6 +7122,7 @@ function updateWorld(dt){
   // enemy projectiles — hit whichever player they reach
   for(const b of G.eProjectiles){
     if(b.bx===undefined){ b.bx=b.mesh.position.x; b.bz=b.mesh.position.z; }
+    if(!b._abn){ b._abn=1; if(G.S.abn&&G.S.abn.size){ abnEnemyBulletSpawn(b); if(b.dead) continue; } }   // abnormal: slow/pop/heart/reflect enemy bullets
     const obx=b.bx, obz=b.bz;
     // homing: steer the heading toward the nearest player at a capped turn rate, then expire (gives a dodge window)
     if(b.turn && b.turnT>0){ b.turnT-=dt; const tp=nearestPlayerTo(b.bx,b.bz).player.position;
@@ -6865,7 +7146,8 @@ function updateWorld(dt){
       } else b.dead=true;
     }
     if(!b.dead) for(const pl of livePlayers()){ const d=Math.hypot(pl.player.position.x-b.mesh.position.x,pl.player.position.z-b.mesh.position.z);
-      if(d<1){ withPlayer(pl.id,()=>{ if(G.invuln<=0){ setKiller(b.name||'an enemy attack'); hurtPlayer(b.dmg, b.heavy?{heavy:true, kx:b.vx*0.05, kz:b.vz*0.05}:null); b.dead=true; } else if(G.perfectT>0){ perfectDodge(); b.dead=true; } }); break; } }
+      if(d<1){ if(b._heart){ withPlayer(pl.id,()=>{ const h=Math.min(G.maxhp*0.05,G.maxhp-G.hp); if(h>0){ G.hp+=h; G.run.healSelf+=h; floatText(pl.player.position.x,pl.player.position.z,'♥ +'+Math.round(h),'heal',2.2); } }); b.dead=true; break; }   // abnormal: enemy bullet turned into a healing heart
+        withPlayer(pl.id,()=>{ if(G.invuln<=0){ setKiller(b.name||'an enemy attack'); hurtPlayer(b.dmg, b.heavy?{heavy:true, kx:b.vx*0.05, kz:b.vz*0.05}:null); b.dead=true; } else if(G.perfectT>0){ perfectDodge(); b.dead=true; } }); break; } }
     if(b.life<=0)b.dead=true; }
   G.eProjectiles=G.eProjectiles.filter(b=>{ if(b.dead){scene.remove(b.mesh);return false;} return true; });
 
@@ -6931,6 +7213,7 @@ function hurtPlayer(dmg, opts){ if(G.invuln>0)return; opts=opts||{}; const heavy
   // recall is non-interruptable — taking a hit no longer cancels the channel; ride it out and you still teleport home
   let real=dmg*(1-dr())*ascEff().dmgTaken*diffCfg().dmgTaken;
   if(G.S.manaShield && G.mana>0){ const absorb=Math.min(G.mana, real*0.6); G.mana-=absorb; real-=absorb; }   // Mana Bulwark: mana soaks 60% while it lasts
+  { const _o={real}; abnTakeDamage(_o); real=Math.max(0,_o.real); }   // Aegis aura / thorns / abnormal damage-taken quirks
   G.hp-=real; G.invuln=heavy?0.62:0.5;
   shakeCam(heavy?1.15:.4);
   if(heavy){ G.hitstop=Math.max(G.hitstop||0,.07); hurtFlash(real>G.maxhp*0.18); sfx.boom&&sfx.boom(); }   // weighty boss impact: freeze-frame + red flash + knockback
@@ -7011,7 +7294,7 @@ function updateHUD(){
   $('manaFill').style.height=clamp(G.mana/G.maxmana*100,0,100)+'%'; $('manaTxt').innerHTML='<span class="num">'+Math.ceil(G.mana)+'</span><small>MANA</small>';
   $('xpStripFill').style.width=Math.min(100,G.xp/G.xpNeed*100)+'%';   // collect-mode XP can exceed a level — cap the bar
   updateFameBar(); renderBuffs();
-  for(let i=0;i<9;i++){ const slot=G.slots[i]; const el=$('cd'+i); if(!el)continue; const sk=slot?SKILLS[slot.skillId]:null; el.style.height=sk?((G.cd[i]||0)/sk.cd*100)+'%':'0%'; }
+  for(let i=0;i<9;i++){ const slot=G.slots[i]; const el=$('cd'+i); if(!el)continue; const sk=slot?SKILLS[slot.skillId]:null; el.style.height=(sk&&!sk.toggle&&sk.cd)?((G.cd[i]||0)/sk.cd*100)+'%':'0%'; }
   $('dashCd').style.height=(G.dashCd/G.dashCdMax*100)+'%';
   for(let i=0;i<5;i++){ const fl=G.belt[i], el=$('flchg'+i), slot=$('flask'+i); if(!el||!slot)continue;
     el.style.height=(fl?fl.chg/fl.mx*100:0)+'%'; slot.classList.toggle('ready', !!(fl && fl.chg>=FLASKS[fl.flaskId].cost)); }
