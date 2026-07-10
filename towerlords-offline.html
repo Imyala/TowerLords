@@ -1397,7 +1397,7 @@ const RARITY = [
 ];
 const SLOTS = [
   {k:'weapon', nm:'Weapon', ic:'⚔', primary:'dmgPct',  names:['Blade','Wand','Maul','Scepter','Cleaver','Spike']},
-  {k:'helm',   nm:'Helm',   ic:'⛑', primary:'lifeFlat', names:['Helm','Crown','Visor','Hood','Circlet']},
+  {k:'helm',   nm:'Helm',   ic:'⛑', primary:'lifePct', names:['Helm','Crown','Visor','Hood','Circlet']},
   {k:'chest',  nm:'Chest',  ic:'🛡', primary:'armor',    names:['Plate','Vest','Robe','Carapace','Aegis']},
   {k:'gloves', nm:'Gloves', ic:'🧤', primary:'asPct',    names:['Gauntlets','Grips','Claws','Wraps']},
   {k:'boots',  nm:'Boots',  ic:'👢', primary:'movePct',  names:['Greaves','Treads','Striders','Boots']},
@@ -1547,7 +1547,7 @@ const GEMS = [
   {gemType:'ruby',     nm:'Ruby',     ic:'🔥', element:'fire',  ailChance:12, mods:{dmgPct:6}},
   {gemType:'sapphire', nm:'Sapphire', ic:'❄', element:'cold',  ailChance:12, mods:{dmgPct:5,armor:8}},
   {gemType:'topaz',    nm:'Topaz',    ic:'⚡', element:'light', ailChance:12, mods:{crit:4}},
-  {gemType:'emerald',  nm:'Emerald',  ic:'💚', mods:{lifeFlat:18}},
+  {gemType:'emerald',  nm:'Emerald',  ic:'💚', mods:{lifePct:3}},
   {gemType:'amethyst', nm:'Amethyst', ic:'🔮', mods:{manaFlat:16,skillDmgPct:6}},
   {gemType:'diamond',  nm:'Diamond',  ic:'💎', mods:{crit:5,critMultPct:10}},
   {gemType:'onyx',     nm:'Onyx',     ic:'🖤', mods:{asPct:7}},
@@ -3183,7 +3183,8 @@ function recompute(){
     if(it.element){ if(sk==='weapon') elem=it.element; else if(elem==='phys') elem=it.element; }
     if(it.special){ special[it.special]=true; }
     if(it.abn){ abnSet.add(it.abn); }
-    if(it.socketed) for(const g of it.socketed){ if(g.mods) for(const k in g.mods) addMod(k, g.mods[k]);
+    if(Array.isArray(it.socketed)) for(let gi=0; gi<it.sockets && gi<it.socketed.length; gi++){ const g=it.socketed[gi]; if(!g) continue;   // skip empty holes (unsocketing leaves nulls) & never apply gems past the socket count
+      if(g.mods) for(const k in g.mods) addMod(k, g.mods[k]);
       if(g.element){ if(sk==='weapon') elem=g.element; else if(elem==='phys') elem=g.element; }
       ailBonus += (g.ailChance||0); }
   }
@@ -5501,7 +5502,9 @@ function renderChar(){
 function renderStash(){
   const inv=$('invList'), st=$('stashList');
   const row=(it,from)=>{ const d=document.createElement('div'); d.className='islot'; d.style.color='var(--'+it.rarity.css+')'; d.textContent=`${it.slotIc||''} ${it.name} · ${it.value}g`;
-    d.onclick=()=>{ if(from==='inv'){ if(stashPush(it)){ G.inv=G.inv.filter(x=>x!==it); bankCashIn(1); } } else {G.stash=G.stash.filter(x=>x!==it);G.inv.push(it);} G.stashStrikes=0; renderStash(); }; return d; };
+    d.onclick=()=>{ if(from==='inv'){ if(stashPush(it)){ G.inv=G.inv.filter(x=>x!==it); bankCashIn(1); } } else {G.stash=G.stash.filter(x=>x!==it);G.inv.push(it);} G.stashStrikes=0; renderStash(); };
+    d.oncontextmenu=(e)=>{ e.preventDefault(); d.onclick(); };   // right-click = quick move to the other side (stash → bag, bag → stash)
+    return d; };
   inv.innerHTML=''; st.innerHTML='';
   if(!G.inv.length) inv.innerHTML='<div class="islot empty">empty</div>'; else G.inv.forEach(it=>inv.appendChild(row(it,'inv')));
   if(!G.stash.length) st.innerHTML='<div class="islot empty">empty</div>'; else G.stash.forEach(it=>st.appendChild(row(it,'stash')));
@@ -5555,6 +5558,12 @@ function unsocketGem(item,si){ const g=item.socketed&&item.socketed[si]; if(!g) 
   META.fame-=UNSOCKET_FAME; saveMeta(); item.socketed[si]=null; G.inv.push(g);
   recompute(); log('⛏ Unsocketed '+g.name+' (−'+UNSOCKET_FAME+' ✦ fame).'); sfx.drop&&sfx.drop(2);
   renderInv(); if(!$('charPanel').classList.contains('hidden'))renderChar(); return true; }
+// pop a gem straight back to the bag — free, no fame cost (click a filled socket)
+function unsocketFree(item,si){ const g=item.socketed&&item.socketed[si]; if(!g) return false;
+  if(G.inv.length>=G.invCap){ log('🎒 Bag full — make room to pop a gem out.'); return false; }
+  item.socketed[si]=null; G.inv.push(g); recompute();
+  log('⛏ Removed '+g.name+' → bag.'); sfx.drop&&sfx.drop(2);
+  renderInv(); if(!$('charPanel').classList.contains('hidden'))renderChar(); return true; }
 // right-click an item in the bag → send it straight to its home (equip gear · bind skill/flask · auto-socket a gem)
 function quickUse(it){
   if(!it) return;
@@ -5599,6 +5608,7 @@ function itemTile(it, o){ o=o||{};
     d.addEventListener('mouseleave', ()=>{ if(_pinItem) showItemDetail(_pinItem, _pinCtx); });     // …but snap back to the SELECTED item so its buttons stay reachable
     d.addEventListener('click', ()=>{ if(it.isGem) G.selGem=(G.selGem===it)?null:it; pinItem(it, cx); if(it.isGem) renderInv(); });  // click = select & lock to the inspect pane
     if(cx.kind==='bag') d.addEventListener('contextmenu', e=>{ e.preventDefault(); quickUse(it); });   // right-click = auto-equip / bind / socket
+    else if(cx.kind==='stash') d.addEventListener('contextmenu', e=>{ e.preventDefault(); if(G.inv.length>=G.invCap){ log('🎒 Bag full — make room first.'); return; } G.stash=G.stash.filter(x=>x!==it); G.inv.push(it); G.stashStrikes=0; refreshItemPanels(); });   // right-click a stashed item → back to the bag
   } else if(o.onclick) d.onclick=o.onclick;   // action tiles (e.g. pet feed) still act immediately on click
   return d;
 }
@@ -5634,9 +5644,9 @@ function showItemDetail(it, ctx){ ctx=ctx||{}; const dp=$('itemDetail'); if(!dp)
   if(comparable){ eqItem=G.equip[it.slotKey]; if(eqItem && eqItem!==it){ eqMap={}; for(const a of eqItem.affixes) eqMap[a.key]=(eqMap[a.key]||0)+a.val; } }
   if(it.affixes && it.affixes.length) h+=`<div class="dp-af">${it.affixes.map(af=>affixLineCmp(af,eqMap)).join('<br>')}</div>`;
   if(it.desc) h+=`<div class="dp-uniq">${it.desc}</div>`;
-  if(it.sockets){ const sel=G.selGem, hasEmpty=it.socketed&&it.socketed.some((g,i)=>!g&&i<it.sockets);
+  if(it.sockets){ const sel=G.selGem, filled=Array.isArray(it.socketed)?it.socketed.slice(0,it.sockets).filter(Boolean).length:0, hasEmpty=filled<it.sockets;
     const armed=!!sel && sel.isGem && hasEmpty;   // a stat gem is selected and this item has a free socket → show it as a live drop target
-    let s=`<div class="dp-socksLbl">${armed?'▼ click a glowing socket to set '+(sel.ic||'💠')+' '+sel.name:'Sockets'+(hasEmpty&&!sel?' — drag a gem here, or select one then click a socket':' — Ctrl+right-click a gem to remove it')}</div>`;
+    let s=`<div class="dp-socksLbl">${armed?'▼ click a glowing socket to set '+(sel.ic||'💠')+' '+sel.name:'Sockets ('+filled+'/'+it.sockets+')'+(hasEmpty&&!sel?' — drag a gem here, or select one then click a socket':' — click a gem to remove it')}</div>`;
     for(let i=0;i<it.sockets;i++){ const g=it.socketed&&it.socketed[i];
       s+=`<div class="ds ${g?'f':'empty'}" data-si="${i}" title="${g?g.name+' — click to pop it out':(sel?'set '+sel.name+' here':'empty socket')}">${g?g.ic:(armed?'＋':'◯')}</div>`; }
     h+=`<div class="dp-socks${armed?' armed':''}">${s}</div>`; }
@@ -5694,12 +5704,11 @@ function showItemDetail(it, ctx){ ctx=ctx||{}; const dp=$('itemDetail'); if(!dp)
   dp.innerHTML=h;
   dp.querySelectorAll('.ds').forEach(ch=>{ const si=+ch.dataset.si;
     ch.onclick=()=>{ const g=it.socketed&&it.socketed[si];
-      if(g){ log('🔧 Ctrl + right-click a socketed gem to pop it out ('+UNSOCKET_FAME+' ✦ fame).'); }
+      if(g){ if(unsocketFree(it,si)) showItemDetail(it,ctx); }   // click a filled socket → pop the gem back to your bag (free)
       else if(G.selGem){ if(socketGemInto(G.selGem,it)) showItemDetail(it,ctx); }
       else log('Select a stat gem in your bag, or just drag one onto the item.'); };
     ch.oncontextmenu=(ev)=>{ ev.preventDefault(); const g=it.socketed&&it.socketed[si]; if(!g) return;
-      if(ev.ctrlKey){ if(unsocketGem(it,si)) showItemDetail(it,ctx); }
-      else log('Hold Ctrl and right-click to unsocket '+g.name+' ('+UNSOCKET_FAME+' ✦ fame).'); };
+      if(unsocketFree(it,si)) showItemDetail(it,ctx); };   // right-click also pops the gem out (free)
     // let gems be dragged directly onto sockets in the inspect pane too
     ch.addEventListener('dragover', e=>{ if(_dragGem && !(it.socketed&&it.socketed[si])){ e.preventDefault(); ch.classList.add('sockhot'); } });
     ch.addEventListener('dragleave', ()=>ch.classList.remove('sockhot'));
