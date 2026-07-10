@@ -1138,6 +1138,9 @@
         <div style="font-size:12px;opacity:.7;margin:4px 0">Share this <b>room code</b> — friends pick <i>Join a Game</i> and type it in:</div>
         <div id="onRoomCode" style="font-size:44px;letter-spacing:12px;font-weight:700;color:#8effd9;margin:10px 0;user-select:all">·····</div>
         <button class="btn ghost small" id="onCopyCode">📋 Copy code</button>
+        <div style="font-size:12px;opacity:.7;margin:12px 0 4px">…or send this <b>one-click join link</b>:</div>
+        <div id="onRoomLink" style="font-size:12px;color:#67c4ff;margin:4px 0;word-break:break-all;user-select:all">—</div>
+        <button class="btn ghost small" id="onCopyLink" style="display:none">🔗 Copy join link</button>
         <div id="onHostStatus" style="font-size:11px;opacity:.6;margin-top:8px"></div>
         <div id="onHostPeers" style="font-size:12px;margin-top:6px;color:#8effd9"></div>
         <details style="margin-top:14px;font-size:11px;opacity:.75"><summary style="cursor:pointer">Manual connect (fallback — no broker needed)</summary>
@@ -2984,9 +2987,18 @@ async function onlineCopy(id){ try{ await navigator.clipboard.writeText($(id).va
 $('onHostBtn').onclick=async()=>{ $('onlineChoose').classList.add('hidden'); $('onlineHost').classList.remove('hidden');
   $('onHostStatus').textContent='Opening room…'; $('onRoomCode').textContent='·····';
   try{ const code=await netRoomHost(s=>{ $('onHostStatus').textContent=s; }, n=>{ $('onHostPeers').textContent=n?('🌐 '+n+' friend'+(n>1?'s':'')+' connected'):''; });
-    $('onRoomCode').textContent=code; $('onHostStatus').textContent='Room open — waiting for friends. Keep this tab running; you are the world.'; }
+    $('onRoomCode').textContent=code;
+    const link=roomJoinLink(code); $('onRoomLink').textContent=link; $('onCopyLink').style.display=''; $('onCopyLink').dataset.link=link;
+    $('onHostStatus').textContent='Room open — waiting for friends. Keep this tab running; you are the world.'; }
   catch(e){ $('onRoomCode').textContent='—'; $('onHostStatus').textContent='⚠ '+(e&&e.message||'Broker unreachable — use Manual connect below.'); } };
-$('onCopyCode').onclick=async()=>{ const c=$('onRoomCode').textContent.trim(); try{ await navigator.clipboard.writeText(c); }catch(_){} };
+$('onCopyCode').onclick=async()=>{ const c=$('onRoomCode').textContent.trim(); try{ await navigator.clipboard.writeText(c); $('onHostStatus').textContent='📋 Code copied.'; }catch(_){} };
+// build a shareable one-click join link (friends open it and auto-join the room)
+function roomJoinLink(code){ try{ const u=new URL(location.href); u.hash=''; u.searchParams.set('room',code); return u.href; }catch(_){ return 'room code: '+code; } }
+$('onCopyLink').onclick=async(e)=>{ const l=e.currentTarget.dataset.link||''; try{ await navigator.clipboard.writeText(l); $('onHostStatus').textContent='🔗 Join link copied — send it to a friend.'; }catch(_){} };
+// deep-link: opening the game with ?room=CODE jumps straight to Join and auto-connects
+addEventListener('load',()=>{ try{ const m=/[?&]room=([A-Za-z0-9]{4,6})/i.exec(location.search); if(!m) return; const code=m[1].toUpperCase();
+  showOnlineLobby(); $('onJoinBtn').click(); $('onCodeIn').value=code; $('onJoinStatus').textContent='Auto-joining room '+code+'…';
+  setTimeout(()=>$('onCodeJoinBtn').click(), 700); }catch(_){} });
 $('onGenOffer').onclick=async()=>{ $('onHostStatus').textContent='Generating invite…';
   try{ const offer=await netCreateInvite(); $('onOfferOut').value=offer; $('onHostStatus').textContent='Invite ready — send it, then paste their answer below.'; }
   catch(e){ $('onHostStatus').textContent='⚠ '+e.message; } };
@@ -5503,7 +5515,9 @@ function renderStash(){
   const inv=$('invList'), st=$('stashList');
   const row=(it,from)=>{ const d=document.createElement('div'); d.className='islot'; d.style.color='var(--'+it.rarity.css+')'; d.textContent=`${it.slotIc||''} ${it.name} · ${it.value}g`;
     d.onclick=()=>{ if(from==='inv'){ if(stashPush(it)){ G.inv=G.inv.filter(x=>x!==it); bankCashIn(1); } } else {G.stash=G.stash.filter(x=>x!==it);G.inv.push(it);} G.stashStrikes=0; renderStash(); };
-    d.oncontextmenu=(e)=>{ e.preventDefault(); d.onclick(); };   // right-click = quick move to the other side (stash → bag, bag → stash)
+    d.oncontextmenu=(e)=>{ e.preventDefault();
+      if(from==='inv'){ if(e.ctrlKey){ d.onclick(); } else { quickUse(it); renderStash(); } }   // bag: right-click equips/uses · Ctrl+right-click banks to stash
+      else { d.onclick(); } };   // stash: right-click retrieves to the bag
     return d; };
   inv.innerHTML=''; st.innerHTML='';
   if(!G.inv.length) inv.innerHTML='<div class="islot empty">empty</div>'; else G.inv.forEach(it=>inv.appendChild(row(it,'inv')));
@@ -5565,6 +5579,8 @@ function unsocketFree(item,si){ const g=item.socketed&&item.socketed[si]; if(!g)
   log('⛏ Removed '+g.name+' → bag.'); sfx.drop&&sfx.drop(2);
   renderInv(); if(!$('charPanel').classList.contains('hidden'))renderChar(); return true; }
 // right-click an item in the bag → send it straight to its home (equip gear · bind skill/flask · auto-socket a gem)
+// send a bag item to the stash (Ctrl+right-click). Returns true on success.
+function stashFromBag(it){ if(!it) return false; if(stashPush(it)){ G.inv=G.inv.filter(x=>x!==it); G.stashStrikes=0; bankCashIn(1); refreshItemPanels(); return true; } return false; }
 function quickUse(it){
   if(!it) return;
   if(it.isGem){ const tgt=firstSocketTarget(); if(tgt) socketGemInto(it,tgt); else log('No item has a free socket right now.'); }
@@ -5607,7 +5623,7 @@ function itemTile(it, o){ o=o||{};
     d.addEventListener('mouseenter', ()=>showItemDetail(it, cx));                                  // hover = quick preview
     d.addEventListener('mouseleave', ()=>{ if(_pinItem) showItemDetail(_pinItem, _pinCtx); });     // …but snap back to the SELECTED item so its buttons stay reachable
     d.addEventListener('click', ()=>{ if(it.isGem) G.selGem=(G.selGem===it)?null:it; pinItem(it, cx); if(it.isGem) renderInv(); });  // click = select & lock to the inspect pane
-    if(cx.kind==='bag') d.addEventListener('contextmenu', e=>{ e.preventDefault(); quickUse(it); });   // right-click = auto-equip / bind / socket
+    if(cx.kind==='bag') d.addEventListener('contextmenu', e=>{ e.preventDefault(); if(e.ctrlKey){ stashFromBag(it); } else quickUse(it); });   // right-click = equip/bind/socket · Ctrl+right-click = send to stash
     else if(cx.kind==='stash') d.addEventListener('contextmenu', e=>{ e.preventDefault(); if(G.inv.length>=G.invCap){ log('🎒 Bag full — make room first.'); return; } G.stash=G.stash.filter(x=>x!==it); G.inv.push(it); G.stashStrikes=0; refreshItemPanels(); });   // right-click a stashed item → back to the bag
   } else if(o.onclick) d.onclick=o.onclick;   // action tiles (e.g. pet feed) still act immediately on click
   return d;
@@ -5906,6 +5922,9 @@ function die(){ if(G.dead)return;
     G.equip={weapon:null,helm:null,chest:null,gloves:null,boots:null,ring:null};
     G.belt=[null,null,null,null,null];
   }
+  // CASUAL & NORMAL: your companion is bound for life — death never takes your pet or yard, and the active pet
+  // is revived ready to keep assisting. (Only a HARDCORE permadeath — a brand-new character — ever resets pets.)
+  if(!diffCfg().perma){ if(G.pet){ G.pet.down=0; if(G.pet.maxhp!==undefined) G.pet.hp=G.pet.maxhp; } }
   recompute(); if(G.hp>G.maxhp)G.hp=G.maxhp; if(G.mana>G.maxmana)G.mana=G.maxmana;
   const greedLost = (!_soft && G.greed>1.05 && carried>0) ? G.greed : 0; if(!_soft) G.greed=1;   // dying forfeits the unbanked greed haul
   // fame is a skill rating now — earn a meaningful chunk per run (scales with depth, kills, level)
