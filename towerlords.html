@@ -250,6 +250,48 @@
     border-radius:14px 14px 0 0;text-shadow:0 0 12px rgba(86,224,255,.4);}
   .closeX{position:absolute;top:10px;right:12px;cursor:pointer;font-size:16px;opacity:.6;}
   .closeX:hover{opacity:1;}
+  /* ---- in-game styled modal (replaces the browser confirm) ---- */
+  #gameModal{position:absolute;inset:0;z-index:200;display:none;align-items:center;justify-content:center;
+    background:rgba(4,5,12,.72);backdrop-filter:blur(3px);pointer-events:auto;padding:18px;}
+  #gameModal.show{display:flex;animation:gmFade .18s ease;}
+  @keyframes gmFade{from{opacity:0;}to{opacity:1;}}
+  .gm-card{width:440px;max-width:92vw;background:linear-gradient(170deg,rgba(16,20,34,.98),rgba(8,10,20,.98));
+    border:1.5px solid rgba(86,224,255,.35);border-radius:16px;box-shadow:0 18px 50px rgba(0,0,0,.7),0 0 40px rgba(86,224,255,.12);
+    padding:24px 26px 20px;text-align:left;animation:gmPop .22s cubic-bezier(.2,.9,.3,1.2);}
+  @keyframes gmPop{from{opacity:0;transform:translateY(18px) scale(.94);}to{opacity:1;transform:none;}}
+  .gm-ic{font-size:30px;line-height:1;margin-bottom:8px;}
+  .gm-title{font-size:19px;font-weight:bold;letter-spacing:1px;color:var(--neon);margin-bottom:10px;text-shadow:0 0 18px rgba(86,224,255,.4);}
+  .gm-body{font-size:13.5px;line-height:1.6;color:#cdd6ee;margin-bottom:20px;}
+  .gm-body b{color:var(--gold);} .gm-hl{color:var(--gold);}
+  .gm-actions{display:flex;gap:12px;justify-content:flex-end;}
+  .gm-btn{cursor:pointer;border-radius:9px;padding:10px 22px;font-size:13px;letter-spacing:2px;font-weight:bold;text-transform:uppercase;
+    border:1px solid var(--neon);color:#04111a;background:var(--neon);transition:.14s;}
+  .gm-btn:hover{box-shadow:0 0 22px var(--neon);transform:translateY(-1px);}
+  .gm-btn.ghost{background:rgba(255,255,255,.05);color:var(--ink);border-color:rgba(255,255,255,.28);}
+  .gm-btn.ghost:hover{background:rgba(255,255,255,.14);color:#fff;box-shadow:none;}
+  .gm-reward{display:flex;align-items:center;gap:14px;margin:14px 0;padding:14px 16px;border-radius:12px;
+    background:rgba(255,206,77,.06);border:1px solid rgba(255,206,77,.28);}
+  .gm-reward .gr-ic{font-size:38px;line-height:1;filter:drop-shadow(0 0 12px rgba(255,206,77,.5));}
+  .gm-reward .gr-nm{font-size:16px;font-weight:bold;color:var(--gold);letter-spacing:.5px;}
+  .gm-reward .gr-ds{font-size:12px;opacity:.75;margin-top:3px;line-height:1.4;}
+  .gm-streak{font-size:11px;opacity:.6;letter-spacing:1px;text-transform:uppercase;text-align:center;margin-top:2px;}
+  /* loot bag + crafting panels */
+  #lootPanel{top:50%;left:50%;transform:translate(-50%,-50%);width:340px;padding-bottom:14px;border-color:rgba(141,255,217,.35);}
+  #lootPanel h3{color:#8effd9;}
+  #craftPanel{top:50%;left:50%;transform:translate(-50%,-50%);width:470px;padding-bottom:16px;border-color:rgba(200,155,255,.35);}
+  #craftPanel h3{color:#c89bff;}
+  .lootGrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(54px,1fr));gap:7px;padding:0 16px;max-height:300px;overflow-y:auto;}
+  .matRow{display:flex;gap:8px;padding:0 16px;margin:2px 0 12px;flex-wrap:wrap;}
+  .matChip{display:flex;align-items:center;gap:5px;font-size:12px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.12);border-radius:8px;padding:5px 9px;}
+  .matChip b{color:var(--gold);}
+  .craftOpt{display:flex;gap:12px;align-items:center;margin:8px 16px;padding:12px 14px;border-radius:11px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.03);cursor:pointer;transition:.14s;}
+  .craftOpt:hover{border-color:var(--neon);background:rgba(86,224,255,.08);}
+  .craftOpt.dis{opacity:.4;cursor:default;}
+  .craftOpt.dis:hover{border-color:rgba(255,255,255,.12);background:rgba(255,255,255,.03);}
+  .craftOpt .co-ic{font-size:26px;}
+  .craftOpt .co-nm{font-size:14px;font-weight:bold;color:#fff;}
+  .craftOpt .co-ds{font-size:11px;opacity:.7;margin-top:2px;line-height:1.35;}
+  .craftOpt .co-cost{margin-left:auto;font-size:11px;text-align:right;white-space:nowrap;color:var(--gold);}
   /* XP mode toggle (auto-level vs collect) on the character screen */
   #xpModeBox{margin:8px 16px 4px;}
   .xpm-row{display:flex;justify-content:space-between;font-size:12px;margin-bottom:6px;}
@@ -1084,6 +1126,25 @@
     <div class="hint">settings are saved on this device</div>
   </div>
 
+  <!-- Loot bag (RotMG-style: opens on F near dropped loot) -->
+  <div id="lootPanel" class="panel hidden">
+    <h3>🎁 LOOT BAG</h3><div class="closeX" data-close="lootPanel">✕ <span style="font-size:11px;opacity:.6">(F)</span></div>
+    <div class="lootGrid" id="lootGrid"></div>
+    <div class="hint">click a tile to take it · right-click → straight to bag · walk away or press F to close</div>
+    <div style="text-align:center;margin-top:10px"><button class="gm-btn" id="lootTakeAll" style="font-size:12px">⤵ Take All</button></div>
+  </div>
+
+  <!-- Crafting bench (sanctuary) -->
+  <div id="craftPanel" class="panel hidden">
+    <h3>⚒ CRAFTING BENCH</h3><div class="closeX" data-close="craftPanel">✕ <span style="font-size:11px;opacity:.6">(F)</span></div>
+    <div class="matRow" id="craftMats"></div>
+    <div id="craftBody"></div>
+    <div class="hint">select a carried item, then reforge or enhance it with materials &amp; gold</div>
+  </div>
+
+  <!-- In-game styled confirm / reward modal (replaces the browser dialog) -->
+  <div id="gameModal"><div class="gm-card" id="gmCard"></div></div>
+
   <!-- Start -->
   <div id="start" class="overlay">
     <h1>TOWERLORDS</h1>
@@ -1091,7 +1152,6 @@
     <div id="menuMain" class="menuCol">
       <button class="btn hidden" id="menuContinue" style="background:linear-gradient(180deg,#1a3a2e,#0f241c);border-color:#3ad18a;color:#bfffdd;box-shadow:0 0 22px rgba(58,209,138,.25)">▶ Continue</button>
       <button class="btn" id="menuClimb">⛰ Climb the Tower</button>
-      <button class="btn" id="menuDaily">🌅 Daily Climb</button>
       <button class="btn" id="menuBoard">🏆 Leaderboard</button>
       <button class="btn" id="menuCoop">🎮 Local Co-op</button>
       <button class="btn" id="menuOnline">🌐 Online Co-op</button>
@@ -1657,8 +1717,8 @@ const FEATS=[
   {id:'f100',     nm:'Centurion',    ds:'Reach Floor 100',                fame:12000},
   {id:'ng',       nm:'Eternal',      ds:'Enter the Endless Ascent (NG+)', fame:6000},
 ];
-let META={fame:0, feats:[], invRows:0, stashSlots:0, petTier:0, petSlots:0, codex:{}, ascMax:0, tips:{}, victories:0, grudges:{}, daily:null, playerName:'', playerId:'', voiceSeen:{}};
-function loadMeta(){ try{ const s=localStorage.getItem(META_KEY); if(s){ const m=JSON.parse(s); META={fame:m.fame||0, feats:m.feats||[], invRows:Math.min(5,m.invRows||0), stashSlots:(m.stashSlots!=null?m.stashSlots:Math.min(25,(m.stashRows||0)*10)), petTier:m.petTier||0, petSlots:m.petSlots||0, codex:m.codex||{}, ascMax:m.ascMax||0, tips:m.tips||{}, victories:m.victories||0, grudges:m.grudges||{}, daily:m.daily||null, playerName:m.playerName||'', playerId:m.playerId||'', voiceSeen:m.voiceSeen||{}}; } }catch(e){} }
+let META={fame:0, feats:[], invRows:0, stashSlots:0, petTier:0, petSlots:0, codex:{}, ascMax:0, tips:{}, victories:0, grudges:{}, daily:null, playerName:'', playerId:'', voiceSeen:{}, materials:{}, lastBonus:'', bonusStreak:0};
+function loadMeta(){ try{ const s=localStorage.getItem(META_KEY); if(s){ const m=JSON.parse(s); META={fame:m.fame||0, feats:m.feats||[], invRows:Math.min(5,m.invRows||0), stashSlots:(m.stashSlots!=null?m.stashSlots:Math.min(25,(m.stashRows||0)*10)), petTier:m.petTier||0, petSlots:m.petSlots||0, codex:m.codex||{}, ascMax:m.ascMax||0, tips:m.tips||{}, victories:m.victories||0, grudges:m.grudges||{}, daily:m.daily||null, playerName:m.playerName||'', playerId:m.playerId||'', voiceSeen:m.voiceSeen||{}, materials:m.materials||{}, lastBonus:m.lastBonus||'', bonusStreak:m.bonusStreak||0}; } }catch(e){} }
 // ---------------- GLOBAL LEADERBOARD (optional backend) ----------------
 // Set LEADERBOARD_URL to a deployed copy of leaderboard-worker.js (free Cloudflare Worker —
 // see LEADERBOARD_SETUP.md next to this file). Leave null for local-only boards: the game
@@ -1715,7 +1775,7 @@ function resumeSession(){
   _G.asc=clamp(s.asc|0,0,99); _G.ascEff=ascEffects(_G.asc);
   _G.seed=(s.seed|0)||randi(0,9999); _G.maxFloor=s.maxFloor||50; _G.returnFloor=s.returnFloor|0; _G.recallGo=false;
   G.running=true; G.paused=false; G.hitstop=0; G.permadead=false;
-  G.floorMod=null; G.bounty=null; G.practice=false; G.dailyRun=false; G.hardcore=!!s.hardcore; G.diff=s.diff||(s.hardcore?'hard':'normal');
+  G.floorMod=null; G.bounty=null; G.practice=false; G.tutorial=false; G.dailyRun=false; G.hardcore=!!s.hardcore; G.diff=s.diff||(s.hardcore?'hard':'normal');
   _G.nemesis=makeNemesis();   // per-run nemesis isn't saved (has function refs) — a fresh cast greets your return; grudges (META) persist
   _G.players.length=1; const p=_G.players[0]; p.joined=true; p.color=PLAYER_COLORS[0]; p.input=p.input||makeKbmInput();
   _G.cur=0; _G.splitscreen=false; $('hud').classList.remove('cohide');
@@ -1743,6 +1803,7 @@ function resumeSession(){
   clock.getDelta();
   banner('▶ CONTINUE', s.inTown?'The Sanctuary':('Floor '+G.floor));
   log('▶ Resumed your climb — '+(s.inTown?'back in the sanctuary':'Floor '+G.floor)+'.');
+  maybeDailyBonus();
   return true;
 }
 // leave the game with progress saved (the "extract" button)
@@ -2572,7 +2633,7 @@ function makePlayer(idx){ return {
   attackCd:0, invuln:0, dead:false, fervor:0, fervorT:0, rootT:0,
   stunT:0, slowT:0, weakT:0, healCutT:0,   // enemy counter-play debuffs: stun-lock tanks, slow speedsters, weaken bruisers, mortal-wound healers
   adaptWarned:false, recallT:0,            // recallT: channel timer for the quick teleport back to the sanctuary
-  nearStash:false, nearVendor:false, nearPortal:false, nearScore:false, _ph:false, _sh:false,
+  nearStash:false, nearVendor:false, nearPortal:false, nearScore:false, nearChest:null, nearLoot:false, nearCraft:false, _ph:false, _sh:false,
   aim:new THREE.Vector3(),
   in:{mx:0,mz:0,ax:0,az:1,hasAim:false,atk:false,prev:{}},   // per-frame input snapshot (filled by input source)
   downed:false, downT:0, reviveT:0,                          // co-op: downed (revivable) + revive progress
@@ -2583,14 +2644,14 @@ const PF = new Set(['id','name','input','cam','viewport','color','joined','playe
   'stashStrikes','selGem','greed','run','pet','pets','petMesh','petMagnet','petErrand','belt','charge','chargeMax','sigSlot','sigCd',
   'swiftT','perfectT','dashRewarded','dashCd','dashCdMax','dashT','dashDir','flowT','attackCd','invuln','dead','rootT',
   'stunT','slowT','weakT','healCutT','adaptWarned','recallT',
-  'fervor','fervorT','nearStash','nearVendor','nearPortal','nearScore','_ph','_sh','aim','in','downed','downT','reviveT']);
+  'fervor','fervorT','nearStash','nearVendor','nearPortal','nearScore','nearChest','nearLoot','nearCraft','_ph','_sh','aim','in','downed','downT','reviveT']);
 const _G = {
   running:false, paused:false, floor:1, maxFloor:50, seed:0,
-  enemies:[], projectiles:[], eProjectiles:[], pickups:[], decals:[], scenery:[], timed:[], netDeaths:[],
-  portal:null, stashStation:null, vendorStation:null, scoreStation:null, goblin:null,
+  enemies:[], projectiles:[], eProjectiles:[], pickups:[], decals:[], scenery:[], timed:[], netDeaths:[], chests:[],
+  portal:null, stashStation:null, vendorStation:null, scoreStation:null, goblin:null, craftStation:null,
   rects:[], rooms:[], obstacles:[], camps:[], respawns:[], bounds:140,
   shiftT:0, shiftWarned:false, layoutSalt:0, hitstop:0, floorMod:null, bounty:null,
-  hardcore:false, diff:'normal', permadead:false, inTown:false, muted:false, practice:false,
+  hardcore:false, diff:'normal', permadead:false, inTown:false, muted:false, practice:false, tutorial:false, modalOpen:false,
   players:[], cur:0, nPlayers:1, splitscreen:false,
   menuOwner:0, menuPanel:null, menuPrev:{}, focusIdx:0,   // per-player co-op menus
   returnFloor:0, recallGo:false,   // recall-to-sanctuary: returnFloor = the depth to drop back to via the town portal; recallGo = a channel finished, teleport next tick
@@ -2622,13 +2683,14 @@ const ATTR_INFO=[
 const keys={}; const mouse=new THREE.Vector2(); let mouseDown=false; let mouseR=false;
 const aimPoint=new THREE.Vector3(); const raycaster=new THREE.Raycaster();
 const groundPlane=new THREE.Plane(new THREE.Vector3(0,1,0),0);
-const PANELS=['charPanel','treePanel','stashPanel','invPanel','vendorPanel','petPanel','scorePanel','codexPanel','settingsPanel'];
-function anyPanelOpen(){ return _G.draftOpen || PANELS.some(p=>!$(p).classList.contains('hidden')); }
+const PANELS=['charPanel','treePanel','stashPanel','invPanel','vendorPanel','petPanel','scorePanel','codexPanel','settingsPanel','lootPanel','craftPanel'];
+function anyPanelOpen(){ return _G.modalOpen || _G.draftOpen || PANELS.some(p=>!$(p).classList.contains('hidden')); }
 function syncPause(){ G.paused=false; }   // menus never pause gameplay — the world keeps running while you browse (mouse-attack stays suppressed via anyPanelOpen so clicking UI won't fire your weapon)
 
 addEventListener('keydown',e=>{
   const k=e.key.toLowerCase(); keys[k]=true;
   if(e.code==='Backquote' && !(document.activeElement && /INPUT|TEXTAREA/.test(document.activeElement.tagName))){ toggleCheat(); e.preventDefault(); return; }   // ~ opens the DEV cheat console (testing only)
+  if(_G.modalOpen){ if(k==='escape'){ closeGameModal(); _gmOnOK=null; } return; }
   if(!G.running) return;
   const pk={c:'charPanel',t:'treePanel',i:'invPanel',p:'petPanel',v:'scorePanel',b:'codexPanel',o:'settingsPanel'}[k];
   if(pk){ _G.menuOwner=0; _G.cur=0; togglePanel(pk); }   // P1's keyboard always manages P1
@@ -2912,13 +2974,13 @@ $('victTownBtn').onclick=()=>{ $('victory').classList.add('hidden'); G.victoryOp
 $('shareDeathBtn').onclick=()=>shareCard('death');
 $('shareVictBtn').onclick=()=>shareCard('victory');
 // ---- main menu navigation ----
-function showMenu(){ ['hud','tutorial','deathlog','death'].forEach(id=>$(id).classList.add('hidden')); PANELS.forEach(p=>$(p).classList.add('hidden'));
-  $('start').classList.remove('hidden'); $('menuMain').classList.remove('hidden'); $('climbScreen').classList.add('hidden'); $('coopLobby').classList.add('hidden'); $('onlineLobby').classList.add('hidden'); coopLobbyOpen=false; G.running=false; G.practice=false; loadMeta(); refreshDailyBtn(); refreshContinueBtn(); syncPause(); }
+function showMenu(){ try{ closeGameModal(); }catch(_){} ['hud','tutorial','deathlog','death'].forEach(id=>$(id).classList.add('hidden')); PANELS.forEach(p=>$(p).classList.add('hidden'));
+  $('start').classList.remove('hidden'); $('menuMain').classList.remove('hidden'); $('climbScreen').classList.add('hidden'); $('coopLobby').classList.add('hidden'); $('onlineLobby').classList.add('hidden'); coopLobbyOpen=false; G.running=false; G.practice=false; G.tutorial=false; loadMeta(); refreshDailyBtn(); refreshContinueBtn(); syncPause(); }
 // ESC while playing (no panels open) → confirm a return to the main menu, auto-saving first
 function promptExitToMenu(){ if(!G.running) return;
-  if(confirm('Return to the main menu?\n\nYour progress is auto-saved — pick ▶ Continue on the menu to resume this run.')){
+  gameConfirm('Return to the main menu?', 'Your progress is auto-saved — pick <b class="gm-hl">▶ Continue</b> on the menu to resume this run.', ()=>{
     try{ if(typeof canSaveSession==='function' && canSaveSession()) saveSession(); }catch(_){}
-    showMenu(); } }
+    showMenu(); }, {ic:'🏳'}); }
 function refreshContinueBtn(){ const c=$('menuContinue'); if(!c) return; const s=loadSession();
   if(s && s.level){ c.classList.remove('hidden'); c.innerHTML='▶ Continue — '+(s.inTown?'Sanctuary':'Floor '+s.floor)+' · Lv '+s.level+(s.evolves?' ✦×'+s.evolves:''); }
   else c.classList.add('hidden'); }
@@ -2936,7 +2998,7 @@ function dailyScoreTick(){ if(!G.dailyRun)return;
   const rec={date:dailyKey(), done:true, floor:G.floor, kills:G.run.kills||0, score:runScore({floor:G.floor,kills:G.run.kills||0,time:G.run.totalTime||0})};
   const cur=dailyState(); META.daily=(cur&&(cur.score||0)>rec.score)?cur:rec; saveMeta(); }
 loadMeta(); refreshDailyBtn(); refreshContinueBtn();   // reflect today's daily state + any saved climb on the menu at boot
-$('menuDaily').onclick=()=>{
+{ const _md=$('menuDaily'); if(_md) _md.onclick=()=>{
   loadMeta(); const d=dailyState();
   if(d&&d.done){ log('🌅 Today’s Daily is scored — a new tower rises at midnight UTC.'); return; }
   selAsc=0; G.hardcore=false; G.diff='normal';             // level playing field: no ascension mods, standard difficulty
@@ -2944,7 +3006,7 @@ $('menuDaily').onclick=()=>{
   G.seed=dailySeedInt(); G.dailyRun=true; // startGame rolled a random seed — the daily overrides it
   banner('🌅 DAILY CLIMB — '+dailyKey(),'one attempt · the whole world races this tower');
   log('🌅 DAILY CLIMB: everyone gets this exact tower today. Your attempt is scored when it ends — climb far, kill lots, die proud.');
-};
+}; }
 $('climbBack').onclick=showMenu;
 // ---- local co-op lobby: claim slots with controllers, then start together ----
 let coopLobbyOpen=false, lobbyPads=[], lobbyPrev={};
@@ -2967,10 +3029,10 @@ function pollLobbyJoins(){ if(!coopLobbyOpen) return; const pads=navigator.getGa
     lobbyPrev[i]={start,b}; }
   if(changed) renderCoopLobby(); }
 function startCoop(){ const pads=lobbyPads.slice(); coopLobbyOpen=false; $('coopLobby').classList.add('hidden');
-  startGame();
-  for(const pad of pads){ if(_G.players.length<4) joinPlayer(pad); }
-  if(pads.length) log('🎮 '+(pads.length+1)+'-player co-op underway! Each player has their own view, build & menus (press Back/Select on your controller).');
-  else log('No controllers joined — starting solo. Plug in a controller and press START anytime to drop in.'); }
+  startGame(()=>{
+    for(const pad of pads){ if(_G.players.length<4) joinPlayer(pad); }
+    if(pads.length) log('🎮 '+(pads.length+1)+'-player co-op underway! Each player has their own view, build & menus (press Back/Select on your controller).');
+    else log('No controllers joined — starting solo. Plug in a controller and press START anytime to drop in.'); }); }
 $('menuCoop').onclick=showCoopLobby;
 $('coopBack').onclick=showMenu;
 $('coopStartBtn').onclick=startCoop;
@@ -2984,13 +3046,13 @@ $('onlineBack').onclick=showMenu;
 $('onHostBack').onclick=onlineToChoose;
 $('onJoinBack').onclick=onlineToChoose;
 async function onlineCopy(id){ try{ await navigator.clipboard.writeText($(id).value); }catch(_){ $(id).select(); document.execCommand&&document.execCommand('copy'); } }
-$('onHostBtn').onclick=async()=>{ $('onlineChoose').classList.add('hidden'); $('onlineHost').classList.remove('hidden');
+$('onHostBtn').onclick=()=>ensureRunStarted(async()=>{ $('onlineChoose').classList.add('hidden'); $('onlineHost').classList.remove('hidden');
   $('onHostStatus').textContent='Opening room…'; $('onRoomCode').textContent='·····';
   try{ const code=await netRoomHost(s=>{ $('onHostStatus').textContent=s; }, n=>{ $('onHostPeers').textContent=n?('🌐 '+n+' friend'+(n>1?'s':'')+' connected'):''; });
     $('onRoomCode').textContent=code;
     const link=roomJoinLink(code); $('onRoomLink').textContent=link; $('onCopyLink').style.display=''; $('onCopyLink').dataset.link=link;
     $('onHostStatus').textContent='Room open — waiting for friends. Keep this tab running; you are the world.'; }
-  catch(e){ $('onRoomCode').textContent='—'; $('onHostStatus').textContent='⚠ '+(e&&e.message||'Broker unreachable — use Manual connect below.'); } };
+  catch(e){ $('onRoomCode').textContent='—'; $('onHostStatus').textContent='⚠ '+(e&&e.message||'Broker unreachable — use Manual connect below.'); } });
 $('onCopyCode').onclick=async()=>{ const c=$('onRoomCode').textContent.trim(); try{ await navigator.clipboard.writeText(c); $('onHostStatus').textContent='📋 Code copied.'; }catch(_){} };
 // build a shareable one-click join link (friends open it and auto-join the room)
 function roomJoinLink(code){ try{ const u=new URL(location.href); u.hash=''; u.searchParams.set('room',code); return u.href; }catch(_){ return 'room code: '+code; } }
@@ -2999,9 +3061,9 @@ $('onCopyLink').onclick=async(e)=>{ const l=e.currentTarget.dataset.link||''; tr
 addEventListener('load',()=>{ try{ const m=/[?&]room=([A-Za-z0-9]{4,6})/i.exec(location.search); if(!m) return; const code=m[1].toUpperCase();
   showOnlineLobby(); $('onJoinBtn').click(); $('onCodeIn').value=code; $('onJoinStatus').textContent='Auto-joining room '+code+'…';
   setTimeout(()=>$('onCodeJoinBtn').click(), 700); }catch(_){} });
-$('onGenOffer').onclick=async()=>{ $('onHostStatus').textContent='Generating invite…';
+$('onGenOffer').onclick=()=>ensureRunStarted(async()=>{ $('onHostStatus').textContent='Generating invite…';
   try{ const offer=await netCreateInvite(); $('onOfferOut').value=offer; $('onHostStatus').textContent='Invite ready — send it, then paste their answer below.'; }
-  catch(e){ $('onHostStatus').textContent='⚠ '+e.message; } };
+  catch(e){ $('onHostStatus').textContent='⚠ '+e.message; } });
 $('onCopyOffer').onclick=()=>onlineCopy('onOfferOut');
 $('onConnectBtn').onclick=async()=>{ const a=$('onAnsIn').value.trim(); if(!a){ $('onHostStatus').textContent='Paste the answer code first.'; return; }
   $('onHostStatus').textContent='Connecting…'; try{ await netAcceptAnswer(a); $('onHostStatus').textContent='✔ Answer accepted — waiting for the channel to open…'; }
@@ -3022,7 +3084,7 @@ function setCoDiff(d){ G.diff=d; G.hardcore=(d==='hard');
 $('coModeCasual').onclick=()=>setCoDiff('casual');
 $('coModeNormal').onclick=()=>setCoDiff('normal');
 $('coModeHard').onclick=()=>setCoDiff('hard');
-$('menuTutorial').onclick=()=>{ loadSettings(); tutPage=0; $('start').classList.add('hidden'); $('tutorial').classList.remove('hidden'); renderTut(); };
+$('menuTutorial').onclick=()=>{ loadSettings(); $('start').classList.add('hidden'); $('tutorial').classList.remove('hidden'); renderTutChoice(); };
 $('menuSettings').onclick=()=>{ loadSettings(); $('settingsPanel').classList.remove('hidden'); renderSettings(); };
 $('menuDeaths').onclick=()=>{ $('start').classList.add('hidden'); $('deathlog').classList.remove('hidden'); renderDeathLog(); };
 $('deathlogBack').onclick=showMenu;
@@ -3078,7 +3140,7 @@ function togglePanel(id){
   if(id!=='stashPanel'){ /* allow stacking char+tree? keep simple: close others */ }
   el.classList.toggle('hidden');
   clearPin();   // a fresh panel open/close starts with nothing selected (avoids a stale pin from a prior screen)
-  if(willOpen){ if(id==='charPanel')renderChar(); else if(id==='treePanel')renderTree(); else if(id==='stashPanel')renderStash(); else if(id==='invPanel')renderInv(); else if(id==='vendorPanel')renderVendor(); else if(id==='petPanel')renderPet(); else if(id==='scorePanel')renderScore(); else if(id==='codexPanel')renderCodex(); else if(id==='settingsPanel')renderSettings(); }
+  if(willOpen){ if(id==='charPanel')renderChar(); else if(id==='treePanel')renderTree(); else if(id==='stashPanel')renderStash(); else if(id==='invPanel')renderInv(); else if(id==='vendorPanel')renderVendor(); else if(id==='petPanel')renderPet(); else if(id==='scorePanel')renderScore(); else if(id==='codexPanel')renderCodex(); else if(id==='settingsPanel')renderSettings(); else if(id==='lootPanel')renderLoot(); else if(id==='craftPanel')renderCraft(); }
   syncPause(); refreshMenuState();
 }
 // ============================================================ PER-PLAYER CO-OP MENUS
@@ -3293,9 +3355,11 @@ function clearWorld(){
   if(G.vendorStation) scene.remove(G.vendorStation.mesh);
   if(G.scoreStation) scene.remove(G.scoreStation.mesh);
   if(G.goblin) scene.remove(G.goblin.mesh);
-  G.enemies=[];G.projectiles=[];G.eProjectiles=[];G.pickups=[];G.decals=[];G.scenery=[];G.timed=[];
+  if(G.chests) for(const c of G.chests) scene.remove(c.mesh);
+  if(G.craftStation) scene.remove(G.craftStation.mesh);
+  G.enemies=[];G.projectiles=[];G.eProjectiles=[];G.pickups=[];G.decals=[];G.scenery=[];G.timed=[];G.chests=[];
   G.obstacles=[];G.camps=[];G.respawns=[];G.traps=[];
-  G.portal=null;G.stashStation=null;G.vendorStation=null;G.scoreStation=null;G.goblin=null;G.grid=null;
+  G.portal=null;G.stashStation=null;G.vendorStation=null;G.scoreStation=null;G.goblin=null;G.grid=null;G.craftStation=null;
 }
 // ---- unified walkable grid: collision AND walls both derive from this, so they always match
 // (fixes invisible-wall-stuck spots and messy overlapping wall corners) ----
@@ -3428,6 +3492,7 @@ function generateFloor(anchor){
         const rm=rooms.length>1?pick(rooms.slice(1)):rooms[0];
         spawnBoss(G.floor, rm, {def:d, roaming:true}); } }
     placeTraps(rooms);   // hidden spike/dart traps along the corridors
+    spawnChests(rooms);   // 2-5 lootable chests scattered across the floor (each opens once)
     G.floorKills=0; G.killGoal=Math.max(10, Math.round(G.enemies.length*ascEff().killFrac));   // clear ~70% (more at high ascension) to open the portal
     G.shiftT=999; G.shiftWarned=false;   // shift clock only starts (=30s) once the portal opens on clear
   }
@@ -3457,6 +3522,9 @@ function generateTown(){
   const vg=new THREE.Group(); const vb=new THREE.Mesh(new THREE.CylinderGeometry(3,3.4,.5,24), new THREE.MeshStandardMaterial({color:0x241a2a,emissive:0x6b2f7a,emissiveIntensity:.4,metalness:.4}));
   const vt=new THREE.Mesh(new THREE.IcosahedronGeometry(1.3,0), new THREE.MeshStandardMaterial({color:0xb06bff,emissive:0xb06bff,emissiveIntensity:.6,flatShading:true})); vt.position.y=2; vt.castShadow=true; vg.add(vb,vt);
   vg.position.set(15,.25,2); scene.add(vg); G.vendorStation={mesh:vg,x:15,z:2};
+  // crafting bench
+  const cg=new THREE.Group(); const cb=new THREE.Mesh(new THREE.CylinderGeometry(2.6,3,.5,6), new THREE.MeshStandardMaterial({color:0x1a2436,emissive:0x3a2a5a,emissiveIntensity:.4,metalness:.4})); const ct=new THREE.Mesh(new THREE.TorusKnotGeometry(0.85,0.26,60,8), new THREE.MeshStandardMaterial({color:0xc89bff,emissive:0xc89bff,emissiveIntensity:.6,flatShading:true})); ct.position.y=1.9; ct.castShadow=true; cg.add(cb,ct);
+  cg.position.set(23,.25,-4); scene.add(cg); G.craftStation={mesh:cg,x:23,z:-4};
   // score obelisk
   const og=new THREE.Group(); const ob=new THREE.Mesh(new THREE.CylinderGeometry(1.1,1.4,5,6), new THREE.MeshStandardMaterial({color:0x223a55,emissive:0x56e0ff,emissiveIntensity:.4,flatShading:true})); ob.position.y=2.5; ob.castShadow=true; og.add(ob);
   og.position.set(0,0,-8); scene.add(og); G.scoreStation={mesh:og,x:0,z:-8};
@@ -4812,7 +4880,7 @@ function killEnemy(e){
   if(e.lastSrc==='pet') G.run.assists++; else G.run.kills++;
   sfx.kill();
   bountyKill(e.elite);
-  spawnPickup(e.mesh.position.x,e.mesh.position.z,'gem',e.xp);   // shared XP crystal (anyone may grab)
+  // XP goes straight to each contributor's bar/bank below (no chase-orb) — see gainXP in the loop
   // ---- per-contributor rewards: every player who earned it (≥SOULBOUND_FRAC dmg, or the finisher) gets their OWN xp/gold/loot ----
   const ex=e.mesh.position.x, ez=e.mesh.position.z;
   const base=e.boss?1:e.elite?0.7:(0.15+(e.etype==='brute'?.18:0));
@@ -4847,7 +4915,7 @@ function killEnemy(e){
       else if(!_G.splitscreen && !NET.role){ const cur=(_G.cur!=null?_G.cur:0); setTimeout(()=>{ if(_G.running) withPlayer(cur,()=>offerBoonDraft()); }, 700); }   // boss-reward draft (single-player) — let the death FX land first
     }
   }
-  else if(floorType(G.floor)==='NORMAL' && !e.leftRoom) G.respawns.push({t:15, room:e.room, home:e.home});   // repopulate its room after ~15s
+  else if(!G.practice && floorType(G.floor)==='NORMAL' && !e.leftRoom) G.respawns.push({t:15, room:e.room, home:e.home});   // repopulate its room after ~15s
   // clear-gate: putting down the floor's population opens the portal
   if(!e.boss && floorType(G.floor)==='NORMAL' && G.portal && !G.portal.active){
     G.floorKills=(G.floorKills||0)+1;
@@ -4868,13 +4936,18 @@ function hurtGoblin(dmg,crit,element){
 function spawnPickup(x,z,kind,val){ const m=new THREE.Mesh(new THREE.OctahedronGeometry(.42,0),M.xp); m.position.set(x,.6,z); scene.add(m); G.pickups.push({mesh:m,kind,val,x,z}); }
 // grey/common gear with no special role — the trash that floods the bag; auto-salvaged to gold when the option is on
 function isJunk(it){ return !!(it && it.slotKey && !it.isGem && !it.isSkillGem && !it.isFlask && !it.isPet && !it.isPot && !it.unique && RARITY.indexOf(it.rarity)===0); }
-function dropLoot(x,z,uniqueChance,owner,themeKey){
-  let item; const r=Math.random();
-  if(r < 0.004 + G.floor*0.0006) item=makePot(G.floor);          // ULTRA-rare permanent stat potion
-  else if(r < 0.065) item=makeSkillGem(G.floor);                  // skill gem (active skill)
-  else if(r < 0.105) item=makeEgg(G.floor);                       // pet egg (fodder / hatch)
-  else if(r < 0.15) item=makeFlask(G.floor);                      // belt flask (active panic button)
-  else item = Math.random()<0.16 ? makeGem(G.floor) : makeItem(G.floor,null,null,uniqueChance);
+function dropLoot(x,z,uniqueChance,owner,themeKey,forceItem){
+  let item;
+  if(forceItem){ item=forceItem; }
+  else { const r=Math.random();
+    if(r < 0.004 + G.floor*0.0006) item=makePot(G.floor);          // ULTRA-rare permanent stat potion
+    else if(r < 0.065) item=makeSkillGem(G.floor);                  // skill gem (active skill)
+    else if(r < 0.105) item=makeEgg(G.floor);                       // pet egg (fodder / hatch)
+    else if(r < 0.15) item=makeFlask(G.floor);                      // belt flask (active panic button)
+    else item = Math.random()<0.16 ? makeGem(G.floor) : makeItem(G.floor,null,null,uniqueChance);
+  }
+  // grey junk auto-salvages straight to gold for the local player (no floor clutter) when the option is on
+  if(!forceItem && SETTINGS.autoSalvage && isJunk(item) && (owner==null||owner===0)){ const g=item.value||0; G.gold+=g; if(typeof flashGold==='function')flashGold(); return; }
   // affix-themed bias: a Volatile foe tends to drop fire gear, Vampiric → lifesteal, etc.
   if(themeKey && AFFIX_THEME[themeKey] && item && item.slotKey && !item.isGem && !item.isSkillGem && !item.isFlask && !item.isPot && !item.isPet){
     const th=AFFIX_THEME[themeKey];
@@ -5881,8 +5954,11 @@ function coopGateAtPortal(){
   return false;
 }
 function interact(){
-  if(G.practice){ if(G.nearPortal) exitPractice(); return; }
-  if(G.inTown){ if(G.nearPortal){ if(coopGateAtPortal()) enterTower(); } else if(G.nearVendor) togglePanel('vendorPanel'); else if(G.nearStash) togglePanel('stashPanel'); else if(G.nearScore) togglePanel('scorePanel'); return; }
+  if(G.tutorial){ if(G.nearChest) return openChest(G.nearChest); if(G.nearLoot) return openLootBag(); if(G.nearPortal) return finishTutorial(); return; }
+  if(G.practice){ if(G.nearLoot) return openLootBag(); if(G.nearPortal) exitPractice(); return; }
+  if(G.nearChest){ return openChest(G.nearChest); }
+  if(G.nearLoot){ return openLootBag(); }
+  if(G.inTown){ if(G.nearPortal){ if(coopGateAtPortal()) enterTower(); } else if(G.nearCraft) togglePanel('craftPanel'); else if(G.nearVendor) togglePanel('vendorPanel'); else if(G.nearStash) togglePanel('stashPanel'); else if(G.nearScore) togglePanel('scorePanel'); return; }
   if(G.nearPortal && G.portal.active){ if(coopGateAtPortal()) ascend(); } else if(G.nearVendor) togglePanel('vendorPanel'); else if(G.nearStash) togglePanel('stashPanel');
 }
 function ascend(){ bountyAscendCheck(); const prevNg=ngLevel(G.floor); G.floor++; const ng=ngLevel(G.floor);
@@ -6400,8 +6476,12 @@ function initPlayerChar(){
   recompute(); G.hp=G.maxhp; G.mana=G.maxmana;
   if(!G.player){ G.player=createPlayer(); tintPlayer(G.player, G.color); }
 }
-function startGame(){
-  if(hasSession() && !confirm('Start a NEW climb?\n\nYour saved character & progress will be replaced. (Use ▶ Continue on the menu to keep it.)')) return;
+function startGame(after){
+  if(typeof after!=='function') after=null;
+  if(hasSession()){ gameConfirm('Start a NEW climb?', 'Your saved character &amp; progress will be replaced. (Use <b class="gm-hl">▶ Continue</b> on the menu to keep it.)', ()=>startGameConfirmed(after), {ic:'⚔', ok:'New Climb'}); return; }
+  startGameConfirmed(after);
+}
+function startGameConfirmed(after){
   clearSession();   // a fresh character supersedes any saved run
   $('start').classList.add('hidden'); $('hud').classList.remove('hidden');
   loadMeta(); loadSettings();
@@ -6409,7 +6489,7 @@ function startGame(){
   if(_G.asc>0) log('⛧ Ascension '+_G.asc+' — '+ASC_MODS.slice(0,_G.asc).map(m=>m.nm).join(', ')+'. Fame ×'+ascFameMult().toFixed(2)+'.');
   // shared run state
   G.floor=1; G.running=true; G.paused=false; G.hitstop=0; G.permadead=false;
-  G.floorMod=null; G.bounty=null; G.practice=false; G.dailyRun=false; G.seed=randi(0,9999); _G.returnFloor=0; _G.recallGo=false;
+  G.floorMod=null; G.bounty=null; G.practice=false; G.tutorial=false; G.dailyRun=false; G.seed=randi(0,9999); _G.returnFloor=0; _G.recallGo=false;
   _G.nemesis=makeNemesis();   // NEMESIS: fresh epithets, traits and grudge-arcs for every climb — no two runs meet the same lords
   // start solo (co-op players drop-in by pressing START on a controller); rebuild P1's character
   _G.players.length=1; const p0=_G.players[0]; p0.joined=true; p0.color=PLAYER_COLORS[0]; p0.input=p0.input||makeKbmInput();
@@ -6426,6 +6506,9 @@ function startGame(){
   layoutViewports(); buildCoopHud();
   if(!firstRun) log('Spend your 3 starting skill points in the tree (T), then enter the portal to climb. Plug in a controller and press START to add a co-op player.');
   clock.getDelta();
+  G.tutorial=false;
+  maybeDailyBonus();
+  if(after) after();
 }
 // big friendly controls card for the very first minute of play — fades on its own
 function showFirstRunHints(){
@@ -6487,7 +6570,7 @@ function netIceDone(pc){ return new Promise(res=>{ if(pc.iceGatheringState==='co
 
 // ---- HOST: authoritative; one connection per friend ----
 function netStartHost(){ if(NET.role==='peer')return null;
-  if(!_G.running){ startGame(); if(!_G.running) return null; }   // start a run first; if the "new climb?" prompt was cancelled, DON'T advertise a broken room
+  if(!_G.running){ startGameConfirmed(); if(!_G.running) return null; }   // start a run first (confirm already handled at the lobby entry)
   NET.role='host'; NET.host=NET.host||{ conns:[] }; return NET.host; }
 // shared "friend fully connected" step — used by both the room-code path and the manual-paste path.
 // rec.ch / rec.evt just need {send(), readyState} (raw RTCDataChannels or PeerJS shims both qualify).
@@ -6885,27 +6968,24 @@ function updatePlayerStep(dt){
 
 // ---- pickups collected by the active player ----
 function updatePlayerPickups(dt){
-  const p=G.player.position;
-  for(const pk of G.pickups){ if(pk.dead)continue; if(pk.owner!=null && pk.owner!==_G.cur) continue;   // soulbound loot: only its owner can magnet/grab it
-    pk.mesh.rotation.y+=dt*3; pk.mesh.position.y=.6+Math.sin(performance.now()*0.005+pk.x)*0.15;
+  const p=G.player.position, isP0=(_G.cur===0); let nearLoot=false;
+  for(const pk of G.pickups){ if(pk.dead)continue; if(pk.owner!=null && pk.owner!==_G.cur) continue;   // soulbound loot: only its owner may grab it
+    pk.mesh.rotation.y+=dt*3; pk.mesh.position.y=.6+Math.sin(performance.now()*0.005+pk.x)*0.15;   // bob & spin IN PLACE — nothing chases the player
     const d=Math.hypot(p.x-pk.mesh.position.x,p.z-pk.mesh.position.z);
-    const magnet = pk.kind==='crystal' ? 2.4 : (pk.kind!=='loot' ? 9 : G.petMagnet);   // crystals: walk into them; gems are magnetised; loot is pet-collected
-    if(d<magnet){ pk.mesh.position.x+=(p.x-pk.mesh.position.x)*dt*7; pk.mesh.position.z+=(p.z-pk.mesh.position.z)*dt*7; }
-    const grab = pk.kind==='loot'?2.0:1.8;
-    if(d<grab){ if(pk.kind==='gem'){ pk.dead=true; sfx.pickup(); floatText(pk.mesh.position.x,pk.mesh.position.z,'+'+pk.val+' XP','heal',1.8); gainXP(pk.val); }
-      else if(pk.kind==='crystal'){ pk.dead=true; sfx.pickup(); G.mana=Math.min(G.maxmana,G.mana+G.maxmana*0.08); floatText(pk.mesh.position.x,pk.mesh.position.z,'✦ +'+pk.val+' XP','heal',1.6); gainXP(pk.val); ringFx(pk.mesh.position.x,pk.mesh.position.z,1.4,biome?biome.accent:0x56e0ff); }
-      else if(pk.item.isPot){ pk.dead=true; applyStatPot(pk.item); }
-      else if(pk.item.isPet){ if(G.inv.length<G.invCap){ pk.dead=true; sfx.gold&&sfx.gold(); floatText(pk.mesh.position.x,pk.mesh.position.z,'🥚 '+pk.item.name,'goldtxt',2);
-        G.inv.push(pk.item); log('🥚 '+pk.item.name+' picked up — Hatch it from your Inventory (I) or Pet Yard (P).'); refreshItemPanels(); }
-        else if(!pk.warned){ pk.warned=true; log('🎒 Inventory full — make room to grab the egg.'); } }
-      else if(SETTINGS.autoSalvage && isJunk(pk.item)){ pk.dead=true; const g=pk.item.value||0; G.gold+=g; flashGold(); sfx.gold();
-        floatText(pk.mesh.position.x,pk.mesh.position.z,'♻ +'+g+'g','goldtxt',1.8); }   // auto-salvage grey junk → gold, no bag clutter
-      else if(G.inv.length<G.invCap){ pk.dead=true; sfx.gold(); floatText(pk.mesh.position.x,pk.mesh.position.z,pk.item.name,pk.item.rarity.css==='legend'||pk.item.rarity.css==='epic'||pk.item.unique||pk.item.isSkillGem?'crit':'goldtxt',2);
-        G.inv.push(pk.item); if(pk.item.isSkillGem && G.slots.includes(null)) autoBind(pk.item); if(pk.item.isFlask && G.belt.includes(null)) autoBeltFlask(pk.item);
-        log('🎁 '+pk.item.name+(pk.item.isPet?' — open Pet (P) to fuse':pk.item.isSkillGem?' — bound / bind in Inventory (I)':' — press I')); refreshItemPanels(); }
-      else if(!pk.warned){ pk.warned=true; log('🎒 Inventory full ('+G.invCap+') — sell at a vendor or bank loot.'); } }
+    if(pk.kind==='crystal'){ if(d<1.8){ pk.dead=true; sfx.pickup(); G.mana=Math.min(G.maxmana,G.mana+G.maxmana*0.08); floatText(pk.mesh.position.x,pk.mesh.position.z,'✦ +'+pk.val+' XP','heal',1.6); gainXP(pk.val); ringFx(pk.mesh.position.x,pk.mesh.position.z,1.4,biome?biome.accent:0x56e0ff); } }
+    else if(pk.kind==='gem'){ pk.dead=true; gainXP(pk.val); }   // legacy XP orb: bank instantly, never chase
+    else if(pk.kind==='loot'){
+      if(!isP0){ if(d<2.0){ if(G.inv.length<G.invCap){ pk.dead=true; sfx.gold&&sfx.gold(); G.inv.push(pk.item); refreshItemPanels(); } else if(!pk.warned){ pk.warned=true; log('🎒 Bag full — make room.'); } } }   // co-op guests auto-collect (no split-screen bag UI)
+      else if(d<4.2) nearLoot=true;   // P1: loot stays on the floor — press F to open the bag
+    }
   }
-  G.pickups=G.pickups.filter(pk=>{ if(pk.dead){scene.remove(pk.mesh);return false;} return true; });
+  if(isP0){
+    G.nearLoot=nearLoot;
+    if(nearLoot){ if(!_lootHint){ log('🎁 Loot on the ground — press F to open the bag.'); _lootHint=true; } }
+    else { _lootHint=false; if(!$('lootPanel').classList.contains('hidden') && !nearbyLootBags().length){ $('lootPanel').classList.add('hidden'); refreshMenuState(); } }
+    if(!$('lootPanel').classList.contains('hidden')) renderLoot();
+  }
+  cleanDeadPickups();
 }
 
 // ---- portal/station proximity for the active player (panels auto-open for P1 only) ----
@@ -6920,7 +7000,242 @@ function updatePlayerStations(dt){
     const near=d<4.4; if(isP0){ if(near && !G.nearVendor && !G.inTown && $('vendorPanel').classList.contains('hidden')) togglePanel('vendorPanel'); if(!near && G.nearVendor && !$('vendorPanel').classList.contains('hidden')){ $('vendorPanel').classList.add('hidden'); syncPause(); } } G.nearVendor=near; } else G.nearVendor=false;
   if(G.scoreStation){ if(isP0) G.scoreStation.mesh.rotation.y+=dt*0.6; const d=Math.hypot(p.x-G.scoreStation.x,p.z-G.scoreStation.z); G.nearScore=d<4.4;
     if(G.nearScore){ if(!G._sh){ log('▣ Press F to view your record'); G._sh=true; } } else G._sh=false; } else G.nearScore=false;
+  // crafting bench (sanctuary)
+  if(G.craftStation){ if(isP0) G.craftStation.mesh.children[1].rotation.y+=dt*0.9; const d=Math.hypot(p.x-G.craftStation.x,p.z-G.craftStation.z); G.nearCraft=d<4.2;
+    if(isP0){ if(G.nearCraft){ if(!_G._crh){ log('⚒ Press F at the bench to craft.'); _G._crh=true; } } else _G._crh=false; } } else G.nearCraft=false;
+  // nearest unopened chest
+  let _nc=null,_ncd=1e9;
+  if(G.chests) for(const c of G.chests){ if(c.opened)continue; if(isP0 && c.lid){ c.lid.rotation.x=Math.sin(performance.now()*0.002+c.x)*0.06; } const cd=Math.hypot(p.x-c.x,p.z-c.z); if(cd<_ncd){ _ncd=cd; _nc=c; } }
+  G.nearChest=(_nc && _ncd<3.0)?_nc:null;
+  if(isP0){ if(G.nearChest){ if(!_G._chh){ log('🧰 A chest! Press F to open it.'); _G._chh=true; } } else _G._chh=false; }
+  if(isP0 && _G.tutorial) tutorialTick(dt);
 }
+
+// ============================================================ NEW SYSTEMS: modal · loot bags · chests · materials · crafting · daily bonus · tutorial floor
+// ---- in-game styled modal (replaces the browser confirm/alert) ----
+let _gmOnOK=null, _gmPrevInvuln=null;
+function closeGameModal(){ const gm=$('gameModal'); if(gm) gm.classList.remove('show'); _G.modalOpen=false;
+  if(_gmPrevInvuln!=null){ if(G.running) G.invuln=Math.max(G.invuln||0,2); _gmPrevInvuln=null; } refreshMenuState&&refreshMenuState(); }
+function gameConfirm(title, bodyHTML, onOK, opts){ opts=opts||{};
+  const gm=$('gameModal'), c=$('gmCard'); if(!gm||!c){ if(onOK)onOK(); return; }
+  const ic=opts.ic||'❔', ok=opts.ok||'OK', cancel=opts.cancel||'Cancel';
+  c.innerHTML='<div class="gm-ic">'+ic+'</div><div class="gm-title">'+title+'</div><div class="gm-body">'+bodyHTML+'</div>'
+    +'<div class="gm-actions">'+(opts.noCancel?'':'<button class="gm-btn ghost" id="gmCancel">'+cancel+'</button>')+'<button class="gm-btn" id="gmOK">'+ok+'</button></div>';
+  _gmOnOK=onOK||null; if(G.running){ _gmPrevInvuln=G.invuln||0; G.invuln=1e9; } _G.modalOpen=true; gm.classList.add('show');
+  $('gmOK').onclick=()=>{ closeGameModal(); const f=_gmOnOK; _gmOnOK=null; if(f)f(); };
+  const cx=$('gmCancel'); if(cx) cx.onclick=()=>{ closeGameModal(); _gmOnOK=null; if(opts.onCancel)opts.onCancel(); };
+  if(sfx.tick)sfx.tick();
+}
+function ensureRunStarted(cb){ if(_G.running){ cb(); return; } startGame(()=>{ if(_G.running) cb(); }); }
+
+// ---- crafting materials (account-wide, persisted in META) ----
+const MATERIALS=[
+  {key:'shard',   nm:'Arcane Shard',  ic:'🔹', ds:'common crafting dust'},
+  {key:'core',    nm:'Power Core',    ic:'🟠', ds:'raises an item rarity'},
+  {key:'essence', nm:'Vital Essence', ic:'💧', ds:'reforges an item affixes'},
+];
+function matDef(k){ return MATERIALS.find(m=>m.key===k); }
+function matName(k){ const m=matDef(k); return m?m.nm:k; }
+function matIc(k){ const m=matDef(k); return m?m.ic:'◆'; }
+function matCount(k){ return (META.materials&&META.materials[k])||0; }
+function grantMaterials(k,n){ if(!META.materials)META.materials={}; META.materials[k]=(META.materials[k]||0)+n; saveMeta();
+  if(G.player&&G.running){ const p=G.player.position; floatText(p.x,p.z,matIc(k)+' +'+n,'goldtxt',2.6); } }
+
+// ---- daily login bonus (once per UTC day, on starting or continuing a run) ----
+function bonusToBag(it){ if(!it)return; if(G.inv&&G.inv.length<(G.invCap||24)){ G.inv.push(it); } else if(G.stash){ G.stash.push(it); } if(typeof refreshItemPanels==='function')refreshItemPanels(); }
+function rollDailyBonus(){
+  const streak=META.bonusStreak||1, fl=Math.max(1,(G.floor||1)), r=Math.random();
+  if(r<0.24){ const amt=80+Math.round(Math.random()*120)+streak*20; G.gold=(G.gold||0)+amt; if(typeof flashGold==='function')flashGold();
+    return {ic:'💰', nm:'+'+amt+' Gold', ds:'Spend it at the vendor or crafting bench.'}; }
+  if(r<0.48){ const m=pick(MATERIALS), amt=3+randi(2,6)+Math.floor(streak/2); grantMaterials(m.key,amt);
+    return {ic:m.ic, nm:'+'+amt+' '+m.nm, ds:'Crafting material — reforge & enhance gear at the bench.'}; }
+  if(r<0.66){ const it=makeItem(fl,null,(Math.random()<0.4?RARITY[Math.min(RARITY.length-1,2)]:null)); bonusToBag(it);
+    return {ic:(it.slotIc||'🗡'), nm:it.name, ds:(it.rarity?it.rarity.nm:'')+' gear — check your bag (I).'}; }
+  if(r<0.80){ const it=makeFlask(fl); bonusToBag(it);
+    return {ic:(it.ic||'🧪'), nm:it.name, ds:'A belt flask — equip it from your bag (I).'}; }
+  if(r<0.90){ const it=makeEgg(fl); bonusToBag(it);
+    return {ic:'🥚', nm:it.name, ds:'A pet egg — hatch or fuse from Pet (P).'}; }
+  const it=makePot(fl); bonusToBag(it);
+  return {ic:'⚗', nm:it.name, ds:'A permanent stat potion — drink it from your bag (I).'};
+}
+function maybeDailyBonus(){
+  loadMeta();
+  const today=dailyKey(); if(META.lastBonus===today) return;   // already claimed today
+  let y=''; try{ y=new Date(Date.now()-86400000).toISOString().slice(0,10); }catch(_){}
+  META.bonusStreak=(META.lastBonus===y)?((META.bonusStreak||0)+1):1;
+  META.lastBonus=today;
+  const rw=rollDailyBonus(); saveMeta();
+  setTimeout(()=>showLoginBonus(rw), 550);
+}
+function showLoginBonus(rw){ const gm=$('gameModal'), c=$('gmCard'); if(!gm||!c) return;
+  const streak=META.bonusStreak||1;
+  c.innerHTML='<div class="gm-ic">🎁</div><div class="gm-title">Daily Login Bonus</div>'
+    +'<div class="gm-body">Welcome back, climber — a gift for showing up today:</div>'
+    +'<div class="gm-reward"><div class="gr-ic">'+rw.ic+'</div><div><div class="gr-nm">'+rw.nm+'</div><div class="gr-ds">'+rw.ds+'</div></div></div>'
+    +'<div class="gm-streak">'+(streak>1?('🔥 '+streak+'-day streak — bigger gifts the longer you keep it going'):'come back tomorrow for another')+'</div>'
+    +'<div class="gm-actions" style="margin-top:14px"><button class="gm-btn" id="gmOK">Claim</button></div>';
+  if(G.running){ _gmPrevInvuln=G.invuln||0; G.invuln=1e9; } _G.modalOpen=true; gm.classList.add('show');
+  $('gmOK').onclick=()=>{ closeGameModal(); }; if(sfx.evolve)sfx.evolve();
+}
+
+// ---- RotMG-style loot bags: dropped loot stays on the floor; open with F and pick what you want ----
+let _lootHint=false;
+function cleanDeadPickups(){ G.pickups=G.pickups.filter(pk=>{ if(pk.dead){ scene.remove(pk.mesh); return false; } return true; }); }
+function nearbyLootBags(){ const p=G.player.position, out=[];
+  for(const pk of G.pickups){ if(pk.dead||pk.kind!=='loot')continue; if(pk.owner!=null&&pk.owner!==_G.cur)continue;
+    if(Math.hypot(p.x-pk.mesh.position.x,p.z-pk.mesh.position.z)<4.2) out.push(pk); }
+  return out; }
+function openLootBag(){
+  if(!$('lootPanel').classList.contains('hidden')){ $('lootPanel').classList.add('hidden'); refreshMenuState(); return; }   // F toggles it closed
+  if(!nearbyLootBags().length){ log('No loot bag nearby.'); return; }
+  togglePanel('lootPanel');
+}
+function takeLoot(pk){ if(!pk||pk.dead) return false; const it=pk.item;
+  if(SETTINGS.autoSalvage && isJunk(it)){ pk.dead=true; const g=it.value||0; G.gold+=g; if(typeof flashGold==='function')flashGold(); sfx.gold&&sfx.gold(); cleanDeadPickups(); return true; }
+  if(G.inv.length>=G.invCap){ log('🎒 Bag full ('+G.invCap+') — make room or bank loot.'); return false; }
+  pk.dead=true; G.inv.push(it);
+  if(it.isSkillGem && G.slots.includes(null)) autoBind(it);
+  if(it.isFlask && G.belt.includes(null)) autoBeltFlask(it);
+  sfx.gold&&sfx.gold(); floatText(G.player.position.x,G.player.position.z,it.name,(it.rarity&&(it.rarity.css==='legend'||it.rarity.css==='epic'))||it.unique||it.isSkillGem?'crit':'goldtxt',2);
+  refreshItemPanels(); cleanDeadPickups(); return true; }
+function renderLoot(){ const grid=$('lootGrid'); if(!grid) return;
+  const bags=nearbyLootBags();
+  if(!bags.length){ if(!$('lootPanel').classList.contains('hidden')){ $('lootPanel').classList.add('hidden'); refreshMenuState(); } return; }
+  grid.innerHTML='';
+  bags.forEach(pk=>{ const t=itemTile(pk.item,{ctx:null}); t.title=pk.item.name+(pk.item.rarity?' · '+pk.item.rarity.nm:'')+' · click to take';
+    t.addEventListener('click',()=>{ takeLoot(pk); renderLoot(); });
+    t.addEventListener('contextmenu',e=>{ e.preventDefault(); takeLoot(pk); renderLoot(); });   // right-click → straight to bag
+    grid.appendChild(t); });
+  const ta=$('lootTakeAll'); if(ta) ta.onclick=()=>{ nearbyLootBags().forEach(takeLoot); renderLoot(); };
+}
+
+// ---- treasure chests: 2-5 per floor, each opens once; XP goes straight to the bar, loot spills as bags ----
+function spawnChest(x,z){
+  const g=new THREE.Group();
+  const base=new THREE.Mesh(new THREE.BoxGeometry(1.5,0.9,1.1), new THREE.MeshStandardMaterial({color:0x6b4a22,emissive:0x3a2810,emissiveIntensity:.5,roughness:.6,metalness:.3})); base.position.y=0.45;
+  const lid=new THREE.Mesh(new THREE.BoxGeometry(1.56,0.5,1.16), new THREE.MeshStandardMaterial({color:0x8a5a28,emissive:0xffce4d,emissiveIntensity:.55,roughness:.5,metalness:.4})); lid.position.set(0,0.95,0);
+  const glow=new THREE.Mesh(new THREE.TorusGeometry(0.9,0.08,8,20), new THREE.MeshStandardMaterial({color:0xffce4d,emissive:0xffce4d,emissiveIntensity:1.2})); glow.rotation.x=Math.PI/2; glow.position.y=0.06;
+  g.add(base,lid,glow); g.position.set(x,0,z); g.castShadow=true; scene.add(g);
+  G.chests.push({mesh:g, lid, glow, x, z, opened:false, r:1.4});
+}
+function spawnChests(rooms){ const pool=(rooms.length>1)?rooms.slice(1):rooms; const n=randi(2,5);
+  for(let i=0;i<n;i++){ const rm=pick(pool); const pt=safePt(rm,3); if(nearAnyPlayer(pt.x,pt.z,5))continue; spawnChest(pt.x,pt.z); } }
+function openChest(c){ if(!c||c.opened) return; c.opened=true;
+  sfx.evolve&&sfx.evolve(); sfx.drop&&sfx.drop(4);
+  try{ if(c.lid){ c.lid.rotation.x=-1.15; c.lid.position.y=1.1; } if(c.glow&&c.glow.material) c.glow.material.emissiveIntensity=0.12; }catch(_){}
+  ringFx(c.x,c.z,3.2,0xffce4d); floatText(c.x,c.z,'✦ CHEST ✦','big',3.2);
+  const fl=Math.max(1,G.floor||1);
+  const xp=Math.round((G.xpNeed||40)*rand(0.35,0.85)); gainXP(xp); floatText(c.x,c.z,'+'+xp+' XP','heal',2.4);   // XP straight to the bar/bank — no orb
+  if(Math.random()<0.72){ const m=pick(MATERIALS); grantMaterials(m.key, randi(2,5)); }
+  const g=Math.round((40+fl*6)*rand(0.8,1.6)); G.gold+=g; if(typeof flashGold==='function')flashGold(); floatText(c.x,c.z,'+'+g+' gold','goldtxt',2.0);
+  const n=randi(1,3);
+  for(let i=0;i<n;i++){ const a=(Math.PI*2*i/Math.max(1,n))+rand(0,1), ox=c.x+Math.cos(a)*1.9, oz=c.z+Math.sin(a)*1.9;
+    let forced=null;
+    if(Math.random()<0.10) forced=makePot(fl);
+    else if(Math.random()<0.16 && typeof makeAbnormal==='function') forced=makeAbnormal();   // rare abnormal item
+    dropLoot(ox,oz, 0.10, _G.cur, null, forced); }
+  log('✦ Chest opened — loot spilled onto the floor. Walk over it and press F to collect.');
+  if(G.nearChest===c) G.nearChest=null;
+}
+
+// ---- crafting bench ----
+let _craftSel=null;
+function reforgeCostFor(it){ return {essence:2, shard:4, gold:60+(it.floor||1)*8}; }
+function enhanceCostFor(it){ const tier=RARITY.indexOf(it.rarity); return {core:2+Math.max(0,tier), shard:3, gold:100+(it.floor||1)*12}; }
+function canAfford(c){ for(const k in c){ if(k==='gold'){ if((G.gold||0)<c.gold) return false; } else if(matCount(k)<c[k]) return false; } return true; }
+function costStr(c){ const parts=[]; for(const k in c){ parts.push(k==='gold'?('💰'+c.gold):(matIc(k)+c[k])); } return parts.join('  '); }
+function payCost(c){ if(!canAfford(c)) return false; for(const k in c){ if(k==='gold') G.gold-=c.gold; else META.materials[k]=(META.materials[k]||0)-c[k]; } saveMeta(); return true; }
+function doReforge(it){ const cost=reforgeCostFor(it); if(!payCost(cost)){ log('Not enough materials to reforge.'); sfx.deny&&sfx.deny(); return; }
+  const fresh=makeItem(it.floor||G.floor||1, it.slotKey); it.affixes=(fresh.affixes||[]).map(a=>Object.assign({},a));
+  recompute(); sfx.evolve&&sfx.evolve(); log('🔀 Reforged '+it.name+' — fresh affixes rolled.'); renderCraft(); refreshItemPanels(); }
+function doEnhance(it){ const tier=RARITY.indexOf(it.rarity); if(tier<0||tier>=RARITY.length-1){ log('Already at max rarity.'); return; }
+  const cost=enhanceCostFor(it); if(!payCost(cost)){ log('Not enough materials to enhance.'); sfx.deny&&sfx.deny(); return; }
+  it.rarity=RARITY[tier+1]; const extra=makeItem(it.floor||G.floor||1, it.slotKey);
+  if(extra.affixes&&extra.affixes.length){ it.affixes.push(Object.assign({},pick(extra.affixes))); }
+  recompute(); sfx.evolve&&sfx.evolve(); if(G.player) ringFx(G.player.position.x,G.player.position.z,3,it.rarity.col);
+  log('⬆ Enhanced '+it.name+' → '+it.rarity.nm+'!'); renderCraft(); refreshItemPanels(); }
+function renderCraft(){
+  const mats=$('craftMats'); if(mats){ mats.innerHTML=MATERIALS.map(m=>'<div class="matChip">'+m.ic+' '+m.nm+' <b>'+matCount(m.key)+'</b></div>').join('')+'<div class="matChip">💰 Gold <b>'+(G.gold||0)+'</b></div>'; }
+  const body=$('craftBody'); if(!body) return;
+  const items=(G.inv||[]).filter(it=>it.slotKey && !it.isGem && !it.isFlask && !it.isPet && !it.isPot && !it.isSkillGem);
+  if(_craftSel && !items.includes(_craftSel)) _craftSel=null;
+  let html='<div style="font-size:11px;opacity:.6;letter-spacing:1px;text-transform:uppercase;margin:0 16px 6px">Select a carried item</div><div class="lootGrid" id="craftItems"></div>';
+  if(_craftSel){ const it=_craftSel, tier=RARITY.indexOf(it.rarity), canEnh=(tier>=0&&tier<RARITY.length-1);
+    const rc=it.rarity?('#'+(it.rarity.col>>>0).toString(16).padStart(6,'0')):'#fff';
+    const rf=reforgeCostFor(it), en=enhanceCostFor(it);
+    html+='<div style="margin:12px 16px 4px;font-size:13px;color:#fff">Selected: <b style="color:'+rc+'">'+(it.slotIc||'')+' '+it.name+'</b> · '+(it.rarity?it.rarity.nm:'')+'</div>';
+    html+='<div class="craftOpt'+(canAfford(rf)?'':' dis')+'" id="craftReforge"><div class="co-ic">🔀</div><div><div class="co-nm">Reforge Affixes</div><div class="co-ds">Reroll this item affixes into a fresh set.</div></div><div class="co-cost">'+costStr(rf)+'</div></div>';
+    html+='<div class="craftOpt'+((canEnh&&canAfford(en))?'':' dis')+'" id="craftEnhance"><div class="co-ic">⬆</div><div><div class="co-nm">Enhance Rarity</div><div class="co-ds">'+(canEnh?'Raise rarity one tier and add an affix.':'Already at max rarity.')+'</div></div><div class="co-cost">'+(canEnh?costStr(en):'—')+'</div></div>';
+  } else { html+='<div style="margin:14px 16px;font-size:12px;opacity:.6">Pick an item above to reforge or enhance it.</div>'; }
+  body.innerHTML=html;
+  const ig=$('craftItems'); if(ig){ if(!items.length){ ig.innerHTML='<div style="grid-column:1/-1;opacity:.5;font-size:11px;text-align:center;padding:8px">No craftable gear in your bag.</div>'; }
+    else items.forEach(it=>{ const t=itemTile(it,{ctx:null,sel:_craftSel===it}); t.title=it.name; t.addEventListener('click',()=>{ _craftSel=it; renderCraft(); }); ig.appendChild(t); }); }
+  if(_craftSel){ const rb=$('craftReforge'), eb=$('craftEnhance'); if(rb) rb.onclick=()=>doReforge(_craftSel); if(eb) eb.onclick=()=>doEnhance(_craftSel); }
+}
+
+// ---- tutorial: read vs hands-on choice, and a short guided tutorial floor ----
+function renderTutChoice(){
+  $('tutCard').innerHTML='<div class="tut-ic">📖</div><h2>How do you want to learn?</h2>'
+    +'<div class="tut-sub">Pick a style — you can always come back</div>'
+    +'<div class="modeSel" style="margin:18px 0 4px">'
+    +'<div class="modeBtn" id="tutReadOpt"><b>📖 READ</b><span>A quick illustrated guide to every system — move at your own pace.</span></div>'
+    +'<div class="modeBtn" id="tutPlayOpt"><b>🎮 PLAY</b><span>Hands-on tutorial floor — learn by doing in about 2–3 minutes.</span></div>'
+    +'</div>';
+  $('tutNav').innerHTML='<button class="btn ghost small" id="tutMenu2">✕ Menu</button>';
+  $('tutMenu2').onclick=showMenu;
+  $('tutReadOpt').onclick=()=>{ tutPage=0; renderTut(); };
+  $('tutPlayOpt').onclick=()=>{ $('tutorial').classList.add('hidden'); enterTutorialFloor(); };
+}
+let _tutStep=0, _tutFlags={};
+function enterTutorialFloor(){
+  $('start').classList.add('hidden'); $('tutorial').classList.add('hidden'); $('hud').classList.remove('hidden');
+  loadMeta(); loadSettings();
+  G.floor=1; G.gold=100; G.level=1; G.xp=0; G.xpNeed=20; G.attrPts=0; G.skillPts=0;
+  G.attr={str:5,dex:5,int:5,vit:5,will:5}; G.alloc={}; G.slots=[makeSkillGem(1,'gNova'),null,null,null,makeSkillGem(1,'tAegis'),null,null,null,null]; G.cd={}; G.auras={};
+  G.equip={weapon:makeItem(1,'weapon'),helm:null,chest:null,gloves:null,boots:null,ring:null};
+  G.inv=[]; G.stash=[]; G.stashStrikes=0; G.dead=false; G.running=true; G.paused=false; G.fervor=0; G.hitstop=0; G.greed=1;
+  G.dashCd=0; G.dashT=0; G.flowT=0; G.permadead=false; G.selGem=null;
+  G.belt=[makeFlask(1,'life'),makeFlask(1,'mana'),null,null,null]; G.charge=100; G.sigSlot=null; G.sigCd=0; G.swiftT=0; G.petErrand=null;
+  G.floorMod=null; G.bounty=null;
+  if(G.petMesh){ scene.remove(G.petMesh); G.petMesh=null; } G.pet=null; G.pets=[]; G.petMagnet=0;
+  G.run={kills:0,assists:0,healSelf:0,healOthers:0,xp:0,floorTime:0,totalTime:0,floorsCleared:0,boons:[]};
+  G.practice=true; G.tutorial=true; G.inTown=false; G.hardcore=false; G.diff='normal'; G.seed=randi(0,9999);
+  _G.asc=0; _G.ascEff=ascEffects(0);
+  initAudio(); startAmbient();
+  recompute(); G.hp=G.maxhp; G.mana=G.maxmana;
+  if(!G.player) G.player=createPlayer();
+  buildTutorialFloor(); renderActionbar(); updatePips();
+  _tutStep=0; _tutFlags={};
+  banner('🎓 TUTORIAL','learn the ropes — follow the tips as they appear');
+  clock.getDelta();
+}
+function buildTutorialFloor(){
+  clearWorld(); biome=BIOMES[4];
+  scene.background=new THREE.Color(biome.fog); scene.fog=new THREE.Fog(biome.fog,46,150); hemi.groundColor.setHex(biome.fog);
+  const room={cx:0,cz:0,rw:56,rh:50,x0:-28,x1:28,z0:-25,z1:25}; G.bounds=68;
+  G.rooms=[room]; G.rects=[{x0:room.x0,x1:room.x1,z0:room.z0,z1:room.z1}];
+  buildFloorMeshes(); buildWalls();
+  if(G.player){ G.player.position.set(0,1,19); }
+  for(const dp of [[-8,-4],[8,-4],[-4,-11],[4,-11],[0,-1]]) spawnEnemy(1,{x:dp[0],z:dp[1]},ETYPES[0]);
+  spawnChest(0,-17);
+  const pg=new THREE.Group();
+  const ring=new THREE.Mesh(new THREE.TorusGeometry(2.4,.35,12,32), new THREE.MeshStandardMaterial({color:0x56e0ff,emissive:0x56e0ff,emissiveIntensity:1.6})); ring.rotation.x=Math.PI/2; ring.position.y=2.4;
+  const beam=new THREE.Mesh(new THREE.CylinderGeometry(2,2,9,24,1,true), new THREE.MeshBasicMaterial({color:0x56e0ff,transparent:true,opacity:.14,side:THREE.DoubleSide,depthWrite:false})); beam.position.y=4.5;
+  pg.add(ring,beam); pg.position.set(0,0,-22); scene.add(pg); G.portal={mesh:pg,x:0,z:-22,active:true,tutorial:true};
+  $('floorTitle').textContent='TUTORIAL'; $('floorType').textContent='🎓 LEARN'; $('floorBig').innerHTML='🎓';
+  $('threatTxt').textContent='SAFE'; $('modTxt').innerHTML=''; $('bountyTxt').innerHTML=''; $('shiftTxt').textContent='';
+  coach('tut_move','🎮','Move & attack','Move with <b>WASD</b>, aim with the <b>mouse</b>, hold <b>left-click</b> to fire. <b>Space</b> dashes — you are invulnerable mid-dash. Defeat the training foes ahead.');
+}
+function tutorialTick(dt){ if(!G.tutorial) return; const kills=G.run.kills||0;
+  if(_tutStep===0 && kills>=1 && !_tutFlags.k1){ _tutFlags.k1=true; _tutStep=1;
+    coach('tut_loot','🎁','Grab your loot','Defeated foes drop a <b>loot bag</b> that stays where it fell — nothing chases you. Walk onto it and press <b>F</b> to open the bag, then click items to take them.'); }
+  if(_tutStep===1 && G.inv && G.inv.length>0 && !_tutFlags.loot){ _tutFlags.loot=true; _tutStep=2;
+    coach('tut_chest','🧰','Open the chest','See the glowing <b>chest</b>? Stand beside it and press <b>F</b>. Chests give XP, gold, gear and rare finds — once each.'); }
+  if(_tutStep>=1 && G.chests && G.chests.some(c=>c.opened) && !_tutFlags.chest){ _tutFlags.chest=true; _tutStep=3;
+    coach('tut_done','✅','You are ready','Collect anything you like, then step into the <b>blue portal</b> and press <b>F</b> to begin your real climb. Good luck, climber.'); }
+}
+function finishTutorial(){ G.tutorial=false; G.practice=false; G.running=false; clearWorld();
+  $('hud').classList.add('hidden'); showClimb(); log('🎓 Tutorial complete — choose your mode and climb for real!'); }
 
 // idle enemies roam their room (so they don't all clump in one corner)
 function wanderEnemy(e, ex, ez, espd, dt){
