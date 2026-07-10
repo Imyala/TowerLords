@@ -630,10 +630,10 @@
   /* prominent fame rank badge (HUD + menu) */
   .mRank{display:flex;align-items:center;justify-content:center;gap:8px;margin:1px 6px 7px;padding:5px 8px;border-radius:9px;
     background:linear-gradient(90deg,rgba(255,206,77,.07),rgba(86,224,255,.05));border:1px solid rgba(255,255,255,.13);box-shadow:inset 0 0 14px rgba(0,0,0,.35);}
-  .mRank .mrk-stars{font-size:14px;letter-spacing:1px;font-weight:bold;line-height:1;}
+  .mRank .mrk-stars{font-size:19px;letter-spacing:2px;font-weight:900;line-height:1;}
   .mRank .mrk-tier{font-size:9.5px;letter-spacing:1.5px;text-transform:uppercase;font-weight:bold;opacity:.92;}
   .menuRank{display:flex;flex-direction:column;align-items:center;gap:3px;margin:-16px 0 22px;}
-  .menuRank .mnrk-stars{font-size:26px;letter-spacing:3px;font-weight:bold;line-height:1;filter:drop-shadow(0 0 8px rgba(0,0,0,.5));}
+  .menuRank .mnrk-stars{font-size:38px;letter-spacing:5px;font-weight:900;line-height:1;filter:drop-shadow(0 0 6px rgba(0,0,0,.4));}
   .menuRank .mnrk-tier{font-size:12px;letter-spacing:2px;text-transform:uppercase;font-weight:bold;}
   .menuRank .mnrk-fame{font-size:11px;opacity:.65;letter-spacing:1px;color:var(--gold);}
   /* vendor: compact carried grid + action bar (no inner scroll) */
@@ -1753,13 +1753,13 @@ function fameRank(fame){
   const nextAt = stars<7 ? floor+STAR_BASE[stars]*mult : null;
   return {tier:t, name:STAR_TIERS[t].nm, col:STAR_TIERS[t].col, stars, nextAt, fame, floor};
 }
-function rankStars(stars){ return '★'.repeat(stars)+'☆'.repeat(7-stars); }
-function rankBadgeHTML(fame,sm){ const r=fameRank(fame); const fs=sm?'11px':'14px';
-  return `<span style="color:${r.col};font-weight:bold;letter-spacing:1px;font-size:${fs};text-shadow:0 0 8px ${r.col}66">${rankStars(r.stars)}</span>`; }
+function rankStars(stars){ return stars>0 ? '★'.repeat(stars) : '☆'; }   // only the stars you've earned, in your tier colour
+function rankBadgeHTML(fame,sm){ const r=fameRank(fame); const fs=sm?'14px':'17px';
+  return `<span style="color:${r.col};font-weight:900;letter-spacing:2px;font-size:${fs};text-shadow:0 0 10px ${r.col}bb,0 1px 2px rgba(0,0,0,.55)">${rankStars(r.stars)}</span>`; }
 function rankHudHTML(){ const r=fameRank(META.fame);
-  return `<span class="mrk-stars" style="color:${r.col};text-shadow:0 0 10px ${r.col}">${rankStars(r.stars)}</span><span class="mrk-tier" style="color:${r.col}">${r.name}</span>`; }
+  return `<span class="mrk-stars" style="color:${r.col};text-shadow:0 0 12px ${r.col}aa,0 1px 2px rgba(0,0,0,.5)">${rankStars(r.stars)}</span><span class="mrk-tier" style="color:${r.col}">${r.name}</span>`; }
 function refreshMenuRank(){ const mr=$('menuRank'); if(!mr) return; const r=fameRank(META.fame); mr.classList.remove('hidden');
-  mr.innerHTML=`<span class="mnrk-stars" style="color:${r.col};text-shadow:0 0 16px ${r.col}">${rankStars(r.stars)}</span>`
+  mr.innerHTML=`<span class="mnrk-stars" style="color:${r.col};text-shadow:0 0 20px ${r.col}cc,0 2px 4px rgba(0,0,0,.5)">${rankStars(r.stars)}</span>`
     +`<span class="mnrk-tier" style="color:${r.col}">${r.name} Tier · ${r.stars}/7★</span>`
     +`<span class="mnrk-fame">✦ ${Math.round(META.fame).toLocaleString()} fame</span>`; }
 const FEATS=[
