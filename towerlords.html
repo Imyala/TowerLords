@@ -944,8 +944,10 @@
   .ascRow.new{color:#fff;} .ascRow.new b{color:#d9b6ff;}
   .ascHint{font-size:10.5px;opacity:.5;letter-spacing:1px;margin-top:9px;line-height:1.4;}
   #deathStats{font-size:16px;line-height:2.1;margin:6px 0 26px;} #deathStats b{color:var(--gold);}
-  #loadErr{position:absolute;inset:0;display:none;align-items:center;justify-content:center;text-align:center;
-    font-size:15px;padding:40px;color:#ff8fa3;line-height:1.7;z-index:99;}
+  #loadErr{position:fixed;inset:0;display:none;align-items:center;justify-content:center;text-align:center;
+    font-size:15px;padding:40px;color:#ff8fa3;line-height:1.7;z-index:200;
+    background:rgba(4,5,12,.985);backdrop-filter:blur(6px);}   /* opaque full-screen — must fully cover the start screen, never overlap it */
+  #loadErr .leInner{max-width:520px;}
   /* ---- local co-op (split-screen) ---- */
   #coopHud{position:absolute;inset:0;pointer-events:none;z-index:6;display:none;}
   .coTag{position:absolute;min-width:148px;padding:6px 9px;border-radius:9px;background:rgba(6,9,18,.6);
@@ -1441,8 +1443,28 @@ const pick=arr=>arr[Math.floor(_rngFn()*arr.length)];
 
 let renderer, scene, camera, clock, hemi, dir;
 
+// Robust context creation. A second WebGL context on the same GPU (e.g. host + guest in two
+// windows, which is exactly how you test online co-op) very often fails the default
+// 'high-performance' request but succeeds on a lighter one — so fall back through progressively
+// cheaper options, then an explicit shared canvas/context, before giving up.
+function makeRenderer(){
+  const tries=[
+    {antialias:true,  powerPreference:'high-performance'},
+    {antialias:false, powerPreference:'high-performance'},
+    {antialias:false},
+    {antialias:false, powerPreference:'low-power', failIfMajorPerformanceCaveat:false},
+  ];
+  let err;
+  for(const opt of tries){ try{ const r=new THREE.WebGLRenderer(opt); if(r&&r.getContext&&r.getContext()) return r; }catch(e){ err=e; } }
+  try{ const cv=document.createElement('canvas');
+    const gl=cv.getContext('webgl2')||cv.getContext('webgl')||cv.getContext('experimental-webgl');
+    if(gl) return new THREE.WebGLRenderer({canvas:cv,context:gl,antialias:false}); }catch(e){ err=e; }
+  throw err||new Error('Could not create a WebGL context.');
+}
 function init(){
-  renderer = new THREE.WebGLRenderer({antialias:true});
+  renderer = makeRenderer();
+  // a lost context (GPU reset, tab backgrounded too long) would otherwise silently freeze the guest — swallow the default so the browser tries to restore it
+  try{ renderer.domElement.addEventListener('webglcontextlost', e=>e.preventDefault(), false); }catch(_){}
   renderer.setPixelRatio(Math.min(2,window.devicePixelRatio));
   renderer.setSize(innerWidth, innerHeight);
   renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
@@ -7302,6 +7324,9 @@ function netPeerSendInput(){ const pr=NET.peer; if(!pr||!pr.ch||pr.ch.readyState
   try{ pr.ch.send(JSON.stringify({ in:{ mx:p.in.mx||0, mz:p.in.mz||0, ax, az, atk:!!p.in.atk, btn } })); }catch(_){}
 }
 function netPeerEnter(){   // enter a lightweight render-only state (no local world sim)
+  if(!scene || !renderer){   // engine never started (WebGL failed) — don't get silently stuck on the join screen; show the reason
+    const le=$('loadErr'); if(le){ le.style.display='flex'; if(!le.innerHTML) le.innerHTML='<div class="leInner">⚠ Can\'t render the game — your browser has no WebGL context. Close other 3D/game tabs and reload, then rejoin.</div>'; }
+    return; }
   _G.netGuest=true; _G.running=false;
   _G.players[0].input = _G.players[0].input || makeKbmInput();   // the guest needs an input source so read() captures its WASD/mouse/aim
   if(!NET.peer.ground){ const gnd=new THREE.Mesh(new THREE.PlaneGeometry(400,400), new THREE.MeshStandardMaterial({color:0x0d1320,roughness:1}));
@@ -8211,7 +8236,7 @@ function updateBossBar(){
 }
 
 try { init(); }
-catch(err){ $('loadErr').style.display='flex'; $('loadErr').innerHTML='⚠ Failed to start the 3D engine.<br>'+err.message+'<br><br>(Three.js loads from a CDN — needs an internet connection.)'; console.error(err); }
+catch(err){ $('loadErr').style.display='flex'; $('loadErr').innerHTML='<div class="leInner">⚠ Failed to start the 3D engine.<br>'+(err&&err.message||err)+'<br><br>Your browser couldn\'t open a WebGL context. If you\'re testing co-op with two windows on one PC, the GPU may be out of contexts — close other 3D/game tabs and reload. (Three.js also loads from a CDN, so an internet connection is required.)</div>'; console.error(err); }
 </script>
 </body>
 </html>
