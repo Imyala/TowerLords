@@ -280,6 +280,22 @@
   #lootPanel{top:33%;right:7%;width:288px;padding-bottom:12px;border-color:rgba(141,255,217,.35);}   /* off-centre so it never blocks the action · drag its header to move it */
   #playerRing{position:absolute;pointer-events:none;z-index:6;display:none;}
   #lootPanel h3{color:#8effd9;}
+  #netHostHud{position:fixed;top:60px;right:16px;width:300px;max-width:94vw;max-height:84vh;overflow-y:auto;z-index:46;background:rgba(7,10,20,.97);border:1px solid rgba(86,224,255,.42);border-radius:14px;padding:12px 14px 13px;box-shadow:0 0 36px rgba(0,0,0,.72);font-size:12px;}
+  #netHostHud h3{color:#8effd9;font-size:13px;letter-spacing:2px;display:flex;justify-content:space-between;align-items:center;margin:0 0 8px;cursor:grab;user-select:none;}
+  #netHostHud .nhClose{cursor:pointer;opacity:.7;font-size:14px;} #netHostHud .nhClose:hover{opacity:1;}
+  #netHostHud .nhStatus{font-size:11px;opacity:.78;text-align:center;margin-bottom:6px;min-height:14px;line-height:1.4;}
+  #netHostHud .nhCode{font-size:30px;letter-spacing:9px;font-weight:800;color:#8effd9;text-align:center;user-select:all;margin:4px 0;text-shadow:0 0 14px rgba(142,255,217,.4);}
+  #netHostHud .nhRow{display:flex;gap:6px;justify-content:center;margin:6px 0;flex-wrap:wrap;}
+  #netHostHud button{background:#182338;border:1px solid #35507e;color:#cfe6ff;border-radius:7px;padding:5px 10px;font-size:11px;cursor:pointer;}
+  #netHostHud button:hover{filter:brightness(1.28);}
+  #netHostHud .nhPeersHd{font-size:10px;letter-spacing:1.5px;opacity:.6;text-transform:uppercase;margin:9px 0 5px;font-weight:bold;}
+  #netHostHud .nhPeer{display:flex;justify-content:space-between;align-items:center;padding:5px 9px;border-radius:8px;background:rgba(255,255,255,.045);margin-bottom:4px;}
+  #netHostHud .nhPeer .k{background:#3a1622;border-color:#7a2a3a;color:#ff8a9c;padding:3px 9px;}
+  #netHostHud .nhEmpty{font-size:11px;opacity:.5;text-align:center;padding:8px 4px;}
+  #netHostHud details{margin-top:9px;font-size:11px;border-top:1px solid #ffffff14;padding-top:8px;}
+  #netHostHud summary{cursor:pointer;opacity:.82;margin-bottom:4px;}
+  #netHostHud .nhHint{font-size:10.5px;opacity:.66;margin:3px 0;}
+  #netHostHud textarea{width:100%;height:50px;font-size:9px;margin:3px 0;background:#0d1320;color:#cfe6ff;border:1px solid #2a3550;border-radius:6px;box-sizing:border-box;}
   #craftPanel{top:50%;left:50%;transform:translate(-50%,-50%);width:470px;padding-bottom:16px;border-color:rgba(200,155,255,.35);}
   #craftPanel h3{color:#c89bff;}
   .lootGrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(54px,1fr));gap:7px;padding:0 16px;max-height:300px;overflow-y:auto;}
@@ -1045,6 +1061,7 @@
       <div class="mItem" id="openCodexBtn"><span class="mKey">B</span><span class="mIc">📖</span><span class="mLbl">Bestiary</span></div>
       <div class="mItem" id="recallBtn"><span class="mKey">H</span><span class="mIc">🏛</span><span class="mLbl">Recall to Sanctuary</span></div>
       <div class="mItem" id="openLegacyBtn"><span class="mKey">L</span><span class="mIc">⚜</span><span class="mLbl">Legacy</span></div>
+      <div class="mItem hidden" id="openCoopHostBtn"><span class="mKey">🌐</span><span class="mIc">🌐</span><span class="mLbl">Co-op Host</span></div>
       <div class="mItem" id="openSettingsBtn"><span class="mKey">O</span><span class="mIc">⚙</span><span class="mLbl">Settings</span><span class="mEnd" id="muteInd" style="cursor:pointer">🔊</span></div>
     </div>
 
@@ -1088,6 +1105,23 @@
   <div id="fct"></div>
   <div id="worldLabels"></div>
   <div id="petInfoCard" class="hidden"></div>
+  <div id="netHostHud" class="hidden">
+    <h3>🌐 CO-OP HOST <span class="nhClose" id="nhClose" title="Hide (keeps hosting)">✕</span></h3>
+    <div class="nhStatus" id="nhStatus">Opening room…</div>
+    <div class="nhCode" id="nhCode">·····</div>
+    <div class="nhRow"><button id="nhCopyCode">📋 Copy code</button><button id="nhCopyLink">🔗 Copy link</button></div>
+    <div class="nhPeersHd">Players in your tower</div>
+    <div id="nhPeers"><div class="nhEmpty">Waiting for friends to join…</div></div>
+    <details id="nhManual">
+      <summary>Friend can't connect? Direct invite (no server)</summary>
+      <div class="nhHint">1 · Generate an invite and send it to your friend:</div>
+      <textarea id="nhOfferOut" readonly placeholder="press Generate…"></textarea>
+      <div class="nhRow"><button id="nhGenOffer">⚙ Generate</button><button id="nhCopyOffer">📋 Copy invite</button></div>
+      <div class="nhHint">2 · Paste the answer code they send back:</div>
+      <textarea id="nhAnsIn" placeholder="paste friend's answer code…"></textarea>
+      <button id="nhConnect">✔ Connect friend</button>
+    </details>
+  </div>
   <div id="vignette"></div>
   <div id="levelFlash"></div>
   <div id="shiftFlash"></div>
@@ -3191,13 +3225,13 @@ $('onlineBack').onclick=showMenu;
 $('onHostBack').onclick=onlineToChoose;
 $('onJoinBack').onclick=onlineToChoose;
 async function onlineCopy(id){ try{ await navigator.clipboard.writeText($(id).value); }catch(_){ $(id).select(); document.execCommand&&document.execCommand('copy'); } }
-$('onHostBtn').onclick=()=>ensureRunStarted(async()=>{ $('onlineChoose').classList.add('hidden'); $('onlineHost').classList.remove('hidden');
-  $('onHostStatus').textContent='Opening room…'; $('onRoomCode').textContent='·····';
-  try{ const code=await netRoomHost(s=>{ $('onHostStatus').textContent=s; }, n=>{ $('onHostPeers').textContent=n?('🌐 '+n+' friend'+(n>1?'s':'')+' connected'):''; });
-    $('onRoomCode').textContent=code;
-    const link=roomJoinLink(code); $('onRoomLink').textContent=link; $('onCopyLink').style.display=''; $('onCopyLink').dataset.link=link;
-    $('onHostStatus').textContent='Room open — waiting for friends. Keep this tab running; you are the world.'; }
-  catch(e){ $('onRoomCode').textContent='—'; $('onHostStatus').textContent='⚠ '+(e&&e.message||'Broker unreachable — use Manual connect below.'); } });
+$('onHostBtn').onclick=()=>ensureRunStarted(async()=>{ openNetHostHud();
+  $('nhStatus').textContent='Opening room…'; $('nhCode').textContent='·····';
+  try{ const code=await netRoomHost(s=>{ $('nhStatus').textContent=s; }, n=>{ renderNetHost(); });
+    $('nhCode').textContent=code;
+    const link=roomJoinLink(code); $('netHostHud').dataset.link=link;
+    $('nhStatus').textContent='Room open — share the code or link. Friends who join show up below.'; }
+  catch(e){ $('nhCode').textContent='—'; $('nhStatus').textContent='⚠ '+(e&&e.message||'Broker down — use Direct invite below.'); const m=$('nhManual'); if(m)m.open=true; } });
 $('onCopyCode').onclick=async()=>{ const c=$('onRoomCode').textContent.trim(); try{ await navigator.clipboard.writeText(c); $('onHostStatus').textContent='📋 Code copied.'; }catch(_){} };
 // build a shareable one-click join link (friends open it and auto-join the room)
 function roomJoinLink(code){ try{ const u=new URL(location.href); u.hash=''; u.searchParams.set('room',code); return u.href; }catch(_){ return 'room code: '+code; } }
@@ -3224,6 +3258,36 @@ $('onGenAnsBtn').onclick=async()=>{ const o=$('onOfferIn').value.trim(); if(!o){
   $('onJoinStatus').textContent='Generating answer…'; try{ const ans=await netAcceptInvite(o); $('onAnsOut').value=ans; $('onJoinStatus').textContent='Answer ready — send it back to the host. You’ll connect automatically.'; }
   catch(e){ $('onJoinStatus').textContent='⚠ '+e.message; } };
 $('onCopyAns').onclick=()=>onlineCopy('onAnsOut');
+// ---- ONLINE CO-OP HOST HUD: a floating in-game panel (lives OUTSIDE #start so it stays visible once the run begins) ----
+function openNetHostHud(){ const el=$('netHostHud'); if(el) el.classList.remove('hidden'); const nav=$('openCoopHostBtn'); if(nav) nav.classList.remove('hidden'); renderNetHost(); }
+function closeNetHostHud(){ const el=$('netHostHud'); if(el) el.classList.add('hidden'); }
+function renderNetHost(){ const wrap=$('nhPeers'); if(!wrap) return; const h=NET.host;
+  const peers=h?h.conns.filter(c=>c.player):[];
+  if(!peers.length){ wrap.innerHTML='<div class="nhEmpty">Waiting for friends to join…</div>'; return; }
+  wrap.innerHTML='';
+  peers.forEach(rec=>{ const pid=(rec.player?rec.player.id:0)+1, live=!!(rec._ready&&rec.player&&rec.player.joined);
+    const d=document.createElement('div'); d.className='nhPeer';
+    d.innerHTML=`<span>${live?'🟢':'🟡'} Player ${pid}${live?'':' · connecting…'}</span>`;
+    const kb=document.createElement('button'); kb.className='k'; kb.textContent='Kick'; kb.onclick=()=>netKick(rec);
+    d.appendChild(kb); wrap.appendChild(d); }); }
+function netKick(rec){ if(!rec) return;
+  try{ if(rec.gameConn&&rec.gameConn.close) rec.gameConn.close(); }catch(_){}
+  try{ if(rec.evtConn&&rec.evtConn.close) rec.evtConn.close(); }catch(_){}
+  try{ if(rec.pc&&rec.pc.close) rec.pc.close(); }catch(_){}
+  const pid=(rec.player?rec.player.id:0)+1;
+  if(rec.player){ rec.player.joined=false; rec.player.downed=true; }
+  if(NET.host) NET.host.conns=NET.host.conns.filter(c=>c!==rec);
+  log('🌐 Kicked Player '+pid+'.'); renderNetHost(); if(typeof buildCoopHud==='function') buildCoopHud(); }
+// wire the host-HUD controls (DOM already parsed — the module runs after <body>)
+{ const c=$('nhClose'); if(c) c.onclick=closeNetHostHud;
+  const nav=$('openCoopHostBtn'); if(nav) nav.onclick=openNetHostHud;
+  const cc=$('nhCopyCode'); if(cc) cc.onclick=async()=>{ try{ await navigator.clipboard.writeText(($('nhCode').textContent||'').trim()); $('nhStatus').textContent='📋 Code copied — send it to a friend.'; }catch(_){ $('nhStatus').textContent='Select the code and copy it manually.'; } };
+  const cl=$('nhCopyLink'); if(cl) cl.onclick=async()=>{ const l=($('netHostHud').dataset.link)||''; if(!l){ $('nhStatus').textContent='No link yet — open the room first.'; return; } try{ await navigator.clipboard.writeText(l); $('nhStatus').textContent='🔗 Join link copied — send it to a friend.'; }catch(_){} };
+  const go=$('nhGenOffer'); if(go) go.onclick=async()=>{ $('nhStatus').textContent='Generating a direct invite…'; try{ $('nhOfferOut').value=await netCreateInvite(); $('nhStatus').textContent='Invite ready — send it, then paste their answer below.'; }catch(e){ $('nhStatus').textContent='⚠ '+(e&&e.message||'Could not create invite.'); } };
+  const co=$('nhCopyOffer'); if(co) co.onclick=async()=>{ try{ await navigator.clipboard.writeText($('nhOfferOut').value||''); $('nhStatus').textContent='📋 Invite copied.'; }catch(_){} };
+  const cn=$('nhConnect'); if(cn) cn.onclick=async()=>{ const a=($('nhAnsIn').value||'').trim(); if(!a){ $('nhStatus').textContent='Paste their answer code first.'; return; } $('nhStatus').textContent='Connecting…'; try{ await netAcceptAnswer(a); $('nhAnsIn').value=''; $('nhStatus').textContent='✔ Answer accepted — your friend is joining…'; }catch(e){ $('nhStatus').textContent='⚠ '+(e&&e.message||'Bad answer code.'); } };
+}
+try{ if(typeof makePanelDraggable==='function') makePanelDraggable('netHostHud'); }catch(_){}
 function setCoDiff(d){ G.diff=d; G.hardcore=(d==='hard');
   ['Casual','Normal','Hard'].forEach(k=>{ const el=$('coMode'+k); if(el) el.classList.toggle('sel', k.toLowerCase()===d); }); }
 $('coModeCasual').onclick=()=>setCoDiff('casual');
@@ -7133,10 +7197,10 @@ async function netRoomHost(status,onPeers){
       if(joinedPlayers().length>=4){ try{ conn.close(); }catch(_){} status&&status('A 5th player tried to join — the tower holds four.'); return; }
       rec={pjId:conn.peer,pc:null,ch:null,evt:null,player:null,awaiting:true,_ready:false}; h.conns.push(rec); }
     conn.on('open',()=>{
-      if(conn.label==='game'){ rec.ch=pjChan(conn);
+      if(conn.label==='game'){ rec.ch=pjChan(conn); rec.gameConn=conn;
         conn.on('data',d=>{ try{ const m=JSON.parse(d); if(m.in && rec.player) rec.player.netPacket=m.in; }catch(_){} });
-        conn.on('close',()=>{ if(rec.player){ rec.player.joined=false; rec.player.downed=true; } if(h.onPeers) h.onPeers(h.conns.filter(c=>c._ready&&c.player&&c.player.joined).length); }); }
-      else if(conn.label==='evt'){ rec.evt=pjChan(conn); }
+        conn.on('close',()=>{ if(rec.player){ rec.player.joined=false; rec.player.downed=true; } if(h.onPeers) h.onPeers(h.conns.filter(c=>c._ready&&c.player&&c.player.joined).length); if(typeof renderNetHost==='function') renderNetHost(); }); }
+      else if(conn.label==='evt'){ rec.evt=pjChan(conn); rec.evtConn=conn; }
       netHostReady(rec); }); });
   return code;
 }
