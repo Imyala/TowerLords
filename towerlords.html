@@ -965,6 +965,7 @@
   #partyHud .pRow{margin-bottom:8px;--pc:#56e0ff;}
   #partyHud .pRow:last-child{margin-bottom:0;}
   #partyHud .pNm{font-size:11px;letter-spacing:.5px;color:var(--pc);margin-bottom:3px;text-shadow:0 0 7px var(--pc);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  #partyHud .pStars span{font-size:10px !important;letter-spacing:1px !important;}
   #partyHud .pBar{height:8px;border-radius:5px;background:rgba(255,255,255,.1);overflow:hidden;margin-top:3px;}
   #partyHud .pBar.mana{height:5px;}
   #partyHud .pBar i{display:block;height:100%;width:100%;background:linear-gradient(90deg,#ff5470,#ff9bb0);transition:width .12s;}
@@ -2857,7 +2858,7 @@ const PF = new Set(['id','name','input','cam','viewport','color','joined','playe
   'fervor','fervorT','nearStash','nearVendor','nearPortal','nearScore','nearChest','nearLoot','nearCraft','nearYard','_ph','_sh','aim','in','downed','downT','reviveT']);
 const _G = {
   running:false, paused:false, floor:1, maxFloor:50, seed:0,
-  enemies:[], projectiles:[], eProjectiles:[], pickups:[], decals:[], scenery:[], timed:[], netDeaths:[], chests:[], yardPets:[],
+  enemies:[], projectiles:[], eProjectiles:[], pickups:[], decals:[], scenery:[], timed:[], netDeaths:[], netHits:[], chests:[], yardPets:[],
   portal:null, stashStation:null, vendorStation:null, scoreStation:null, goblin:null, craftStation:null, yardStation:null,
   rects:[], rooms:[], obstacles:[], camps:[], respawns:[], bounds:140,
   shiftT:0, shiftWarned:false, layoutSalt:0, hitstop:0, floorMod:null, bounty:null,
@@ -3159,18 +3160,19 @@ function buildPartyHud(){ let el=$('partyHud'); if(el) return el;
   return el; }
 function updatePartyHud(){
   let list=null;
-  if(NET.role==='host'){ list=joinedPlayers().map(p=>({ id:p.id, nm:p.name||('Player '+(p.id+1)), lv:p.level||1, hp:p.hp, mh:p.maxhp||1, mp:p.mana, mm:p.maxmana||1, col:PLAYER_TINT[p.id]||'#56e0ff', dn:!!p.downed })); }
-  else if(NET.role==='peer'){ const s=NET.peer&&NET.peer.lastSnap; if(s&&s.players) list=s.players.map(p=>({ id:p.id, nm:'Player '+(p.id+1), lv:p.lv||1, hp:p.hp, mh:p.mh||1, mp:p.mp||0, mm:p.mm||1, col:PLAYER_TINT[p.id]||'#56e0ff', dn:!!p.dn })); }
+  if(NET.role==='host'){ list=joinedPlayers().map(p=>({ id:p.id, nm:p.name||('Player '+(p.id+1)), lv:p.level||1, hp:p.hp, mh:p.maxhp||1, mp:p.mana, mm:p.maxmana||1, col:PLAYER_TINT[p.id]||'#56e0ff', dn:!!p.downed, fm:(p.isRemote?(p.fame||0):((typeof META!=='undefined'&&META.fame)||0)) })); }
+  else if(NET.role==='peer'){ const s=NET.peer&&NET.peer.lastSnap; if(s&&s.players) list=s.players.map(p=>({ id:p.id, nm:'Player '+(p.id+1), lv:p.lv||1, hp:p.hp, mh:p.mh||1, mp:p.mp||0, mm:p.mm||1, col:PLAYER_TINT[p.id]||'#56e0ff', dn:!!p.dn, fm:p.fm||0 })); }
   const el=$('partyHud');
   if(!list || list.length<2){ if(el) el.style.display='none'; return; }   // only meaningful with 2+ players online
   const host=el||buildPartyHud(); if(host.style.display!=='block') host.style.display='block';
   const rows=$('partyRows'); const sig=list.map(p=>p.id).join(',');
   if(host._sig!==sig){ host._sig=sig;
-    rows.innerHTML=list.map(p=>`<div class="pRow" data-pid="${p.id}"><div class="pNm"></div><div class="pBar"><i class="pHp"></i></div><div class="pBar mana"><i class="pMp"></i></div></div>`).join('');
-    list.forEach(p=>{ const r=rows.querySelector('.pRow[data-pid="'+p.id+'"]'); if(r){ r.style.setProperty('--pc',p.col); r.querySelector('.pNm').textContent=p.nm+' · Lv '+p.lv; } }); }
+    rows.innerHTML=list.map(p=>`<div class="pRow" data-pid="${p.id}"><div class="pNm"><span class="pNmTxt"></span> <span class="pStars"></span></div><div class="pBar"><i class="pHp"></i></div><div class="pBar mana"><i class="pMp"></i></div></div>`).join('');
+    list.forEach(p=>{ const r=rows.querySelector('.pRow[data-pid="'+p.id+'"]'); if(r) r.style.setProperty('--pc',p.col); }); }
   list.forEach(p=>{ const r=rows.querySelector('.pRow[data-pid="'+p.id+'"]'); if(!r)return;
     r.classList.toggle('down',p.dn);
-    const nm=r.querySelector('.pNm'); if(nm) nm.textContent=p.nm+' · Lv '+p.lv;
+    const nm=r.querySelector('.pNmTxt'); if(nm) nm.textContent=p.nm+' · Lv '+p.lv;
+    const st=r.querySelector('.pStars'); if(st && st._fm!==p.fm){ st._fm=p.fm; st.innerHTML=(typeof rankBadgeHTML==='function')?rankBadgeHTML(p.fm||0,true):''; }
     r.querySelector('.pHp').style.width=clamp(p.hp/(p.mh||1)*100,0,100)+'%';
     r.querySelector('.pMp').style.width=clamp(p.mp/(p.mm||1)*100,0,100)+'%'; });
 }
@@ -4869,6 +4871,10 @@ function basicAttack(){
     fireBolt(p.x+dx,p.z+dz,dx,dz,dmg,crit,G.S.pierce+w.pierce,w.size,w.speed,G.S.element,w.life,o);
   }
   if(G.S.abn&&G.S.abn.size) abnFire(shots);   // abnormal weapon quirks tweak the shots we just fired
+  // muzzle flash — so you can always tell you're firing, even when an enemy is right on top of you (renders through it)
+  try{ const mz=new THREE.Mesh(new THREE.SphereGeometry(0.5,8,8), new THREE.MeshBasicMaterial({color:(ELEMENTS[G.S.element]&&ELEMENTS[G.S.element].col)||0x9be7ff,transparent:true,opacity:.75,depthTest:false}));
+    mz.position.set(p.x+Math.sin(baseAng)*0.95, 1.15, p.z+Math.cos(baseAng)*0.95); mz.renderOrder=997; scene.add(mz);
+    G.decals.push({mesh:mz,fade:true,life:.11,t:0}); }catch(_){}
 }
 function fireBolt(x,z,dx,dz,dmg,crit,pierce,size,spd,element,life,o){
   element=element||'phys'; o=o||{};
@@ -5126,6 +5132,7 @@ function hurtEnemy(e,dmg,crit,element,src,owner){
   if((src||'player')==='player') addCharge(0.5);
   const cls = crit?'crit':(ELEMENTS[element]?ELEMENTS[element].cls:'dmg');
   floatText(e.mesh.position.x,e.mesh.position.z, Math.round(dmg), cls, e.r*0.9+1.7);
+  if(NET.role==='host' && _G.netHits.length<48) _G.netHits.push({x:Math.round(e.mesh.position.x*100)/100, z:Math.round(e.mesh.position.z*100)/100, d:Math.round(dmg), c:cls, y:e.r*0.9+1.7});   // peers show the same damage numbers
   if(crit) G.hitstop=Math.max(G.hitstop||0,.03);
   if(G.S.lifeOnHit>0 && G.hp<G.maxhp){ const h=Math.min(G.S.lifeOnHit*healScale(),G.maxhp-G.hp); G.hp+=h; G.run.healSelf+=h; }
   if(G.S.lifesteal>0 && G.hp<G.maxhp){ const h=Math.min(dmg*G.S.lifesteal*healScale(),G.maxhp-G.hp); G.hp+=h; G.run.healSelf+=h; }
@@ -7318,7 +7325,7 @@ async function netAcceptAnswer(answerStr){ const h=NET.host; if(!h)return false;
   await rec.pc.setRemoteDescription(JSON.parse(answerStr.trim())); return true; }
 function netHostBroadcast(){ const h=NET.host; if(!h)return; const buf=serializeSnapshot();
   for(const c of h.conns){ if(c.ch&&c.ch.readyState==='open'){ try{ c.ch.send(buf); }catch(_){} } }
-  if(_G.netDeaths.length) _G.netDeaths.length=0;   // deaths delivered — clear the per-broadcast queue
+  if(_G.netDeaths.length) _G.netDeaths.length=0; if(_G.netHits.length) _G.netHits.length=0;   // deaths + damage numbers delivered — clear the per-broadcast queues
   // stream each peer's full BUILD (attr/tree/gear/skills/inventory) on the reliable channel whenever it changes —
   // level-ups, loot, respec, point spends all shift the signature, so the guest's menus & HUD stay in sync.
   for(const c of h.conns){ if(c.player&&c.player.joined&&c.evt&&c.evt.readyState==='open'){ const sig=buildSig(c.player);
@@ -7423,6 +7430,7 @@ function netHostOnPeerEvt(rec,data){ if(!rec)return;
         if(m.b.petsOnly){ rec.player.pets=(m.b.pets||[]).map(x=>Object.assign({},x)); rec.player.pet=(m.b.petIdx>=0&&rec.player.pets[m.b.petIdx])?rec.player.pets[m.b.petIdx]:null; withPlayer(rec.player.id,()=>{ try{ recompute(); }catch(_){} }); }   // give the guest its OWN pets
         else applyPlayerBuild(rec.player, m.b); }
       if(rec) rec._buildSig=''; }   // returning guest keeps its saved build/pets
+    else if(m.type==='fame'){ if(rec.player) rec.player.fame=m.v|0; }   // guest's account fame → its party-HUD rank
     else if(m.type==='cmd'){ netHostRunCmd(rec, m.fn, m.a); }
   }catch(_){}
 }
@@ -7559,25 +7567,57 @@ function netPeerEnter(){   // enter a lightweight render-only state (no local wo
       name:s.name, gold:s.gold, level:s.level, xp:s.xp, xpNeed:s.xpNeed, xpMode:s.xpMode, attrPts:s.attrPts, skillPts:s.skillPts,
       skillGranted:s.skillGranted, evolves:s.evolves, invCap:s.invCap, attr:s.attr, alloc:s.alloc, equip:s.equip, inv:s.inv,
       belt:s.belt, slots:s.slots, sigSlot:s.sigSlot, pets:s.pets, petIdx:s.petIdx, greed:s.greed, run:s.run } })); }
-    else if(sp && sp.pets && sp.pets.length && NET.peer && NET.peer.evt){ NET.peer.evt.send(JSON.stringify({ type:'char', b:{ petsOnly:true, pets:sp.pets, petIdx:(sp.idx!=null?sp.idx:-1) } })); } }catch(_){}
+    else if(sp && sp.pets && sp.pets.length && NET.peer && NET.peer.evt){ NET.peer.evt.send(JSON.stringify({ type:'char', b:{ petsOnly:true, pets:sp.pets, petIdx:(sp.idx!=null?sp.idx:-1) } })); }
+    if(NET.peer && NET.peer.evt){ NET.peer.evt.send(JSON.stringify({ type:'fame', v:(typeof META!=='undefined'&&META.fame)||0 })); }   // my rank stars for the party HUD
+  }catch(_){}
   banner('🌐 ONLINE CO-OP','your own build · the host runs the world'); }
 // ---- floor layout sync (Phase 2 finish): host streams the room/wall/pillar layout once per floor; peer rebuilds it ----
+function netFloorProps(){ const P=[]; const rr=v=>Math.round(v*100)/100;
+  const st=(o,t)=>{ if(o&&o.x!=null) P.push({t,x:rr(o.x),z:rr(o.z)}); };
+  st(G.portal,'portal'); st(G.vendorStation,'vendor'); st(G.stashStation,'stash'); st(G.scoreStation,'score');
+  st(G.craftStation,'craft'); st(G.yardStation,'yard'); st(G.yardTerminal,'yardterm');   // goblin roams → streamed via snapshot, not the static prop list
+  for(const c of (G.chests||[])) if(c&&!c.opened) P.push({t:'chest',x:rr(c.x),z:rr(c.z)});
+  for(const tr of (G.traps||[])) if(tr) P.push({t:'trap',x:rr(tr.x),z:rr(tr.z),s:tr.type||'turret'});
+  return P; }
 function serializeFloorLayout(){ const bi=Math.max(0,BIOMES.indexOf(biome));
-  return JSON.stringify({ type:'floor', bi, bounds:G.bounds,
+  return JSON.stringify({ type:'floor', bi, bounds:G.bounds, town:!!G.inTown,
     rects:(G.rects||[]).map(r=>({x0:r.x0,x1:r.x1,z0:r.z0,z1:r.z1})),
     rooms:(G.rooms||[]).map(r=>({cx:r.cx,cz:r.cz,rw:r.rw,rh:r.rh,x0:r.x0,x1:r.x1,z0:r.z0,z1:r.z1})),
-    obs:(G.obstacles||[]).map(o=>({x:Math.round(o.x*100)/100,z:Math.round(o.z*100)/100,r:Math.round(o.r*100)/100,h:o.h||3.5})) }); }
+    obs:(G.obstacles||[]).map(o=>({x:Math.round(o.x*100)/100,z:Math.round(o.z*100)/100,r:Math.round(o.r*100)/100,h:o.h||3.5})),
+    props: netFloorProps() }); }
+// guest: build a recognizable ghost mesh for each streamed world prop (station/chest/turret) at its position
+function netBuildProp(pr){ if(!pr) return; const x=pr.x, z=pr.z; let m=null;
+  const box=(w,h,d,col,em)=>{ const g=new THREE.Mesh(new THREE.BoxGeometry(w,h,d), new THREE.MeshStandardMaterial({color:col,emissive:em!=null?em:col,emissiveIntensity:.45,roughness:.5,metalness:.35})); g.position.set(x,h/2,z); return g; };
+  switch(pr.t){
+    case 'portal': { const g=new THREE.Group(); const ring=new THREE.Mesh(new THREE.TorusGeometry(1.9,0.28,10,26), new THREE.MeshStandardMaterial({color:0x56e0ff,emissive:0x56e0ff,emissiveIntensity:1.2})); ring.rotation.x=Math.PI/2; ring.position.y=2.2;
+      const beam=new THREE.Mesh(new THREE.CylinderGeometry(1.7,1.7,8,20,1,true), new THREE.MeshBasicMaterial({color:0x56e0ff,transparent:true,opacity:.12,side:THREE.DoubleSide,depthWrite:false})); beam.position.y=4; g.add(ring,beam); g.position.set(x,0,z); m=g; break; }
+    case 'vendor':   m=box(2.4,2,1.8,0xffce4d); break;
+    case 'stash':    m=box(2.4,1.6,1.8,0x3aa0ff); break;
+    case 'craft':    m=box(2.2,1.8,1.8,0xff9a3d); break;
+    case 'yardterm': m=box(2.0,2.4,0.4,0x2aa0ff); break;
+    case 'yard': { const g=new THREE.Mesh(new THREE.TorusGeometry(1.9,0.28,10,24), new THREE.MeshStandardMaterial({color:0x2a5a2a,emissive:0x3aff8a,emissiveIntensity:.5,flatShading:true})); g.rotation.x=Math.PI/2; g.position.set(x,2.1,z); m=g; break; }
+    case 'score': { const g=new THREE.Mesh(new THREE.TorusKnotGeometry(0.85,0.26,50,8), new THREE.MeshStandardMaterial({color:0xc89bff,emissive:0xc89bff,emissiveIntensity:.6,flatShading:true})); g.position.set(x,1.9,z); m=g; break; }
+    case 'chest': { m=box(1.5,0.9,1.1,0x8a5a28,0xffce4d); m.position.y=0.45; break; }
+    case 'trap': { const c=pr.s==='turret'?0x1a5a3a:pr.s==='ring'?0x6a1a8a:pr.s==='dart'?0x8a6a1a:0x8a1a2a;
+      const g=new THREE.Group(); const base=new THREE.Mesh(new THREE.CylinderGeometry(0.5,0.72,1.1,8), new THREE.MeshStandardMaterial({color:c,emissive:c,emissiveIntensity:.7,metalness:.5}));
+      base.position.y=0.55; const eye=new THREE.Mesh(new THREE.SphereGeometry(0.32,10,10), new THREE.MeshStandardMaterial({color:0xff5470,emissive:0xff5470,emissiveIntensity:1.3})); eye.position.y=1.15; g.add(base,eye); g.position.set(x,0,z); m=g; break; }
+    default: m=box(1.4,1.4,1.4,0x8899bb);
+  }
+  if(m){ scene.add(m); G.scenery.push(m); }   // G.scenery is cleared on the next floor build
+}
 function netPeerBuildFloor(L){
   biome = BIOMES[L.bi % BIOMES.length];
   scene.background=new THREE.Color(biome.fog); scene.fog=new THREE.Fog(biome.fog,46,150); if(typeof hemi!=='undefined'&&hemi) hemi.groundColor.setHex(biome.fog);
   clearWorld();                                  // drop the previous floor's geometry (peer enemies/bullets are separate ghost pools)
-  G.rects=L.rects; G.rooms=L.rooms; G.bounds=L.bounds;
+  G.rects=L.rects; G.rooms=L.rooms; G.bounds=L.bounds; G.inTown=!!L.town;
   buildFloorMeshes(); buildWalls();              // reuse the real builders — they read G.rects/G.rooms/biome
   const pmat=new THREE.MeshStandardMaterial({color:biome.wall, roughness:.8});   // pillars from the streamed obstacle list
   for(const o of (L.obs||[])){ const h=o.h||3.5; const m=new THREE.Mesh(new THREE.CylinderGeometry(o.r*0.78,o.r*0.84,h,8),pmat); m.position.set(o.x,h/2,o.z); m.castShadow=true; scene.add(m); G.scenery.push(m); G.obstacles.push({x:o.x,z:o.z,r:o.r,h}); }
+  for(const pr of (L.props||[])) netBuildProp(pr);   // stations · chests · turret-traps so the guest sees the same world, not an empty floor
   if(NET.peer.ground){ scene.remove(NET.peer.ground); NET.peer.ground=null; }   // remove the placeholder plane
   for(const k in NET.peer.eg){ scene.remove(NET.peer.eg[k]); } NET.peer.eg={};   // clear stale enemy/bullet/loot ghosts from the old floor
   for(const k in NET.peer.bg){ scene.remove(NET.peer.bg[k]); } NET.peer.bg={};
+  for(const k in (NET.peer.pbg||{})){ scene.remove(NET.peer.pbg[k]); } NET.peer.pbg={};
   for(const k in (NET.peer.lg||{})){ scene.remove(NET.peer.lg[k]); } NET.peer.lg={};
   if(NET.peer._built) banner('⬇ NEW AREA','the host moved the party'); NET.peer._built=true;   // first build is silent; later = a transition
 }
@@ -7593,17 +7633,21 @@ function serializeSnapshot(){
     xp:Math.round(p.xp||0), xn:Math.round(p.xpNeed||1), g:p.gold|0, sg:rnd(p.charge||0), cm:p.chargeMax||100,
     fv:rnd(p.fervor||0), ft:rnd(p.fervorT||0), sw:rnd(p.swiftT||0), fw:rnd(p.flowT||0), iv:rnd(p.invuln||0),
     su:rnd(p.stunT||0), sl:rnd(p.slowT||0), wk:rnd(p.weakT||0), hc:rnd(p.healCutT||0), rc:rnd(p.recallT||0),
-    cd:(p.cd?[0,1,2,3,4,5,6,7,8].map(i=>rnd(p.cd[i]||0)):[]), fl:(p.belt?p.belt.map(f=>f?rnd(f.chg||0):0):[]) }));
+    cd:(p.cd?[0,1,2,3,4,5,6,7,8].map(i=>rnd(p.cd[i]||0)):[]), fl:(p.belt?p.belt.map(f=>f?rnd(f.chg||0):0):[]),
+    fm:(p.isRemote?(p.fame||0):((typeof META!=='undefined'&&META.fame)||0)) }));   // account fame → party-HUD rank stars
   const en=[];   // enemies near any player (cull for bandwidth)
   for(const e of _G.enemies){ const x=e.mesh.position.x, z=e.mesh.position.z; if(!nearAnyPlayer(x,z,46))continue;
     if(e._nid==null)e._nid=_nid++; en.push({ i:e._nid, x:rnd(x), z:rnd(z), s:rnd(e.scale||1), c:e.color||0xff5c78, b:e.boss?1:0, h:e.maxhp?Math.round(e.hp/e.maxhp*100):100, f:e.hitFlash>0?1:0 }); }
   const pj=[];   // enemy projectiles near any player
   for(const b of _G.eProjectiles){ const x=b.mesh.position.x, z=b.mesh.position.z; if(!nearAnyPlayer(x,z,46))continue;
     if(b._nid==null)b._nid=_nid++; pj.push({ i:b._nid, x:rnd(x), z:rnd(z) }); }
+  const pb=[];   // PLAYER projectiles near any player — so the guest sees everyone's shots (its own & allies')
+  for(const b of _G.projectiles){ if(!b.mesh)continue; const x=b.mesh.position.x, z=b.mesh.position.z; if(!nearAnyPlayer(x,z,46))continue;
+    if(b._nid==null)b._nid=_nid++; if(pb.length<160) pb.push({ i:b._nid, x:rnd(x), z:rnd(z), c:(ELEMENTS[b.element]&&ELEMENTS[b.element].col)||0x9be7ff, s:rnd((b.mesh.geometry&&b.mesh.geometry.parameters&&b.mesh.geometry.parameters.radius)||0.4) }); }
   const lt=[];   // loot/pickups near any player (so peers see & walk to their own soulbound drops)
   for(const pk of _G.pickups){ if(pk.dead)continue; const x=pk.mesh.position.x, z=pk.mesh.position.z; if(!nearAnyPlayer(x,z,46))continue;
     if(pk._nid==null)pk._nid=_nid++; lt.push({ i:pk._nid, x:rnd(x), z:rnd(z), k:pk.kind==='loot'?'l':pk.kind==='crystal'?'c':'g', o:pk.owner!=null?pk.owner:-1, col:pk.rcol||0x8effd9 }); }
-  return JSON.stringify({ t:performance.now()|0, players, en, pj, dd:_G.netDeaths, lt }); }
+  return JSON.stringify({ t:performance.now()|0, players, en, pj, pb, dd:_G.netDeaths, ht:_G.netHits, lt }); }
 function makeGhost(color){ const g=new THREE.Group();
   const body=new THREE.Mesh(new THREE.CylinderGeometry(0.55,0.55,1.7,12), new THREE.MeshStandardMaterial({color,emissive:color,emissiveIntensity:.55,roughness:.4}));
   body.position.y=1.05; g.add(body);
@@ -7613,6 +7657,7 @@ function makeEnemyGhost(color,scale,boss){ const s=scale||1;
   const m=new THREE.Mesh(boss?new THREE.IcosahedronGeometry(1.4*s,0):new THREE.IcosahedronGeometry(0.8*s,0), new THREE.MeshStandardMaterial({color,emissive:color,emissiveIntensity:.4,roughness:.5}));
   m.position.y=s; scene.add(m); return m; }
 function makeBulletGhost(){ const m=new THREE.Mesh(new THREE.SphereGeometry(0.36,8,8), M.ebolt); m.position.y=1.1; scene.add(m); return m; }
+function makePlayerBoltGhost(color,size){ const c=color||0x9be7ff; const m=new THREE.Mesh(new THREE.SphereGeometry(Math.max(0.22,size||0.4),8,8), new THREE.MeshStandardMaterial({color:c,emissive:c,emissiveIntensity:1.1})); m.position.y=1.1; scene.add(m); return m; }
 function applySnapshot(s){ const pr=NET.peer; if(!pr||!s)return;
   // players
   if(s.players){ for(const sp of s.players){ let g=pr.ghosts[sp.id]; if(!g){ g=makeGhost(sp.c||0x56e0ff); pr.ghosts[sp.id]=g; g.position.set(sp.x,0,sp.z); }
@@ -7631,8 +7676,13 @@ function applySnapshot(s){ const pr=NET.peer; if(!pr||!s)return;
   pr.bg=pr.bg||{}; const bLive=new Set();
   for(const b of (s.pj||[])){ bLive.add(b.i); let g=pr.bg[b.i]; if(!g){ g=makeBulletGhost(); pr.bg[b.i]=g; } g.position.x=b.x; g.position.z=b.z; }
   for(const id in pr.bg){ if(!bLive.has(+id)){ scene.remove(pr.bg[id]); delete pr.bg[id]; } }
+  // PLAYER projectiles — so the guest sees everyone's shots fly (its own and allies')
+  pr.pbg=pr.pbg||{}; const pbLive=new Set();
+  for(const b of (s.pb||[])){ pbLive.add(b.i); let g=pr.pbg[b.i]; if(!g){ g=makePlayerBoltGhost(b.c,b.s); pr.pbg[b.i]=g; } g.position.x=b.x; g.position.z=b.z; }
+  for(const id in pr.pbg){ if(!pbLive.has(+id)){ scene.remove(pr.pbg[id]); delete pr.pbg[id]; } }
   // enemy deaths → replay the burst FX the host saw (reuses burst/ringFx; peer animates G.decals in netGuestRender)
   for(const d of (s.dd||[])){ burst(d.x,d.z,d.c||0xff5c78); if(d.b){ ringFx(d.x,d.z,7,0xffce4d); ringFx(d.x,d.z,4,d.c||0xff5c78); } }
+  for(const h of (s.ht||[])){ floatText(h.x, h.z, h.d, h.c||'dmg', h.y||2); }   // damage numbers the host dealt → shown on the guest too
   // loot/pickups (own soulbound drops shown bright; allies' shown dim so you know what's yours)
   pr.lg=pr.lg||{}; const ltLive=new Set();
   for(const pk of (s.lt||[])){ ltLive.add(pk.i); let g=pr.lg[pk.i]; if(!g){ g=makeLootGhost(pk.k,pk.col); pr.lg[pk.i]=g; }
