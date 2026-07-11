@@ -948,17 +948,9 @@
     font-size:15px;padding:40px;color:#ff8fa3;line-height:1.7;z-index:200;
     background:rgba(4,5,12,.985);backdrop-filter:blur(6px);}   /* opaque full-screen — must fully cover the start screen, never overlap it */
   #loadErr .leInner{max-width:520px;}
-  /* ---- online co-op guest vitals (host streams hp/mana/level; full menus live on the host) ---- */
-  #guestHud{position:fixed;left:14px;top:12px;min-width:172px;padding:8px 11px 9px;border-radius:11px;z-index:47;
-    background:rgba(6,9,18,.72);border:1px solid rgba(86,224,255,.34);box-shadow:0 0 22px rgba(0,0,0,.5);
-    font-size:12px;pointer-events:none;display:none;--pc:#56e0ff;}
-  #guestHud .ghName{font-size:12px;letter-spacing:1px;color:var(--pc);margin-bottom:5px;text-shadow:0 0 8px var(--pc);}
-  #guestHud .ghBar{height:9px;border-radius:5px;background:rgba(255,255,255,.1);overflow:hidden;margin-top:4px;}
-  #guestHud .ghBar.mana{height:6px;}
-  #guestHud .ghBar i{display:block;height:100%;width:100%;background:linear-gradient(90deg,#ff5470,#ff9bb0);transition:width .12s;}
-  #guestHud .ghBar.mana i{background:linear-gradient(90deg,#3aa0ff,#8ad4ff);}
-  #guestHud .ghDown{display:none;margin-top:6px;font-size:10.5px;color:#ff5470;letter-spacing:.5px;}
-  #guestHud.down{border-color:#ff5470;} #guestHud.down .ghDown{display:block;}
+  /* ---- online co-op guest: full HUD, but hide host-only / account controls that a guest can't drive mid-run ---- */
+  body.netGuest #recallBtn, body.netGuest #openLegacyBtn, body.netGuest #openCoopHostBtn,
+  body.netGuest #towerInfo, body.netGuest #floorBanner{ display:none !important; }
   /* ---- local co-op (split-screen) ---- */
   #coopHud{position:absolute;inset:0;pointer-events:none;z-index:6;display:none;}
   .coTag{position:absolute;min-width:148px;padding:6px 9px;border-radius:9px;background:rgba(6,9,18,.6);
@@ -2890,6 +2882,12 @@ addEventListener('keydown',e=>{
   if(e.code==='Backquote' && !(document.activeElement && /INPUT|TEXTAREA/.test(document.activeElement.tagName))){ toggleCheat(); e.preventDefault(); return; }   // ~ opens the DEV cheat console (testing only)
   if(_G.modalOpen){ if(k==='escape'){ closeGameModal(); _gmOnOK=null; } return; }
   if(_G.legacyOpen){ if(k==='escape'||k==='l') closeLegacy(); return; }
+  if(_G.netGuest){   // guest: open/close its OWN menus (rendered from the streamed build); movement/skills go up as input packets, not here
+    const gp={c:'charPanel',t:'treePanel',i:'invPanel',p:'petPanel',v:'scorePanel',b:'codexPanel',o:'settingsPanel'}[k];
+    if(gp){ _G.menuOwner=0; _G.cur=0; togglePanel(gp); }
+    else if(k==='escape'){ if(anyPanelOpen()){ PANELS.forEach(p=>$(p).classList.add('hidden')); refreshMenuState(); } }
+    return;
+  }
   if(!G.running) return;
   const pk={c:'charPanel',t:'treePanel',i:'invPanel',p:'petPanel',v:'scorePanel',b:'codexPanel',o:'settingsPanel'}[k];
   if(pk){ _G.menuOwner=0; _G.cur=0; togglePanel(pk); }   // P1's keyboard always manages P1
@@ -5590,7 +5588,8 @@ function updatePet(dt){
         const m=new THREE.Mesh(new THREE.SphereGeometry(.22,6,6),M.petBolt); m.position.set(pm.position.x,1.2,pm.position.z); scene.add(m);
         G.projectiles.push({mesh:m,vx:dx/l*40,vz:dz/l*40,dmg:petAbilVal('attack',pet.level)*(1+(G.S.petDmg||0)),life:1.0,crit:false,pierce:0,hit:null,element:'phys',src:'pet'}); } } }
 }
-function refreshItemPanels(){ if(!$('invPanel').classList.contains('hidden'))renderInv(); if(!$('stashPanel').classList.contains('hidden'))renderStash(); if(!$('petPanel').classList.contains('hidden'))renderPet(); if($('petYardPanel')&&!$('petYardPanel').classList.contains('hidden'))renderPetYard(); }
+function refreshItemPanels(){ if(_G.netApplying) return;   // host applying a guest's action → don't repaint the host's own panels with guest data
+  if(!$('invPanel').classList.contains('hidden'))renderInv(); if(!$('stashPanel').classList.contains('hidden'))renderStash(); if(!$('petPanel').classList.contains('hidden'))renderPet(); if($('petYardPanel')&&!$('petYardPanel').classList.contains('hidden'))renderPetYard(); }
 function feedAllJunk(){
   if(!G.pet){ log('No active pet to feed.'); return; }
   if(G.pet.level>=petLevelCap(G.pet)){ log('Pet at its cap — fuse a yard pet to raise it.'); return; }
@@ -5949,11 +5948,12 @@ function doFloorShift(){
   if(wasOpen && G.portal){ G.portal.active=true; G.floorKills=G.killGoal||0; G.shiftT=portalShiftT(); G.shiftWarned=false; }   // keep the portal open, keep the floor "cleared", and arm the next 1-min reshuffle
   shakeCam(1.0); G.hitstop=Math.max(G.hitstop||0,.12);
 }
-function spendAttr(k){ if(G.attrPts<=0)return; if((G.attr[k]||0)>=ATTR_CAP){ log('That attribute is at its cap ('+ATTR_CAP+').'); return; } G.attrPts--; G.attr[k]++; recompute(); renderChar(); updatePips(); }
-function updatePips(){ $('pipChar').classList.toggle('on',G.attrPts>0); $('pipTree').classList.toggle('on',G.skillPts>0); $('spNum').textContent=G.skillPts; $('ptsNum').textContent=G.attrPts; renderQuickBuild(); }
+function spendAttr(k){ if(NET.role==='peer') return netPeerCmd('spendAttr',[k]); if(G.attrPts<=0)return; if((G.attr[k]||0)>=ATTR_CAP){ log('That attribute is at its cap ('+ATTR_CAP+').'); return; } G.attrPts--; G.attr[k]++; recompute(); renderChar(); updatePips(); }
+function updatePips(){ if(_G.netApplying) return; $('pipChar').classList.toggle('on',G.attrPts>0); $('pipTree').classList.toggle('on',G.skillPts>0); $('spNum').textContent=G.skillPts; $('ptsNum').textContent=G.attrPts; renderQuickBuild(); }
 
 // ============================================================ SKILL TREE UI
 function investTalent(id){
+  if(NET.role==='peer') return netPeerCmd('investTalent',[id]);
   const t=TALENTMAP[id]; if(!t) return;
   const rank=G.alloc[id]||0;
   if(rank>=t.max) return;
@@ -5968,6 +5968,7 @@ function investTalent(id){
 }
 // ---- one-click "recommended build": pour all available points down a chosen spec (newcomer-friendly) ----
 function autoBuild(si){
+  if(NET.role==='peer') return netPeerCmd('autoBuild',[si]);
   const spec=SPECS[si]; if(!spec) return;
   if(G.skillPts<=0){ log('No skill points to spend — level up to earn more.'); return; }
   let spent=0, grantedSkill=false;
@@ -5990,6 +5991,7 @@ function renderQuickBuild(){
   w.querySelectorAll('.qbBtn').forEach(b=>b.onclick=()=>autoBuild(+b.dataset.si));
 }
 function removeTalent(id){   // right-click to refund a point, if nothing still depends on it
+  if(NET.role==='peer') return netPeerCmd('removeTalent',[id]);
   const t=TALENTMAP[id]; if(!t) return; const rank=G.alloc[id]||0; if(rank<=0) return;
   if(t.grantSkill){ log('Learned skills are permanent — the point can’t be refunded.'); return; }   // no invest/refund gem farming
   G.alloc[id]=rank-1;
@@ -6047,8 +6049,9 @@ function specInner(spec){
   const dvgTag = reach>0 ? `<span class="spts dvgTag" title="Divergence — deep investment in a neighbouring tree lets you dive ${reach} tier${reach>1?'s':''} into this one without climbing its foundation">⇄${reach}</span>` : '';
   return `<div class="specHd"><span class="si">${spec.ic}</span><div class="sttl"><div class="snm">${spec.nm}</div><div class="ssub">${spec.sub}</div></div>${dvgTag}<div class="spts">${spent}</div></div><div class="specGrid">${rows}</div>`;
 }
-function refreshSpec(spec){ const el=$('spec-'+spec.kw); if(el) el.innerHTML=specInner(spec); }
+function refreshSpec(spec){ if(_G.netApplying) return; const el=$('spec-'+spec.kw); if(el) el.innerHTML=specInner(spec); }
 function renderTree(){
+  if(_G.netApplying) return;
   const sp=$('spNum'); if(sp) sp.textContent=G.skillPts;
   renderQuickBuild();
   const cont=$('treeCols'); if(!cont) return;
@@ -6063,20 +6066,21 @@ function renderTree(){
     cont._built=true;
   } else { SPECS.forEach(refreshSpec); }   // reflect external changes (respec / new run) on re-open
 }
-function autoBind(item){ if(G.slots.includes(item))return; const tog=item.isSkillGem&&isToggleId(item.skillId); const lo=tog?4:0, hi=tog?9:4;
+function autoBind(item){ if(NET.role==='peer') return netPeerCmd('autoBind',[item&&item.uid]); if(G.slots.includes(item))return; const tog=item.isSkillGem&&isToggleId(item.skillId); const lo=tog?4:0, hi=tog?9:4;
   let i=-1; for(let s=lo;s<hi;s++){ if(!G.slots[s]){ i=s; break; } } if(i<0)return; G.inv=G.inv.filter(x=>x!==item); G.slots[i]=item; renderActionbar(); }
-function bindSkill(item,i){ if(!item.isSkillGem)return;
+function bindSkill(item,i){ if(NET.role==='peer') return netPeerCmd('bindSkill',[item&&item.uid,i]); if(!item.isSkillGem)return;
   const tog=isToggleId(item.skillId);
   if(tog && i<4){ log('🌀 Toggle auras go in slots 5–9 (passive, drain mana). Active skills use 1–4.'); return; }
   if(!tog && i>=4){ log('⚡ Active skills go in slots 1–4. Slots 5–9 are for toggle auras.'); return; }
   G.inv=G.inv.filter(x=>x!==item); const ex=G.slots.indexOf(item); if(ex>=0)G.slots[ex]=null; if(G.sigSlot===item)G.sigSlot=null; if(G.slots[i])G.inv.push(G.slots[i]); G.slots[i]=item; renderActionbar(); refreshItemPanels(); }
-function unbindSkill(i){ if(!G.slots[i])return; if(G.inv.length>=G.invCap){log('Inventory full.');return;} G.inv.push(G.slots[i]); G.slots[i]=null; renderActionbar(); refreshItemPanels(); }
-function bindSig(item){ if(!item.isSkillGem)return; G.inv=G.inv.filter(x=>x!==item); const ex=G.slots.indexOf(item); if(ex>=0)G.slots[ex]=null; if(G.sigSlot)G.inv.push(G.sigSlot); G.sigSlot=item; renderActionbar(); refreshItemPanels(); }
-function unbindSig(){ if(!G.sigSlot)return; if(G.inv.length>=G.invCap){log('Inventory full.');return;} G.inv.push(G.sigSlot); G.sigSlot=null; renderActionbar(); refreshItemPanels(); }
-function bindFlask(item,i){ if(!item.isFlask)return; G.inv=G.inv.filter(x=>x!==item); const ex=G.belt.indexOf(item); if(ex>=0)G.belt[ex]=null; if(G.belt[i])G.inv.push(G.belt[i]); G.belt[i]=item; renderActionbar(); refreshItemPanels(); }
-function unbindFlask(i){ if(!G.belt[i])return; if(G.inv.length>=G.invCap){log('Inventory full.');return;} G.inv.push(G.belt[i]); G.belt[i]=null; renderActionbar(); refreshItemPanels(); }
+function unbindSkill(i){ if(NET.role==='peer') return netPeerCmd('unbindSkill',[i]); if(!G.slots[i])return; if(G.inv.length>=G.invCap){log('Inventory full.');return;} G.inv.push(G.slots[i]); G.slots[i]=null; renderActionbar(); refreshItemPanels(); }
+function bindSig(item){ if(NET.role==='peer') return netPeerCmd('bindSig',[item&&item.uid]); if(!item.isSkillGem)return; G.inv=G.inv.filter(x=>x!==item); const ex=G.slots.indexOf(item); if(ex>=0)G.slots[ex]=null; if(G.sigSlot)G.inv.push(G.sigSlot); G.sigSlot=item; renderActionbar(); refreshItemPanels(); }
+function unbindSig(){ if(NET.role==='peer') return netPeerCmd('unbindSig',[]); if(!G.sigSlot)return; if(G.inv.length>=G.invCap){log('Inventory full.');return;} G.inv.push(G.sigSlot); G.sigSlot=null; renderActionbar(); refreshItemPanels(); }
+function bindFlask(item,i){ if(NET.role==='peer') return netPeerCmd('bindFlask',[item&&item.uid,i]); if(!item.isFlask)return; G.inv=G.inv.filter(x=>x!==item); const ex=G.belt.indexOf(item); if(ex>=0)G.belt[ex]=null; if(G.belt[i])G.inv.push(G.belt[i]); G.belt[i]=item; renderActionbar(); refreshItemPanels(); }
+function unbindFlask(i){ if(NET.role==='peer') return netPeerCmd('unbindFlask',[i]); if(!G.belt[i])return; if(G.inv.length>=G.invCap){log('Inventory full.');return;} G.inv.push(G.belt[i]); G.belt[i]=null; renderActionbar(); refreshItemPanels(); }
 function autoBeltFlask(item){ if(G.belt.includes(item))return; const i=G.belt.indexOf(null); if(i<0)return; G.inv=G.inv.filter(x=>x!==item); G.belt[i]=item; renderActionbar(); }
 function respec(){
+  if(NET.role==='peer') return netPeerCmd('respec',[]);
   if(!(G.inTown || floorType(G.floor)==='SAFE' || META.fieldRespec)){ log('↺ Respec is only available in a safe zone. Unlock 🔧 Field Respecialisation in the Legacy menu (L) to respec on any floor.'); if(sfx.deny)sfx.deny(); return; }
   let total=0; for(const id in G.alloc) total+=G.alloc[id]||0;
   if(total<=0){ log('Nothing allocated to respec.'); return; }
@@ -6087,6 +6091,7 @@ function respec(){
   log('↺ Respec — '+total+' points refunded ('+cost+'g spent).');
 }
 function renderActionbar(){
+  if(_G.netApplying) return;   // host applying a guest's action → keep the host's own skill bar intact
   const bar=$('actionbar'); bar.innerHTML='';
   for(let i=0;i<9;i++){ const slot=G.slots[i], sk=slot?SKILLS[slot.skillId]:null; const tog=!!(sk&&sk.toggle), on=tog&&auraOn(slot.skillId);
     const d=document.createElement('div'); d.className='slot'+(sk?'':' empty')+(tog?' toggle':'')+(on?' auraOn':'');
@@ -6108,7 +6113,7 @@ function renderSig(){ const s=$('sigSlot'); if(!s)return; const gem=G.sigSlot, s
 
 // ============================================================ CHARACTER UI
 const ATTR_ICON={str:'💪',dex:'🏹',int:'🔮',vit:'❤',will:'🌀'};
-function renderChar(){
+function renderChar(){ if(_G.netApplying) return;
   // ---- header: identity · level/XP · fame ----
   const head=$('csHead');
   if(head){
@@ -6202,6 +6207,7 @@ function renderStash(){
 }
 // ---------------- inventory / equipment ----------------
 function equipItem(it){
+  if(NET.role==='peer') return netPeerCmd('equip',[it&&it.uid]);
   if(it.isGem||it.isSkillGem) return;
   const sk=it.slotKey, cur=G.equip[sk];
   G.inv=G.inv.filter(x=>x!==it); if(cur) G.inv.push(cur);
@@ -6209,7 +6215,7 @@ function equipItem(it){
   G.hp=Math.min(G.hp,G.maxhp); G.mana=Math.min(G.mana,G.maxmana);
   log('Equipped '+it.name); renderInv(); if(!$('charPanel').classList.contains('hidden'))renderChar();
 }
-function unequip(sk){ const it=G.equip[sk]; if(!it)return; if(G.inv.length>=G.invCap){ log('Inventory full — make room first.'); return; }
+function unequip(sk){ if(NET.role==='peer') return netPeerCmd('unequip',[sk]); const it=G.equip[sk]; if(!it)return; if(G.inv.length>=G.invCap){ log('Inventory full — make room first.'); return; }
   G.equip[sk]=null; G.inv.push(it); recompute(); renderInv(); if(!$('charPanel').classList.contains('hidden'))renderChar(); }
 function eleColor(el){ return el==='fire'?'#ff9a4d':el==='cold'?'#7fd0ff':el==='light'?'#ffe14d':'#fff'; }
 function itemRow(it,cls,compare){ const d=document.createElement('div'); d.className=cls+' r-'+it.rarity.css+(it.isGem?' isgem':'');
@@ -6237,7 +6243,7 @@ function firstSocketTarget(){   // an item with a free socket — prefer equippe
   for(const it of G.inv){ if(hasFreeSocket(it)) return it; }
   return null;
 }
-function socketGemInto(gem,item){ if(!gem||!gem.isGem||!item||!item.sockets) return false;
+function socketGemInto(gem,item){ if(NET.role==='peer'){ netPeerCmd('socket',[gem&&gem.uid,item&&item.uid]); return true; } if(!gem||!gem.isGem||!item||!item.sockets) return false;
   const si=firstEmptySocket(item); if(si<0){ log('No free socket on '+item.name+'.'); return false; }
   const idx=G.inv.indexOf(gem); if(idx>=0) G.inv.splice(idx,1); item.socketed[si]=gem; if(G.selGem===gem)G.selGem=null;
   recompute(); log('💠 Socketed '+gem.name+' → '+item.name); sfx.pickup&&sfx.pickup();
@@ -6249,7 +6255,7 @@ function unsocketGem(item,si){ const g=item.socketed&&item.socketed[si]; if(!g) 
   recompute(); log('⛏ Unsocketed '+g.name+' (−'+UNSOCKET_FAME+' ✦ fame).'); sfx.drop&&sfx.drop(2);
   renderInv(); if(!$('charPanel').classList.contains('hidden'))renderChar(); return true; }
 // pop a gem straight back to the bag — free, no fame cost (click a filled socket)
-function unsocketFree(item,si){ const g=item.socketed&&item.socketed[si]; if(!g) return false;
+function unsocketFree(item,si){ if(NET.role==='peer'){ netPeerCmd('unsocket',[item&&item.uid,si]); return true; } const g=item.socketed&&item.socketed[si]; if(!g) return false;
   if(G.inv.length>=G.invCap){ log('🎒 Bag full — make room to pop a gem out.'); return false; }
   item.socketed[si]=null; G.inv.push(g); recompute();
   log('⛏ Removed '+g.name+' → bag.'); sfx.drop&&sfx.drop(2);
@@ -6259,6 +6265,7 @@ function unsocketFree(item,si){ const g=item.socketed&&item.socketed[si]; if(!g)
 function stashFromBag(it){ if(!it) return false; if(stashPush(it)){ G.inv=G.inv.filter(x=>x!==it); G.stashStrikes=0; bankCashIn(1); refreshItemPanels(); return true; } return false; }
 function quickUse(it){
   if(!it) return;
+  if(NET.role==='peer') return netPeerCmd('quickUse',[it.uid]);
   if(it.isGem){ const tgt=firstSocketTarget(); if(tgt) socketGemInto(it,tgt); else log('No item has a free socket right now.'); }
   else if(it.isSkillGem){ if(G.slots.includes(it)||G.sigSlot===it) return; if(G.slots.indexOf(null)>=0){ autoBind(it); log('✦ Bound '+it.name); refreshItemPanels(); } else log('Skill bar full — unbind one first.'); }
   else if(it.isFlask){ if(G.belt.includes(it)) return; if(G.belt.indexOf(null)>=0){ autoBeltFlask(it); log('🧪 Equipped '+it.name); refreshItemPanels(); } else log('Belt full — unbind a flask first.'); }
@@ -6269,6 +6276,7 @@ function quickUse(it){
 let _dragGem=null;   // gem currently being dragged onto a socketed item
 function wireSockets(d,it){
   d.querySelectorAll('.sock').forEach(ch=>{ ch.onclick=(ev)=>{ ev.stopPropagation(); const si=+ch.dataset.si, g=it.socketed[si];
+    if(NET.role==='peer'){ if(g) netPeerCmd('unsocket',[it.uid,si]); else if(G.selGem){ netPeerCmd('socket',[G.selGem.uid,it.uid]); G.selGem=null; } return; }   // guest → host
     if(g){ if(G.inv.length>=G.invCap){ log('Inventory full — cannot remove gem.'); return; } it.socketed[si]=null; G.inv.push(g); recompute(); renderInv(); if(!$('charPanel').classList.contains('hidden'))renderChar(); }
     else if(G.selGem){ const idx=G.inv.indexOf(G.selGem); if(idx<0){G.selGem=null;return;} it.socketed[si]=G.selGem; G.inv.splice(idx,1); G.selGem=null; recompute(); renderInv(); if(!$('charPanel').classList.contains('hidden'))renderChar(); log('💠 Gem socketed.'); }
   }; });
@@ -6448,7 +6456,7 @@ function stashAllGear(){ const keep=[]; let n=0;
   G.inv=keep; if(n){ G.stashStrikes=0; bankCashIn(n); log('⇩ Stashed '+n+' gear item(s) — survives death.'); } else log('No loose gear to stash.');
   renderInv();
 }
-function renderInv(){
+function renderInv(){ if(_G.netApplying) return;
   $('bagCount').textContent=G.inv.length; $('bagCap').textContent=G.invCap; clearItemDetail();
   // ---- bag toolbar (sort modes + quick-stash) ----
   const tools=$('bagTools'); if(tools){
@@ -7214,6 +7222,7 @@ function netHostReady(rec){ if(rec._ready) return; if(rec.ch.readyState!=='open'
   rec._ready=true; rec.awaiting=false; rec.player=joinNetPlayer();
   try{ rec.evt.send(JSON.stringify({type:'hello',id:rec.player.id,seed:_G.seed,floor:_G.floor})); }catch(_){}
   try{ rec.evt.send(serializeFloorLayout()); }catch(_){}     // send the current floor so the peer can build it
+  try{ rec.evt.send(JSON.stringify({type:'build', b:serializePlayerBuild(rec.player)})); rec._buildSig=buildSig(rec.player); }catch(_){}   // seed the guest's full character (build changes stream on-demand after)
   banner('🌐 PEER JOINED','online co-op'); log('🌐 A friend connected as Player '+(rec.player.id+1)+'.');
   if(NET.host&&NET.host.onPeers) NET.host.onPeers(NET.host.conns.filter(c=>c._ready).length); }
 async function netCreateInvite(){
@@ -7224,6 +7233,7 @@ async function netCreateInvite(){
   const rec={pc,ch,evt,player:null,awaiting:true,_ready:false};
   const onReady=()=>netHostReady(rec);
   ch.onopen=onReady; evt.onopen=onReady;
+  evt.onmessage=e=>netHostOnPeerEvt(rec, e.data);   // guest → host build actions / saved-char handoff
   ch.onmessage=e=>{ try{ const m=JSON.parse(e.data); if(m.in && rec.player) rec.player.netPacket=m.in; }catch(_){} };
   ch.onclose=()=>{ netReleasePlayer(rec); if(NET.host) NET.host.conns=NET.host.conns.filter(c=>c!==rec); if(typeof renderNetHost==='function') renderNetHost(); };
   h.conns.push(rec);
@@ -7238,7 +7248,101 @@ async function netAcceptAnswer(answerStr){ const h=NET.host; if(!h)return false;
   await rec.pc.setRemoteDescription(JSON.parse(answerStr.trim())); return true; }
 function netHostBroadcast(){ const h=NET.host; if(!h)return; const buf=serializeSnapshot();
   for(const c of h.conns){ if(c.ch&&c.ch.readyState==='open'){ try{ c.ch.send(buf); }catch(_){} } }
-  if(_G.netDeaths.length) _G.netDeaths.length=0; }   // deaths delivered — clear the per-broadcast queue
+  if(_G.netDeaths.length) _G.netDeaths.length=0;   // deaths delivered — clear the per-broadcast queue
+  // stream each peer's full BUILD (attr/tree/gear/skills/inventory) on the reliable channel whenever it changes —
+  // level-ups, loot, respec, point spends all shift the signature, so the guest's menus & HUD stay in sync.
+  for(const c of h.conns){ if(c.player&&c.player.joined&&c.evt&&c.evt.readyState==='open'){ const sig=buildSig(c.player);
+    if(sig!==c._buildSig){ c._buildSig=sig; try{ c.evt.send(JSON.stringify({type:'build', b:serializePlayerBuild(c.player)})); }catch(_){} } } } }
+
+// ============================================================ ONLINE CO-OP — FULL BUILD SYNC (guest plays its OWN character)
+// The host is authoritative: it runs the sim for every player. To make the guest feel like a full game — its own
+// build, HUD, skill bar, inventory, skill tree — the host streams the guest's complete character state, and the
+// guest sends build ACTIONS (allocate, equip, bind, respec…) back up as commands the host applies to that player.
+let _uidSeq=1;
+function _stampUid(it){ if(it && it.uid==null) it.uid=_uidSeq++; return it; }
+function _stampItem(it){ if(!it)return it; _stampUid(it); if(it.socketed) for(const g of it.socketed) if(g) _stampUid(g); return it; }
+function _stampPlayer(p){ if(!p)return; if(p.inv) p.inv.forEach(_stampItem); if(p.slots) p.slots.forEach(_stampItem);
+  if(p.belt) p.belt.forEach(_stampItem); if(p.sigSlot) _stampItem(p.sigSlot); if(p.equip) for(const k in p.equip) _stampItem(p.equip[k]); }
+// compact structural signature — changes whenever the build (not the fast HUD values) changes, so we only resend on real edits
+function buildSig(p){ if(!p)return''; _stampPlayer(p);
+  const iu=a=>a?a.map(x=>x?x.uid:0).join(','):'';
+  const eu=e=>{ let s=''; for(const k in e){ const it=e[k]; s+=k+':'+(it?it.uid+(it.socketed?'.'+it.socketed.map(g=>g?g.uid:0).join('-'):''):'0')+';'; } return s; };
+  let al=''; for(const k in p.alloc){ if(p.alloc[k]) al+=k+p.alloc[k]+','; }
+  const A=p.attr||{};
+  return [p.level,p.xpNeed,p.attrPts,p.skillPts,p.skillGranted,p.evolves,al,iu(p.inv),eu(p.equip||{}),iu(p.slots),iu(p.belt),
+    p.sigSlot?p.sigSlot.uid:0, A.str+'.'+A.dex+'.'+A.int+'.'+A.vit+'.'+A.will, p.pet?(p.pet.level+'#'+(p.pets?p.pets.length:0)):'-', Math.round((p.greed||1)*100), p.invCap|0].join('|'); }
+function serializePlayerBuild(p){ if(!p)return null; _stampPlayer(p);
+  try{ return { name:p.name, gold:p.gold|0, level:p.level|0, xp:p.xp, xpNeed:p.xpNeed, xpMode:p.xpMode||'use',
+    attrPts:p.attrPts|0, skillPts:p.skillPts|0, skillGranted:p.skillGranted|0, evolves:p.evolves|0, invCap:p.invCap|0,
+    attr:p.attr, alloc:p.alloc, equip:p.equip, inv:p.inv, belt:p.belt, slots:p.slots, sigSlot:p.sigSlot,
+    pets:p.pets, petIdx:(p.pet&&p.pets)?p.pets.indexOf(p.pet):-1, greed:p.greed||1,
+    run:{ boons:(p.run&&p.run.boons)||[] } }; }catch(e){ return null; } }
+function applyPlayerBuild(p,b){ if(!p||!b)return;
+  p.name=b.name||p.name; p.gold=b.gold|0; p.level=b.level||1; p.xp=b.xp||0; p.xpNeed=b.xpNeed||(typeof xpForLevel==='function'?xpForLevel(p.level):20);
+  p.xpMode=b.xpMode||'use'; p.attrPts=b.attrPts|0; p.skillPts=b.skillPts|0; p.skillGranted=b.skillGranted|0; p.evolves=b.evolves|0;
+  if(b.invCap) p.invCap=b.invCap; p.attr=b.attr||p.attr; p.alloc=b.alloc||{}; p.equip=b.equip||p.equip;
+  p.inv=b.inv||[]; p.belt=b.belt||p.belt; p.slots=b.slots||p.slots; p.sigSlot=b.sigSlot||null;
+  p.pets=b.pets||p.pets||[]; p.pet=(b.petIdx>=0&&p.pets&&p.pets[b.petIdx])?p.pets[b.petIdx]:null; p.greed=b.greed||1;
+  p.run=p.run||{}; p.run.boons=(b.run&&b.run.boons)||p.run.boons||[];
+  withPlayer(p.id, ()=>{ recompute(); }); }
+// ---- GUEST side: receive my build, receive my live vitals, render the FULL hud from them ----
+function netPeerApplyBuild(b){ const p=_G.players[0]; if(!p||!b)return; applyPlayerBuild(p,b);
+  // reflect the new build in any open menu + the always-on skill bar
+  withPlayer(0, ()=>{ if(typeof renderActionbar==='function') renderActionbar(); if(typeof refreshItemPanels==='function') refreshItemPanels();
+    if(!$('charPanel').classList.contains('hidden')&&typeof renderChar==='function') renderChar();
+    if(!$('treePanel').classList.contains('hidden')&&typeof renderTree==='function') renderTree();
+    if(typeof updatePips==='function') updatePips(); }); }
+function netApplyLive(sp){ const p=_G.players[0]; if(!p||!sp)return;
+  p.hp=sp.hp; if(sp.mh) p.maxhp=sp.mh; p.mana=sp.mp!=null?sp.mp:p.mana; if(sp.mm) p.maxmana=sp.mm;
+  p.level=sp.lv||p.level; if(sp.xp!=null)p.xp=sp.xp; if(sp.xn)p.xpNeed=sp.xn; if(sp.g!=null)p.gold=sp.g;
+  p.dashCd=sp.dc||0; if(sp.dm)p.dashCdMax=sp.dm; p.charge=sp.sg||0; if(sp.cm)p.chargeMax=sp.cm;
+  p.fervor=sp.fv||0; p.fervorT=sp.ft||0; p.swiftT=sp.sw||0; p.flowT=sp.fw||0; p.invuln=sp.iv||0;
+  p.stunT=sp.su||0; p.slowT=sp.sl||0; p.weakT=sp.wk||0; p.healCutT=sp.hc||0; p.recallT=sp.rc||0; p.downed=!!sp.dn;
+  if(sp.cd){ p.cd=p.cd||{}; for(let i=0;i<sp.cd.length;i++) p.cd[i]=sp.cd[i]; }
+  if(sp.fl&&p.belt){ for(let i=0;i<p.belt.length;i++){ if(p.belt[i]) p.belt[i].chg=sp.fl[i]||0; } } }
+// ---- GUEST side: send a build action up to the host (it runs the real handler on my authoritative character) ----
+function isPeer(){ return NET.role==='peer'; }
+function netPeerCmd(fn,a){ const pr=NET.peer; if(!pr||!pr.evt||pr.evt.readyState!=='open')return;
+  try{ pr.evt.send(JSON.stringify({ type:'cmd', fn, a:a||[] })); }catch(_){} }
+// ---- HOST side: apply an incoming guest build action to THAT player, without disturbing the host's own on-screen panels ----
+function netHostRunCmd(rec,fn,a){ const p=rec&&rec.player; if(!p||!p.joined)return; a=a||[];
+  const findItem=uid=>{ if(uid==null)return null; const P=_G.players[_G.cur]; if(!P)return null;
+    if(P.inv) for(const it of P.inv) if(it&&it.uid===uid) return it;
+    if(P.slots) for(const it of P.slots) if(it&&it.uid===uid) return it;
+    if(P.belt) for(const it of P.belt) if(it&&it.uid===uid) return it;
+    if(P.sigSlot&&P.sigSlot.uid===uid) return P.sigSlot;
+    if(P.equip) for(const k in P.equip){ const e=P.equip[k]; if(e&&e.uid===uid) return e; if(e&&e.socketed) for(const g of e.socketed) if(g&&g.uid===uid) return g; }
+    return null; };
+  _G.netApplying=true;   // suppress the shared-DOM re-renders these handlers fire, so the host's own HUD/panels aren't repainted with guest data
+  try{ withPlayer(p.id, ()=>{ switch(fn){
+    case 'spendAttr':    spendAttr(a[0]); break;
+    case 'investTalent': investTalent(a[0]); break;
+    case 'removeTalent': removeTalent(a[0]); break;
+    case 'autoBuild':    autoBuild(a[0]); break;
+    case 'respec':       respec(); break;
+    case 'equip':        { const it=findItem(a[0]); if(it) equipItem(it); break; }
+    case 'unequip':      unequip(a[0]); break;
+    case 'autoBind':     { const it=findItem(a[0]); if(it) autoBind(it); break; }
+    case 'bindSkill':    { const it=findItem(a[0]); if(it) bindSkill(it,a[1]); break; }
+    case 'unbindSkill':  unbindSkill(a[0]); break;
+    case 'bindSig':      { const it=findItem(a[0]); if(it) bindSig(it); break; }
+    case 'unbindSig':    unbindSig(); break;
+    case 'bindFlask':    { const it=findItem(a[0]); if(it) bindFlask(it,a[1]); break; }
+    case 'unbindFlask':  unbindFlask(a[0]); break;
+    case 'quickUse':     { const it=findItem(a[0]); if(it) quickUse(it); break; }
+    case 'socket':       { const g=findItem(a[0]), it=findItem(a[1]); if(g&&it) socketGemInto(g,it); break; }
+    case 'unsocket':     { const it=findItem(a[0]); if(it) unsocketFree(it,a[1]|0); break; }
+    case 'setXpMode':    { G.xpMode=(a[0]==='collect')?'collect':'use'; break; }
+  } }); }catch(e){ console.error('[net] guest cmd failed',fn,e); }
+  _G.netApplying=false;
+  const c=NET.host&&NET.host.conns&&NET.host.conns.find(x=>x===rec); if(c) c._buildSig='';   // force an immediate build resend so the guest sees the result
+}
+function netHostOnPeerEvt(rec,data){ if(!rec)return;
+  try{ const m=JSON.parse(data);
+    if(m.type==='char'){ if(rec.player && m.b) applyPlayerBuild(rec.player, m.b); if(rec) rec._buildSig=''; }   // returning guest keeps its saved build
+    else if(m.type==='cmd'){ netHostRunCmd(rec, m.fn, m.a); }
+  }catch(_){}
+}
 
 // ---- PEER: render-only guest; sends input up, draws the host's snapshots ----
 function netPeerStart(){ if(NET.role==='host')return null; NET.role='peer'; NET.peer={ pc:null, ch:null, evt:null, ghosts:{}, lastSnap:null }; return NET.peer; }
@@ -7295,7 +7399,7 @@ async function netRoomHost(status,onPeers){
       if(conn.label==='game'){ rec.ch=pjChan(conn); rec.gameConn=conn;
         conn.on('data',d=>{ try{ const m=JSON.parse(d); if(m.in && rec.player) rec.player.netPacket=m.in; }catch(_){} });
         conn.on('close',()=>{ netReleasePlayer(rec); if(h) h.conns=h.conns.filter(c=>c!==rec); if(h.onPeers) h.onPeers(h.conns.filter(c=>c._ready&&c.player&&c.player.joined).length); if(typeof renderNetHost==='function') renderNetHost(); }); }
-      else if(conn.label==='evt'){ rec.evt=pjChan(conn); rec.evtConn=conn; }
+      else if(conn.label==='evt'){ rec.evt=pjChan(conn); rec.evtConn=conn; conn.on('data',d=>netHostOnPeerEvt(rec,d)); }   // guest → host build actions / saved-char handoff
       netHostReady(rec); }); });
   return code;
 }
@@ -7334,16 +7438,23 @@ function netPeerOnEvt(data){ const pr=NET.peer; if(!pr)return;   // 'evt' channe
   try{ const m=JSON.parse(data);
     if(m.type==='hello'){ NET.localId=m.id; _G.seed=m.seed; netPeerEnter(); }
     else if(m.type==='floor'){ netPeerBuildFloor(m); }
+    else if(m.type==='build'){ netPeerApplyBuild(m.b); }   // my full character (attr/tree/gear/skills/inventory)
   }catch(_){}
 }
 function netPeerSendInput(){ const pr=NET.peer; if(!pr||!pr.ch||pr.ch.readyState!=='open')return;
   const p=_G.players[0]; if(!p)return; if(p.input) p.input.read(p);   // fills p.in.mx/mz + p.aim (raycast) + p.in.atk
+  const inMenu=anyPanelOpen()||_G.modalOpen;   // don't walk/fire/cast while managing your build
   // aim direction relative to our OWN ghost so the host aims our shots/facing correctly
   let ax=0,az=0; const me=pr.ghosts[NET.localId];
   if(me && p.in.hasAim){ const dx=p.aim.x-me.position.x, dz=p.aim.z-me.position.z, dl=Math.hypot(dx,dz)||1; ax=dx/dl; az=dz/dl; }
-  // action keys → btn edges (the guest's keydown handler is inert, so read keys[] directly): F interact, Space dash, QER skills, 123 flasks, Shift signature
-  const btn={ interact:!!keys['f'], dash:!!keys[' '], q:!!keys['q'], e:!!keys['e'], r:!!keys['r'], f1:!!keys['1'], f2:!!keys['2'], f3:!!keys['3'], sig:!!keys['shift'] };
-  try{ pr.ch.send(JSON.stringify({ in:{ mx:p.in.mx||0, mz:p.in.mz||0, ax, az, atk:!!p.in.atk, btn } })); }catch(_){}
+  // action keys → btn edges (the guest's keydown handler is inert, so read keys[] directly). Keys MATCH the on-screen HUD:
+  // skills 1–9, flasks Q/E/R/Z/X, Space dash, ⇧ signature, F interact. Host maps s0–s8→useSlot, k0–k4→useFlask.
+  const K=inMenu?(()=>false):(kk=>!!keys[kk]);
+  const btn={ interact:K('f'), dash:K(' '), sig:K('shift'),
+    s0:K('1'),s1:K('2'),s2:K('3'),s3:K('4'),s4:K('5'),s5:K('6'),s6:K('7'),s7:K('8'),s8:K('9'),
+    k0:K('q'),k1:K('e'),k2:K('r'),k3:K('z'),k4:K('x') };
+  const mx=inMenu?0:(p.in.mx||0), mz=inMenu?0:(p.in.mz||0), atk=inMenu?false:!!p.in.atk;
+  try{ pr.ch.send(JSON.stringify({ in:{ mx, mz, ax, az, atk, btn } })); }catch(_){}
 }
 function netPeerEnter(){   // enter a lightweight render-only state (no local world sim)
   if(!scene || !renderer){   // engine never started (WebGL failed) — don't get silently stuck on the join screen; show the reason
@@ -7353,25 +7464,17 @@ function netPeerEnter(){   // enter a lightweight render-only state (no local wo
   _G.players[0].input = _G.players[0].input || makeKbmInput();   // the guest needs an input source so read() captures its WASD/mouse/aim
   if(!NET.peer.ground){ const gnd=new THREE.Mesh(new THREE.PlaneGeometry(400,400), new THREE.MeshStandardMaterial({color:0x0d1320,roughness:1}));
     gnd.rotation.x=-Math.PI/2; gnd.position.y=0; scene.add(gnd); NET.peer.ground=gnd; }   // placeholder until the floor layout arrives
-  $('start').classList.add('hidden'); $('hud').classList.add('hidden');
-  // the guest can't use the full HUD (skills/menus/inventory live on the host), but it DOES get the
-  // on-character hp·mana·dash ring plus a compact vitals readout, streamed from the host.
-  const ring=$('playerRing'); if(ring && ring.parentElement!==$('app')){ $('app').appendChild(ring); }   // lift the ring out of the hidden #hud so it stays visible
-  buildGuestHud();
-  banner('🌐 ONLINE CO-OP','guest view — the host runs the world'); }
-function buildGuestHud(){ let el=$('guestHud'); if(el) return el;
-  el=document.createElement('div'); el.id='guestHud';
-  el.innerHTML='<div class="ghName">P<span id="ghNum">?</span> · <span class="ghLv">LV <b id="ghLv">1</b></span></div>'
-    +'<div class="ghBar"><i id="ghHp"></i></div><div class="ghBar mana"><i id="ghMp"></i></div>'
-    +'<div class="ghDown" id="ghDown">DOWNED — hold on, an ally can revive you</div>';
-  $('app').appendChild(el); return el; }
-function updateGuestHud(){ const st=NET.peer&&NET.peer.me; const el=$('guestHud'); if(!el){ return; }
-  if(!st){ el.style.display='none'; return; } el.style.display='block';
-  const num=$('ghNum'); if(num) num.textContent=(NET.localId|0)+1;
-  const lv=$('ghLv'); if(lv) lv.textContent=st.lv||1;
-  const hp=$('ghHp'); if(hp) hp.style.width=clamp(st.hp/(st.mh||1)*100,0,100)+'%';
-  const mp=$('ghMp'); if(mp) mp.style.width=clamp(st.mp/(st.mm||1)*100,0,100)+'%';
-  el.classList.toggle('down', !!st.dn); }
+  // the guest gets the FULL HUD — health orbs, mana, skill bar with live cooldowns, flasks, xp, gold, rampage/buffs —
+  // driven by the host's streamed build (recomputed locally) + live vitals. Host-only controls are hidden.
+  $('start').classList.add('hidden'); $('hud').classList.remove('hidden'); document.body.classList.add('netGuest');
+  const ring=$('playerRing'); if(ring && ring.parentElement!==$('app')){ $('app').appendChild(ring); }   // keep the on-hero ring above the world
+  // send my saved character up so a returning guest keeps its own build (a fresh guest just starts at level 1)
+  try{ const s=(typeof loadSession==='function')?loadSession():null;
+    if(s && s.level && NET.peer && NET.peer.evt){ NET.peer.evt.send(JSON.stringify({ type:'char', b:{
+      name:s.name, gold:s.gold, level:s.level, xp:s.xp, xpNeed:s.xpNeed, xpMode:s.xpMode, attrPts:s.attrPts, skillPts:s.skillPts,
+      skillGranted:s.skillGranted, evolves:s.evolves, invCap:s.invCap, attr:s.attr, alloc:s.alloc, equip:s.equip, inv:s.inv,
+      belt:s.belt, slots:s.slots, sigSlot:s.sigSlot, pets:s.pets, petIdx:s.petIdx, greed:s.greed, run:s.run } })); } }catch(_){}
+  banner('🌐 ONLINE CO-OP','your own build · the host runs the world'); }
 // ---- floor layout sync (Phase 2 finish): host streams the room/wall/pillar layout once per floor; peer rebuilds it ----
 function serializeFloorLayout(){ const bi=Math.max(0,BIOMES.indexOf(biome));
   return JSON.stringify({ type:'floor', bi, bounds:G.bounds,
@@ -7399,7 +7502,12 @@ function serializeSnapshot(){
   const rnd=v=>Math.round(v*100)/100;
   const players=joinedPlayers().map(p=>({ id:p.id, x:rnd(p.player.position.x), z:rnd(p.player.position.z),
     r:rnd(p.player.rotation.y), hp:Math.round(p.hp), mh:Math.round(p.maxhp||1), c:p.color, dn:p.downed?1:0,
-    mp:Math.round(p.mana||0), mm:Math.round(p.maxmana||1), dc:rnd(p.dashCd||0), dm:rnd(p.dashCdMax||0.5), lv:p.level||1 }));   // mana/dash/level so a guest can draw its own hp·mana·dash ring + HUD
+    mp:Math.round(p.mana||0), mm:Math.round(p.maxmana||1), dc:rnd(p.dashCd||0), dm:rnd(p.dashCdMax||0.5), lv:p.level||1,
+    // full live HUD vitals so the guest's real HUD (orbs, skill-bar cooldowns, flasks, xp, gold, buffs) tracks the host sim
+    xp:Math.round(p.xp||0), xn:Math.round(p.xpNeed||1), g:p.gold|0, sg:rnd(p.charge||0), cm:p.chargeMax||100,
+    fv:rnd(p.fervor||0), ft:rnd(p.fervorT||0), sw:rnd(p.swiftT||0), fw:rnd(p.flowT||0), iv:rnd(p.invuln||0),
+    su:rnd(p.stunT||0), sl:rnd(p.slowT||0), wk:rnd(p.weakT||0), hc:rnd(p.healCutT||0), rc:rnd(p.recallT||0),
+    cd:(p.cd?[0,1,2,3,4,5,6,7,8].map(i=>rnd(p.cd[i]||0)):[]), fl:(p.belt?p.belt.map(f=>f?rnd(f.chg||0):0):[]) }));
   const en=[];   // enemies near any player (cull for bandwidth)
   for(const e of _G.enemies){ const x=e.mesh.position.x, z=e.mesh.position.z; if(!nearAnyPlayer(x,z,46))continue;
     if(e._nid==null)e._nid=_nid++; en.push({ i:e._nid, x:rnd(x), z:rnd(z), s:rnd(e.scale||1), c:e.color||0xff5c78, b:e.boss?1:0, h:e.maxhp?Math.round(e.hp/e.maxhp*100):100, f:e.hitFlash>0?1:0 }); }
@@ -7425,7 +7533,7 @@ function applySnapshot(s){ const pr=NET.peer; if(!pr||!s)return;
       g.userData.tx=sp.x; g.userData.tz=sp.z; g.userData.tr=sp.r||0; g.userData.hp=sp.hp; g.userData.mh=sp.mh;
       const dn=!!sp.dn; if(dn!==g.userData.dn){ g.userData.dn=dn; g.rotation.x=dn?Math.PI/2:0;   // lay knocked-out allies on their side
         const body=g.children[0]; if(body&&body.material) body.material.emissiveIntensity=dn?0.12:0.55; }
-      if(sp.id===NET.localId){ pr.me={ hp:sp.hp, mh:sp.mh||1, mp:sp.mp!=null?sp.mp:0, mm:sp.mm||1, dc:sp.dc||0, dm:sp.dm||0.5, lv:sp.lv||1, dn }; } }   // MY own stats → guest HUD + ring
+      if(sp.id===NET.localId){ pr.me={ hp:sp.hp, mh:sp.mh||1, mp:sp.mp!=null?sp.mp:0, mm:sp.mm||1, dc:sp.dc||0, dm:sp.dm||0.5, lv:sp.lv||1, dn }; netApplyLive(sp); } }   // MY own stats → guest HUD + ring, and feed the full HUD
     const live=new Set(s.players.map(p=>p.id));
     for(const id in pr.ghosts){ if(!live.has(+id)){ scene.remove(pr.ghosts[id]); delete pr.ghosts[id]; } } }
   // enemies (pooled by net-id; lerped toward target in render)
@@ -7458,7 +7566,9 @@ function netGuestRender(raw){ const pr=NET.peer; if(!pr)return; const k=Math.min
   camera.position.lerp(new THREE.Vector3(fx,24,fz+13),0.2); camera.lookAt(fx,1.2,fz);
   if(typeof dir!=='undefined'&&dir){ dir.position.set(fx+20,42,fz+14); dir.target.position.set(fx,0,fz); dir.target.updateMatrixWorld(); }
   renderer.setScissorTest(false); renderer.setViewport(0,0,innerWidth,innerHeight); renderer.render(scene,camera);
-  drawGuestRing(); updateGuestHud(); }
+  drawGuestRing();
+  withPlayer(0, ()=>{ try{ updateHUD(); }catch(_){} });   // full HUD (orbs, skill bar, flasks, xp, gold, buffs) from the streamed build + vitals
+}
 
 const SIM_DT=1/60; let _acc=0;   // fixed-timestep accumulator (decouples sim cadence from render fps)
 // keep the host simulating when its tab is hidden (rAF pauses there). Browsers throttle background
@@ -7615,8 +7725,10 @@ function updatePlayerStep(dt){
   // gamepad action edges (keyboard P1 fires these from the keydown handler instead)
   if(pObj.input && pObj.input.pollActions && !G.paused){ const inp=pObj.in;
     if(padEdge(inp,'dash')) doDash();
-    if(padEdge(inp,'q')) useSlot(0); if(padEdge(inp,'e')) useSlot(1); if(padEdge(inp,'r')) useSlot(2);
-    if(padEdge(inp,'f1')) useFlask(0); if(padEdge(inp,'f2')) useFlask(1); if(padEdge(inp,'f3')) useFlask(2);
+    if(padEdge(inp,'q')) useSlot(0); if(padEdge(inp,'e')) useSlot(1); if(padEdge(inp,'r')) useSlot(2);   // gamepad (3 skills)
+    if(padEdge(inp,'f1')) useFlask(0); if(padEdge(inp,'f2')) useFlask(1); if(padEdge(inp,'f3')) useFlask(2);   // gamepad (3 flasks)
+    for(let _s=0;_s<9;_s++) if(padEdge(inp,'s'+_s)) useSlot(_s);      // online guest: full keyboard skills 1–9
+    for(let _f=0;_f<5;_f++) if(padEdge(inp,'k'+_f)) useFlask(_f);     // online guest: full keyboard flasks Q/E/R/Z/X
     if(padEdge(inp,'sig')) useSignature();
     if(padEdge(inp,'interact')) interact();
     if(padEdge(inp,'menu')){ openCoopMenu(pObj.id); inp.prev=inp.btn?Object.assign({},inp.btn):{}; return; }   // open this player's own menu
