@@ -678,6 +678,27 @@
   #petPanel h3{color:#ffae3d;}
   #petYardPanel{top:50%;left:50%;transform:translate(-50%,-50%);width:760px;max-width:96vw;max-height:90vh;display:flex;flex-direction:column;padding-bottom:14px;border-color:rgba(255,174,61,.3);}
   #petYardPanel h3{color:#ffae3d;}
+  #petInfoCard{position:fixed;right:18px;top:50%;transform:translateY(-50%);width:274px;max-height:88vh;overflow-y:auto;z-index:30;background:rgba(9,13,22,.95);border:1px solid rgba(255,174,61,.55);border-radius:14px;padding:12px 14px 13px;box-shadow:0 0 30px rgba(0,0,0,.65);pointer-events:none;font-size:12px;}
+  #petInfoCard .piHead{display:flex;gap:10px;align-items:center;margin-bottom:9px;}
+  #petInfoCard .piIc{font-size:32px;line-height:1;filter:drop-shadow(0 0 8px rgba(255,206,77,.4));}
+  #petInfoCard .piHd{display:flex;flex-direction:column;min-width:0;}
+  #petInfoCard .piNm{font-weight:900;font-size:15px;letter-spacing:.4px;}
+  #petInfoCard .piActive{color:var(--gold);font-size:10px;}
+  #petInfoCard .piMeta{font-size:10.5px;opacity:.72;letter-spacing:1px;text-transform:uppercase;}
+  #petInfoCard .piStatRow{display:flex;justify-content:space-between;font-size:11.5px;padding:2px 0;}
+  #petInfoCard .piStatRow span{opacity:.62;}
+  #petInfoCard .piBar{height:6px;border-radius:4px;background:rgba(255,255,255,.08);overflow:hidden;margin:2px 0 5px;}
+  #petInfoCard .piBar i{display:block;height:100%;border-radius:4px;}
+  #petInfoCard .piBar.hp i{background:linear-gradient(90deg,#ff5c78,#b3142f);}
+  #petInfoCard .piBar.xp i{background:linear-gradient(90deg,#9d7bff,#5a3fc0);}
+  #petInfoCard .piSkTtl{font-size:10px;letter-spacing:1.5px;text-transform:uppercase;opacity:.6;margin:8px 0 5px;font-weight:bold;}
+  #petInfoCard .piAb{display:flex;gap:8px;align-items:center;padding:4px 6px;border-radius:8px;background:rgba(255,255,255,.03);border-left:3px solid var(--ac,#ffae3d);margin-bottom:4px;}
+  #petInfoCard .piAb.lk{opacity:.5;border-left-color:#555;}
+  #petInfoCard .piAbic{font-size:16px;line-height:1;}
+  #petInfoCard .piAbtx{display:flex;flex-direction:column;line-height:1.25;min-width:0;}
+  #petInfoCard .piAbtx b{font-size:12px;}
+  #petInfoCard .piAbtx i{font-size:10.5px;opacity:.72;font-style:normal;}
+  #petInfoCard .piFoot{margin-top:9px;font-size:10px;opacity:.6;text-align:center;line-height:1.5;}
   #petYardPanel #petFuse{overflow-y:auto;flex:1;margin:0 16px;grid-template-columns:repeat(auto-fill,minmax(168px,1fr));}
   #petYardPanel #petFuse::-webkit-scrollbar{width:9px;} #petYardPanel #petFuse::-webkit-scrollbar-thumb{background:rgba(255,174,61,.3);border-radius:5px;}
   .petCard .pcAb{margin-right:3px;} .petCard .pcAb.lk{opacity:.32;filter:grayscale(1);}
@@ -1102,6 +1123,7 @@
 
   <div id="fct"></div>
   <div id="worldLabels"></div>
+  <div id="petInfoCard" class="hidden"></div>
   <div id="vignette"></div>
   <div id="levelFlash"></div>
   <div id="shiftFlash"></div>
@@ -5568,6 +5590,45 @@ function renderPetYard(){
     }
     yard.appendChild(card); });
 }
+// ---- PET YARD TERMINAL: a console you walk to that opens the full roster (view all pets, their skills, equip/fuse/sell) ----
+function buildYardTerminal(){
+  if(G.yardTerminal&&G.yardTerminal.mesh){ scene.remove(G.yardTerminal.mesh); }
+  const g=new THREE.Group();
+  const base=new THREE.Mesh(new THREE.CylinderGeometry(0.5,0.95,1.4,8), new THREE.MeshStandardMaterial({color:0x27334f,emissive:0x14243f,emissiveIntensity:.5,roughness:.5,metalness:.55})); base.position.y=0.7; base.castShadow=true;
+  const scr=new THREE.Mesh(new THREE.BoxGeometry(2.0,1.25,0.16), new THREE.MeshStandardMaterial({color:0x0d2030,emissive:0x2aa0ff,emissiveIntensity:1.5,roughness:.3,metalness:.3})); scr.position.set(0,2.05,0); scr.rotation.x=-0.34;
+  const halo=new THREE.Mesh(new THREE.TorusGeometry(1.15,0.07,8,26), new THREE.MeshStandardMaterial({color:0x56e0ff,emissive:0x56e0ff,emissiveIntensity:1.5})); halo.rotation.x=Math.PI/2; halo.position.y=0.08;
+  g.add(base,scr,halo); g.position.set(0,0,9); scene.add(g);
+  G.yardTerminal={mesh:g, x:0, z:9};
+}
+function openPetTerminal(){
+  if($('petYardPanel').classList.contains('hidden')){ hidePetInfoCard(); togglePanel('petYardPanel'); }
+  else { $('petYardPanel').classList.add('hidden'); syncPause(); refreshMenuState(); }
+}
+// ---- walk-over inspector: a live card with a roaming pet's race, type, level, vitality, XP and every skill ----
+function renderPetInfoCard(pet){
+  const el=$('petInfoCard'); if(!el||!pet) return; ensurePetAbilities(pet);
+  const rr=PET_RARITY[pet.rarity], f=PET_FAMILIES[pet.family], cap=petLevelCap(pet), atCap=pet.level>=cap, active=(pet===G.pet);
+  const mhp=petMaxHp(pet), hp=Math.round(pet.hp!=null?pet.hp:mhp), hpPct=clamp(hp/mhp*100,0,100);
+  const xpPct=atCap?100:Math.round(pet.xp/petXpNeed(pet.level)*100), actN=petActiveCount(pet);
+  let sk=''; for(let i=0;i<3;i++){ const a=pet.abilities[i], ab=a?PET_ABILITIES[a.type]:null, unlocked=i<actN;
+    if(ab&&unlocked) sk+=`<div class="piAb" style="--ac:${ABIL_COLOR[a.type]||'#ffae3d'}"><span class="piAbic">${ab.ic}</span><span class="piAbtx"><b>${ab.nm}</b><i>${ab.ds(pet.level)}</i></span></div>`;
+    else if(ab) sk+=`<div class="piAb lk"><span class="piAbic">🔒</span><span class="piAbtx"><b>${ab.nm}</b><i>unlocks at ${PET_RARITY[PET_SLOT_UNLOCK[i]].nm}</i></span></div>`;
+    else sk+=`<div class="piAb lk"><span class="piAbic">🔒</span><span class="piAbtx"><b>Locked</b><i>—</i></span></div>`; }
+  el.style.borderColor='var(--'+rr.css+')';
+  el.innerHTML=`<div class="piHead"><span class="piIc">${f.ic}</span><div class="piHd">`
+      +`<span class="piNm" style="color:var(--${rr.css})">${petName(pet)}${active?' <b class="piActive">★ ACTIVE</b>':''}</span>`
+      +`<span class="piMeta">${rr.nm} ${f.nm} · Lv ${pet.level}/${cap}</span></div></div>`
+    +`<div class="piStatRow"><span>🏷 Race</span><b>${f.nm}</b></div>`
+    +`<div class="piStatRow"><span>✦ Type</span><b style="color:var(--${rr.css})">${rr.nm}</b></div>`
+    +`<div class="piStatRow"><span>❤ Vitality</span><b>${hp.toLocaleString()} / ${mhp.toLocaleString()}</b></div>`
+    +`<div class="piBar hp"><i style="width:${hpPct}%"></i></div>`
+    +`<div class="piStatRow"><span>✧ Experience</span><b>${atCap?'MAX':pet.xp.toLocaleString()+' / '+petXpNeed(pet.level).toLocaleString()}</b></div>`
+    +`<div class="piBar xp"><i style="width:${xpPct}%"></i></div>`
+    +`<div class="piSkTtl">Skills · ${actN}/3 unlocked</div>${sk}`
+    +`<div class="piFoot">Press <b>F</b> to manage · use the <b>🖥 Terminal</b> to equip</div>`;
+  el.classList.remove('hidden');
+}
+function hidePetInfoCard(){ const el=$('petInfoCard'); if(el&&!el.classList.contains('hidden')) el.classList.add('hidden'); }
 function openPetYard(){ $('petPanel').classList.add('hidden'); syncPause(); refreshMenuState(); enterPetYard(); }
 function refreshPetUI(){ if(!$('petPanel').classList.contains('hidden')) renderPet(); if($('petYardPanel')&&!$('petYardPanel').classList.contains('hidden')) renderPetYard(); }
 // ============================================================ LEGACY UI (data/helpers are defined earlier, near the META block)
@@ -5686,10 +5747,10 @@ function enterPetYard(){
   const ring=new THREE.Mesh(new THREE.TorusGeometry(2.4,.35,12,32), new THREE.MeshStandardMaterial({color:0xff9a3d,emissive:0xff9a3d,emissiveIntensity:1.6})); ring.rotation.x=Math.PI/2; ring.position.y=2.4;
   const beam=new THREE.Mesh(new THREE.CylinderGeometry(2,2,9,24,1,true), new THREE.MeshBasicMaterial({color:0xff9a3d,transparent:true,opacity:.14,side:THREE.DoubleSide,depthWrite:false})); beam.position.y=4.5;
   pg.add(ring,beam); pg.position.set(0,0,-18); scene.add(pg); G.portal={mesh:pg,x:0,z:-18,active:true,yard:true};
-  buildYardMeshes();
+  buildYardMeshes(); buildYardTerminal();
   $('floorTitle').textContent='PET YARD'; $('floorType').textContent='🏡 SANCTUARY'; $('floorBig').innerHTML='🏡';
   $('threatTxt').textContent='SAFE'; $('modTxt').innerHTML=''; $('bountyTxt').innerHTML=''; $('shiftTxt').textContent=''; $('clearTxt').textContent='';
-  log('🏡 PET YARD — your '+G.pets.length+' companion'+(G.pets.length===1?'':'s')+' roam here. Walk up to one and press F to Equip · Fuse · Sell. Step in the portal to return.');
+  log('🏡 PET YARD — your '+G.pets.length+' companion'+(G.pets.length===1?'':'s')+' roam here. Walk over a pet to inspect its stats & skills; step up to the 🖥 Terminal (press F) to view them all & equip. Step in the portal to return.');
   clock.getDelta();
 }
 function buildYardMeshes(){
@@ -5702,18 +5763,23 @@ function buildYardMeshes(){
     _G.yardPets.push({pet:pt, mesh:m, wanderT:rand(0,2), tx:rx, tz:rz}); });
 }
 function updatePetYard(dt){
-  if(!_G.inYard) return; const pl=_G.players[0]; if(!pl||!pl.player) return; const p=pl.player.position;
+  if(!_G.inYard){ hidePetInfoCard(); return; } const pl=_G.players[0]; if(!pl||!pl.player){ hidePetInfoCard(); return; } const p=pl.player.position;
   let near=null, nd=1e9;
   for(const yp of (_G.yardPets||[])){ const m=yp.mesh; if(!m) continue;
     yp.wanderT-=dt; if(yp.wanderT<=0){ yp.wanderT=rand(2.2,4.8); yp.tx=clamp(m.position.x+rand(-9,9),-23,23); yp.tz=clamp(m.position.z+rand(-9,9),-20,17); }
     m.position.x+=(yp.tx-m.position.x)*Math.min(1,dt*1.1); m.position.z+=(yp.tz-m.position.z)*Math.min(1,dt*1.1);
     m.position.y=1.2+Math.sin(performance.now()*0.004+m.position.x)*0.14; if(m.userData.body) m.userData.body.rotation.y+=dt*1.6;
     const d=Math.hypot(p.x-m.position.x,p.z-m.position.z); if(d<nd){ nd=d; near=yp; } }
-  _G.nearYardPet=(near && nd<3.0)?near:null;
-  if(_G.nearYardPet){ if(!_G._pyh){ log('🐾 '+petName(_G.nearYardPet.pet)+' — press F to manage (Equip · Fuse · Sell).'); _G._pyh=true; } } else _G._pyh=false;
+  _G.nearYardPet=(near && nd<3.4)?near:null;
+  const T=G.yardTerminal; _G.nearTerminal=!!(T && Math.hypot(p.x-T.x,p.z-T.z)<3.2);
+  if(T&&T.mesh) T.mesh.rotation.y+=dt*0.7;
+  const blocked=anyPanelOpen()||_G.modalOpen;
+  if(_G.nearYardPet && !blocked){ renderPetInfoCard(_G.nearYardPet.pet); } else { hidePetInfoCard(); }
+  if(_G.nearTerminal){ if(!_G._pth){ log('🖥 Pet Terminal — press F to view every companion, their skills & equip.'); _G._pth=true; } } else _G._pth=false;
 }
-function exitPetYard(){ _G.inYard=false; _G.nearYardPet=null;
+function exitPetYard(){ _G.inYard=false; _G.nearYardPet=null; _G.nearTerminal=false; hidePetInfoCard();
   if(_G.yardPets) for(const yp of _G.yardPets){ if(yp.mesh) scene.remove(yp.mesh); } _G.yardPets=[];
+  if(G.yardTerminal&&G.yardTerminal.mesh){ scene.remove(G.yardTerminal.mesh); } G.yardTerminal=null;
   generateTown(); }
 function openPetAction(yp){ if(!yp) return; const pet=yp.pet; const gm=$('gameModal'), c=$('gmCard'); if(!gm||!c) return;
   const rr=PET_RARITY[pet.rarity], active=(pet===G.pet), abs=activeAbilities(pet).map(a=>PET_ABILITIES[a.type].ic+' '+PET_ABILITIES[a.type].nm).join(' · ');
@@ -6364,7 +6430,7 @@ function coopGateAtPortal(){
   return false;
 }
 function interact(){
-  if(_G.inYard){ if(_G.nearYardPet) return openPetAction(_G.nearYardPet); if(G.nearPortal) return exitPetYard(); return; }
+  if(_G.inYard){ if(_G.nearTerminal) return openPetTerminal(); if(_G.nearYardPet) return openPetAction(_G.nearYardPet); if(G.nearPortal) return exitPetYard(); return; }
   if(G.tutorial){ if(G.nearChest) return openChest(G.nearChest); if(G.nearLoot) return openLootBag(); if(G.nearPortal) return finishTutorial(); return; }
   if(G.practice){ if(G.nearLoot) return openLootBag(); if(G.nearPortal) exitPractice(); return; }
   if(G.nearChest){ return openChest(G.nearChest); }
