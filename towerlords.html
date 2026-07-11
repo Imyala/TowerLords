@@ -6292,6 +6292,17 @@ function equipItem(it){
   G.hp=Math.min(G.hp,G.maxhp); G.mana=Math.min(G.mana,G.maxmana);
   log('Equipped '+it.name); renderInv(); if(!$('charPanel').classList.contains('hidden'))renderChar();
 }
+// sell a carried item for gold from anywhere (Shift+click in the bag) — works for host and guest (relayed)
+function sellItem(it){ if(NET.role==='peer') return netPeerCmd('sellItem',[it&&it.uid]);
+  if(!it) return; if(it.locked){ log('🔒 Locked — unlock it first to sell.'); if(sfx&&sfx.deny)sfx.deny(); return; }
+  const idx=G.inv.indexOf(it); if(idx<0) return;
+  const v=it.value||0; G.inv.splice(idx,1); G.gold+=v; if(G.selGem===it)G.selGem=null;
+  if(typeof flashGold==='function')flashGold(); if(sfx&&sfx.gold)sfx.gold(); log('💰 Sold '+it.name+' (+'+v+'g)'); refreshItemPanels(); }
+function sellJunk(){ if(NET.role==='peer') return netPeerCmd('sellJunk',[]);
+  const junk=G.inv.filter(it=>it && !it.locked && it.slotKey && !it.isGem && typeof isBulkJunk==='function' && isBulkJunk(it));
+  if(!junk.length){ log('No junk gear in your bag to sell.'); return; }
+  let g=0,n=0; for(const it of junk){ const idx=G.inv.indexOf(it); if(idx>=0){ G.inv.splice(idx,1); g+=(it.value||0); n++; } }
+  G.gold+=g; if(typeof flashGold==='function')flashGold(); if(sfx&&sfx.gold)sfx.gold(); log('💰 Sold '+n+' junk item(s) (+'+g+'g).'); refreshItemPanels(); }
 function unequip(sk){ if(NET.role==='peer') return netPeerCmd('unequip',[sk]); const it=G.equip[sk]; if(!it)return; if(G.inv.length>=G.invCap){ log('Inventory full — make room first.'); return; }
   G.equip[sk]=null; G.inv.push(it); recompute(); renderInv(); if(!$('charPanel').classList.contains('hidden'))renderChar(); }
 function eleColor(el){ return el==='fire'?'#ff9a4d':el==='cold'?'#7fd0ff':el==='light'?'#ffe14d':'#fff'; }
@@ -6539,9 +6550,11 @@ function renderInv(){ if(_G.netApplying) return;
   const tools=$('bagTools'); if(tools){
     tools.innerHTML=['slot','rarity','new'].map(m=>`<span class="st${BAG_SORT===m?' on':''}" data-sort="${m}">${m}</span>`).join('')
       +`<span class="st" id="stashAllBtn" style="border-color:rgba(255,206,77,.4);color:var(--gold)">⇩ All gear</span>`
+      +`<span class="st" id="sellJunkBtn" style="border-color:rgba(255,120,140,.4);color:#ff8a9c" title="Sell all junk (grey/blue) gear in your bag for gold">💰 Sell junk</span>`
       +rowBuyChip('buyInvRowBtn', (META.invRows||0)>=INV_ROWS_MAX, invRowCost());
     tools.querySelectorAll('[data-sort]').forEach(b=>b.onclick=()=>{ BAG_SORT=b.dataset.sort; renderInv(); });
     const sa=$('stashAllBtn'); if(sa) sa.onclick=stashAllGear;
+    const sj=$('sellJunkBtn'); if(sj) sj.onclick=sellJunk;
     const bi=$('buyInvRowBtn'); if(bi) bi.onclick=buyInvRow;
   }
   // ---- equipped paper-doll ----
@@ -6569,6 +6582,7 @@ function renderInv(){ if(_G.netApplying) return;
     if(it.isGem) click=()=>{ G.selGem=(G.selGem===it)?null:it; renderInv(); };
     else if(it.isSkillGem||it.isFlask||it.isPet||it.isPot) click=()=>showItemDetail(it,{kind:'bag'});
     else click=()=>equipItem(it);
+    { const _base=click; click=()=>{ if(typeof keys!=='undefined' && keys['shift']){ sellItem(it); return; } _base(); }; }   // Shift+click sells any bag item for gold
     const si=it.isSkillGem?G.slots.indexOf(it):-1, bi=it.isFlask?G.belt.indexOf(it):-1;
     const bound = si>=0?SLOT_LABEL[si] : (it.isSkillGem&&G.sigSlot===it)?'⇧' : bi>=0?FLASK_LABEL[bi] : '';
     bag.appendChild(itemTile(it,{ctx:{kind:'bag'}, sel:(it.isGem&&G.selGem===it), bound, onclick:click}));
@@ -7412,6 +7426,8 @@ function netHostRunCmd(rec,fn,a){ const p=rec&&rec.player; if(!p||!p.joined)retu
     case 'quickUse':     { const it=findItem(a[0]); if(it) quickUse(it); break; }
     case 'socket':       { const g=findItem(a[0]), it=findItem(a[1]); if(g&&it) socketGemInto(g,it); break; }
     case 'unsocket':     { const it=findItem(a[0]); if(it) unsocketFree(it,a[1]|0); break; }
+    case 'sellItem':     { const it=findItem(a[0]); if(it) sellItem(it); break; }
+    case 'sellJunk':     sellJunk(); break;
     case 'setXpMode':    { G.xpMode=(a[0]==='collect')?'collect':'use'; break; }
     case 'setActivePet': { const pt=findPet(a[0]); if(pt) setActivePet(pt); break; }   // pet yard: the guest manages its OWN pets
     case 'fusePet':      { const pt=findPet(a[0]); if(pt) fusePet(pt); break; }
@@ -8424,9 +8440,14 @@ function updateFameBar(){
   const fc=$('fameCap'); if(fc){ fc.style.color=fr.col; fc.textContent='★ '+fr.stars+'/7 · '+fr.name+(fr.stars>=7?' · MAX':' · '+Math.round(famePct)+'%'); }
 }
 // ---- player buff/status stack: surface active timed states as a Torchlight-style icon row ----
+const ABN_LABEL={ reverseRun:{ic:'↩',nm:'Reversed Move'}, drunkShots:{ic:'🌀',nm:'Weaving Shots'}, homingHate:{ic:'🎯',nm:'Homing Shots'},
+  bouncyShots:{ic:'🪀',nm:'Bouncy Shots'}, boomerangs:{ic:'🪃',nm:'Boomerangs'}, giantBolts:{ic:'⚫',nm:'Giant Bolts'},
+  backfire:{ic:'💥',nm:'Backfire'}, splitshot:{ic:'🔱',nm:'Splitshot'}, lowHpBonus:{ic:'🩸',nm:'Desperate Power'} };
 function renderBuffs(){
   const bar=$('buffBar'); if(!bar) return;
   const list=[]; const st=fervorStacks();
+  // active ABNORMAL item effects — shown so you always know what's affecting you (and can find which gear to swap)
+  if(G.S && G.S.abn && G.S.abn.forEach){ G.S.abn.forEach(k=>{ const l=ABN_LABEL[k]; list.push({id:'abn_'+k, ic:l?l.ic:'❔', nm:l?l.nm:('Abnormal: '+k), col:'#c89bff'}); }); }
   // --- offensive / tempo ---
   if(st>0)                  list.push({id:'ramp', ic:'🔥', nm:'Rampage ×'+(1+st), t:Math.max(0,G.fervorT||0), col:'#ff9a3d', pulse:st>=4});
   if(G.swiftT>0)            list.push({id:'swift',ic:'💨', nm:'Swift',            t:G.swiftT,  col:'#8effd9'});
