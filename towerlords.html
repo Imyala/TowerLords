@@ -3348,13 +3348,20 @@ function layoutShopInv(shopId){ const shop=$(shopId), inv=$('invPanel'); if(!sho
   shop.style.left='2vw'; shop.style.right='auto'; shop.style.top='50%'; shop.style.transform='translateY(-50%)';
   inv.style.left='auto'; inv.style.right='2vw'; inv.style.top='50%'; inv.style.transform='translateY(-50%)'; }
 function clearPanelPos(id){ const el=$(id); if(el){ el.style.left=''; el.style.right=''; el.style.top=''; el.style.transform=''; } }
+const _panelPos={};                                   // remembers where each menu was last dragged to
+const _POS_CENTERED=new Set(['settingsPanel']);       // settings (and the ESC exit prompt, a modal) stay centred
+function applyPanelPos(id){ const el=$(id); if(!el) return;
+  if(_POS_CENTERED.has(id)){ el.style.left=''; el.style.right=''; el.style.top=''; el.style.transform=''; return; }   // keep the CSS centring
+  const p=_panelPos[id];
+  if(p&&p.left){ el.style.left=p.left; el.style.top=p.top; el.style.right='auto'; el.style.transform='none'; }        // reopen where you left it
+  else { el.style.left='3vw'; el.style.right='auto'; el.style.top='50%'; el.style.transform='translateY(-50%)'; } }   // default off-centre so menus don't cover the centred hero
 function togglePanel(id){
   const el=$(id), willOpen=el.classList.contains('hidden');
   if(id!=='stashPanel'){ /* allow stacking char+tree? keep simple: close others */ }
   el.classList.toggle('hidden');
   clearPin();   // a fresh panel open/close starts with nothing selected (avoids a stale pin from a prior screen)
   if(willOpen){ if(id==='charPanel')renderChar(); else if(id==='treePanel')renderTree(); else if(id==='stashPanel')renderStash(); else if(id==='invPanel')renderInv(); else if(id==='vendorPanel')renderVendor(); else if(id==='petPanel')renderPet(); else if(id==='petYardPanel')renderPetYard(); else if(id==='scorePanel')renderScore(); else if(id==='codexPanel')renderCodex(); else if(id==='settingsPanel')renderSettings(); else if(id==='lootPanel')renderLoot(); else if(id==='craftPanel')renderCraft(); }
-  if(willOpen && id==='invPanel') clearPanelPos('invPanel');   // a standalone inventory stays centred
+  if(willOpen) applyPanelPos(id);   // reopen at last-dragged spot · off-centre by default (settings stays centred)
   if((id==='vendorPanel'||id==='stashPanel') && willOpen){   // shopping? bring your bag alongside
     if($('invPanel').classList.contains('hidden')){ $('invPanel').classList.remove('hidden'); renderInv(); }
     _G.shopInvPaired=true; layoutShopInv(id);
@@ -7669,14 +7676,14 @@ function makePanelDraggable(panelId){
   const move=e=>{ let nx=e.clientX-ox, ny=e.clientY-oy;
     nx=Math.max(6, Math.min(innerWidth-el.offsetWidth-6, nx)); ny=Math.max(6, Math.min(innerHeight-48, ny));
     el.style.left=nx+'px'; el.style.top=ny+'px'; };
-  const up=()=>{ h.style.cursor='grab'; window.removeEventListener('pointermove',move); window.removeEventListener('pointerup',up); };
+  const up=()=>{ h.style.cursor='grab'; try{ _panelPos[el.id]={left:el.style.left, top:el.style.top}; }catch(_){} window.removeEventListener('pointermove',move); window.removeEventListener('pointerup',up); };
   h.addEventListener('pointerdown',e=>{ if(e.target.closest('.closeX')||e.target.closest('button')) return;
     const r=el.getBoundingClientRect(); el.style.left=r.left+'px'; el.style.top=r.top+'px'; el.style.right='auto'; el.style.transform='none';
     ox=e.clientX-r.left; oy=e.clientY-r.top; h.style.cursor='grabbing';
     window.addEventListener('pointermove',move); window.addEventListener('pointerup',up);
     e.preventDefault(); e.stopPropagation(); });
 }
-makePanelDraggable('lootPanel'); makePanelDraggable('petPanel'); makePanelDraggable('petYardPanel');
+['lootPanel','petPanel','petYardPanel','charPanel','treePanel','invPanel','vendorPanel','stashPanel','scorePanel','codexPanel','craftPanel'].forEach(makePanelDraggable);
 function takeLoot(pk){ if(!pk||pk.dead) return false; const it=pk.item;
   if(SETTINGS.autoSalvage && isJunk(it)){ pk.dead=true; const g=it.value||0; G.gold+=g; if(typeof flashGold==='function')flashGold(); sfx.gold&&sfx.gold(); cleanDeadPickups(); return true; }
   if(G.inv.length>=G.invCap){ log('🎒 Bag full ('+G.invCap+') — make room or bank loot.'); return false; }
