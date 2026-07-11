@@ -5724,13 +5724,13 @@ function drawPlayerRing(){
   const cv=$('playerRing'); if(!cv) return;
   const pl=_G.players[0];
   if(!_G.running || _G.splitscreen || _G.modalOpen || anyPanelOpen() || !pl || !pl.player){ cv.style.display='none'; return; }
-  _ringV.set(pl.player.position.x,1.3,pl.player.position.z).project(camera);
+  _ringV.set(pl.player.position.x,1.5,pl.player.position.z).project(camera);
   if(_ringV.z>1){ cv.style.display='none'; return; }
-  const SZ=220; if(cv.width!==SZ){ cv.width=SZ; cv.height=SZ; }
+  const SZ=258; if(cv.width!==SZ){ cv.width=SZ; cv.height=SZ; }
   const sx=(_ringV.x*.5+.5)*innerWidth, sy=(-_ringV.y*.5+.5)*innerHeight;
   cv.style.display='block'; cv.style.left=(sx-SZ/2)+'px'; cv.style.top=(sy-SZ/2)+'px';
   const ctx=cv._c||(cv._c=cv.getContext('2d')); ctx.clearRect(0,0,SZ,SZ);
-  const cx=SZ/2, cy=SZ/2, R=66, D=Math.PI/180;
+  const cx=SZ/2, cy=SZ/2, R=84, D=Math.PI/180;
   const hpF=clamp(pl.hp/(pl.maxhp||1),0,1), mpF=clamp(pl.mana/(pl.maxmana||1),0,1), dF=clamp(1-((pl.dashCd||0)/(pl.dashCdMax||1)),0,1);
   function seg(a0,sweep,frac,col,w,r){ r=r||R; const anti=sweep<0, a0r=a0*D, a1r=(a0+sweep)*D, afr=(a0+sweep*frac)*D;
     ctx.lineCap='round'; ctx.lineWidth=w; ctx.shadowBlur=0;
