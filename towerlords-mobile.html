@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover"/>
 <title>TOWERLORDS — Prototype v2</title>
 <style>
   :root{
@@ -16,7 +16,8 @@
   input,textarea{user-select:text;-webkit-user-select:text;-moz-user-select:text;}   /* …except real text fields (co-op invite codes) so you can still copy them */
   html,body{height:100%;overflow:hidden;background:#04050a;color:var(--ink);
     font-family:"Trebuchet MS","Segoe UI",system-ui,sans-serif;}
-  #app{position:relative;width:100vw;height:100vh;}
+  /* use the DYNAMIC viewport height on mobile so the bottom dock/skill bar isn't hidden behind the browser toolbar / gesture bar */
+  #app{position:relative;width:100vw;height:100vh;height:100dvh;}
   canvas{display:block;}
   .ui{position:absolute;pointer-events:none;text-shadow:0 1px 3px rgba(0,0,0,.9);}
   .hidden{display:none!important;}
@@ -95,8 +96,12 @@
      element (nav, dock, panels), so tapping menus/skills always wins over the stick */
   #touchUI{position:absolute;inset:0;pointer-events:none;z-index:2;display:none;}
   body.touch-on #hud:not(.hidden) #touchUI{display:block;}
-  #tMove,#tAim{position:absolute;top:118px;bottom:104px;width:46%;pointer-events:auto;touch-action:none;z-index:2;}
-  #tMove{left:0;} #tAim{right:0;display:none;}
+  /* auto-aim: the move zone covers the WHOLE screen so the joystick spawns wherever your thumb lands
+     (interactive HUD — nav/dock/skills/action buttons — sits above it and always wins the tap) */
+  #tMove{position:absolute;inset:0;pointer-events:auto;touch-action:none;z-index:2;}
+  #tAim{position:absolute;top:0;bottom:0;right:0;left:50%;pointer-events:auto;touch-action:none;z-index:2;display:none;}
+  /* twin-stick: split the screen — move on the left half, aim on the right half */
+  body.touch-twin #tMove{right:50%;}
   body.touch-twin #hud:not(.hidden) #tAim{display:block;}
   .tstick{position:absolute;width:132px;height:132px;margin:-66px 0 0 -66px;border-radius:50%;
     border:2px solid rgba(255,255,255,.16);background:radial-gradient(circle,rgba(86,224,255,.08),rgba(255,255,255,.015));
@@ -151,12 +156,17 @@
   #tDash.cool{opacity:.4;}
 
   /* ---- MOBILE BUILD: keep every HUD piece on-screen (no clipping in gameplay) ---- */
-  body.touch-on #towerInfo{transform:scale(.8);transform-origin:top right;}
-  body.touch-on #floorBanner{transform:translateX(-50%) scale(.82);}
+  /* MOBILE top HUD — three columns won't fit a phone. Drop the redundant centre floor banner (the
+     right-hand tower panel already shows the floor + act/biome), clamp that panel so its lines wrap on
+     the right instead of spilling into the centre, and tuck the rampage streak under the level pill on
+     the left. Nothing overlaps anymore. */
+  body.touch-on #floorBanner{display:none;}
+  body.touch-on #towerInfo{transform:scale(.82);transform-origin:top right;max-width:58vw;}
+  body.touch-on #towerInfo .sm{white-space:normal;}
   /* the top-left pill already shows LV + XP, so the bottom XP/fame bars are redundant clutter on a phone */
   body.touch-on #progressBars{display:none;}
   body.touch-on #buffBar{max-width:96vw;bottom:calc(150px + env(safe-area-inset-bottom));}
-  body.touch-on #rampage{transform:scale(.85);transform-origin:top right;}
+  body.touch-on #rampage{left:14px;right:auto;width:180px;text-align:left;transform:scale(.85);transform-origin:top left;top:calc(env(safe-area-inset-top) + 112px);}
   body.touch-on #coach{max-width:88vw;font-size:12px;}
   body.touch-on #dock{padding-bottom:calc(4px + env(safe-area-inset-bottom));}
   /* the move stick lives on the LEFT half; keep the right-half action buttons clear of the aim zone */
@@ -1099,7 +1109,7 @@
 
     <div id="towerInfo" class="ui">
       <div class="big" id="floorBig">1<span style="opacity:.4;font-size:14px">/100</span></div>
-      <div class="sm">TOWER ASCENT</div>
+      <div class="sm" id="towerSub">TOWER ASCENT</div>
       <div class="sm" id="threatTxt" style="margin-top:6px;">THREAT ◆◇◇◇◇◇◇◇</div>
       <div class="sm" id="modTxt" style="margin-top:4px;"></div>
       <div class="sm" id="bountyTxt"></div>
@@ -1477,19 +1487,23 @@ const pick=arr=>arr[Math.floor(_rngFn()*arr.length)];
 
 let renderer, scene, camera, clock, hemi, dir;
 
+// detect a touch/phone device once — used to dial back GPU-heavy settings so mobile stays smooth
+const IS_MOBILE = (window.matchMedia && matchMedia('(pointer:coarse)').matches) || (navigator.maxTouchPoints||0)>0 || ('ontouchstart' in window);
+
 function init(){
-  renderer = new THREE.WebGLRenderer({antialias:true});
-  renderer.setPixelRatio(Math.min(2,window.devicePixelRatio));
+  // mobile: skip MSAA (very costly on phone GPUs), cap the pixel ratio, and use cheaper shadows — big smoothness win
+  renderer = new THREE.WebGLRenderer({antialias:!IS_MOBILE, powerPreference:'high-performance'});
+  renderer.setPixelRatio(Math.min(IS_MOBILE?1.5:2, window.devicePixelRatio));
   renderer.setSize(innerWidth, innerHeight);
-  renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  renderer.shadowMap.enabled = true; renderer.shadowMap.type = IS_MOBILE?THREE.PCFShadowMap:THREE.PCFSoftShadowMap;
   $('app').insertBefore(renderer.domElement, $('app').firstChild);
   scene = new THREE.Scene();
-  camera = new THREE.PerspectiveCamera(54, innerWidth/innerHeight, 0.1, 500);
+  camera = new THREE.PerspectiveCamera(camFov(), innerWidth/innerHeight, 0.1, 500);
   clock = new THREE.Clock();
   addEventListener('resize',()=>{ camera.aspect=innerWidth/innerHeight; camera.updateProjectionMatrix(); renderer.setSize(innerWidth,innerHeight); layoutViewports(); buildCoopHud(); });
   hemi = new THREE.HemisphereLight(0xbfd4ff, 0x0a0a16, 0.8); scene.add(hemi);
   dir = new THREE.DirectionalLight(0xffffff, 1.15); dir.position.set(20,42,14); dir.castShadow=true;
-  dir.shadow.mapSize.set(2048,2048);
+  dir.shadow.mapSize.set(IS_MOBILE?1024:2048, IS_MOBILE?1024:2048);
   const d=70,c=dir.shadow.camera; c.left=-d;c.right=d;c.top=d;c.bottom=-d;c.near=1;c.far=160; scene.add(dir);
   renderer.setAnimationLoop(frame);
 }
@@ -1831,8 +1845,14 @@ function makeSkillGem(floor, idForce){ const id=idForce||pick(SKILL_IDS), sk=SKI
     value:60+tier*40+floor*3, desc:(sk.toggle?`Toggle aura · bind to slots 5–9 · ${sk.mps} mana/sec while active`:`Active skill · bind to slots 1–4${tier>1?` · +${(tier-1)*15}% power`:''}`)}; }
 // ---- user settings (persist across sessions) ----
 const SETTINGS_KEY='towerlords_settings_v1';
-const SETTINGS={ bigNumbers:true, moveMode:'keyboard', tips:true, autoSalvage:true, music:true, musicVol:75, junkMaxRarity:1, camSway:true, touch:'auto', touchAim:'auto' };   // autoSalvage: grey/common drops auto-sell for gold · musicVol: music loudness 0-100 (player-set) · junkMaxRarity: highest rarity index eligible for bulk feed/sell · camSway: directional camera lean · touch: mobile on-screen controls (auto/on/off) · touchAim: auto-aim vs twin-stick
-function loadSettings(){ try{ const s=localStorage.getItem(SETTINGS_KEY); if(s){ const o=JSON.parse(s); if(typeof o.bigNumbers==='boolean')SETTINGS.bigNumbers=o.bigNumbers; if(o.moveMode==='keyboard'||o.moveMode==='mouse')SETTINGS.moveMode=o.moveMode; if(typeof o.tips==='boolean')SETTINGS.tips=o.tips; if(typeof o.autoSalvage==='boolean')SETTINGS.autoSalvage=o.autoSalvage; if(typeof o.music==='boolean')SETTINGS.music=o.music; if(typeof o.musicVol==='number')SETTINGS.musicVol=clamp(o.musicVol|0,0,100); if(typeof o.junkMaxRarity==='number')SETTINGS.junkMaxRarity=clamp(o.junkMaxRarity|0,0,3); if(typeof o.camSway==='boolean')SETTINGS.camSway=o.camSway; if(o.touch==='auto'||o.touch==='on'||o.touch==='off')SETTINGS.touch=o.touch; if(o.touchAim==='auto'||o.touchAim==='twin')SETTINGS.touchAim=o.touchAim; } }catch(e){} }
+const SETTINGS={ bigNumbers:true, moveMode:'keyboard', tips:true, autoSalvage:true, music:true, musicVol:75, junkMaxRarity:1, camSway:true, touch:'auto', touchAim:'auto', fov:62 };   // autoSalvage: grey/common drops auto-sell for gold · musicVol: music loudness 0-100 (player-set) · junkMaxRarity: highest rarity index eligible for bulk feed/sell · camSway: directional camera lean · touch: mobile on-screen controls (auto/on/off) · touchAim: auto-aim vs twin-stick · fov: camera field of view (higher = zoomed further out)
+const FOV_MIN=50, FOV_MAX=82;
+function camFov(){ return clamp(SETTINGS.fov|0, FOV_MIN, FOV_MAX); }
+// push the new field of view to every live camera (main + any co-op viewports)
+function applyFov(){ const f=camFov();
+  if(typeof camera!=='undefined' && camera){ camera.fov=f; camera.updateProjectionMatrix(); }
+  if(typeof _G!=='undefined' && _G.players) for(const pl of _G.players){ if(pl.cam){ pl.cam.fov=f; pl.cam.updateProjectionMatrix(); } } }
+function loadSettings(){ try{ const s=localStorage.getItem(SETTINGS_KEY); if(s){ const o=JSON.parse(s); if(typeof o.bigNumbers==='boolean')SETTINGS.bigNumbers=o.bigNumbers; if(o.moveMode==='keyboard'||o.moveMode==='mouse')SETTINGS.moveMode=o.moveMode; if(typeof o.tips==='boolean')SETTINGS.tips=o.tips; if(typeof o.autoSalvage==='boolean')SETTINGS.autoSalvage=o.autoSalvage; if(typeof o.music==='boolean')SETTINGS.music=o.music; if(typeof o.musicVol==='number')SETTINGS.musicVol=clamp(o.musicVol|0,0,100); if(typeof o.junkMaxRarity==='number')SETTINGS.junkMaxRarity=clamp(o.junkMaxRarity|0,0,3); if(typeof o.camSway==='boolean')SETTINGS.camSway=o.camSway; if(o.touch==='auto'||o.touch==='on'||o.touch==='off')SETTINGS.touch=o.touch; if(o.touchAim==='auto'||o.touchAim==='twin')SETTINGS.touchAim=o.touchAim; if(typeof o.fov==='number')SETTINGS.fov=clamp(o.fov|0,FOV_MIN,FOV_MAX); } }catch(e){} }
 // bulk feed/sell "junk" = anything at or below the chosen quality that isn't a special item or locked
 function junkThreshold(){ return clamp(SETTINGS.junkMaxRarity|0,0,4); }
 function isBulkJunk(it){ return it && !it.isPet && !it.isPot && !it.isFlask && !it.isSkillGem && !it.locked && RARITY.indexOf(it.rarity)<=junkThreshold(); }
@@ -3073,7 +3093,7 @@ function addPlayer(makeInput){
   const idx=_G.players.length; const p=makePlayer(idx); p.color=PLAYER_COLORS[idx]; p.joined=true;
   p.input=makeInput(p); _G.players.push(p);
   withPlayer(idx, ()=>{ initPlayerChar(false); });
-  p.cam=new THREE.PerspectiveCamera(54,1,0.1,500);
+  p.cam=new THREE.PerspectiveCamera(camFov(),1,0.1,500);
   const a=_G.players[0].player.position; p.player.position.set(a.x+rand(-3,3),1,a.z+rand(-3,3));
   tintPlayer(p.player,p.color);
   _G.splitscreen = joinedPlayers().length>1; _G.cur=0;
@@ -3106,7 +3126,7 @@ function layoutViewports(){
   if(n<=1) rects=[{x:0,y:0,w:W,h:H}];
   else if(n===2) rects=[{x:0,y:0,w:W,h:H/2},{x:0,y:H/2,w:W,h:H/2}];                 // Halo 2p: top / bottom
   else rects=[{x:0,y:0,w:W/2,h:H/2},{x:W/2,y:0,w:W/2,h:H/2},{x:0,y:H/2,w:W/2,h:H/2},{x:W/2,y:H/2,w:W/2,h:H/2}]; // quadrants
-  J.forEach((p,i)=>{ p.viewport=rects[i]; if(!p.cam){ p.cam = (i===0)?camera:new THREE.PerspectiveCamera(54,1,0.1,500); } });
+  J.forEach((p,i)=>{ p.viewport=rects[i]; if(!p.cam){ p.cam = (i===0)?camera:new THREE.PerspectiveCamera(camFov(),1,0.1,500); } });
 }
 
 // ---- compact per-player co-op HUD ----
@@ -3986,7 +4006,9 @@ function buildProps(type){
   }
 }
 function updateFloorUI(type){
+  const _sub=$('towerSub');
   if(type==='TOWN'){ $('floorTitle').textContent='SANCTUARY'; $('floorType').textContent='TOWN HUB'; $('floorBig').innerHTML='⌂'; $('threatTxt').textContent='SAFE';
+    if(_sub)_sub.textContent='SANCTUARY';
     $('modTxt').innerHTML=''; $('bountyTxt').innerHTML=''; $('shiftTxt').textContent='';   // clear any combat-floor mod/bounty/shift text lingering from the run you just left
     return; }
   $('floorTitle').textContent='FLOOR '+G.floor;
@@ -3994,6 +4016,7 @@ function updateFloorUI(type){
   const ng=ngLevel(G.floor);
   $('floorBig').innerHTML=G.floor+(ng>0?`<span style="color:var(--gold);font-size:14px"> NG+${ng}</span>`:'<span style="opacity:.4;font-size:14px">/'+SUMMIT_FLOOR+'</span>');
   const _act=actOf(G.floor); if(type==='NORMAL') $('floorType').textContent='ACT '+_act.num+' · '+biome.name;
+  if(_sub)_sub.textContent=$('floorType').textContent;   // mirror act/biome/milestone into the tower panel (mobile hides the centre banner)
   $('modTxt').innerHTML = G.floorMod?`<span style="color:${G.floorMod.col}">${G.floorMod.nm}</span>`:'';
   const threat=clamp(Math.ceil(G.floor/8),1,8);
   const TLBL=['','TRIVIAL','LOW','MODERATE','RISKY','DANGEROUS','SEVERE','DEADLY','LETHAL'];
@@ -5838,7 +5861,7 @@ function enterPetYard(){
   const beam=new THREE.Mesh(new THREE.CylinderGeometry(2,2,9,24,1,true), new THREE.MeshBasicMaterial({color:0xff9a3d,transparent:true,opacity:.14,side:THREE.DoubleSide,depthWrite:false})); beam.position.y=4.5;
   pg.add(ring,beam); pg.position.set(0,0,-18); scene.add(pg); G.portal={mesh:pg,x:0,z:-18,active:true,yard:true};
   buildYardMeshes(); buildYardTerminal();
-  $('floorTitle').textContent='PET YARD'; $('floorType').textContent='🏡 SANCTUARY'; $('floorBig').innerHTML='🏡';
+  $('floorTitle').textContent='PET YARD'; $('floorType').textContent='🏡 SANCTUARY'; $('floorBig').innerHTML='🏡'; { const _s=$('towerSub'); if(_s)_s.textContent='PET YARD'; }
   $('threatTxt').textContent='SAFE'; $('modTxt').innerHTML=''; $('bountyTxt').innerHTML=''; $('shiftTxt').textContent=''; $('clearTxt').textContent='';
   log('🏡 PET YARD — your '+G.pets.length+' companion'+(G.pets.length===1?'':'s')+' roam here. Walk over a pet to inspect its stats & skills; step up to the 🖥 Terminal (press F) to view them all & equip. Step in the portal to return.');
   clock.getDelta();
@@ -6752,6 +6775,10 @@ function renderSettings(){
         <span id="musVolVal" style="width:38px;text-align:right;font-variant-numeric:tabular-nums;opacity:.8">${SETTINGS.musicVol}%</span></div></div>
     <div class="setRow"><div class="lbl">Camera sway<small>The view leans as you move &amp; springs on direction changes — more kinetic, less stiff</small></div>
       <div class="tog${SETTINGS.camSway?' on':''}" id="togSway"><div class="knob"></div></div></div>
+    <div class="setRow"><div class="lbl">Field of view<small>How far the camera zooms out from your character — higher shows more of the room</small></div>
+      <div style="display:flex;align-items:center;gap:10px;min-width:150px">
+        <input type="range" min="${FOV_MIN}" max="${FOV_MAX}" step="1" value="${camFov()}" id="fovSlide" style="flex:1;accent-color:#56e0ff">
+        <span id="fovVal" style="width:38px;text-align:right;font-variant-numeric:tabular-nums;opacity:.8">${camFov()}°</span></div></div>
     <div style="margin:16px 16px 6px;font-size:11px;opacity:.6;letter-spacing:1px;text-transform:uppercase">Movement</div>
     <div style="display:flex;gap:8px;margin:0 16px 14px;">
       <div class="segBtn${mm==='keyboard'?' sel':''}" data-mm="keyboard">⌨ Keyboard<small>WASD to move · cursor to aim · L-click attack</small></div>
@@ -6784,6 +6811,9 @@ function renderSettings(){
       mv.oninput=()=>{ SETTINGS.musicVol=clamp(mv.value|0,0,100); const vv=$('musVolVal'); if(vv)vv.textContent=SETTINGS.musicVol+'%'; initAudio(); applyMusicVol(); };   // live while dragging
       mv.onchange=()=>{ SETTINGS.musicVol=clamp(mv.value|0,0,100); saveSettings(); log('🎵 Music volume '+SETTINGS.musicVol+'%.'); }; } }   // persist on release
   $('togSway').onclick=()=>{ SETTINGS.camSway=!SETTINGS.camSway; saveSettings(); renderSettings(); log(SETTINGS.camSway?'🎥 Camera sway on.':'Camera sway off.'); };
+  { const fs=$('fovSlide'); if(fs){
+      fs.oninput=()=>{ SETTINGS.fov=clamp(fs.value|0,FOV_MIN,FOV_MAX); const fv=$('fovVal'); if(fv)fv.textContent=SETTINGS.fov+'°'; applyFov(); };   // live while dragging
+      fs.onchange=()=>{ SETTINGS.fov=clamp(fs.value|0,FOV_MIN,FOV_MAX); saveSettings(); log('🎥 Field of view '+SETTINGS.fov+'°.'); }; } }
   { const eb=$('extractBtn'); if(eb) eb.onclick=extractToMenu; }
   b.querySelectorAll('[data-mm]').forEach(el=>el.onclick=()=>{ SETTINGS.moveMode=el.dataset.mm; saveSettings(); renderSettings();
     log(SETTINGS.moveMode==='mouse'?'🖱 Mouse-move: hold left-click to move, right-click to attack.':'⌨ Keyboard: WASD to move, left-click to attack.'); });
@@ -6887,7 +6917,7 @@ function buildPracticeArena(){
   const ring=new THREE.Mesh(new THREE.TorusGeometry(2.4,.35,12,32), new THREE.MeshStandardMaterial({color:0xff9a3d,emissive:0xff9a3d,emissiveIntensity:1.6})); ring.rotation.x=Math.PI/2; ring.position.y=2.4;
   const beam=new THREE.Mesh(new THREE.CylinderGeometry(2,2,9,24,1,true), new THREE.MeshBasicMaterial({color:0xff9a3d,transparent:true,opacity:.14,side:THREE.DoubleSide,depthWrite:false})); beam.position.y=4.5;
   pg.add(ring,beam); pg.position.set(0,0,22); scene.add(pg); G.portal={mesh:pg,x:0,z:22,active:true,practice:true};
-  $('floorTitle').textContent='PRACTICE ARENA'; $('floorType').textContent='🎯 NO STAKES'; $('floorBig').innerHTML='🎯';
+  $('floorTitle').textContent='PRACTICE ARENA'; $('floorType').textContent='🎯 NO STAKES'; $('floorBig').innerHTML='🎯'; { const _s=$('towerSub'); if(_s)_s.textContent='PRACTICE'; }
   $('threatTxt').textContent='SAFE'; $('modTxt').innerHTML=''; $('bountyTxt').innerHTML=''; $('shiftTxt').textContent='';
   log('🎯 Practice freely — these dummies are harmless and never die. Step into the orange portal to return to the menu.');
 }
@@ -7113,9 +7143,19 @@ function updateTouchInteract(){
   const db=document.getElementById('tDash'); if(db) db.classList.toggle('cool', (G.dashCd|0)>0 || !!G.dead || !!G.downed);
   if(!TOUCH.on || !_G.running || anyPanelOpen() || _G.splitscreen){ b.classList.remove('show'); return; }
   let label='', ic='✋';
-  if(G.practice){ if(G.nearPortal){ label='Leave'; ic='🚪'; } }
+  // chests & loot bags take priority — these are the "tap to open" targets the player walks onto
+  if(_G.inYard){
+    if(_G.nearTerminal){ label='Terminal'; ic='🖥'; }
+    else if(_G.nearYardPet){ label='Inspect'; ic='🐾'; }
+    else if(G.nearPortal){ label='Leave'; ic='🚪'; }
+  }
+  else if(G.nearChest){ label='Open'; ic='🧰'; }
+  else if(G.nearLoot){ label='Grab'; ic='🎁'; }
+  else if(G.practice){ if(G.nearPortal){ label='Leave'; ic='🚪'; } }
   else if(G.inTown){
     if(G.nearPortal){ label=((_G.returnFloor|0)>1?'Return':'Climb'); ic='⛰'; }
+    else if(G.nearYard){ label='Pet Yard'; ic='🏡'; }
+    else if(G.nearCraft){ label='Craft'; ic='⚒'; }
     else if(G.nearVendor){ label='Vendor'; ic='💰'; }
     else if(G.nearStash){ label='Stash'; ic='🗄'; }
     else if(G.nearScore){ label='Record'; ic='📜'; }
@@ -7859,7 +7899,7 @@ function buildTutorialFloor(){
   const ring=new THREE.Mesh(new THREE.TorusGeometry(2.4,.35,12,32), new THREE.MeshStandardMaterial({color:0x56e0ff,emissive:0x56e0ff,emissiveIntensity:1.6})); ring.rotation.x=Math.PI/2; ring.position.y=2.4;
   const beam=new THREE.Mesh(new THREE.CylinderGeometry(2,2,9,24,1,true), new THREE.MeshBasicMaterial({color:0x56e0ff,transparent:true,opacity:.14,side:THREE.DoubleSide,depthWrite:false})); beam.position.y=4.5;
   pg.add(ring,beam); pg.position.set(0,0,-22); scene.add(pg); G.portal={mesh:pg,x:0,z:-22,active:true,tutorial:true};
-  $('floorTitle').textContent='TUTORIAL'; $('floorType').textContent='🎓 LEARN'; $('floorBig').innerHTML='🎓';
+  $('floorTitle').textContent='TUTORIAL'; $('floorType').textContent='🎓 LEARN'; $('floorBig').innerHTML='🎓'; { const _s=$('towerSub'); if(_s)_s.textContent='TUTORIAL'; }
   $('threatTxt').textContent='SAFE'; $('modTxt').innerHTML=''; $('bountyTxt').innerHTML=''; $('shiftTxt').textContent='';
   coach('tut_move','🎮','Move & attack','Move with <b>WASD</b>, aim with the <b>mouse</b>, hold <b>left-click</b> to fire. <b>Space</b> dashes — you are invulnerable mid-dash. Defeat the training foes ahead.');
 }
