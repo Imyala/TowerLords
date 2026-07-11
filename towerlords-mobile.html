@@ -1675,7 +1675,7 @@ const AFFIXES = [
   {key:'asPct',       name:'attack speed',    pct:true,  min:4,  max:13},
   {key:'crit',        name:'crit chance',     pct:true,  min:2,  max:7},
   {key:'critMultPct', name:'crit multiplier', pct:true,  min:8,  max:24},
-  {key:'lifeFlat',    name:'maximum life',    pct:false, min:10, max:34, int:true},
+  {key:'lifeFlat',    name:'life',            pct:false, min:10, max:34, int:true},
   {key:'lifePct',     name:'maximum life',    pct:true,  min:3,  max:9},
   {key:'armor',       name:'armour',          pct:false, min:10, max:42, int:true},
   {key:'manaFlat',    name:'maximum mana',    pct:false, min:6,  max:22, int:true},
@@ -1758,7 +1758,7 @@ const UNIQUE_RAR={nm:'Unique', col:0xff6a3d, css:'unique', mult:9, affixes:0};
 const UNIQUES = [
   {slotKey:'weapon', arch:'staff', name:'Stormcaller', element:'light', sockets:1, special:'alwaysShock', desc:'Your attacks always shock.', affixes:[{key:'dmgPct',name:'damage',pct:true,val:22},{key:'crit',name:'crit chance',pct:true,val:8}]},
   {slotKey:'weapon', arch:'daggers', name:'Emberfang', element:'fire', sockets:1, special:'igniteBoost', desc:'+100% ignite damage.', affixes:[{key:'dmgPct',name:'damage',pct:true,val:18},{key:'asPct',name:'attack speed',pct:true,val:12}]},
-  {slotKey:'chest', name:'Heart of the Tower', sockets:2, desc:'A fortress of flesh.', affixes:[{key:'lifePct',name:'maximum life',pct:true,val:22},{key:'lifeFlat',name:'maximum life',pct:false,val:60,int:true},{key:'armor',name:'armour',pct:false,val:40,int:true}]},
+  {slotKey:'chest', name:'Heart of the Tower', sockets:2, desc:'A fortress of flesh.', affixes:[{key:'lifePct',name:'maximum life',pct:true,val:22},{key:'lifeFlat',name:'life',pct:false,val:60,int:true},{key:'armor',name:'armour',pct:false,val:40,int:true}]},
   {slotKey:'gloves', name:'Manyfold Grip', sockets:1, desc:'Split your fire wide.', affixes:[{key:'proj',name:'extra projectile',pct:false,val:2},{key:'asPct',name:'attack speed',pct:true,val:10}]},
   {slotKey:'ring', name:'Glass Cannon', sockets:0, desc:'Immense power, fragile life.', affixes:[{key:'dmgPct',name:'damage',pct:true,val:40},{key:'critMultPct',name:'crit multiplier',pct:true,val:30},{key:'lifePct',name:'maximum life',pct:true,val:-25}]},
   {slotKey:'boots', name:'Phasestep', sockets:1, special:'dashCdr', desc:'Dash recharges far faster.', affixes:[{key:'movePct',name:'move speed',pct:true,val:20}]},
@@ -1915,6 +1915,7 @@ function serializeSession(){
     pets:p.pets, petIdx:(p.pet&&p.pets)?p.pets.indexOf(p.pet):-1,
     stash:p.stash, stashStrikes:p.stashStrikes|0,
     greed:p.greed||1, charge:p.charge||0,
+    fusedRecipes:_G.fusedRecipes||{}, fuseSeq:_fuseSeq,
     run:p.run }; }catch(e){ return null; }
 }
 function saveSession(){ if(!canSaveSession()) return; try{ if(typeof backupPets==='function') backupPets(); const s=serializeSession(); if(s) localStorage.setItem(RUN_KEY, JSON.stringify(s)); }catch(e){} }
@@ -1940,6 +1941,7 @@ function resumeSession(){
   p.inv=s.inv||[]; p.belt=s.belt||[null,null,null,null,null]; p.slots=s.slots||[null,null,null,null,null,null,null,null,null]; p.sigSlot=s.sigSlot||null;
   p.pets=s.pets||[]; p.pet=(s.petIdx!=null && s.petIdx>=0 && p.pets[s.petIdx])?p.pets[s.petIdx]:null;
   p.stash=s.stash||[]; p.stashStrikes=s.stashStrikes||0;
+  _G.fusedRecipes=s.fusedRecipes||{}; if(s.fuseSeq) _fuseSeq=Math.max(_fuseSeq, s.fuseSeq); rebuildFusedSkills();   // rebuild fused active skills
   p.greed=s.greed||1; p.charge=s.charge||0;
   p.run=s.run||{kills:0,assists:0,healSelf:0,healOthers:0,xp:0,floorTime:0,totalTime:0,floorsCleared:0,boons:[]};
   if(!p.run.boons) p.run.boons=[];
@@ -2426,6 +2428,24 @@ function previewFuse(a,b){
   const name=syn?syn.nm:`${firstWord(a.name||(SKILLS[a.skillId]||{}).nm)}-${firstWord(b.name||(SKILLS[b.skillId]||{}).nm)}`;
   return { syn:!!syn, name, ic:syn?syn.ic:'⚛', mana, comps, fame:fuseFameCost(a,b), fuseCount:n+1 };
 }
+// ---- fused skills are runtime SKILLS entries; persist a recipe so they survive save/resume ----
+function buildFusedSkill(id, r){
+  const rec=synergyFor(r.idA, r.idB), syn=!!rec, power=syn?1.35:1.12;
+  SKILLS[id]={ nm:r.name, ic:r.ic, mana:r.mana, cd:r.cd, fused:true, cast:(pwr)=>{
+    const P=(pwr||1)*power;
+    if(rec && rec.fx){ rec.fx(P); return; }                                  // unique synergy effect (Supernova, Magnetar, …)
+    const sa=SKILLS[r.idA], sb=SKILLS[r.idB];
+    if(sa)sa.cast(P); if(sb)sb.cast(P*0.9);                                   // otherwise fire BOTH source skills…
+    const p=G.player.position;                                               // …plus a bonus burst (bigger for synergies)
+    hitRadius(p.x,p.z,areaR(syn?7:5), skillDmg(syn?1.6:0.9,P), syn?360:240, G.S.element);
+    ringFx(p.x,p.z,areaR(syn?7:5), syn?0xffce4d:0x9d7bff);
+  }};
+}
+function rebuildFusedSkills(){
+  const recs=_G.fusedRecipes||{};
+  const ids=Object.keys(recs).sort((a,b)=>(parseInt(a.slice(3))||0)-(parseInt(b.slice(3))||0));   // creation order so nested fusions resolve
+  for(const id of ids){ try{ buildFusedSkill(id, recs[id]); }catch(_){} }
+}
 let _fuseSeq=0;
 function doFuse(a,b){
   if(!a||!b||a===b||!a.isSkillGem||!b.isSkillGem) return false;
@@ -2434,15 +2454,9 @@ function doFuse(a,b){
   const idA=a.skillId, idB=b.skillId, syn=pv.syn, power=syn?1.35:1.12;
   const rec=synergyFor(idA,idB);   // some synergies have a bespoke `fx` that replaces the generic cast
   const id='gFz'+(++_fuseSeq);
-  SKILLS[id]={ nm:pv.name, ic:pv.ic, mana:pv.mana, cd:Math.max(0.3,(skCd(a)+skCd(b))/2), fused:true, cast:(pwr)=>{
-    const P=(pwr||1)*power;
-    if(rec && rec.fx){ rec.fx(P); return; }                                  // unique synergy effect (Supernova, Magnetar, …)
-    const sa=SKILLS[idA], sb=SKILLS[idB];
-    if(sa)sa.cast(P); if(sb)sb.cast(P*0.9);                                   // otherwise fire BOTH source skills…
-    const p=G.player.position;                                               // …plus a bonus burst (bigger for synergies)
-    hitRadius(p.x,p.z,areaR(syn?7:5), skillDmg(syn?1.6:0.9,P), syn?360:240, G.S.element);
-    ringFx(p.x,p.z,areaR(syn?7:5), syn?0xffce4d:0x9d7bff);
-  }};
+  if(!_G.fusedRecipes) _G.fusedRecipes={};
+  const recipe={ idA, idB, mana:pv.mana, cd:Math.max(0.3,(skCd(a)+skCd(b))/2), name:pv.name, ic:pv.ic };
+  _G.fusedRecipes[id]=recipe; buildFusedSkill(id, recipe);   // persisted → survives save/resume
   for(const g of [a,b]){ const si=G.slots.indexOf(g); if(si>=0)G.slots[si]=null; if(G.sigSlot===g)G.sigSlot=null; }   // unbind sources
   G.inv=G.inv.filter(x=>x!==a&&x!==b); if(G.selGem===a||G.selGem===b)G.selGem=null;                                  // …and remove them for good
   META.fame-=pv.fame; saveMeta();
@@ -2460,7 +2474,7 @@ function doFuse(a,b){
 
 // ---------------- skill tree definition (generated: 6 branches, ~100 nodes) ----------------
 const EFF_LBL={dmgPct:'% attack damage',asPct:'% attack speed',crit:'% crit chance',critMultPct:'% crit multiplier',
-  proj:' projectile',pierce:' pierce',area:'% skill area',movePct:'% move speed',lifeFlat:' maximum life',
+  proj:' projectile',pierce:' pierce',area:'% skill area',movePct:'% move speed',lifeFlat:' life',
   lifePct:'% maximum life',lifeRegen:' life regen/s',manaFlat:' maximum mana',manaPct:'% maximum mana',
   manaRegen:' mana regen/s',armor:' armour',lifeOnHit:' life on hit',lifesteal:'% lifesteal',
   skillDmgPct:'% skill damage',manaCostPct:'% mana cost',
@@ -3311,12 +3325,21 @@ $('depositAll').onclick=()=>{ if(G.inv?.length){ const n=stashPushMany(G.inv); G
 $('retrieveAll').onclick=()=>{ if(G.stash?.length){G.inv.push(...G.stash);G.stash=[];G.stashStrikes=0;log('Stash retrieved.');renderStash();} };
 $('respec').onclick=respec;
 
+function layoutShopInv(shopId){ const shop=$(shopId), inv=$('invPanel'); if(!shop||!inv) return;
+  shop.style.left='2vw'; shop.style.right='auto'; shop.style.top='50%'; shop.style.transform='translateY(-50%)';
+  inv.style.left='auto'; inv.style.right='2vw'; inv.style.top='50%'; inv.style.transform='translateY(-50%)'; }
+function clearPanelPos(id){ const el=$(id); if(el){ el.style.left=''; el.style.right=''; el.style.top=''; el.style.transform=''; } }
 function togglePanel(id){
   const el=$(id), willOpen=el.classList.contains('hidden');
   if(id!=='stashPanel'){ /* allow stacking char+tree? keep simple: close others */ }
   el.classList.toggle('hidden');
   clearPin();   // a fresh panel open/close starts with nothing selected (avoids a stale pin from a prior screen)
   if(willOpen){ if(id==='charPanel')renderChar(); else if(id==='treePanel')renderTree(); else if(id==='stashPanel')renderStash(); else if(id==='invPanel')renderInv(); else if(id==='vendorPanel')renderVendor(); else if(id==='petPanel')renderPet(); else if(id==='petYardPanel')renderPetYard(); else if(id==='scorePanel')renderScore(); else if(id==='codexPanel')renderCodex(); else if(id==='settingsPanel')renderSettings(); else if(id==='lootPanel')renderLoot(); else if(id==='craftPanel')renderCraft(); }
+  if(willOpen && id==='invPanel') clearPanelPos('invPanel');   // a standalone inventory stays centred
+  if((id==='vendorPanel'||id==='stashPanel') && willOpen){   // shopping? bring your bag alongside
+    if($('invPanel').classList.contains('hidden')){ $('invPanel').classList.remove('hidden'); renderInv(); }
+    _G.shopInvPaired=true; layoutShopInv(id);
+  }
   syncPause(); refreshMenuState();
 }
 // ============================================================ PER-PLAYER CO-OP MENUS
@@ -3326,6 +3349,9 @@ const BUILD_PANELS=['charPanel','treePanel','invPanel','petPanel'];   // bumpers
 function refreshMenuState(){
   const open=PANELS.find(p=>!$(p).classList.contains('hidden'));
   _G.menuPanel=open||null;
+  if(_G.shopInvPaired && $('vendorPanel').classList.contains('hidden') && $('stashPanel').classList.contains('hidden')){   // both shop panels closed → close the paired bag & reset positions
+    $('invPanel').classList.add('hidden'); clearPanelPos('invPanel'); clearPanelPos('vendorPanel'); clearPanelPos('stashPanel'); _G.shopInvPaired=false;
+  }
   clearCoopBadge();
   if(open){ if(_G.splitscreen && BUILD_PANELS.includes(open)) setCoopBadge(_G.menuOwner); if(BUILD_PANELS.includes(open)) coopFocusReset(); }
   else { _G.menuOwner=0; _G.cur=0; clearCoopFocus(); }   // nothing open → back to P1 context
@@ -5323,7 +5349,7 @@ const PET_AB_DEFS=[
   {id:'brilliant', nm:'Brilliant',    ic:'🧠', col:'#4aa8ff', attr:'int', s:0.10, u:'Intelligence'},
   {id:'hearty',    nm:'Hearty',       ic:'💗', col:'#ff5c78', attr:'vit', s:0.10, u:'Vitality'},
   {id:'willful',   nm:'Willful',      ic:'🔆', col:'#ffe14d', attr:'will', s:0.10, u:'Willpower'},
-  {id:'bulwark',   nm:'Bulwark',      ic:'🧱', col:'#b0a08f', mod:'lifeFlat', s:0.9, u:'maximum life'},
+  {id:'bulwark',   nm:'Bulwark',      ic:'🧱', col:'#b0a08f', mod:'lifeFlat', s:0.9, u:'life'},
   {id:'wellspring',nm:'Wellspring',   ic:'⛲', col:'#4aa8ff', mod:'manaFlat', s:0.7, u:'mana'},
   {id:'vigor',     nm:'Vigor',        ic:'🌿', col:'#6dff8c', mod:'lifePct', s:0.06, pct:true, u:'maximum life'},
   {id:'sorcery',   nm:'Sorcery',      ic:'🔯', col:'#9d7bff', mod:'manaPct', s:0.08, pct:true, u:'max mana'},
@@ -6053,6 +6079,7 @@ function renderStash(){
     d.oncontextmenu=(e)=>{ e.preventDefault();
       if(from==='inv'){ if(e.ctrlKey){ d.onclick(); } else { quickUse(it); renderStash(); } }   // bag: right-click equips/uses · Ctrl+right-click banks to stash
       else { d.onclick(); } };   // stash: right-click retrieves to the bag
+    d.classList.add('has-gtip'); d.addEventListener('mouseenter',()=>showTileTip(lootTip(it))); d.addEventListener('mousemove',moveTileTip); d.addEventListener('mouseleave',hideTileTip);   // hover → full item info
     return d; };
   inv.innerHTML=''; st.innerHTML='';
   if(!G.inv.length) inv.innerHTML='<div class="islot empty">empty</div>'; else G.inv.forEach(it=>inv.appendChild(row(it,'inv')));
@@ -6974,7 +7001,7 @@ function startGameConfirmed(after){
     return;
   }
   _G._petAsked=false; if(!G.hardcore) _G.petHardDeath=false;
-  clearSession();   // a fresh character supersedes any saved run
+  clearSession(); _G.fusedRecipes={};   // a fresh character supersedes any saved run (and its fused-skill recipes)
   $('start').classList.add('hidden'); $('hud').classList.remove('hidden');
   loadMeta(); loadSettings();
   _G.asc=clamp(selAsc|0, 0, META.ascMax||0); _G.ascEff=ascEffects(_G.asc);   // lock in the chosen ascension for this climb
@@ -7676,7 +7703,7 @@ function openChest(c){ if(!c||c.opened) return; c.opened=true;
   const n=randi(1,3);
   for(let i=0;i<n;i++){ const a=(Math.PI*2*i/Math.max(1,n))+rand(0,1), ox=c.x+Math.cos(a)*1.9, oz=c.z+Math.sin(a)*1.9;
     let forced=null;
-    if(Math.random()<0.10) forced=makePot(fl);
+    if(Math.random()<0.03) forced=makePot(fl);
     else if(Math.random()<0.16 && typeof makeAbnormal==='function') forced=makeAbnormal();   // rare abnormal item
     dropLoot(ox,oz, 0.10, _G.cur, null, forced); }
   log('✦ Chest opened — loot spilled onto the floor. Walk over it and press F to collect.');
