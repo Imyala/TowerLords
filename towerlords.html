@@ -60,6 +60,7 @@
 
   /* orbs + action bar */
   #dock{position:absolute;bottom:16px;left:50%;transform:translateX(-50%);display:flex;align-items:flex-end;gap:13px;pointer-events:none;}
+  #dock .orb{display:none;}   /* HP & MP now live on the player ring — no duplicate orbs at the bottom */
   .orb{width:100px;height:100px;border-radius:50%;position:relative;overflow:hidden;
     border:2px solid rgba(255,255,255,.18);background:rgba(0,0,0,.45);box-shadow:0 0 24px rgba(0,0,0,.6);}
   .orb .fill{position:absolute;left:0;right:0;bottom:0;height:100%;transition:height .14s linear;}
@@ -607,6 +608,34 @@
   .menuRank .mnrk-stars{font-size:38px;letter-spacing:5px;font-weight:900;line-height:1;filter:drop-shadow(0 0 6px rgba(0,0,0,.4));}
   .menuRank .mnrk-tier{font-size:12px;letter-spacing:2px;text-transform:uppercase;font-weight:bold;}
   .menuRank .mnrk-fame{font-size:11px;opacity:.65;letter-spacing:1px;color:var(--gold);}
+  .menuRank .mnrk-title{font-size:12px;letter-spacing:2px;color:var(--gold);font-style:italic;text-shadow:0 0 10px rgba(255,206,77,.4);}
+  #legacyBody{width:580px;max-width:94vw;max-height:60vh;overflow:auto;text-align:left;padding-right:4px;}
+  .lgFame{text-align:center;font-size:16px;margin-bottom:14px;color:var(--gold);font-weight:bold;}
+  .lgFame b{font-size:19px;}
+  .lgFame .lgNote{display:block;font-size:10px;opacity:.55;letter-spacing:1px;color:#9fb0c8;margin-top:2px;font-weight:normal;}
+  .lgSec{background:#0d1320cc;border:1px solid #2a3550;border-radius:12px;padding:12px 14px;margin-bottom:14px;}
+  .lgHd{font-size:12px;letter-spacing:2px;font-weight:bold;color:#bfe9ff;margin-bottom:8px;}
+  .lgHd2{font-size:11px;letter-spacing:2px;font-weight:bold;opacity:.75;margin:12px 0 8px;}
+  .lgRow{display:flex;align-items:center;gap:12px;justify-content:space-between;padding:9px 0;border-top:1px solid #ffffff11;}
+  .lgRow:first-of-type{border-top:none;}
+  .lgInfo{display:flex;flex-direction:column;gap:3px;min-width:0;}
+  .lgInfo b{font-size:13px;}
+  .lgInfo>span{font-size:11px;opacity:.72;line-height:1.45;}
+  .lgBuy{background:linear-gradient(180deg,#25406a,#16263f);border:1px solid #3a6ea5;color:#cfe6ff;border-radius:8px;padding:7px 13px;font-size:12px;font-weight:bold;cursor:pointer;white-space:nowrap;}
+  .lgBuy:hover{filter:brightness(1.22);}
+  .lgBuy.cant{opacity:.4;cursor:not-allowed;filter:grayscale(.6);}
+  .lgOwned{color:#6dff8c;font-size:12px;font-weight:bold;white-space:nowrap;}
+  .lgCost{color:var(--gold);font-size:12px;white-space:nowrap;}
+  .lgTitles{display:flex;flex-wrap:wrap;gap:6px;}
+  .lgTitle{font-size:11.5px;padding:5px 11px;border-radius:14px;border:1px solid #2a3550;background:#111a2b;cursor:pointer;}
+  .lgTitle:hover{border-color:#4a628c;}
+  .lgTitle.on{border-color:var(--gold);color:var(--gold);box-shadow:0 0 10px rgba(255,206,77,.25);}
+  .lgTitle.locked{opacity:.5;cursor:default;}
+  .lgTitle.locked:hover{border-color:#2a3550;}
+  .lgStats{display:inline-flex;gap:4px;margin-left:4px;flex-wrap:wrap;}
+  .lgStat{background:#1a2740;border:1px solid #35507e;color:#cfe6ff;border-radius:6px;padding:3px 7px;font-size:10px;cursor:pointer;}
+  .lgStat:hover{filter:brightness(1.3);}
+  .lgNote2{font-size:11.5px;opacity:.7;line-height:1.5;}
   /* vendor: compact carried grid + action bar (no inner scroll) */
   .vendGrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(46px,1fr));gap:6px;margin-bottom:10px;}
   .vendAct{border-top:1px solid rgba(255,255,255,.09);padding-top:9px;min-height:62px;}
@@ -994,6 +1023,7 @@
       <div class="mItem" id="openScoreBtn"><span class="mKey">V</span><span class="mIc">📜</span><span class="mLbl">Record</span><span class="mEnd" id="rankChip"></span></div>
       <div class="mItem" id="openCodexBtn"><span class="mKey">B</span><span class="mIc">📖</span><span class="mLbl">Bestiary</span></div>
       <div class="mItem" id="recallBtn"><span class="mKey">H</span><span class="mIc">🏛</span><span class="mLbl">Recall to Sanctuary</span></div>
+      <div class="mItem" id="openLegacyBtn"><span class="mKey">L</span><span class="mIc">⚜</span><span class="mLbl">Legacy</span></div>
       <div class="mItem" id="openSettingsBtn"><span class="mKey">O</span><span class="mIc">⚙</span><span class="mLbl">Settings</span><span class="mEnd" id="muteInd" style="cursor:pointer">🔊</span></div>
     </div>
 
@@ -1191,6 +1221,7 @@
       <button class="btn ghost" id="menuTutorial">📖 Tutorial</button>
       <button class="btn ghost" id="menuSettings">⚙ Settings</button>
       <button class="btn ghost" id="menuDeaths">💀 Death Log</button>
+      <button class="btn ghost" id="menuLegacy">⚜ Legacy</button>
     </div>
     <div id="climbScreen" class="menuCol hidden">
       <div class="modeSel">
@@ -1295,6 +1326,14 @@
     </div>
     <div id="boardBody" style="width:420px;max-width:92vw;max-height:46vh;overflow:auto"></div>
     <button class="btn ghost small" id="boardBack" style="margin-top:14px;">← Back to menu</button>
+  </div>
+
+  <!-- Legacy -->
+  <div id="legacyScreen" class="overlay hidden">
+    <h1 style="font-size:34px;letter-spacing:6px;">⚜ LEGACY</h1>
+    <div class="tag" style="margin-top:-6px;margin-bottom:14px">Spend fame — permanent unlocks endure, character boons fall with you</div>
+    <div id="legacyBody"></div>
+    <button class="btn ghost small" id="legacyBack" style="margin-top:16px;">← Back</button>
   </div>
 
   <!-- Death -->
@@ -1741,7 +1780,8 @@ function rankHudHTML(){ const r=fameRank(META.fame);
 function refreshMenuRank(){ const mr=$('menuRank'); if(!mr) return; const r=fameRank(META.fame); mr.classList.remove('hidden');
   mr.innerHTML=`<span class="mnrk-stars" style="color:${r.col};text-shadow:0 0 20px ${r.col}cc,0 2px 4px rgba(0,0,0,.5)">${rankStars(r.stars)}</span>`
     +`<span class="mnrk-tier" style="color:${r.col}">${r.name} Tier · ${r.stars}/7★</span>`
-    +`<span class="mnrk-fame">✦ ${Math.round(META.fame).toLocaleString()} fame</span>`; }
+    +`<span class="mnrk-fame">✦ ${Math.round(META.fame).toLocaleString()} fame</span>`
+    +(activeTitleName&&activeTitleName()?`<span class="mnrk-title">${activeTitleName()}</span>`:''); }
 const FEATS=[
   {id:'firstboss',nm:'Giant Slayer', ds:'Slay a floor guardian',          fame:600},
   {id:'react',    nm:'Alchemist',    ds:'Trigger an elemental reaction',  fame:300},
@@ -1756,8 +1796,8 @@ const FEATS=[
   {id:'f100',     nm:'Centurion',    ds:'Reach Floor 100',                fame:12000},
   {id:'ng',       nm:'Eternal',      ds:'Enter the Endless Ascent (NG+)', fame:6000},
 ];
-let META={fame:0, feats:[], invRows:0, stashSlots:0, petTier:0, petSlots:0, codex:{}, ascMax:0, tips:{}, victories:0, grudges:{}, daily:null, playerName:'', playerId:'', voiceSeen:{}, materials:{}, lastBonus:'', bonusStreak:0};
-function loadMeta(){ try{ const s=localStorage.getItem(META_KEY); if(s){ const m=JSON.parse(s); META={fame:m.fame||0, feats:m.feats||[], invRows:Math.min(5,m.invRows||0), stashSlots:(m.stashSlots!=null?m.stashSlots:Math.min(25,(m.stashRows||0)*10)), petTier:m.petTier||0, petSlots:m.petSlots||0, codex:m.codex||{}, ascMax:m.ascMax||0, tips:m.tips||{}, victories:m.victories||0, grudges:m.grudges||{}, daily:m.daily||null, playerName:m.playerName||'', playerId:m.playerId||'', voiceSeen:m.voiceSeen||{}, materials:m.materials||{}, lastBonus:m.lastBonus||'', bonusStreak:m.bonusStreak||0}; } }catch(e){} }
+let META={fame:0, feats:[], invRows:0, stashSlots:0, petTier:0, petSlots:0, codex:{}, ascMax:0, tips:{}, victories:0, grudges:{}, daily:null, playerName:'', playerId:'', voiceSeen:{}, materials:{}, lastBonus:'', bonusStreak:0, fieldRespec:false, recallTier:0, titles:[], title:'', savedPets:null};
+function loadMeta(){ try{ const s=localStorage.getItem(META_KEY); if(s){ const m=JSON.parse(s); META={fame:m.fame||0, feats:m.feats||[], invRows:Math.min(5,m.invRows||0), stashSlots:(m.stashSlots!=null?m.stashSlots:Math.min(25,(m.stashRows||0)*10)), petTier:m.petTier||0, petSlots:m.petSlots||0, codex:m.codex||{}, ascMax:m.ascMax||0, tips:m.tips||{}, victories:m.victories||0, grudges:m.grudges||{}, daily:m.daily||null, playerName:m.playerName||'', playerId:m.playerId||'', voiceSeen:m.voiceSeen||{}, materials:m.materials||{}, lastBonus:m.lastBonus||'', bonusStreak:m.bonusStreak||0, fieldRespec:!!m.fieldRespec, recallTier:m.recallTier||0, titles:m.titles||[], title:m.title||'', savedPets:m.savedPets||null}; } }catch(e){} }
 // ---------------- GLOBAL LEADERBOARD (optional backend) ----------------
 // Set LEADERBOARD_URL to a deployed copy of leaderboard-worker.js (free Cloudflare Worker —
 // see LEADERBOARD_SETUP.md next to this file). Leave null for local-only boards: the game
@@ -1784,6 +1824,22 @@ function dailyKey(){ return new Date().toISOString().slice(0,10); }   // UTC dat
 function dailySeedInt(){ const s='TOWERLORDS-'+dailyKey(); let h=2166136261; for(let i=0;i<s.length;i++){ h^=s.charCodeAt(i); h=Math.imul(h,16777619); } return h>>>0; }
 function dailyState(){ const d=META.daily; return (d&&d.date===dailyKey())?d:null; }   // null = not attempted today
 function saveMeta(){ try{ localStorage.setItem(META_KEY, JSON.stringify(META)); }catch(e){} }
+// ============================================================ LEGACY (fame → permanent unlocks & character boons) + account-bound pets + swift recall
+const LEG_FIELD_COST=15000, LEG_SKILL_COST=2500, LEG_STAT_COST=3500;
+function legRecallCost(tier){ return [5000,11000,22000][tier]||999999; }
+const LEGACY_TITLES=[
+  {id:'climber',  nm:'the Climber',        fame:3000},
+  {id:'slayer',   nm:'the Slayer',         fame:12000},
+  {id:'warden',   nm:'the Warden',         fame:35000},
+  {id:'ascendant',nm:'the Ascendant',      fame:80000},
+  {id:'eternal',  nm:'the Eternal',        fame:180000},
+  {id:'lord',     nm:'Lord of the Tower',  fame:400000},
+];
+function activeTitleName(){ if(!META||!META.title) return ''; const t=LEGACY_TITLES.find(x=>x.id===META.title); return t?t.nm:''; }
+function recallTime(){ return Math.max(0.8, RECALL_TIME - (META.recallTier||0)*0.55); }
+// pets are account-bound: back them up so they carry into every new character (permanent unless a hardcore pet-wager)
+function backupPets(){ try{ const p=_G.players[0]; if(!p) return; META.savedPets={pets:(p.pets||[]).map(x=>Object.assign({},x)), idx:(p.pet&&p.pets)?p.pets.indexOf(p.pet):-1}; saveMeta(); }catch(_){} }
+
 function discover(key){ if(!META.codex) META.codex={}; if(!META.codex[key]){ META.codex[key]=true; saveMeta(); } }   // bestiary: record a first encounter
 // ============================================================ SESSION SAVE / RESUME — jump in and out; continue from the floor you were on
 // A full single-player snapshot (character + which floor / sanctuary). Autosaves on every floor change and on tab close, so
@@ -1793,7 +1849,7 @@ function canSaveSession(){ return _G.running && !_G.splitscreen && !NET.role && 
 function serializeSession(){
   const p=_G.players[0]; if(!p||!p.player) return null;
   try{ return { v:1, ts:Date.now(),
-    floor:G.floor|0, inTown:!!G.inTown, returnFloor:_G.returnFloor|0, asc:_G.asc||0, hardcore:!!G.hardcore, diff:G.diff||'normal', seed:_G.seed|0, maxFloor:_G.maxFloor||50,
+    floor:G.floor|0, inTown:!!G.inTown, returnFloor:_G.returnFloor|0, asc:_G.asc||0, hardcore:!!G.hardcore, petHardDeath:!!_G.petHardDeath, diff:G.diff||'normal', seed:_G.seed|0, maxFloor:_G.maxFloor||50,
     name:p.name, gold:p.gold|0, level:p.level|0, xp:p.xp, xpNeed:p.xpNeed, xpMode:p.xpMode||'use',
     attrPts:p.attrPts|0, skillPts:p.skillPts|0, skillGranted:p.skillGranted|0, evolves:p.evolves|0,
     attr:p.attr, alloc:p.alloc,
@@ -1803,7 +1859,7 @@ function serializeSession(){
     greed:p.greed||1, charge:p.charge||0,
     run:p.run }; }catch(e){ return null; }
 }
-function saveSession(){ if(!canSaveSession()) return; try{ const s=serializeSession(); if(s) localStorage.setItem(RUN_KEY, JSON.stringify(s)); }catch(e){} }
+function saveSession(){ if(!canSaveSession()) return; try{ if(typeof backupPets==='function') backupPets(); const s=serializeSession(); if(s) localStorage.setItem(RUN_KEY, JSON.stringify(s)); }catch(e){} }
 function loadSession(){ try{ const s=localStorage.getItem(RUN_KEY); return s?JSON.parse(s):null; }catch(e){ return null; } }
 function clearSession(){ try{ localStorage.removeItem(RUN_KEY); }catch(e){} }
 function hasSession(){ const s=loadSession(); return !!(s && s.level); }
@@ -1814,7 +1870,7 @@ function resumeSession(){
   _G.asc=clamp(s.asc|0,0,99); _G.ascEff=ascEffects(_G.asc);
   _G.seed=(s.seed|0)||randi(0,9999); _G.maxFloor=s.maxFloor||50; _G.returnFloor=s.returnFloor|0; _G.recallGo=false;
   G.running=true; G.paused=false; G.hitstop=0; G.permadead=false;
-  G.floorMod=null; G.bounty=null; G.practice=false; G.tutorial=false; G.dailyRun=false; G.hardcore=!!s.hardcore; G.diff=s.diff||(s.hardcore?'hard':'normal');
+  G.floorMod=null; G.bounty=null; G.practice=false; G.tutorial=false; G.dailyRun=false; G.hardcore=!!s.hardcore; _G.petHardDeath=!!s.petHardDeath; G.diff=s.diff||(s.hardcore?'hard':'normal');
   _G.nemesis=makeNemesis();   // per-run nemesis isn't saved (has function refs) — a fresh cast greets your return; grudges (META) persist
   _G.players.length=1; const p=_G.players[0]; p.joined=true; p.color=PLAYER_COLORS[0]; p.input=p.input||makeKbmInput();
   _G.cur=0; _G.splitscreen=false; $('hud').classList.remove('cohide');
@@ -2690,7 +2746,7 @@ const _G = {
   portal:null, stashStation:null, vendorStation:null, scoreStation:null, goblin:null, craftStation:null, yardStation:null,
   rects:[], rooms:[], obstacles:[], camps:[], respawns:[], bounds:140,
   shiftT:0, shiftWarned:false, layoutSalt:0, hitstop:0, floorMod:null, bounty:null,
-  hardcore:false, diff:'normal', permadead:false, inTown:false, muted:false, practice:false, tutorial:false, modalOpen:false, inYard:false, nearYardPet:null,
+  hardcore:false, diff:'normal', permadead:false, inTown:false, muted:false, practice:false, tutorial:false, modalOpen:false, inYard:false, nearYardPet:null, legacyOpen:false, petHardDeath:false,
   players:[], cur:0, nPlayers:1, splitscreen:false,
   menuOwner:0, menuPanel:null, menuPrev:{}, focusIdx:0,   // per-player co-op menus
   returnFloor:0, recallGo:false,   // recall-to-sanctuary: returnFloor = the depth to drop back to via the town portal; recallGo = a channel finished, teleport next tick
@@ -2723,19 +2779,21 @@ const keys={}; const mouse=new THREE.Vector2(); let mouseDown=false; let mouseR=
 const aimPoint=new THREE.Vector3(); const raycaster=new THREE.Raycaster();
 const groundPlane=new THREE.Plane(new THREE.Vector3(0,1,0),0);
 const PANELS=['charPanel','treePanel','stashPanel','invPanel','vendorPanel','petPanel','petYardPanel','scorePanel','codexPanel','settingsPanel','craftPanel'];
-function anyPanelOpen(){ return _G.modalOpen || _G.draftOpen || PANELS.some(p=>!$(p).classList.contains('hidden')); }
+function anyPanelOpen(){ return _G.modalOpen || _G.legacyOpen || _G.draftOpen || PANELS.some(p=>!$(p).classList.contains('hidden')); }
 function syncPause(){ G.paused=false; }   // menus never pause gameplay — the world keeps running while you browse (mouse-attack stays suppressed via anyPanelOpen so clicking UI won't fire your weapon)
 
 addEventListener('keydown',e=>{
   const k=e.key.toLowerCase(); keys[k]=true;
   if(e.code==='Backquote' && !(document.activeElement && /INPUT|TEXTAREA/.test(document.activeElement.tagName))){ toggleCheat(); e.preventDefault(); return; }   // ~ opens the DEV cheat console (testing only)
   if(_G.modalOpen){ if(k==='escape'){ closeGameModal(); _gmOnOK=null; } return; }
+  if(_G.legacyOpen){ if(k==='escape'||k==='l') closeLegacy(); return; }
   if(!G.running) return;
   const pk={c:'charPanel',t:'treePanel',i:'invPanel',p:'petPanel',v:'scorePanel',b:'codexPanel',o:'settingsPanel'}[k];
   if(pk){ _G.menuOwner=0; _G.cur=0; togglePanel(pk); }   // P1's keyboard always manages P1
   else if(k==='m'){ toggleMute(); }
   else if(k==='f'){ interact(); }
   else if(k==='h'){ startRecall(); }   // quick recall to the sanctuary (RotMG nexus-style)
+  else if(k==='l'){ openLegacy('game'); }   // fame-spent legacy (titles, field respec, swift recall, character boons)
   else if(k==='escape'){ if(anyPanelOpen()){ PANELS.forEach(p=>$(p).classList.add('hidden')); syncPause(); refreshMenuState(); } else { promptExitToMenu(); } }
   else if(k===' '){ if(!G.paused) doDash(); }
   else if(k==='shift'){ if(!G.paused) useSignature(); }
@@ -3018,7 +3076,7 @@ $('victTownBtn').onclick=()=>{ $('victory').classList.add('hidden'); G.victoryOp
 $('shareDeathBtn').onclick=()=>shareCard('death');
 $('shareVictBtn').onclick=()=>shareCard('victory');
 // ---- main menu navigation ----
-function showMenu(){ try{ closeGameModal(); }catch(_){} ['hud','tutorial','deathlog','death'].forEach(id=>$(id).classList.add('hidden')); PANELS.forEach(p=>$(p).classList.add('hidden'));
+function showMenu(){ try{ closeGameModal(); }catch(_){} _G.legacyOpen=false; ['hud','tutorial','deathlog','death','legacyScreen'].forEach(id=>$(id).classList.add('hidden')); PANELS.forEach(p=>$(p).classList.add('hidden'));
   $('start').classList.remove('hidden'); $('menuMain').classList.remove('hidden'); $('climbScreen').classList.add('hidden'); $('coopLobby').classList.add('hidden'); $('onlineLobby').classList.add('hidden'); coopLobbyOpen=false; G.running=false; G.practice=false; G.tutorial=false; loadMeta(); refreshDailyBtn(); refreshContinueBtn(); refreshMenuRank(); syncPause(); }
 // ESC while playing (no panels open) → confirm a return to the main menu, auto-saving first
 function promptExitToMenu(){ if(!G.running) return;
@@ -3610,10 +3668,10 @@ function startRecall(){
   if(_G.splitscreen || NET.role){ log('Recall is single-player only for now.'); return; }
   if(G.dead || G.downed) return;
   if(G.recallT>0){ G.recallT=0; log('Recall cancelled.'); return; }   // press again to cancel
-  G.recallT=RECALL_TIME;
+  const _rt=(typeof recallTime==='function')?recallTime():RECALL_TIME; G.recallT=_rt;
   const p=G.player.position; ringFx(p.x,p.z,6,0x8effd9); sfx.cast&&sfx.cast();
   banner('🏛 RECALLING','Returning to the Sanctuary…');
-  log('🏛 Recalling to the sanctuary… ('+RECALL_TIME.toFixed(1)+'s). Nothing can interrupt it — press H again to cancel manually.');
+  log('🏛 Recalling to the sanctuary… ('+_rt.toFixed(1)+'s). Nothing can interrupt it — press H again to cancel manually.');
   coach('recall','🏛','Quick recall','Press <b>H</b> to channel a return to the <b>Sanctuary</b> — bank loot, shop, respec, then the portal drops you back at the floor you left. It <b>can\'t be interrupted</b> once started; press H again if you change your mind.');
 }
 function tickRecall(dt){
@@ -5467,6 +5525,66 @@ function renderPetYard(){
 }
 function openPetYard(){ $('petPanel').classList.add('hidden'); syncPause(); refreshMenuState(); enterPetYard(); }
 function refreshPetUI(){ if(!$('petPanel').classList.contains('hidden')) renderPet(); if($('petYardPanel')&&!$('petYardPanel').classList.contains('hidden')) renderPetYard(); }
+// ============================================================ LEGACY UI (data/helpers are defined earlier, near the META block)
+let _legacyFrom=null, _legacyPrevInvuln=null;
+function openLegacy(from){ _legacyFrom=from||'game';
+  if(_legacyFrom==='menu'){ $('start').classList.add('hidden'); }
+  else { PANELS.forEach(p=>$(p).classList.add('hidden')); refreshMenuState&&refreshMenuState(); if(_G.running){ _legacyPrevInvuln=G.invuln||0; G.invuln=1e9; } }
+  _G.legacyOpen=true; $('legacyScreen').classList.remove('hidden'); renderLegacy();
+}
+function closeLegacy(){ $('legacyScreen').classList.add('hidden'); _G.legacyOpen=false;
+  if(_legacyPrevInvuln!=null){ if(G.running) G.invuln=Math.max(G.invuln||0,2); _legacyPrevInvuln=null; }
+  if(_legacyFrom==='menu'){ $('start').classList.remove('hidden'); refreshMenuRank&&refreshMenuRank(); }
+  _legacyFrom=null;
+}
+function renderLegacy(){ const b=$('legacyBody'); if(!b) return; loadMeta();
+  if(!META.titles) META.titles=[];
+  LEGACY_TITLES.forEach(t=>{ if(META.fame>=t.fame && !META.titles.includes(t.id)){ META.titles.push(t.id); saveMeta(); } });   // titles unlock permanently once your fame reaches the mark
+  const f=Math.floor(META.fame);
+  let h=`<div class="lgFame">✦ Fame available: <b>${f.toLocaleString()}</b> <span class="lgNote">spending fame lowers your star rank</span></div>`;
+  // ---- permanent (survives death) ----
+  h+=`<div class="lgSec"><div class="lgHd">⚜ PERMANENT — kept through every death</div>`;
+  h+=`<div class="lgRow"><div class="lgInfo"><b>🔧 Field Respecialisation</b><span>Respec your skill tree on <b>any floor</b>, not just safe zones.</span></div>`
+    +(META.fieldRespec?`<span class="lgOwned">✓ UNLOCKED</span>`:`<button class="lgBuy${f>=LEG_FIELD_COST?'':' cant'}" data-buy="field">${LEG_FIELD_COST.toLocaleString()} ✦</button>`)+`</div>`;
+  const rt=META.recallTier||0;
+  h+=`<div class="lgRow"><div class="lgInfo"><b>🏛 Swift Recall${rt>0?' · Lv '+rt:''}</b><span>Recall channel is now <b>${recallTime().toFixed(1)}s</b>. Each tier −0.55s (min 0.8s).</span></div>`
+    +(rt>=3?`<span class="lgOwned">✓ MAX</span>`:`<button class="lgBuy${f>=legRecallCost(rt)?'':' cant'}" data-buy="recall">${legRecallCost(rt).toLocaleString()} ✦</button>`)+`</div>`;
+  h+=`<div class="lgHd2">🎖 Titles — permanent · pick one to display</div><div class="lgTitles">`;
+  h+=`<div class="lgTitle${!META.title?' on':''}" data-title="">— none —</div>`;
+  for(const t of LEGACY_TITLES){ const unlocked=META.titles.includes(t.id);
+    h+=`<div class="lgTitle${META.title===t.id?' on':''}${unlocked?'':' locked'}" data-title="${unlocked?t.id:''}" title="${unlocked?'Display this title':('Reach '+t.fame.toLocaleString()+' fame to unlock')}">${unlocked?'':'🔒 '}${t.nm}${unlocked?'':' · '+t.fame.toLocaleString()+'✦'}</div>`; }
+  h+=`</div></div>`;
+  // ---- this character (lost on death) ----
+  if(_G.running && G.level){
+    h+=`<div class="lgSec"><div class="lgHd">⚔ THIS CHARACTER — lost when this character dies</div>`;
+    h+=`<div class="lgRow"><div class="lgInfo"><b>✦ +1 Skill Point</b><span>Spend it in the tree (T) right now.</span></div><button class="lgBuy${f>=LEG_SKILL_COST?'':' cant'}" data-buy="skill">${LEG_SKILL_COST.toLocaleString()} ✦</button></div>`;
+    h+=`<div class="lgRow"><div class="lgInfo"><b>➕ +2 Attribute</b><span>Add to a stat: <span class="lgStats">`+ATTR_INFO.map(a=>`<button class="lgStat" data-stat="${a.k}">${a.nm.slice(0,3).toUpperCase()}</button>`).join('')+`</span></span></div><span class="lgCost">${LEG_STAT_COST.toLocaleString()} ✦ each</span></div>`;
+    h+=`</div>`;
+  } else {
+    h+=`<div class="lgSec"><div class="lgHd">⚔ THIS CHARACTER</div><div class="lgNote2">Start or continue a climb to spend fame on your character's skills &amp; stats — these boosts are <b>lost when the character dies</b>.</div></div>`;
+  }
+  b.innerHTML=h;
+  b.querySelectorAll('[data-buy]').forEach(el=>el.onclick=()=>legacyBuy(el.dataset.buy));
+  b.querySelectorAll('[data-title]').forEach(el=>el.onclick=()=>{ if(el.classList.contains('locked'))return; META.title=el.dataset.title; saveMeta(); renderLegacy(); });
+  b.querySelectorAll('[data-stat]').forEach(el=>el.onclick=()=>legacyBuyStat(el.dataset.stat));
+}
+function legacyBuy(kind){ loadMeta(); const f=META.fame;
+  if(kind==='field'){ if(META.fieldRespec) return; if(f<LEG_FIELD_COST){ log('Not enough fame — need '+LEG_FIELD_COST.toLocaleString()+'.'); sfx.deny&&sfx.deny(); return; } META.fame-=LEG_FIELD_COST; META.fieldRespec=true; saveMeta(); log('🔧 Field Respecialisation unlocked — respec anywhere!'); sfx.evolve&&sfx.evolve(); }
+  else if(kind==='recall'){ const rt=META.recallTier||0; if(rt>=3) return; const c=legRecallCost(rt); if(f<c){ log('Not enough fame — need '+c.toLocaleString()+'.'); sfx.deny&&sfx.deny(); return; } META.fame-=c; META.recallTier=rt+1; saveMeta(); log('🏛 Swift Recall Lv '+META.recallTier+' — recall now '+recallTime().toFixed(1)+'s.'); sfx.evolve&&sfx.evolve(); }
+  else if(kind==='skill'){ if(!_G.running) return; if(f<LEG_SKILL_COST){ log('Not enough fame.'); sfx.deny&&sfx.deny(); return; } META.fame-=LEG_SKILL_COST; saveMeta(); G.skillPts=(G.skillPts||0)+1; if(typeof updatePips==='function')updatePips(); log('✦ +1 Skill Point — spend it in the tree (T). Lost if this character dies.'); sfx.gold&&sfx.gold(); }
+  renderLegacy(); if(typeof updateHUD==='function')updateHUD();
+}
+function legacyBuyStat(k){ if(!_G.running) return; loadMeta();
+  if(META.fame<LEG_STAT_COST){ log('Not enough fame — need '+LEG_STAT_COST.toLocaleString()+'.'); sfx.deny&&sfx.deny(); return; }
+  if((G.attr[k]||0)>=ATTR_CAP){ log('That attribute is already at its cap ('+ATTR_CAP+').'); return; }
+  META.fame-=LEG_STAT_COST; saveMeta(); G.attr[k]=(G.attr[k]||0)+2; recompute(); if(!$('charPanel').classList.contains('hidden'))renderChar(); if(typeof updatePips==='function')updatePips();
+  log('➕ +2 '+k.toUpperCase()+' (Legacy) — lost if this character dies.'); sfx.gold&&sfx.gold(); renderLegacy(); if(typeof updateHUD==='function')updateHUD();
+}
+// wire the entry points (DOM exists — the main script runs after the body)
+{ const _ml=$('menuLegacy'); if(_ml) _ml.onclick=()=>openLegacy('menu');
+  const _lb=$('legacyBack'); if(_lb) _lb.onclick=closeLegacy;
+  const _og=$('openLegacyBtn'); if(_og) _og.onclick=()=>openLegacy('game'); }
+
 // ============================================================ PLAYER-CENTRED RING HUD + PET-YARD AREA
 // hp (red, left) · mana (blue, right) · dash cooldown (gold, top) drawn right on the player so you never look away
 const _ringV=new THREE.Vector3();
@@ -5476,19 +5594,19 @@ function drawPlayerRing(){
   if(!_G.running || _G.splitscreen || _G.modalOpen || anyPanelOpen() || !pl || !pl.player){ cv.style.display='none'; return; }
   _ringV.set(pl.player.position.x,1.3,pl.player.position.z).project(camera);
   if(_ringV.z>1){ cv.style.display='none'; return; }
-  const SZ=156; if(cv.width!==SZ){ cv.width=SZ; cv.height=SZ; }
+  const SZ=190; if(cv.width!==SZ){ cv.width=SZ; cv.height=SZ; }
   const sx=(_ringV.x*.5+.5)*innerWidth, sy=(-_ringV.y*.5+.5)*innerHeight;
   cv.style.display='block'; cv.style.left=(sx-SZ/2)+'px'; cv.style.top=(sy-SZ/2)+'px';
   const ctx=cv._c||(cv._c=cv.getContext('2d')); ctx.clearRect(0,0,SZ,SZ);
-  const cx=SZ/2, cy=SZ/2, R=52, D=Math.PI/180;
+  const cx=SZ/2, cy=SZ/2, R=66, D=Math.PI/180;
   const hpF=clamp(pl.hp/(pl.maxhp||1),0,1), mpF=clamp(pl.mana/(pl.maxmana||1),0,1), dF=clamp(1-((pl.dashCd||0)/(pl.dashCdMax||1)),0,1);
   function seg(a0,sweep,frac,col,w){ const anti=sweep<0, a0r=a0*D, a1r=(a0+sweep)*D, afr=(a0+sweep*frac)*D;
     ctx.lineCap='round'; ctx.lineWidth=w; ctx.shadowBlur=0;
     ctx.strokeStyle='rgba(2,6,14,0.55)'; ctx.beginPath(); ctx.arc(cx,cy,R,a0r,a1r,anti); ctx.stroke();
     if(frac>0.004){ ctx.strokeStyle=col; ctx.shadowColor=col; ctx.shadowBlur=8; ctx.beginPath(); ctx.arc(cx,cy,R,a0r,afr,anti); ctx.stroke(); ctx.shadowBlur=0; } }
-  seg(112,76,hpF,'#ff4d6d',7);     // HP — lower-left arc
-  seg(68,-76,mpF,'#4aa8ff',7);     // MANA — lower-right arc (mirrors HP)
-  seg(232,76,dF,'#ffce4d',7);      // DASH cooldown — top arc, same size as the others (empty after a dash, refills)
+  seg(120,60,hpF,'#ff4d6d',8);     // HP — lower-left arc (60° arcs with 60° gaps → facing stays clear)
+  seg(60,-60,mpF,'#4aa8ff',8);     // MANA — lower-right arc (mirrors HP)
+  seg(240,60,dF,'#ffce4d',8);      // DASH cooldown — top arc, same size as the others (empty after a dash, refills)
 }
 
 // ---- loot bag tooltip (hover shows the item's full info) ----
@@ -5708,6 +5826,7 @@ function bindFlask(item,i){ if(!item.isFlask)return; G.inv=G.inv.filter(x=>x!==i
 function unbindFlask(i){ if(!G.belt[i])return; if(G.inv.length>=G.invCap){log('Inventory full.');return;} G.inv.push(G.belt[i]); G.belt[i]=null; renderActionbar(); refreshItemPanels(); }
 function autoBeltFlask(item){ if(G.belt.includes(item))return; const i=G.belt.indexOf(null); if(i<0)return; G.inv=G.inv.filter(x=>x!==item); G.belt[i]=item; renderActionbar(); }
 function respec(){
+  if(!(G.inTown || floorType(G.floor)==='SAFE' || META.fieldRespec)){ log('↺ Respec is only available in a safe zone. Unlock 🔧 Field Respecialisation in the Legacy menu (L) to respec on any floor.'); if(sfx.deny)sfx.deny(); return; }
   let total=0; for(const id in G.alloc) total+=G.alloc[id]||0;
   if(total<=0){ log('Nothing allocated to respec.'); return; }
   const cost=respecCost(); if(G.gold<cost){ log('Respec costs '+cost+'g — not enough gold.'); return; }
@@ -6247,7 +6366,10 @@ function die(){ if(G.dead)return;
   }
   // CASUAL & NORMAL: your companion is bound for life — death never takes your pet or yard, and the active pet
   // is revived ready to keep assisting. (Only a HARDCORE permadeath — a brand-new character — ever resets pets.)
-  if(!diffCfg().perma){ if(G.pet){ G.pet.down=0; if(G.pet.maxhp!==undefined) G.pet.hp=G.pet.maxhp; } }
+  // pets are account-bound & PERMANENT in every mode — death revives your companion and keeps the yard intact.
+  // sole exception: a HARDCORE climb where you WAGERED your pet at the start (petHardDeath) — then it falls with you.
+  if(G.hardcore && _G.petHardDeath){ G.pet=null; G.pets=[]; META.savedPets=null; saveMeta(); log('☠ Your companion fell with you — the Hardcore wager is paid in full.'); }
+  else { if(G.pet){ G.pet.down=0; if(G.pet.maxhp!==undefined) G.pet.hp=G.pet.maxhp; } if(typeof backupPets==='function') backupPets(); }
   recompute(); if(G.hp>G.maxhp)G.hp=G.maxhp; if(G.mana>G.maxmana)G.mana=G.maxmana;
   const greedLost = (!_soft && G.greed>1.05 && carried>0) ? G.greed : 0; if(!_soft) G.greed=1;   // dying forfeits the unbanked greed haul
   // fame is a skill rating now — earn a meaningful chunk per run (scales with depth, kills, level)
@@ -6720,6 +6842,8 @@ function initPlayerChar(){
   G.dashCd=0; G.dashT=0; G.flowT=0;
   G.belt=[makeFlask(1,'life'), makeFlask(1,'mana'), null, null, null]; G.charge=0; G.sigSlot=null; G.sigCd=0; G.swiftT=0; G.petErrand=null;
   if(G.petMesh){ scene.remove(G.petMesh); G.petMesh=null; } G.pet=null; G.pets=[]; G.petMagnet=0;
+  // pets are account-bound: a fresh character inherits every companion you own (permanent across deaths)
+  if(META.savedPets && META.savedPets.pets && META.savedPets.pets.length){ G.pets=META.savedPets.pets.map(x=>Object.assign({},x)); const _pi=(META.savedPets.idx!=null?META.savedPets.idx:-1); G.pet=(_pi>=0 && G.pets[_pi])?G.pets[_pi]:null; }
   G.run={kills:0,assists:0,healSelf:0,healOthers:0,xp:0,floorTime:0,totalTime:0,floorsCleared:0,boons:[]};
   recompute(); G.hp=G.maxhp; G.mana=G.maxmana;
   if(!G.player){ G.player=createPlayer(); tintPlayer(G.player, G.color); }
@@ -6730,6 +6854,15 @@ function startGame(after){
   startGameConfirmed(after);
 }
 function startGameConfirmed(after){
+  if(G.hardcore && !_G._petAsked){   // HARDCORE only: let the player wager their companion for greater glory before the climb begins
+    _G._petAsked=true;
+    gameConfirm('☠ HARDCORE — your companion\'s fate',
+      'Pets are normally <b class="gm-hl">permanent</b> — they survive every death. In Hardcore you may raise the stakes: <b>wager your companion</b> so that if this character falls for good, your active pet <b>and the entire yard die with it</b>.<br><br>Choose your path.',
+      ()=>{ _G.petHardDeath=true; log('☠ Companion WAGERED — glory or ruin.'); startGameConfirmed(after); },
+      {ic:'☠', ok:'⚔ Wager Pet', cancel:'🛡 Keep Pet Safe', onCancel:()=>{ _G.petHardDeath=false; startGameConfirmed(after); }});
+    return;
+  }
+  _G._petAsked=false; if(!G.hardcore) _G.petHardDeath=false;
   clearSession();   // a fresh character supersedes any saved run
   $('start').classList.add('hidden'); $('hud').classList.remove('hidden');
   loadMeta(); loadSettings();
