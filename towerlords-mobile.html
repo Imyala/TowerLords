@@ -5003,17 +5003,17 @@ function checkReactions(e,dmg){
 // persist for the whole climb and stack with gear, skills and each other — authoring a build, not just looting one.
 const BOONS=[
  {id:'bloodthirst',nm:'Bloodthirst',   ic:'🩸',tag:'Sustain', col:'#ff4d6d',eff:{lifesteal:6,dmgPct:8},          ds:'Heal for <b>6%</b> of all damage dealt. <b>+8%</b> damage.'},
- {id:'glasscannon',nm:'Glass Cannon',  ic:'💥',tag:'Greed',   col:'#ff6b8a',warn:true,eff:{dmgPct:45,lifePct:-22},ds:'<b>+45%</b> damage — but <b>−22%</b> max life. Live dangerously.'},
+ {id:'glasscannon',nm:'Glass Cannon',  ic:'💥',tag:'Greed',   col:'#ff6b8a',warn:true,eff:{dmgPct:45,lifePct:-22},ds:'<b>+45%</b> damage — but <b>−22%</b> maximum life. Live dangerously.'},
  {id:'executioner',nm:'Executioner',   ic:'☠️',tag:'Offense', col:'#c98bff',eff:{execPct:35},                    ds:'<b>+35%</b> damage to enemies below 30% life.'},
  {id:'berserk',    nm:'Berserker Heart',ic:'🔥',tag:'Tempo',  col:'#ff9a3d',eff:{fervorRatePct:50,asPct:8},      ds:'Rampage builds <b>50%</b> faster. <b>+8%</b> attack speed.'},
  {id:'deadeye',    nm:'Deadeye',       ic:'🎯',tag:'Crit',    col:'#ffd24d',eff:{crit:12,critMultPct:40},        ds:'<b>+12%</b> crit chance and <b>+40%</b> crit damage.'},
- {id:'juggernaut', nm:'Juggernaut',    ic:'🛡️',tag:'Defense', col:'#8aa0c0',eff:{lifePct:26,armor:45,dmgPct:6},  ds:'<b>+26%</b> life, <b>+45</b> armour, <b>+6%</b> damage.'},
+ {id:'juggernaut', nm:'Juggernaut',    ic:'🛡️',tag:'Defense', col:'#8aa0c0',eff:{lifePct:26,armor:45,dmgPct:6},  ds:'<b>+26%</b> maximum life, <b>+45</b> armour, <b>+6%</b> damage.'},
  {id:'overflow',   nm:'Overflow',      ic:'🌀',tag:'Skills',  col:'#56e0ff',eff:{skillDmgPct:28,cdrPct:18},      ds:'<b>+28%</b> skill damage and <b>18%</b> faster cooldowns.'},
  {id:'swiftblade', nm:'Swiftblade',    ic:'💨',tag:'Speed',   col:'#8effd9',eff:{asPct:24,movePct:13},           ds:'<b>+24%</b> attack speed and <b>+13%</b> move speed.'},
  {id:'titanreach', nm:'Titan’s Reach', ic:'🔱',tag:'Area',    col:'#67c4ff',eff:{area:32,pierce:2},              ds:'<b>+32%</b> area of effect and <b>+2</b> pierce.'},
  {id:'multishot',  nm:'Multishot',     ic:'🎇',tag:'Offense', col:'#ffd24d',eff:{proj:1,dmgPct:5},               ds:'Your weapon fires <b>+1</b> extra projectile. <b>+5%</b> damage.'},
- {id:'vampirelord',nm:'Vampire Lord',  ic:'🦇',tag:'Sustain', col:'#b06bff',eff:{lifesteal:4,lifeOnKill:20,lifePct:8},ds:'<b>4%</b> lifesteal, <b>+20</b> life on kill, <b>+8%</b> life.'},
- {id:'thornmail',  nm:'Thornmail',     ic:'🌹',tag:'Defense', col:'#ff7a9c',eff:{reflectPct:28,armor:30,lifePct:10},ds:'Return <b>28%</b> of damage taken. <b>+30</b> armour, <b>+10%</b> life.'},
+ {id:'vampirelord',nm:'Vampire Lord',  ic:'🦇',tag:'Sustain', col:'#b06bff',eff:{lifesteal:4,lifeOnKill:20,lifePct:8},ds:'<b>4%</b> lifesteal, <b>+20</b> life on kill, <b>+8%</b> maximum life.'},
+ {id:'thornmail',  nm:'Thornmail',     ic:'🌹',tag:'Defense', col:'#ff7a9c',eff:{reflectPct:28,armor:30,lifePct:10},ds:'Return <b>28%</b> of damage taken. <b>+30</b> armour, <b>+10%</b> maximum life.'},
  {id:'manabulwark',nm:'Mana Bulwark',  ic:'🔷',tag:'Keystone',col:'#56b8ff',gives:'manaShield',eff:{manaPct:30,armor:20},ds:'Damage drains <b>mana before life</b> while mana holds. <b>+30%</b> mana.'},
  {id:'twincast',   nm:'Twin Cast',     ic:'✨',tag:'Keystone',col:'#a18bff',gives:'doubleCast',eff:{skillDmgPct:8},ds:'Your skills <b>cast twice</b>. <b>+8%</b> skill damage.'},
  {id:'greed',      nm:'Greed Incarnate',ic:'💰',tag:'Fortune',col:'#ffd24d',eff:{goldPct:70,xpPct:35,dmgPct:5},  ds:'<b>+70%</b> gold and <b>+35%</b> XP. Spoils of the bold.'},
@@ -5291,7 +5291,7 @@ const PET_AB_DEFS=[
   {id:'mana',      nm:'Magic',        ic:'🔵', col:'#4aa8ff', regen:'mana', s:0.08, u:'mana regen/s', d:1},
   {id:'magnet',    nm:'Magnet',       ic:'🧲', col:'#ffce4d', kind:'magnet', base:3, s:0.05, u:'pickup range', d:1},
   {id:'savage',    nm:'Savage',       ic:'🔥', col:'#ff9a3d', mod:'dmgPct', s:0.10, pct:true, u:'your damage'},
-  {id:'guard',     nm:'Guard',        ic:'🛡', col:'#56e0ff', mod:'lifePct', s:0.10, pct:true, u:'max life'},
+  {id:'guard',     nm:'Guard',        ic:'🛡', col:'#56e0ff', mod:'lifePct', s:0.10, pct:true, u:'maximum life'},
   {id:'swift',     nm:'Swiftness',    ic:'💨', col:'#8effd9', mod:'asPct', s:0.08, pct:true, u:'attack speed'},
   {id:'keen',      nm:'Keen Eye',     ic:'🎯', col:'#ffe14d', mod:'crit', s:0.04, pct:true, u:'crit chance'},
   {id:'brutal',    nm:'Brutality',    ic:'💢', col:'#ff5470', mod:'critMultPct', s:0.12, pct:true, u:'crit damage'},
@@ -5323,9 +5323,9 @@ const PET_AB_DEFS=[
   {id:'brilliant', nm:'Brilliant',    ic:'🧠', col:'#4aa8ff', attr:'int', s:0.10, u:'Intelligence'},
   {id:'hearty',    nm:'Hearty',       ic:'💗', col:'#ff5c78', attr:'vit', s:0.10, u:'Vitality'},
   {id:'willful',   nm:'Willful',      ic:'🔆', col:'#ffe14d', attr:'will', s:0.10, u:'Willpower'},
-  {id:'bulwark',   nm:'Bulwark',      ic:'🧱', col:'#b0a08f', mod:'lifeFlat', s:0.9, u:'life'},
+  {id:'bulwark',   nm:'Bulwark',      ic:'🧱', col:'#b0a08f', mod:'lifeFlat', s:0.9, u:'maximum life'},
   {id:'wellspring',nm:'Wellspring',   ic:'⛲', col:'#4aa8ff', mod:'manaFlat', s:0.7, u:'mana'},
-  {id:'vigor',     nm:'Vigor',        ic:'🌿', col:'#6dff8c', mod:'lifePct', s:0.06, pct:true, u:'max life'},
+  {id:'vigor',     nm:'Vigor',        ic:'🌿', col:'#6dff8c', mod:'lifePct', s:0.06, pct:true, u:'maximum life'},
   {id:'sorcery',   nm:'Sorcery',      ic:'🔯', col:'#9d7bff', mod:'manaPct', s:0.08, pct:true, u:'max mana'},
   {id:'juggernaut',nm:'Juggernaut',   ic:'🐗', col:'#ff9a3d', mod:'dmgPct', s:0.07, pct:true, u:'your damage'},
   {id:'sharpshooter',nm:'Sharpshooter',ic:'🔭', col:'#ffe14d', mod:'crit', s:0.03, pct:true, u:'crit chance'},
@@ -5710,9 +5710,9 @@ function drawPlayerRing(){
     ctx.lineCap='round'; ctx.lineWidth=w; ctx.shadowBlur=0;
     ctx.strokeStyle='rgba(2,6,14,0.55)'; ctx.beginPath(); ctx.arc(cx,cy,r,a0r,a1r,anti); ctx.stroke();
     if(frac>0.004){ ctx.strokeStyle=col; ctx.shadowColor=col; ctx.shadowBlur=8; ctx.beginPath(); ctx.arc(cx,cy,r,a0r,afr,anti); ctx.stroke(); ctx.shadowBlur=0; } }
-  seg(120,60,hpF,'#ff4d6d',8);     // HP — lower-left arc (60° arcs with 60° gaps → facing stays clear)
-  seg(60,-60,mpF,'#4aa8ff',8);     // MANA — lower-right arc (mirrors HP)
-  seg(240,60,dF,'#ffce4d',8,94);   // DASH cooldown — top arc, pushed further out so it never covers the head / your aim (HP & MP stay put)
+  seg(95,110,hpF,'#ff4d6d',8);     // HP — lower-left arc (110° arcs, ~10° gaps → the three read as one clean ring)
+  seg(85,-110,mpF,'#4aa8ff',8);    // MANA — lower-right arc (mirrors HP)
+  seg(215,110,dF,'#ffce4d',8);     // DASH cooldown — top arc, SAME radius as the others so all three complete one circle
 }
 
 // ---- loot bag tooltip (hover shows the item's full info) ----
@@ -6030,7 +6030,7 @@ function renderChar(){
   if(S.lifesteal>0) offense.push(['Lifesteal', Math.round(S.lifesteal*100)+'%']);
   if(S.lifeOnHit>0) offense.push(['Life on hit', '+'+S.lifeOnHit]);
   const defense=[
-    ['Max life', S.maxhp.toLocaleString()],
+    ['Maximum life', S.maxhp.toLocaleString()],
     ['Life regen', S.lifeRegen.toFixed(1)+'/s'],
     ['Armour', Math.round(S.armor)],
     ['Damage reduction', Math.round(dr()*100)+'%'],
@@ -6431,10 +6431,10 @@ function coopGateAtPortal(){
 }
 function interact(){
   if(_G.inYard){ if(_G.nearTerminal) return openPetTerminal(); if(_G.nearYardPet) return openPetAction(_G.nearYardPet); if(G.nearPortal) return exitPetYard(); return; }
-  if(G.tutorial){ if(G.nearChest) return openChest(G.nearChest); if(G.nearLoot) return openLootBag(); if(G.nearPortal) return finishTutorial(); return; }
-  if(G.practice){ if(G.nearLoot) return openLootBag(); if(G.nearPortal) exitPractice(); return; }
+  if(G.tutorial){ if(G.nearChest) return openChest(G.nearChest); if(G.nearLoot) return grabAllLoot(); if(G.nearPortal) return finishTutorial(); return; }
+  if(G.practice){ if(G.nearLoot) return grabAllLoot(); if(G.nearPortal) exitPractice(); return; }
   if(G.nearChest){ return openChest(G.nearChest); }
-  if(G.nearLoot){ return openLootBag(); }
+  if(G.nearLoot){ return grabAllLoot(); }
   if(G.inTown){ if(G.nearPortal){ if(coopGateAtPortal()) enterTower(); } else if(G.nearYard) enterPetYard(); else if(G.nearCraft) togglePanel('craftPanel'); else if(G.nearVendor) togglePanel('vendorPanel'); else if(G.nearStash) togglePanel('stashPanel'); else if(G.nearScore) togglePanel('scorePanel'); return; }
   if(G.nearPortal && G.portal.active){ if(coopGateAtPortal()) ascend(); } else if(G.nearVendor) togglePanel('vendorPanel'); else if(G.nearStash) togglePanel('stashPanel');
 }
@@ -7607,6 +7607,13 @@ function nearbyLootBags(){ const p=G.player.position, out=[];
   for(const pk of G.pickups){ if(pk.dead||pk.kind!=='loot')continue; if(pk.owner!=null&&pk.owner!==_G.cur)continue;
     if(Math.hypot(p.x-pk.mesh.position.x,p.z-pk.mesh.position.z)<4.2) out.push(pk); }
   return out; }
+function grabAllLoot(){ const bags=nearbyLootBags(); if(!bags.length){ log('No loot bag nearby.'); return; }
+  let got=0, full=false; for(const pk of bags){ if(takeLoot(pk)) got++; else if(G.inv.length>=G.invCap) full=true; }
+  renderLoot();
+  if(got>0){ log('🎒 Collected '+got+' item'+(got===1?'':'s')+(full?' — bag full, the rest stays on the floor.':'.')); }
+  else if(full){ log('🎒 Bag full ('+G.invCap+') — make room to collect.'); }
+  if(!nearbyLootBags().length){ $('lootPanel').classList.add('hidden'); refreshMenuState(); }
+}
 function openLootBag(){
   if(!$('lootPanel').classList.contains('hidden')){ $('lootPanel').classList.add('hidden'); refreshMenuState(); return; }   // F toggles it closed
   if(!nearbyLootBags().length){ log('No loot bag nearby.'); return; }
