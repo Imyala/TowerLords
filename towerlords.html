@@ -948,6 +948,17 @@
     font-size:15px;padding:40px;color:#ff8fa3;line-height:1.7;z-index:200;
     background:rgba(4,5,12,.985);backdrop-filter:blur(6px);}   /* opaque full-screen — must fully cover the start screen, never overlap it */
   #loadErr .leInner{max-width:520px;}
+  /* ---- online co-op guest vitals (host streams hp/mana/level; full menus live on the host) ---- */
+  #guestHud{position:fixed;left:14px;top:12px;min-width:172px;padding:8px 11px 9px;border-radius:11px;z-index:47;
+    background:rgba(6,9,18,.72);border:1px solid rgba(86,224,255,.34);box-shadow:0 0 22px rgba(0,0,0,.5);
+    font-size:12px;pointer-events:none;display:none;--pc:#56e0ff;}
+  #guestHud .ghName{font-size:12px;letter-spacing:1px;color:var(--pc);margin-bottom:5px;text-shadow:0 0 8px var(--pc);}
+  #guestHud .ghBar{height:9px;border-radius:5px;background:rgba(255,255,255,.1);overflow:hidden;margin-top:4px;}
+  #guestHud .ghBar.mana{height:6px;}
+  #guestHud .ghBar i{display:block;height:100%;width:100%;background:linear-gradient(90deg,#ff5470,#ff9bb0);transition:width .12s;}
+  #guestHud .ghBar.mana i{background:linear-gradient(90deg,#3aa0ff,#8ad4ff);}
+  #guestHud .ghDown{display:none;margin-top:6px;font-size:10.5px;color:#ff5470;letter-spacing:.5px;}
+  #guestHud.down{border-color:#ff5470;} #guestHud.down .ghDown{display:block;}
   /* ---- local co-op (split-screen) ---- */
   #coopHud{position:absolute;inset:0;pointer-events:none;z-index:6;display:none;}
   .coTag{position:absolute;min-width:148px;padding:6px 9px;border-radius:9px;background:rgba(6,9,18,.6);
@@ -5810,20 +5821,18 @@ function legacyBuyStat(k){ if(!_G.running) return; loadMeta();
 // ============================================================ PLAYER-CENTRED RING HUD + PET-YARD AREA
 // hp (red, left) · mana (blue, right) · dash cooldown (gold, top) drawn right on the player so you never look away
 const _ringV=new THREE.Vector3();
-function drawPlayerRing(){
-  const cv=$('playerRing'); if(!cv) return;
-  const pl=_G.players[0];
-  if(!_G.running || _G.splitscreen || _G.modalOpen || anyPanelOpen() || !pl || !pl.player){ cv.style.display='none'; return; }
-  const _px=pl.player.position.x, _py=pl.player.position.y, _pz=pl.player.position.z;   // group sits at y≈1, capsule body spans local 0→2.2 (world py→py+2.2, centre py+1.1)
-  _ringV.set(_px,_py,_pz).project(camera); const _fz=_ringV.z, _fx=(_ringV.x*.5+.5)*innerWidth, _fy=(-_ringV.y*.5+.5)*innerHeight;       // feet (group origin)
-  _ringV.set(_px,_py+2.2,_pz).project(camera); const _hx=(_ringV.x*.5+.5)*innerWidth, _hy=(-_ringV.y*.5+.5)*innerHeight;                 // head (capsule top)
+// shared ring renderer — draws the hp·mana·dash arcs centred on any hero/ghost mesh.
+function drawRingOn(mesh, hpF, mpF, dF){
+  const cv=$('playerRing'); if(!cv||!mesh) return;
+  const _px=mesh.position.x, _py=mesh.position.y, _pz=mesh.position.z;   // hero group sits at y≈1 (ghost at y≈0); body spans ~2.2 up → centre on its midpoint
+  _ringV.set(_px,_py,_pz).project(camera); const _fz=_ringV.z, _fx=(_ringV.x*.5+.5)*innerWidth, _fy=(-_ringV.y*.5+.5)*innerHeight;       // feet
+  _ringV.set(_px,_py+2.2,_pz).project(camera); const _hx=(_ringV.x*.5+.5)*innerWidth, _hy=(-_ringV.y*.5+.5)*innerHeight;                 // head
   if(_fz>1){ cv.style.display='none'; return; }
   const SZ=258; if(cv.width!==SZ){ cv.width=SZ; cv.height=SZ; }
   const sx=(_fx+_hx)/2, sy=(_fy+_hy)/2;   // midpoint of feet & head on screen → perfectly centred on the hero
   cv.style.display='block'; cv.style.left=(sx-SZ/2)+'px'; cv.style.top=(sy-SZ/2)+'px';
   const ctx=cv._c||(cv._c=cv.getContext('2d')); ctx.clearRect(0,0,SZ,SZ);
   const cx=SZ/2, cy=SZ/2, R=84, D=Math.PI/180;
-  const hpF=clamp(pl.hp/(pl.maxhp||1),0,1), mpF=clamp(pl.mana/(pl.maxmana||1),0,1), dF=clamp(1-((pl.dashCd||0)/(pl.dashCdMax||1)),0,1);
   function seg(a0,sweep,frac,col,w,r){ r=r||R; const anti=sweep<0, a0r=a0*D, a1r=(a0+sweep)*D, afr=(a0+sweep*frac)*D;
     ctx.lineCap='round'; ctx.lineWidth=w; ctx.shadowBlur=0;
     ctx.strokeStyle='rgba(2,6,14,0.55)'; ctx.beginPath(); ctx.arc(cx,cy,r,a0r,a1r,anti); ctx.stroke();
@@ -5831,6 +5840,19 @@ function drawPlayerRing(){
   seg(95,110,hpF,'#ff4d6d',8);     // HP — lower-left arc (110° arcs, ~10° gaps → the three read as one clean ring)
   seg(85,-110,mpF,'#4aa8ff',8);    // MANA — lower-right arc (mirrors HP)
   seg(215,110,dF,'#ffce4d',8);     // DASH cooldown — top arc, SAME radius as the others so all three complete one circle
+}
+function drawPlayerRing(){
+  const cv=$('playerRing'); if(!cv) return;
+  const pl=_G.players[0];
+  if(!_G.running || _G.splitscreen || _G.modalOpen || anyPanelOpen() || !pl || !pl.player){ cv.style.display='none'; return; }
+  drawRingOn(pl.player, clamp(pl.hp/(pl.maxhp||1),0,1), clamp(pl.mana/(pl.maxmana||1),0,1), clamp(1-((pl.dashCd||0)/(pl.dashCdMax||1)),0,1));
+}
+// guest: the same on-character ring, anchored to MY ghost and fed by the host's streamed stats
+function drawGuestRing(){
+  const cv=$('playerRing'); if(!cv) return;
+  const pr=NET.peer; const me=pr&&pr.ghosts&&pr.ghosts[NET.localId], st=pr&&pr.me;
+  if(!me || !st || _G.modalOpen || anyPanelOpen()){ cv.style.display='none'; return; }
+  drawRingOn(me, clamp(st.hp/(st.mh||1),0,1), clamp(st.mp/(st.mm||1),0,1), clamp(1-((st.dc||0)/(st.dm||0.5)),0,1));
 }
 
 // ---- loot bag tooltip (hover shows the item's full info) ----
@@ -7332,7 +7354,24 @@ function netPeerEnter(){   // enter a lightweight render-only state (no local wo
   if(!NET.peer.ground){ const gnd=new THREE.Mesh(new THREE.PlaneGeometry(400,400), new THREE.MeshStandardMaterial({color:0x0d1320,roughness:1}));
     gnd.rotation.x=-Math.PI/2; gnd.position.y=0; scene.add(gnd); NET.peer.ground=gnd; }   // placeholder until the floor layout arrives
   $('start').classList.add('hidden'); $('hud').classList.add('hidden');
+  // the guest can't use the full HUD (skills/menus/inventory live on the host), but it DOES get the
+  // on-character hp·mana·dash ring plus a compact vitals readout, streamed from the host.
+  const ring=$('playerRing'); if(ring && ring.parentElement!==$('app')){ $('app').appendChild(ring); }   // lift the ring out of the hidden #hud so it stays visible
+  buildGuestHud();
   banner('🌐 ONLINE CO-OP','guest view — the host runs the world'); }
+function buildGuestHud(){ let el=$('guestHud'); if(el) return el;
+  el=document.createElement('div'); el.id='guestHud';
+  el.innerHTML='<div class="ghName">P<span id="ghNum">?</span> · <span class="ghLv">LV <b id="ghLv">1</b></span></div>'
+    +'<div class="ghBar"><i id="ghHp"></i></div><div class="ghBar mana"><i id="ghMp"></i></div>'
+    +'<div class="ghDown" id="ghDown">DOWNED — hold on, an ally can revive you</div>';
+  $('app').appendChild(el); return el; }
+function updateGuestHud(){ const st=NET.peer&&NET.peer.me; const el=$('guestHud'); if(!el){ return; }
+  if(!st){ el.style.display='none'; return; } el.style.display='block';
+  const num=$('ghNum'); if(num) num.textContent=(NET.localId|0)+1;
+  const lv=$('ghLv'); if(lv) lv.textContent=st.lv||1;
+  const hp=$('ghHp'); if(hp) hp.style.width=clamp(st.hp/(st.mh||1)*100,0,100)+'%';
+  const mp=$('ghMp'); if(mp) mp.style.width=clamp(st.mp/(st.mm||1)*100,0,100)+'%';
+  el.classList.toggle('down', !!st.dn); }
 // ---- floor layout sync (Phase 2 finish): host streams the room/wall/pillar layout once per floor; peer rebuilds it ----
 function serializeFloorLayout(){ const bi=Math.max(0,BIOMES.indexOf(biome));
   return JSON.stringify({ type:'floor', bi, bounds:G.bounds,
@@ -7359,7 +7398,8 @@ function nearAnyPlayer(x,z,r){ const r2=r*r; for(const p of _G.players){ if(!p.j
 function serializeSnapshot(){
   const rnd=v=>Math.round(v*100)/100;
   const players=joinedPlayers().map(p=>({ id:p.id, x:rnd(p.player.position.x), z:rnd(p.player.position.z),
-    r:rnd(p.player.rotation.y), hp:Math.round(p.hp), mh:Math.round(p.maxhp||1), c:p.color, dn:p.downed?1:0 }));
+    r:rnd(p.player.rotation.y), hp:Math.round(p.hp), mh:Math.round(p.maxhp||1), c:p.color, dn:p.downed?1:0,
+    mp:Math.round(p.mana||0), mm:Math.round(p.maxmana||1), dc:rnd(p.dashCd||0), dm:rnd(p.dashCdMax||0.5), lv:p.level||1 }));   // mana/dash/level so a guest can draw its own hp·mana·dash ring + HUD
   const en=[];   // enemies near any player (cull for bandwidth)
   for(const e of _G.enemies){ const x=e.mesh.position.x, z=e.mesh.position.z; if(!nearAnyPlayer(x,z,46))continue;
     if(e._nid==null)e._nid=_nid++; en.push({ i:e._nid, x:rnd(x), z:rnd(z), s:rnd(e.scale||1), c:e.color||0xff5c78, b:e.boss?1:0, h:e.maxhp?Math.round(e.hp/e.maxhp*100):100, f:e.hitFlash>0?1:0 }); }
@@ -7384,7 +7424,8 @@ function applySnapshot(s){ const pr=NET.peer; if(!pr||!s)return;
   if(s.players){ for(const sp of s.players){ let g=pr.ghosts[sp.id]; if(!g){ g=makeGhost(sp.c||0x56e0ff); pr.ghosts[sp.id]=g; g.position.set(sp.x,0,sp.z); }
       g.userData.tx=sp.x; g.userData.tz=sp.z; g.userData.tr=sp.r||0; g.userData.hp=sp.hp; g.userData.mh=sp.mh;
       const dn=!!sp.dn; if(dn!==g.userData.dn){ g.userData.dn=dn; g.rotation.x=dn?Math.PI/2:0;   // lay knocked-out allies on their side
-        const body=g.children[0]; if(body&&body.material) body.material.emissiveIntensity=dn?0.12:0.55; } }
+        const body=g.children[0]; if(body&&body.material) body.material.emissiveIntensity=dn?0.12:0.55; }
+      if(sp.id===NET.localId){ pr.me={ hp:sp.hp, mh:sp.mh||1, mp:sp.mp!=null?sp.mp:0, mm:sp.mm||1, dc:sp.dc||0, dm:sp.dm||0.5, lv:sp.lv||1, dn }; } }   // MY own stats → guest HUD + ring
     const live=new Set(s.players.map(p=>p.id));
     for(const id in pr.ghosts){ if(!live.has(+id)){ scene.remove(pr.ghosts[id]); delete pr.ghosts[id]; } } }
   // enemies (pooled by net-id; lerped toward target in render)
@@ -7416,7 +7457,8 @@ function netGuestRender(raw){ const pr=NET.peer; if(!pr)return; const k=Math.min
   const me=pr.ghosts[NET.localId]; const fx=me?me.position.x:0, fz=me?me.position.z:0;
   camera.position.lerp(new THREE.Vector3(fx,24,fz+13),0.2); camera.lookAt(fx,1.2,fz);
   if(typeof dir!=='undefined'&&dir){ dir.position.set(fx+20,42,fz+14); dir.target.position.set(fx,0,fz); dir.target.updateMatrixWorld(); }
-  renderer.setScissorTest(false); renderer.setViewport(0,0,innerWidth,innerHeight); renderer.render(scene,camera); }
+  renderer.setScissorTest(false); renderer.setViewport(0,0,innerWidth,innerHeight); renderer.render(scene,camera);
+  drawGuestRing(); updateGuestHud(); }
 
 const SIM_DT=1/60; let _acc=0;   // fixed-timestep accumulator (decouples sim cadence from render fps)
 // keep the host simulating when its tab is hidden (rAF pauses there). Browsers throttle background
