@@ -958,20 +958,20 @@
   body.netGuest #recallBtn, body.netGuest #openLegacyBtn, body.netGuest #openCoopHostBtn,
   body.netGuest #towerInfo, body.netGuest #floorBanner{ display:none !important; }
   /* ---- online party HUD: every player's hp/mp on the left, draggable ---- */
-  #partyHud{position:fixed;left:14px;top:210px;width:190px;z-index:44;display:none;
-    background:rgba(8,11,22,.8);border:1px solid rgba(120,150,200,.28);border-radius:12px;
-    box-shadow:0 6px 22px rgba(0,0,0,.5);backdrop-filter:blur(7px);padding:7px 10px 9px;font-size:12px;}
-  #partyHud h3{font-size:10px;letter-spacing:2.5px;color:#9fb4d8;opacity:.85;margin:0 0 7px;cursor:grab;user-select:none;font-weight:bold;}
-  #partyHud .pRow{margin-bottom:8px;--pc:#56e0ff;}
+  #partyHud{position:fixed;left:16px;top:224px;width:250px;z-index:44;display:none;
+    background:rgba(8,11,22,.88);border:1px solid rgba(120,150,200,.42);border-radius:14px;
+    box-shadow:0 8px 30px rgba(0,0,0,.6),inset 0 0 0 1px rgba(255,255,255,.04);backdrop-filter:blur(8px);padding:11px 14px 13px;font-size:13px;}
+  #partyHud h3{font-size:12px;letter-spacing:3px;color:#bcd0f0;opacity:.95;margin:0 0 11px;cursor:grab;user-select:none;font-weight:bold;}
+  #partyHud .pRow{margin-bottom:13px;--pc:#56e0ff;}
   #partyHud .pRow:last-child{margin-bottom:0;}
-  #partyHud .pNm{font-size:11px;letter-spacing:.5px;color:var(--pc);margin-bottom:3px;text-shadow:0 0 7px var(--pc);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-  #partyHud .pStars span{font-size:10px !important;letter-spacing:1px !important;}
-  #partyHud .pBar{height:8px;border-radius:5px;background:rgba(255,255,255,.1);overflow:hidden;margin-top:3px;}
-  #partyHud .pBar.mana{height:5px;}
-  #partyHud .pBar i{display:block;height:100%;width:100%;background:linear-gradient(90deg,#ff5470,#ff9bb0);transition:width .12s;}
-  #partyHud .pBar.mana i{background:linear-gradient(90deg,#3aa0ff,#8ad4ff);}
-  #partyHud .pRow.down .pNm{color:#ff5470;text-shadow:0 0 7px #ff5470;}
-  #partyHud .pRow.down .pNm::after{content:' · DOWNED';font-size:9px;opacity:.9;}
+  #partyHud .pNm{font-size:14px;font-weight:bold;letter-spacing:.5px;color:var(--pc);margin-bottom:5px;text-shadow:0 0 9px var(--pc);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  #partyHud .pStars span{font-size:13px !important;letter-spacing:1.5px !important;}
+  #partyHud .pBar{height:12px;border-radius:6px;background:rgba(255,255,255,.12);overflow:hidden;margin-top:4px;box-shadow:inset 0 1px 2px rgba(0,0,0,.4);}
+  #partyHud .pBar.mana{height:7px;}
+  #partyHud .pBar i{display:block;height:100%;width:100%;background:linear-gradient(90deg,#ff5470,#ff9bb0);transition:width .12s;box-shadow:0 0 8px rgba(255,84,112,.5);}
+  #partyHud .pBar.mana i{background:linear-gradient(90deg,#3aa0ff,#8ad4ff);box-shadow:0 0 8px rgba(58,160,255,.5);}
+  #partyHud .pRow.down .pNm{color:#ff5470;text-shadow:0 0 9px #ff5470;}
+  #partyHud .pRow.down .pNm::after{content:' · DOWNED';font-size:10px;opacity:.9;}
   /* ---- local co-op (split-screen) ---- */
   #coopHud{position:absolute;inset:0;pointer-events:none;z-index:6;display:none;}
   .coTag{position:absolute;min-width:148px;padding:6px 9px;border-radius:9px;background:rgba(6,9,18,.6);
@@ -2928,7 +2928,11 @@ let mouseCX=innerWidth/2, mouseCY=innerHeight/2;
 addEventListener('mousemove',e=>{ mouseCX=e.clientX; mouseCY=e.clientY; mouse.x=(e.clientX/innerWidth)*2-1; mouse.y=-(e.clientY/innerHeight)*2+1; });
 addEventListener('mousedown',e=>{ if(anyPanelOpen())return; if(e.button===0) mouseDown=true; else if(e.button===2) mouseR=true; });
 addEventListener('mouseup',e=>{ if(e.button===0) mouseDown=false; else if(e.button===2) mouseR=false; });
-addEventListener('contextmenu',e=>{ if(G.running && !anyPanelOpen()) e.preventDefault(); });
+addEventListener('contextmenu',e=>{ if((G.running||_G.netGuest) && !anyPanelOpen()) e.preventDefault(); });   // guest too (G.running is false for the render-only guest) — else the browser menu eats keyup and a key sticks
+// losing focus (right-click menu, alt-tab, dev console) drops keyup/mouseup events → a held key/mouse can stick
+// (guest: "stuck moving down"). Clear all held input whenever the window loses focus or visibility.
+addEventListener('blur',()=>{ for(const k in keys) keys[k]=false; mouseDown=false; mouseR=false; });
+addEventListener('visibilitychange',()=>{ if(document.hidden){ for(const k in keys) keys[k]=false; mouseDown=false; mouseR=false; } });
 
 // ============================================================ LOCAL CO-OP (split-screen, up to 4)
 const PLAYER_COLORS=[0x56e0ff,0xff5c78,0x6dff8c,0xffce4d];
@@ -3606,7 +3610,7 @@ function recompute(){
   const E={ str:A.str+attrItem.str, dex:A.dex+attrItem.dex, int:A.int+attrItem.int, vit:A.vit+attrItem.vit, will:A.will+attrItem.will };
   if(special.igniteBoost) igniteMult=2;
   if(special.dashCdr) dashCdr=0.6;
-  if(G.pet){ const pl=G.pet.level;   // active-pet ability auras — ONLY unlocked abilities apply, each scales with pet level
+  if(G.pet && !G.petErrand && !(G.pet.down>0)){ const pl=G.pet.level;   // pet auras apply ONLY while your companion is actually at your side (not on a sell-run, not downed)
     for(const a of activeAbilities(G.pet)){ const d=AB_DEF[a.type]; if(!d) continue; const v=petAbilVal(a.type,pl);
       if(d.regen==='life') talLifeRegen+=v;
       else if(d.regen==='mana') talManaRegen+=v;
@@ -3614,7 +3618,7 @@ function recompute(){
       else if(d.mod) addMod(d.mod, d.neg? -v : v);
     }
   }
-  G.petMagnet = G.pet ? (7 + petMagnetVal(G.pet)) : 0;
+  G.petMagnet = (G.pet && !G.petErrand && !(G.pet.down>0)) ? (7 + petMagnetVal(G.pet)) : 0;
   // (fame no longer grants any combat power — it's a pure skill rating)
   const S={};
   S.attrBase=A; S.attrItem=attrItem; S.attrEff=E;   // exposed so the Character screen can show base (+gear)
@@ -4941,6 +4945,7 @@ function sendPetErrand(){
   if(G.selGem && !G.inv.includes(G.selGem)) G.selGem=null;
   const t=Math.max(14, 34 - (G.pet.rarity||0)*4);   // faster as the pet's rarity rises
   G.petErrand={items:junk.length, gold, t, total:t};
+  recompute();   // pet is away → its combat auras drop until it returns
   log(`🐾 Companion off to town with ${junk.length} item(s) → ~${gold}g, back in ${Math.ceil(t)}s.`);
   banner('🐾 SELL-RUN','companion heading to town'); refreshItemPanels();
 }
@@ -5636,7 +5641,7 @@ function updatePet(dt){
   if(!G.pet)return; const pet=G.pet;
   // sell-run errand: pet is away in town, fights nothing, returns with gold
   if(G.petErrand){ G.petErrand.t-=dt; if(G.petMesh) G.petMesh.visible=false;
-    if(G.petErrand.t<=0){ const er=G.petErrand; G.petErrand=null; G.gold+=er.gold; flashGold();
+    if(G.petErrand.t<=0){ const er=G.petErrand; G.petErrand=null; G.gold+=er.gold; flashGold(); recompute();   // back at your side → auras return
       banner('🐾 SELL-RUN DONE','+'+er.gold+' gold'); log(`🐾 Companion returned — sold ${er.items} item(s) for +${er.gold}g.`); unlockFeat('sellrun');
       if(G.petMesh){ G.petMesh.visible=true; G.petMesh.position.set(G.player.position.x,1.2,G.player.position.z+1.5); }
       if(!$('vendorPanel').classList.contains('hidden'))renderVendor(); refreshPetUI(); }
@@ -7688,13 +7693,13 @@ function applySnapshot(s){ const pr=NET.peer; if(!pr||!s)return;
   for(const e of (s.en||[])){ eLive.add(e.i); let g=pr.eg[e.i]; if(!g){ g=makeEnemyGhost(e.c,e.s,e.b); pr.eg[e.i]=g; g.position.set(e.x,e.s||1,e.z); } g.userData.tx=e.x; g.userData.tz=e.z;
     if(e.f && g.material){ g.material.emissiveIntensity=1.6; } else if(g.material){ g.material.emissiveIntensity=.4; } }
   for(const id in pr.eg){ if(!eLive.has(+id)){ scene.remove(pr.eg[id]); delete pr.eg[id]; } }
-  // enemy projectiles (snap to position — they move fast)
+  // enemy projectiles — interpolate toward the latest position so they glide instead of stepping at 18Hz
   pr.bg=pr.bg||{}; const bLive=new Set();
-  for(const b of (s.pj||[])){ bLive.add(b.i); let g=pr.bg[b.i]; if(!g){ g=makeBulletGhost(); pr.bg[b.i]=g; } g.position.x=b.x; g.position.z=b.z; }
+  for(const b of (s.pj||[])){ bLive.add(b.i); let g=pr.bg[b.i]; if(!g){ g=makeBulletGhost(); pr.bg[b.i]=g; g.position.set(b.x,1.1,b.z); } g.userData.tx=b.x; g.userData.tz=b.z; }
   for(const id in pr.bg){ if(!bLive.has(+id)){ scene.remove(pr.bg[id]); delete pr.bg[id]; } }
-  // PLAYER projectiles — so the guest sees everyone's shots fly (its own and allies')
+  // PLAYER projectiles — so the guest sees everyone's shots fly (its own and allies'), interpolated too
   pr.pbg=pr.pbg||{}; const pbLive=new Set();
-  for(const b of (s.pb||[])){ pbLive.add(b.i); let g=pr.pbg[b.i]; if(!g){ g=makePlayerBoltGhost(b.c,b.s); pr.pbg[b.i]=g; } g.position.x=b.x; g.position.z=b.z; }
+  for(const b of (s.pb||[])){ pbLive.add(b.i); let g=pr.pbg[b.i]; if(!g){ g=makePlayerBoltGhost(b.c,b.s); pr.pbg[b.i]=g; g.position.set(b.x,1.1,b.z); } g.userData.tx=b.x; g.userData.tz=b.z; }
   for(const id in pr.pbg){ if(!pbLive.has(+id)){ scene.remove(pr.pbg[id]); delete pr.pbg[id]; } }
   // enemy deaths → replay the burst FX the host saw (reuses burst/ringFx; peer animates G.decals in netGuestRender)
   for(const d of (s.dd||[])){ burst(d.x,d.z,d.c||0xff5c78); if(d.b){ ringFx(d.x,d.z,7,0xffce4d); ringFx(d.x,d.z,4,d.c||0xff5c78); } }
@@ -7712,6 +7717,9 @@ function makeLootGhost(kind,color){ const c=color||0x8effd9;
 function netGuestRender(raw){ const pr=NET.peer; if(!pr)return; const k=Math.min(1,raw*12);
   for(const id in pr.ghosts){ const g=pr.ghosts[id], u=g.userData; if(u.tx!=null){ g.position.x+=(u.tx-g.position.x)*k; g.position.z+=(u.tz-g.position.z)*k; g.rotation.y=u.tr||0; } }
   if(pr.eg) for(const id in pr.eg){ const g=pr.eg[id], u=g.userData; if(u.tx!=null){ g.position.x+=(u.tx-g.position.x)*k; g.position.z+=(u.tz-g.position.z)*k; g.rotation.y+=raw*2; } }
+  const kb=Math.min(1,raw*22);   // bullets move fast → snappier catch-up so they glide without lagging behind
+  if(pr.bg) for(const id in pr.bg){ const g=pr.bg[id], u=g.userData; if(u.tx!=null){ g.position.x+=(u.tx-g.position.x)*kb; g.position.z+=(u.tz-g.position.z)*kb; } }
+  if(pr.pbg) for(const id in pr.pbg){ const g=pr.pbg[id], u=g.userData; if(u.tx!=null){ g.position.x+=(u.tx-g.position.x)*kb; g.position.z+=(u.tz-g.position.z)*kb; } }
   if(pr.lg) for(const id in pr.lg){ const g=pr.lg[id]; g.rotation.y+=raw*3; g.position.y=.7+Math.sin(performance.now()*0.005+g.position.x)*0.12; }   // bob/spin loot
   updateDecals(Math.min(0.05,raw));   // animate hit/death bursts the host streamed
   const me=pr.ghosts[NET.localId]; const fx=me?me.position.x:0, fz=me?me.position.z:0;
