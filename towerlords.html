@@ -917,8 +917,14 @@
   }
   /* touchscreens: the keyboard key-badges in the nav are useless — hide them for a tighter menu */
   body.touch-on #stats .mKey{display:none;}
-  /* touch: collapse the nav behind a ☰ button so it stops eating the screen */
-  #navToggle{display:none;}
+  /* desktop: ☰ collapses the left nav to just the header pill (remembered); touch build restyles below */
+  #navToggle{display:flex;align-items:center;justify-content:center;width:30px;height:30px;flex:none;
+    border-radius:8px;border:1px solid rgba(86,224,255,.4);background:rgba(86,224,255,.1);color:var(--neon);
+    font-size:16px;line-height:1;cursor:pointer;pointer-events:auto;margin-right:5px;transition:background .12s;}
+  #navToggle:hover{background:rgba(86,224,255,.24);}
+  #stats.collapsed{width:max-content;min-width:0;}
+  #stats.collapsed .mItem,#stats.collapsed #rankHud{display:none;}
+  #stats.collapsed .mHdr{border-bottom:none;margin-bottom:0;padding-bottom:0;}
   body.touch-on #navToggle{display:flex;align-items:center;justify-content:center;width:32px;height:32px;flex:none;
     border-radius:8px;border:1px solid rgba(86,224,255,.42);background:rgba(86,224,255,.12);color:var(--neon);
     font-size:18px;line-height:1;cursor:pointer;pointer-events:auto;margin-right:6px;}
@@ -951,6 +957,20 @@
   /* ---- online co-op guest: full HUD, but hide host-only / account controls that a guest can't drive mid-run ---- */
   body.netGuest #recallBtn, body.netGuest #openLegacyBtn, body.netGuest #openCoopHostBtn,
   body.netGuest #towerInfo, body.netGuest #floorBanner{ display:none !important; }
+  /* ---- online party HUD: every player's hp/mp on the left, draggable ---- */
+  #partyHud{position:fixed;left:14px;top:210px;width:190px;z-index:44;display:none;
+    background:rgba(8,11,22,.8);border:1px solid rgba(120,150,200,.28);border-radius:12px;
+    box-shadow:0 6px 22px rgba(0,0,0,.5);backdrop-filter:blur(7px);padding:7px 10px 9px;font-size:12px;}
+  #partyHud h3{font-size:10px;letter-spacing:2.5px;color:#9fb4d8;opacity:.85;margin:0 0 7px;cursor:grab;user-select:none;font-weight:bold;}
+  #partyHud .pRow{margin-bottom:8px;--pc:#56e0ff;}
+  #partyHud .pRow:last-child{margin-bottom:0;}
+  #partyHud .pNm{font-size:11px;letter-spacing:.5px;color:var(--pc);margin-bottom:3px;text-shadow:0 0 7px var(--pc);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  #partyHud .pBar{height:8px;border-radius:5px;background:rgba(255,255,255,.1);overflow:hidden;margin-top:3px;}
+  #partyHud .pBar.mana{height:5px;}
+  #partyHud .pBar i{display:block;height:100%;width:100%;background:linear-gradient(90deg,#ff5470,#ff9bb0);transition:width .12s;}
+  #partyHud .pBar.mana i{background:linear-gradient(90deg,#3aa0ff,#8ad4ff);}
+  #partyHud .pRow.down .pNm{color:#ff5470;text-shadow:0 0 7px #ff5470;}
+  #partyHud .pRow.down .pNm::after{content:' · DOWNED';font-size:9px;opacity:.9;}
   /* ---- local co-op (split-screen) ---- */
   #coopHud{position:absolute;inset:0;pointer-events:none;z-index:6;display:none;}
   .coTag{position:absolute;min-width:148px;padding:6px 9px;border-radius:9px;background:rgba(6,9,18,.6);
@@ -1820,8 +1840,8 @@ function makeSkillGem(floor, idForce){ const id=idForce||pick(SKILL_IDS), sk=SKI
     value:60+tier*40+floor*3, desc:(sk.toggle?`Toggle aura · bind to slots 5–9 · ${sk.mps} mana/sec while active`:`Active skill · bind to slots 1–4${tier>1?` · +${(tier-1)*15}% power`:''}`)}; }
 // ---- user settings (persist across sessions) ----
 const SETTINGS_KEY='towerlords_settings_v1';
-const SETTINGS={ bigNumbers:true, moveMode:'keyboard', tips:true, autoSalvage:true, music:true, musicVol:75, junkMaxRarity:1, camSway:true, touch:'auto', touchAim:'auto' };   // autoSalvage: grey/common drops auto-sell for gold · musicVol: music loudness 0-100 (player-set) · junkMaxRarity: highest rarity index eligible for bulk feed/sell · camSway: directional camera lean · touch: mobile on-screen controls (auto/on/off) · touchAim: auto-aim vs twin-stick
-function loadSettings(){ try{ const s=localStorage.getItem(SETTINGS_KEY); if(s){ const o=JSON.parse(s); if(typeof o.bigNumbers==='boolean')SETTINGS.bigNumbers=o.bigNumbers; if(o.moveMode==='keyboard'||o.moveMode==='mouse')SETTINGS.moveMode=o.moveMode; if(typeof o.tips==='boolean')SETTINGS.tips=o.tips; if(typeof o.autoSalvage==='boolean')SETTINGS.autoSalvage=o.autoSalvage; if(typeof o.music==='boolean')SETTINGS.music=o.music; if(typeof o.musicVol==='number')SETTINGS.musicVol=clamp(o.musicVol|0,0,100); if(typeof o.junkMaxRarity==='number')SETTINGS.junkMaxRarity=clamp(o.junkMaxRarity|0,0,3); if(typeof o.camSway==='boolean')SETTINGS.camSway=o.camSway; if(o.touch==='auto'||o.touch==='on'||o.touch==='off')SETTINGS.touch=o.touch; if(o.touchAim==='auto'||o.touchAim==='twin')SETTINGS.touchAim=o.touchAim; } }catch(e){} }
+const SETTINGS={ bigNumbers:true, moveMode:'keyboard', tips:true, autoSalvage:true, music:true, musicVol:75, junkMaxRarity:1, camSway:true, touch:'auto', touchAim:'auto', navCollapsed:false };   // autoSalvage: grey/common drops auto-sell for gold · musicVol: music loudness 0-100 (player-set) · junkMaxRarity: highest rarity index eligible for bulk feed/sell · camSway: directional camera lean · touch: mobile on-screen controls (auto/on/off) · touchAim: auto-aim vs twin-stick
+function loadSettings(){ try{ const s=localStorage.getItem(SETTINGS_KEY); if(s){ const o=JSON.parse(s); if(typeof o.bigNumbers==='boolean')SETTINGS.bigNumbers=o.bigNumbers; if(o.moveMode==='keyboard'||o.moveMode==='mouse')SETTINGS.moveMode=o.moveMode; if(typeof o.tips==='boolean')SETTINGS.tips=o.tips; if(typeof o.autoSalvage==='boolean')SETTINGS.autoSalvage=o.autoSalvage; if(typeof o.music==='boolean')SETTINGS.music=o.music; if(typeof o.musicVol==='number')SETTINGS.musicVol=clamp(o.musicVol|0,0,100); if(typeof o.junkMaxRarity==='number')SETTINGS.junkMaxRarity=clamp(o.junkMaxRarity|0,0,3); if(typeof o.camSway==='boolean')SETTINGS.camSway=o.camSway; if(o.touch==='auto'||o.touch==='on'||o.touch==='off')SETTINGS.touch=o.touch; if(o.touchAim==='auto'||o.touchAim==='twin')SETTINGS.touchAim=o.touchAim; if(typeof o.navCollapsed==='boolean')SETTINGS.navCollapsed=o.navCollapsed; } }catch(e){} }
 // bulk feed/sell "junk" = anything at or below the chosen quality that isn't a special item or locked
 function junkThreshold(){ return clamp(SETTINGS.junkMaxRarity|0,0,4); }
 function isBulkJunk(it){ return it && !it.isPet && !it.isPot && !it.isFlask && !it.isSkillGem && !it.locked && RARITY.indexOf(it.rarity)<=junkThreshold(); }
@@ -2967,10 +2987,13 @@ function setupTouchControls(){
     else if(el.classList.contains('flask')){ const i=[].indexOf.call(belt.children,el); if(i>=0) useFlask(i); }
     else if(el.parentNode===bar){ const i=[].indexOf.call(bar.children,el); if(i>=0) useSlot(i); }
     e.preventDefault(); }, {passive:false});
-  // collapsible nav: ☰ toggles the list; picking any item closes it again
+  // collapsible nav: ☰ toggles the list. Touch build uses .open (default collapsed); desktop uses
+  // .collapsed (default expanded) and remembers the choice.
   const nav=$('navToggle'), stats=$('stats');
-  if(nav) nav.addEventListener('click',()=>{ stats.classList.toggle('open'); });
+  if(nav) nav.addEventListener('click',()=>{ if(TOUCH.on){ stats.classList.toggle('open'); }
+    else { stats.classList.toggle('collapsed'); try{ SETTINGS.navCollapsed=stats.classList.contains('collapsed'); saveSettings(); }catch(_){} } });
   if(stats) stats.addEventListener('click',e=>{ if(TOUCH.on && e.target.closest('.mItem')) stats.classList.remove('open'); });
+  if(stats && !TOUCH.on && SETTINGS.navCollapsed) stats.classList.add('collapsed');   // restore desktop collapsed state
 }
 function makeKbmInput(){ return { kind:'kbm', pollActions:false, read(p){
   const inp=p.in; let mx=0,mz=0; if(keys['w'])mz-=1; if(keys['s'])mz+=1; if(keys['a'])mx-=1; if(keys['d'])mx+=1;
@@ -3093,6 +3116,9 @@ function joinBotPlayer(){
 function joinNetPlayer(){
   const p=addPlayer(()=>makeNetInput(), {isRemote:true}); if(!p) return null;
   p.name='Peer '+(p.id+1);
+  // a remote player's pets are the GUEST's, not the host's — clear the defaults initPlayerChar seeded from the host's
+  // account; the guest streams its own pets up in its join handoff.
+  withPlayer(p.id, ()=>{ if(G.petMesh){ try{ scene.remove(G.petMesh); }catch(_){} G.petMesh=null; } }); p.pets=[]; p.pet=null;
   return p;
 }
 
@@ -3124,6 +3150,29 @@ function updateCoopHud(){
     w.querySelector('.coHp').style.width=clamp(p.hp/p.maxhp*100,0,100)+'%';
     w.querySelector('.coMana').style.width=clamp(p.mana/p.maxmana*100,0,100)+'%';
     w.classList.toggle('down',!!p.downed); });
+}
+// ---- ONLINE party HUD: every player's hp/mp on the left (host reads live players; guest reads the snapshot) — draggable ----
+function buildPartyHud(){ let el=$('partyHud'); if(el) return el;
+  el=document.createElement('div'); el.id='partyHud'; el.innerHTML='<h3>◈ PARTY</h3><div id="partyRows"></div>';
+  $('app').appendChild(el);
+  try{ if(typeof makePanelDraggable==='function') makePanelDraggable('partyHud'); }catch(_){}
+  return el; }
+function updatePartyHud(){
+  let list=null;
+  if(NET.role==='host'){ list=joinedPlayers().map(p=>({ id:p.id, nm:p.name||('Player '+(p.id+1)), lv:p.level||1, hp:p.hp, mh:p.maxhp||1, mp:p.mana, mm:p.maxmana||1, col:PLAYER_TINT[p.id]||'#56e0ff', dn:!!p.downed })); }
+  else if(NET.role==='peer'){ const s=NET.peer&&NET.peer.lastSnap; if(s&&s.players) list=s.players.map(p=>({ id:p.id, nm:'Player '+(p.id+1), lv:p.lv||1, hp:p.hp, mh:p.mh||1, mp:p.mp||0, mm:p.mm||1, col:PLAYER_TINT[p.id]||'#56e0ff', dn:!!p.dn })); }
+  const el=$('partyHud');
+  if(!list || list.length<2){ if(el) el.style.display='none'; return; }   // only meaningful with 2+ players online
+  const host=el||buildPartyHud(); if(host.style.display!=='block') host.style.display='block';
+  const rows=$('partyRows'); const sig=list.map(p=>p.id).join(',');
+  if(host._sig!==sig){ host._sig=sig;
+    rows.innerHTML=list.map(p=>`<div class="pRow" data-pid="${p.id}"><div class="pNm"></div><div class="pBar"><i class="pHp"></i></div><div class="pBar mana"><i class="pMp"></i></div></div>`).join('');
+    list.forEach(p=>{ const r=rows.querySelector('.pRow[data-pid="'+p.id+'"]'); if(r){ r.style.setProperty('--pc',p.col); r.querySelector('.pNm').textContent=p.nm+' · Lv '+p.lv; } }); }
+  list.forEach(p=>{ const r=rows.querySelector('.pRow[data-pid="'+p.id+'"]'); if(!r)return;
+    r.classList.toggle('down',p.dn);
+    const nm=r.querySelector('.pNm'); if(nm) nm.textContent=p.nm+' · Lv '+p.lv;
+    r.querySelector('.pHp').style.width=clamp(p.hp/(p.mh||1)*100,0,100)+'%';
+    r.querySelector('.pMp').style.width=clamp(p.mp/(p.mm||1)*100,0,100)+'%'; });
 }
 
 // ---- downed / revive (co-op) ----
@@ -4876,6 +4925,7 @@ function useSignature(){
 // ---- pet sell-runs ----
 function petSellable(it){ return it && !it.isFlask && !it.isPot && !it.locked && (it.value||0)>0; }
 function sendPetErrand(){
+  if(NET.role==='peer') return netPeerCmd('sendPetErrand',[]);
   if(!G.pet){ log('No companion to send.'); return; }
   if(G.petErrand){ log('Your companion is already on a sell-run.'); return; }
   if(G.pet.down>0){ log('Your companion is downed — it cannot run errands.'); return; }
@@ -5270,7 +5320,18 @@ let camShake=0; function shakeCam(v){ camShake=Math.max(camShake,v); }
 let camWobX=0, camWobZ=0;   // directional camera sway — the view leans opposite to your movement, springing on direction changes
 let camFocus=null;   // smoothed point the camera chases; the camera sits at a FIXED offset from it so the tilt never wobbles
 const _proj=new THREE.Vector3();
+// Floating combat text — pooled/bounded so a burst of hits on an older PC can't tank FPS.
+// Each number used to be a fresh DOM node + its own setTimeout; under heavy damage that piled up
+// hundreds of nodes, CSS animations and timers. Now: cull off-screen, cap the live count (retire the
+// oldest to make room), and reap on ONE shared rAF sweep instead of a timer per number.
+const _fctActive=[]; const FCT_CAP=56; let _fctRAF=false;
+function _fctSweep(){ const now=performance.now();
+  for(let i=_fctActive.length-1;i>=0;i--){ if(now>=_fctActive[i].die){ _fctActive[i].el.remove(); _fctActive.splice(i,1); } }
+  if(_fctActive.length) requestAnimationFrame(_fctSweep); else _fctRAF=false; }
 function floatText(x,z,txt,cls,yOff){ _proj.set(x,yOff||2,z).project(camera); if(_proj.z>1)return;
+  const sx=(_proj.x*.5+.5)*innerWidth, sy=(-_proj.y*.5+.5)*innerHeight;
+  if(sx<-90||sx>innerWidth+90||sy<-90||sy>innerHeight+90) return;   // off-screen → don't spawn a node nobody will see
+  if(_fctActive.length>=FCT_CAP){ const old=_fctActive.shift(); if(old&&old.el) old.el.remove(); }   // bound the DOM so a damage burst can't stall the frame
   const d=document.createElement('div'); d.className='fct '+(cls||'dmg'); d.textContent=txt; let life=850;
   if(SETTINGS.bigNumbers){ d.classList.add('enh'); life=950;
     const s=String(txt), n=parseFloat(s.replace(/[+,]/g,''));
@@ -5279,8 +5340,9 @@ function floatText(x,z,txt,cls,yOff){ _proj.set(x,yOff||2,z).project(camera); if
       const base=(cls==='crit')?30:(cls==='hurt')?22:(cls==='goldtxt')?20:18;
       d.style.fontSize=Math.round(base*scale)+'px'; }
     if(cls==='crit'||cls==='big') d.classList.add('critpop'); }
-  d.style.left=((_proj.x*.5+.5)*innerWidth)+'px'; d.style.top=((-_proj.y*.5+.5)*innerHeight)+'px';
-  $('fct').appendChild(d); setTimeout(()=>d.remove(),life); }
+  d.style.left=sx+'px'; d.style.top=sy+'px';
+  $('fct').appendChild(d); _fctActive.push({el:d, die:performance.now()+life});
+  if(!_fctRAF){ _fctRAF=true; requestAnimationFrame(_fctSweep); } }
 
 // ============================================================ XP / PROGRESSION
 function gainXP(n){
@@ -5366,6 +5428,7 @@ function buyPetSlot(){
   refreshPetUI(); updateHUD();
 }
 function sellPet(p){
+  if(NET.role==='peer') return netPeerCmd('sellPet',[p&&p.uid]);
   if(!p) return;
   if(p===G.pet){ log('Set another pet active before selling your active companion.'); return; }
   const v=petSellValue(p); G.pets=G.pets.filter(x=>x!==p); G.gold+=v; flashGold();
@@ -5488,12 +5551,14 @@ function buildPetMesh(p){ const f=PET_FAMILIES[p.family];
   return grp;
 }
 function setActivePet(p){
+  if(NET.role==='peer') return netPeerCmd('setActivePet',[p&&p.uid]);
   if(G.petMesh){ scene.remove(G.petMesh); G.petMesh=null; }
   G.pet=p||null; if(G.pet) ensurePetAbilities(G.pet);
   if(p){ p.maxhp=petMaxHp(p); p.hp=p.maxhp; p.down=0; G.petMesh=buildPetMesh(p); scene.add(G.petMesh); }   // equipping always restores the companion to full HP (their regen if they lack a heal skill)
   recompute(); refreshPetUI();
 }
 function hatchPet(egg){
+  if(NET.role==='peer') return netPeerCmd('hatchPet',[egg&&egg.uid]);
   if(!G.pets) G.pets=[];
   if(G.pets.length>=petYardCap()){ log('🐾 Pet yard is full ('+petYardCap()+' slots) — sell/fuse a pet, buy a slot, or rank the yard up (P).'); return false; }
   const trained=(egg&&egg.petLevel>1);
@@ -5513,11 +5578,11 @@ function petLevelUp(p){ const cap=petLevelCap(p);
   if(p.level>=cap) p.xp=Math.min(p.xp, petXpNeed(p.level));
   if(p===G.pet) recompute();
 }
-function feedPet(item){ if(!G.pet)return;
+function feedPet(item){ if(NET.role==='peer') return netPeerCmd('feedPet',[item&&item.uid]); if(!G.pet)return;
   if(item._ambrosia){ G.inv=G.inv.filter(x=>x!==item); G.pet.rarity=PET_RARITY.length-1; ensurePetAbilities(G.pet); if(G.petMesh){ scene.remove(G.petMesh); G.petMesh=buildPetMesh(G.pet); scene.add(G.petMesh); } G.pet.level=petLevelCap(G.pet); G.pet.xp=0; recompute(); refreshPetUI(); refreshItemPanels(); log('🍯 Ambrosia — your companion is instantly MAXED to '+PET_RARITY[G.pet.rarity].nm+' Lv '+G.pet.level+'. (dev)'); return; }
   if(item.locked){ log('🔒 '+item.name+' is locked — unlock it first to feed it.'); return; } if(G.pet.level>=petLevelCap(G.pet)){ log('Active pet is at its rarity cap ('+petLevelCap(G.pet)+') — fuse to raise its rarity & cap.'); return; }
   G.inv=G.inv.filter(x=>x!==item); G.pet.xp+=feedXp(item); petLevelUp(G.pet); refreshPetUI(); refreshItemPanels(); }
-function fusePet(fodder){ // fuse a SAME-RANK yard pet INTO the active pet to rank it up
+function fusePet(fodder){ if(NET.role==='peer') return netPeerCmd('fusePet',[fodder&&fodder.uid]);   // fuse a SAME-RANK yard pet INTO the active pet to rank it up
   if(!G.pet||fodder===G.pet){ log('Pick a different pet from the yard to fuse into your active pet.'); return; }
   if(fodder.rarity!==G.pet.rarity){ log('🔗 Fusion needs two pets of the SAME rank — e.g. Common + Common.'); if(sfx.deny)sfx.deny(); return; }
   const t=G.pet;
@@ -5591,6 +5656,7 @@ function updatePet(dt){
 function refreshItemPanels(){ if(_G.netApplying) return;   // host applying a guest's action → don't repaint the host's own panels with guest data
   if(!$('invPanel').classList.contains('hidden'))renderInv(); if(!$('stashPanel').classList.contains('hidden'))renderStash(); if(!$('petPanel').classList.contains('hidden'))renderPet(); if($('petYardPanel')&&!$('petYardPanel').classList.contains('hidden'))renderPetYard(); }
 function feedAllJunk(){
+  if(NET.role==='peer') return netPeerCmd('feedAllJunk',[]);
   if(!G.pet){ log('No active pet to feed.'); return; }
   if(G.pet.level>=petLevelCap(G.pet)){ log('Pet at its cap — fuse a yard pet to raise it.'); return; }
   const junk=G.inv.filter(isBulkJunk);
@@ -5601,7 +5667,7 @@ function feedAllJunk(){
   banner('🍖 FED','+'+xp.toLocaleString()+' pet XP'); log('🍖 Fed '+junk.length+' junk item(s) → +'+xp.toLocaleString()+' pet XP.'); sfx.gold&&sfx.gold();
   refreshPetUI(); refreshItemPanels();
 }
-function renderPetYardTools(){
+function renderPetYardTools(){ if(_G.netApplying) return;
   const yt=$('petYardTools'); if(!yt) return;
   const tier=petYardTier(), cap=petYardCap(), tmax=petTierMaxSlots();
   const tierUp = tier<5 ? `<span class="buyRow${META.fame>=petTierUpCost()?'':' cant'}" id="petTierBtn" title="Rank the yard up to hold ${PET_RARITY[tier+1].nm} pets">▲ Tier: ${PET_RARITY[tier+1].nm} · ${petTierUpCost().toLocaleString()} ✦</span>` : `<span class="buyRow maxed">✦ Mythos tier</span>`;
@@ -5611,6 +5677,7 @@ function renderPetYardTools(){
   const sb=$('petSlotBtn'); if(sb) sb.onclick=buyPetSlot;
 }
 function renderPet(){
+  if(_G.netApplying) return;
   const body=$('petBody'); if(!G.pets) G.pets=[];
   if(G.pet) ensurePetAbilities(G.pet); G.pets.forEach(p=>ensurePetAbilities(p));   // repair legacy pets to exactly 3 abilities
   const ft=$('petFeedTools'); if(ft) ft.innerHTML='';
@@ -5689,6 +5756,7 @@ function renderPet(){
 }
 // ---- PET YARD: the only place to equip / fuse / sell pets ----
 function renderPetYard(){
+  if(_G.netApplying) return;
   if(!G.pets) G.pets=[];
   renderPetYardTools();
   const yard=$('petFuse'); if(!yard) return; yard.className='petGrid'; yard.innerHTML='';
@@ -5755,8 +5823,10 @@ function renderPetInfoCard(pet){
   el.classList.remove('hidden');
 }
 function hidePetInfoCard(){ const el=$('petInfoCard'); if(el&&!el.classList.contains('hidden')) el.classList.add('hidden'); }
-function openPetYard(){ $('petPanel').classList.add('hidden'); syncPause(); refreshMenuState(); enterPetYard(); }
-function refreshPetUI(){ if(!$('petPanel').classList.contains('hidden')) renderPet(); if($('petYardPanel')&&!$('petYardPanel').classList.contains('hidden')) renderPetYard(); }
+function openPetYard(){ $('petPanel').classList.add('hidden');
+  if(_G.netGuest){ togglePanel('petYardPanel'); return; }   // the guest has no physical yard area — open its OWN pet roster panel directly
+  syncPause(); refreshMenuState(); enterPetYard(); }
+function refreshPetUI(){ if(_G.netApplying) return; if(!$('petPanel').classList.contains('hidden')) renderPet(); if($('petYardPanel')&&!$('petYardPanel').classList.contains('hidden')) renderPetYard(); }
 // ============================================================ LEGACY UI (data/helpers are defined earlier, near the META block)
 let _legacyFrom=null, _legacyPrevInvuln=null;
 function openLegacy(from){ _legacyFrom=from||'game';
@@ -7262,15 +7332,17 @@ let _uidSeq=1;
 function _stampUid(it){ if(it && it.uid==null) it.uid=_uidSeq++; return it; }
 function _stampItem(it){ if(!it)return it; _stampUid(it); if(it.socketed) for(const g of it.socketed) if(g) _stampUid(g); return it; }
 function _stampPlayer(p){ if(!p)return; if(p.inv) p.inv.forEach(_stampItem); if(p.slots) p.slots.forEach(_stampItem);
-  if(p.belt) p.belt.forEach(_stampItem); if(p.sigSlot) _stampItem(p.sigSlot); if(p.equip) for(const k in p.equip) _stampItem(p.equip[k]); }
+  if(p.belt) p.belt.forEach(_stampItem); if(p.sigSlot) _stampItem(p.sigSlot); if(p.equip) for(const k in p.equip) _stampItem(p.equip[k]);
+  if(p.pets) p.pets.forEach(_stampUid); }   // pets get uids too so the guest can equip/fuse/sell its OWN pets by reference
 // compact structural signature — changes whenever the build (not the fast HUD values) changes, so we only resend on real edits
 function buildSig(p){ if(!p)return''; _stampPlayer(p);
   const iu=a=>a?a.map(x=>x?x.uid:0).join(','):'';
   const eu=e=>{ let s=''; for(const k in e){ const it=e[k]; s+=k+':'+(it?it.uid+(it.socketed?'.'+it.socketed.map(g=>g?g.uid:0).join('-'):''):'0')+';'; } return s; };
   let al=''; for(const k in p.alloc){ if(p.alloc[k]) al+=k+p.alloc[k]+','; }
   const A=p.attr||{};
+  const petSig=(p.pets||[]).map(x=>x?(x.uid+'.'+x.level+'.'+x.rarity+(x===p.pet?'A':'')):'0').join(',');   // catches equip/fuse/sell/feed
   return [p.level,p.xpNeed,p.attrPts,p.skillPts,p.skillGranted,p.evolves,al,iu(p.inv),eu(p.equip||{}),iu(p.slots),iu(p.belt),
-    p.sigSlot?p.sigSlot.uid:0, A.str+'.'+A.dex+'.'+A.int+'.'+A.vit+'.'+A.will, p.pet?(p.pet.level+'#'+(p.pets?p.pets.length:0)):'-', Math.round((p.greed||1)*100), p.invCap|0].join('|'); }
+    p.sigSlot?p.sigSlot.uid:0, A.str+'.'+A.dex+'.'+A.int+'.'+A.vit+'.'+A.will, petSig, Math.round((p.greed||1)*100), p.invCap|0].join('|'); }
 function serializePlayerBuild(p){ if(!p)return null; _stampPlayer(p);
   try{ return { name:p.name, gold:p.gold|0, level:p.level|0, xp:p.xp, xpNeed:p.xpNeed, xpMode:p.xpMode||'use',
     attrPts:p.attrPts|0, skillPts:p.skillPts|0, skillGranted:p.skillGranted|0, evolves:p.evolves|0, invCap:p.invCap|0,
@@ -7313,6 +7385,7 @@ function netHostRunCmd(rec,fn,a){ const p=rec&&rec.player; if(!p||!p.joined)retu
     if(P.sigSlot&&P.sigSlot.uid===uid) return P.sigSlot;
     if(P.equip) for(const k in P.equip){ const e=P.equip[k]; if(e&&e.uid===uid) return e; if(e&&e.socketed) for(const g of e.socketed) if(g&&g.uid===uid) return g; }
     return null; };
+  const findPet=uid=>{ if(uid==null)return null; const P=_G.players[_G.cur]; if(P&&P.pets) for(const pt of P.pets) if(pt&&pt.uid===uid) return pt; return null; };
   _G.netApplying=true;   // suppress the shared-DOM re-renders these handlers fire, so the host's own HUD/panels aren't repainted with guest data
   try{ withPlayer(p.id, ()=>{ switch(fn){
     case 'spendAttr':    spendAttr(a[0]); break;
@@ -7333,13 +7406,23 @@ function netHostRunCmd(rec,fn,a){ const p=rec&&rec.player; if(!p||!p.joined)retu
     case 'socket':       { const g=findItem(a[0]), it=findItem(a[1]); if(g&&it) socketGemInto(g,it); break; }
     case 'unsocket':     { const it=findItem(a[0]); if(it) unsocketFree(it,a[1]|0); break; }
     case 'setXpMode':    { G.xpMode=(a[0]==='collect')?'collect':'use'; break; }
+    case 'setActivePet': { const pt=findPet(a[0]); if(pt) setActivePet(pt); break; }   // pet yard: the guest manages its OWN pets
+    case 'fusePet':      { const pt=findPet(a[0]); if(pt) fusePet(pt); break; }
+    case 'sellPet':      { const pt=findPet(a[0]); if(pt) sellPet(pt); break; }
+    case 'feedPet':      { const it=findItem(a[0]); if(it) feedPet(it); break; }
+    case 'feedAllJunk':  if(typeof feedAllJunk==='function') feedAllJunk(); break;
+    case 'sendPetErrand':if(typeof sendPetErrand==='function') sendPetErrand(); break;
+    case 'hatchPet':     { const it=findItem(a[0]); if(it) hatchPet(it); break; }
   } }); }catch(e){ console.error('[net] guest cmd failed',fn,e); }
   _G.netApplying=false;
   const c=NET.host&&NET.host.conns&&NET.host.conns.find(x=>x===rec); if(c) c._buildSig='';   // force an immediate build resend so the guest sees the result
 }
 function netHostOnPeerEvt(rec,data){ if(!rec)return;
   try{ const m=JSON.parse(data);
-    if(m.type==='char'){ if(rec.player && m.b) applyPlayerBuild(rec.player, m.b); if(rec) rec._buildSig=''; }   // returning guest keeps its saved build
+    if(m.type==='char'){ if(rec.player && m.b){
+        if(m.b.petsOnly){ rec.player.pets=(m.b.pets||[]).map(x=>Object.assign({},x)); rec.player.pet=(m.b.petIdx>=0&&rec.player.pets[m.b.petIdx])?rec.player.pets[m.b.petIdx]:null; withPlayer(rec.player.id,()=>{ try{ recompute(); }catch(_){} }); }   // give the guest its OWN pets
+        else applyPlayerBuild(rec.player, m.b); }
+      if(rec) rec._buildSig=''; }   // returning guest keeps its saved build/pets
     else if(m.type==='cmd'){ netHostRunCmd(rec, m.fn, m.a); }
   }catch(_){}
 }
@@ -7468,12 +7551,15 @@ function netPeerEnter(){   // enter a lightweight render-only state (no local wo
   // driven by the host's streamed build (recomputed locally) + live vitals. Host-only controls are hidden.
   $('start').classList.add('hidden'); $('hud').classList.remove('hidden'); document.body.classList.add('netGuest');
   const ring=$('playerRing'); if(ring && ring.parentElement!==$('app')){ $('app').appendChild(ring); }   // keep the on-hero ring above the world
-  // send my saved character up so a returning guest keeps its own build (a fresh guest just starts at level 1)
+  // send my saved character up so a returning guest keeps its own build (a fresh guest starts fresh but still
+  // brings its OWN account pets, so the Pet Yard shows the guest's pets — never the host's).
   try{ const s=(typeof loadSession==='function')?loadSession():null;
+    const sp=(typeof META!=='undefined'&&META.savedPets)?META.savedPets:null;
     if(s && s.level && NET.peer && NET.peer.evt){ NET.peer.evt.send(JSON.stringify({ type:'char', b:{
       name:s.name, gold:s.gold, level:s.level, xp:s.xp, xpNeed:s.xpNeed, xpMode:s.xpMode, attrPts:s.attrPts, skillPts:s.skillPts,
       skillGranted:s.skillGranted, evolves:s.evolves, invCap:s.invCap, attr:s.attr, alloc:s.alloc, equip:s.equip, inv:s.inv,
-      belt:s.belt, slots:s.slots, sigSlot:s.sigSlot, pets:s.pets, petIdx:s.petIdx, greed:s.greed, run:s.run } })); } }catch(_){}
+      belt:s.belt, slots:s.slots, sigSlot:s.sigSlot, pets:s.pets, petIdx:s.petIdx, greed:s.greed, run:s.run } })); }
+    else if(sp && sp.pets && sp.pets.length && NET.peer && NET.peer.evt){ NET.peer.evt.send(JSON.stringify({ type:'char', b:{ petsOnly:true, pets:sp.pets, petIdx:(sp.idx!=null?sp.idx:-1) } })); } }catch(_){}
   banner('🌐 ONLINE CO-OP','your own build · the host runs the world'); }
 // ---- floor layout sync (Phase 2 finish): host streams the room/wall/pillar layout once per floor; peer rebuilds it ----
 function serializeFloorLayout(){ const bi=Math.max(0,BIOMES.indexOf(biome));
@@ -8361,6 +8447,7 @@ function updateHUD(){
   $('petChip').textContent = G.petErrand ? `Sell-run ${Math.ceil(G.petErrand.t)}s` : G.pet ? `${PET_FAMILIES[G.pet.family].ic} Lv ${G.pet.level}${(G.pets&&G.pets.length>1)?' ·'+G.pets.length:''}` : 'Pet Yard —';
   const bt=$('bountyTxt'); if(bt){ const b=G.bounty; bt.innerHTML = b ? `◈ ${b.nm}: ${b.failed?'<span style="color:var(--hp)">failed</span>':b.done?'<span style="color:var(--xp)">✓ done</span>':b.id==='kills'?`${b.have}/${b.need}`:b.descTxt}` : ''; }
   updateBossBar();
+  updatePartyHud();   // online: show every player's hp/mp (draggable)
 }
 // ---- boss health bar (top of screen) + off-screen roaming indicator so the player always knows a lord is out there ----
 function updateBossBar(){
