@@ -5768,9 +5768,9 @@ function drawPlayerRing(){
   const cv=$('playerRing'); if(!cv) return;
   const pl=_G.players[0];
   if(!_G.running || _G.splitscreen || _G.modalOpen || anyPanelOpen() || !pl || !pl.player){ cv.style.display='none'; return; }
-  const _px=pl.player.position.x, _pz=pl.player.position.z;
-  _ringV.set(_px,0.1,_pz).project(camera); const _fz=_ringV.z, _fx=(_ringV.x*.5+.5)*innerWidth, _fy=(-_ringV.y*.5+.5)*innerHeight;   // feet
-  _ringV.set(_px,2.5,_pz).project(camera); const _hx=(_ringV.x*.5+.5)*innerWidth, _hy=(-_ringV.y*.5+.5)*innerHeight;                 // head
+  const _px=pl.player.position.x, _py=pl.player.position.y, _pz=pl.player.position.z;   // group sits at y≈1, capsule body spans local 0→2.2 (world py→py+2.2, centre py+1.1)
+  _ringV.set(_px,_py,_pz).project(camera); const _fz=_ringV.z, _fx=(_ringV.x*.5+.5)*innerWidth, _fy=(-_ringV.y*.5+.5)*innerHeight;       // feet (group origin)
+  _ringV.set(_px,_py+2.2,_pz).project(camera); const _hx=(_ringV.x*.5+.5)*innerWidth, _hy=(-_ringV.y*.5+.5)*innerHeight;                 // head (capsule top)
   if(_fz>1){ cv.style.display='none'; return; }
   const SZ=258; if(cv.width!==SZ){ cv.width=SZ; cv.height=SZ; }
   const sx=(_fx+_hx)/2, sy=(_fy+_hy)/2;   // midpoint of feet & head on screen → perfectly centred on the hero

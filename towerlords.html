@@ -280,7 +280,7 @@
   #lootPanel{top:33%;right:7%;width:288px;padding-bottom:12px;border-color:rgba(141,255,217,.35);}   /* off-centre so it never blocks the action · drag its header to move it */
   #playerRing{position:absolute;pointer-events:none;z-index:6;display:none;}
   #lootPanel h3{color:#8effd9;}
-  #netHostHud{position:fixed;top:60px;right:16px;width:300px;max-width:94vw;max-height:84vh;overflow-y:auto;z-index:46;background:rgba(7,10,20,.97);border:1px solid rgba(86,224,255,.42);border-radius:14px;padding:12px 14px 13px;box-shadow:0 0 36px rgba(0,0,0,.72);font-size:12px;}
+  #netHostHud{position:fixed;top:50%;left:3vw;transform:translateY(-50%);width:300px;max-width:94vw;max-height:84vh;overflow-y:auto;z-index:46;background:rgba(7,10,20,.97);border:1px solid rgba(86,224,255,.42);border-radius:14px;padding:12px 14px 13px;box-shadow:0 0 36px rgba(0,0,0,.72);font-size:12px;}
   #netHostHud h3{color:#8effd9;font-size:13px;letter-spacing:2px;display:flex;justify-content:space-between;align-items:center;margin:0 0 8px;cursor:grab;user-select:none;}
   #netHostHud .nhClose{cursor:pointer;opacity:.7;font-size:14px;} #netHostHud .nhClose:hover{opacity:1;}
   #netHostHud .nhStatus{font-size:11px;opacity:.78;text-align:center;margin-bottom:6px;min-height:14px;line-height:1.4;}
@@ -3259,7 +3259,12 @@ $('onGenAnsBtn').onclick=async()=>{ const o=$('onOfferIn').value.trim(); if(!o){
   catch(e){ $('onJoinStatus').textContent='⚠ '+e.message; } };
 $('onCopyAns').onclick=()=>onlineCopy('onAnsOut');
 // ---- ONLINE CO-OP HOST HUD: a floating in-game panel (lives OUTSIDE #start so it stays visible once the run begins) ----
-function openNetHostHud(){ const el=$('netHostHud'); if(el) el.classList.remove('hidden'); const nav=$('openCoopHostBtn'); if(nav) nav.classList.remove('hidden'); renderNetHost(); }
+function openNetHostHud(){ const el=$('netHostHud'); if(el){ el.classList.remove('hidden');
+    const p=(typeof _panelPos!=='undefined')?_panelPos['netHostHud']:null;
+    if(p&&p.left){ el.style.left=p.left; el.style.top=p.top; el.style.right='auto'; el.style.transform='none'; }   // reopen where it was dragged
+    else { el.style.left='3vw'; el.style.right='auto'; el.style.top='50%'; el.style.transform='translateY(-50%)'; }   // default: centred-left, not off the right edge
+  }
+  const nav=$('openCoopHostBtn'); if(nav) nav.classList.remove('hidden'); renderNetHost(); }
 function closeNetHostHud(){ const el=$('netHostHud'); if(el) el.classList.add('hidden'); }
 function renderNetHost(){ const wrap=$('nhPeers'); if(!wrap) return; const h=NET.host;
   const peers=h?h.conns.filter(c=>c.player):[];
@@ -5768,9 +5773,9 @@ function drawPlayerRing(){
   const cv=$('playerRing'); if(!cv) return;
   const pl=_G.players[0];
   if(!_G.running || _G.splitscreen || _G.modalOpen || anyPanelOpen() || !pl || !pl.player){ cv.style.display='none'; return; }
-  const _px=pl.player.position.x, _pz=pl.player.position.z;
-  _ringV.set(_px,0.1,_pz).project(camera); const _fz=_ringV.z, _fx=(_ringV.x*.5+.5)*innerWidth, _fy=(-_ringV.y*.5+.5)*innerHeight;   // feet
-  _ringV.set(_px,2.5,_pz).project(camera); const _hx=(_ringV.x*.5+.5)*innerWidth, _hy=(-_ringV.y*.5+.5)*innerHeight;                 // head
+  const _px=pl.player.position.x, _py=pl.player.position.y, _pz=pl.player.position.z;   // group sits at y≈1, capsule body spans local 0→2.2 (world py→py+2.2, centre py+1.1)
+  _ringV.set(_px,_py,_pz).project(camera); const _fz=_ringV.z, _fx=(_ringV.x*.5+.5)*innerWidth, _fy=(-_ringV.y*.5+.5)*innerHeight;       // feet (group origin)
+  _ringV.set(_px,_py+2.2,_pz).project(camera); const _hx=(_ringV.x*.5+.5)*innerWidth, _hy=(-_ringV.y*.5+.5)*innerHeight;                 // head (capsule top)
   if(_fz>1){ cv.style.display='none'; return; }
   const SZ=258; if(cv.width!==SZ){ cv.width=SZ; cv.height=SZ; }
   const sx=(_fx+_hx)/2, sy=(_fy+_hy)/2;   // midpoint of feet & head on screen → perfectly centred on the hero
