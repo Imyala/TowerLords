@@ -307,7 +307,7 @@
   .gm-reward .gr-ds{font-size:12px;opacity:.75;margin-top:3px;line-height:1.4;}
   .gm-streak{font-size:11px;opacity:.6;letter-spacing:1px;text-transform:uppercase;text-align:center;margin-top:2px;}
   /* loot bag + crafting panels */
-  #lootPanel{top:30%;right:20px;width:288px;padding-bottom:12px;border-color:rgba(141,255,217,.35);}   /* off-centre so it never blocks the action */
+  #lootPanel{top:33%;right:7%;width:288px;padding-bottom:12px;border-color:rgba(141,255,217,.35);}   /* off-centre so it never blocks the action · drag its header to move it */
   #playerRing{position:absolute;pointer-events:none;z-index:6;display:none;}
   #lootPanel h3{color:#8effd9;}
   #craftPanel{top:50%;left:50%;transform:translate(-50%,-50%);width:470px;padding-bottom:16px;border-color:rgba(200,155,255,.35);}
@@ -5578,7 +5578,7 @@ function openLegacy(from){ _legacyFrom=from||'game';
   _G.legacyOpen=true; $('legacyScreen').classList.remove('hidden'); renderLegacy();
 }
 function closeLegacy(){ $('legacyScreen').classList.add('hidden'); _G.legacyOpen=false;
-  if(_legacyPrevInvuln!=null){ if(G.running) G.invuln=Math.max(G.invuln||0,2); _legacyPrevInvuln=null; }
+  if(_legacyPrevInvuln!=null){ if(G.running) G.invuln=Math.max(_legacyPrevInvuln||0,2); _legacyPrevInvuln=null; }
   if(_legacyFrom==='menu'){ $('start').classList.remove('hidden'); refreshMenuRank&&refreshMenuRank(); }
   _legacyFrom=null;
 }
@@ -7471,7 +7471,7 @@ function updatePlayerStations(dt){
 // ---- in-game styled modal (replaces the browser confirm/alert) ----
 let _gmOnOK=null, _gmPrevInvuln=null;
 function closeGameModal(){ const gm=$('gameModal'); if(gm) gm.classList.remove('show'); _G.modalOpen=false;
-  if(_gmPrevInvuln!=null){ if(G.running) G.invuln=Math.max(G.invuln||0,2); _gmPrevInvuln=null; } refreshMenuState&&refreshMenuState(); }
+  if(_gmPrevInvuln!=null){ if(G.running) G.invuln=Math.max(_gmPrevInvuln||0,2); _gmPrevInvuln=null; } refreshMenuState&&refreshMenuState(); }
 function gameConfirm(title, bodyHTML, onOK, opts){ opts=opts||{};
   const gm=$('gameModal'), c=$('gmCard'); if(!gm||!c){ if(onOK)onOK(); return; }
   const ic=opts.ic||'❔', ok=opts.ok||'OK', cancel=opts.cancel||'Cancel';
@@ -7546,6 +7546,22 @@ function openLootBag(){
   if(!nearbyLootBags().length){ log('No loot bag nearby.'); return; }
   togglePanel('lootPanel');
 }
+// ---- draggable HUD panels: grab the header (h3) to reposition, RotMG-style ----
+function makePanelDraggable(panelId){
+  const el=$(panelId); if(!el) return; const h=el.querySelector('h3'); if(!h) return;
+  h.style.cursor='grab'; h.style.touchAction='none'; h.style.userSelect='none';
+  let ox=0, oy=0;
+  const move=e=>{ let nx=e.clientX-ox, ny=e.clientY-oy;
+    nx=Math.max(6, Math.min(innerWidth-el.offsetWidth-6, nx)); ny=Math.max(6, Math.min(innerHeight-48, ny));
+    el.style.left=nx+'px'; el.style.top=ny+'px'; };
+  const up=()=>{ h.style.cursor='grab'; window.removeEventListener('pointermove',move); window.removeEventListener('pointerup',up); };
+  h.addEventListener('pointerdown',e=>{ if(e.target.closest('.closeX')||e.target.closest('button')) return;
+    const r=el.getBoundingClientRect(); el.style.left=r.left+'px'; el.style.top=r.top+'px'; el.style.right='auto'; el.style.transform='none';
+    ox=e.clientX-r.left; oy=e.clientY-r.top; h.style.cursor='grabbing';
+    window.addEventListener('pointermove',move); window.addEventListener('pointerup',up);
+    e.preventDefault(); e.stopPropagation(); });
+}
+makePanelDraggable('lootPanel');
 function takeLoot(pk){ if(!pk||pk.dead) return false; const it=pk.item;
   if(SETTINGS.autoSalvage && isJunk(it)){ pk.dead=true; const g=it.value||0; G.gold+=g; if(typeof flashGold==='function')flashGold(); sfx.gold&&sfx.gold(); cleanDeadPickups(); return true; }
   if(G.inv.length>=G.invCap){ log('🎒 Bag full ('+G.invCap+') — make room or bank loot.'); return false; }
