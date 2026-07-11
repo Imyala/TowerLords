@@ -2884,6 +2884,10 @@ const PLAYER_TINT  =['#56e0ff','#ff5c78','#6dff8c','#ffce4d'];
 // XInput-style button map (Chrome "standard" gamepad)
 const PAD={A:0,B:1,X:2,Y:3,LB:4,RB:5,LT:6,RT:7,BACK:8,START:9,L3:10,R3:11,DU:12,DD:13,DL:14,DR:15};
 function joinedPlayers(){ return _G.players.filter(p=>p.joined); }
+// players that get a LOCAL split-screen viewport on THIS machine (couch co-op only).
+// Online peers are simulated by the host but render on their OWN screens, so they must
+// never split the host's view, claim a viewport, or appear in the local co-op HUD.
+function localViewPlayers(){ return _G.players.filter(p=>p.joined && !p.isRemote); }
 function livePlayers(){ return _G.players.filter(p=>p.joined && !p.downed && p.player); }
 function nearestPlayerTo(x,z){ let best=null,bd=Infinity; for(const p of _G.players){ if(!p.joined||p.downed||!p.player)continue;
   const dx=p.player.position.x-x, dz=p.player.position.z-z, d=dx*dx+dz*dz; if(d<bd){bd=d;best=p;} } return best || _G.players[0]; }
@@ -3025,17 +3029,21 @@ function pollJoins(){
 function tintPlayer(grp,color){ if(!grp)return; const body=grp.children[0]; if(body&&body.material){ body.material=body.material.clone(); if(body.material.color)body.material.color.setHex(color); if(body.material.emissive)body.material.emissive.setHex(color); }
   const mk=grp.userData&&grp.userData.marker; if(mk&&mk.material){ mk.material=mk.material.clone(); mk.material.color.setHex(color); } }
 // shared spawn path for every input source (pad / bot / net). makeInput(p)→input source.
-function addPlayer(makeInput){
-  if(_G.players.length>=4) return null;
-  const idx=_G.players.length; const p=makePlayer(idx); p.color=PLAYER_COLORS[idx]; p.joined=true;
-  p.input=makeInput(p); _G.players.push(p);
+function addPlayer(makeInput, opts){
+  let idx=_G.players.findIndex((q,i)=>i>0 && !q.joined);   // reuse a slot left by a departed player so the array & network ids stay bounded across join/kick cycles
+  let p;
+  if(idx>=0){ p=makePlayer(idx); _G.players[idx]=p; }
+  else { if(_G.players.length>=4) return null; idx=_G.players.length; p=makePlayer(idx); _G.players.push(p); }
+  p.color=PLAYER_COLORS[idx]; p.joined=true;
+  if(opts&&opts.isRemote) p.isRemote=true;   // mark BEFORE the split calc so a remote peer never flips the host into split-screen
+  p.input=makeInput(p);
   withPlayer(idx, ()=>{ initPlayerChar(false); });
   p.cam=new THREE.PerspectiveCamera(54,1,0.1,500);
   const a=_G.players[0].player.position; p.player.position.set(a.x+rand(-3,3),1,a.z+rand(-3,3));
   tintPlayer(p.player,p.color);
-  _G.splitscreen = joinedPlayers().length>1; _G.cur=0;
+  _G.splitscreen = localViewPlayers().length>1; _G.cur=0;   // online peers don't split the host's screen — only extra LOCAL players do
   layoutViewports(); buildCoopHud();
-  if(_G.splitscreen) $('hud').classList.add('cohide');
+  $('hud').classList.toggle('cohide', _G.splitscreen);
   return p;
 }
 function joinPlayer(padIndex){
@@ -3052,14 +3060,14 @@ function joinBotPlayer(){
 }
 // Phase 1 will use this for a remote peer: host fills p.netPacket from the data channel.
 function joinNetPlayer(){
-  const p=addPlayer(()=>makeNetInput()); if(!p) return null;
-  p.isRemote=true; p.name='Peer '+(p.id+1);
+  const p=addPlayer(()=>makeNetInput(), {isRemote:true}); if(!p) return null;
+  p.name='Peer '+(p.id+1);
   return p;
 }
 
 // ---- split-screen viewport layout (CSS px, top-left origin) ----
 function layoutViewports(){
-  const J=joinedPlayers(), n=J.length, W=innerWidth, H=innerHeight; let rects;
+  const J=localViewPlayers(), n=J.length, W=innerWidth, H=innerHeight; let rects;
   if(n<=1) rects=[{x:0,y:0,w:W,h:H}];
   else if(n===2) rects=[{x:0,y:0,w:W,h:H/2},{x:0,y:H/2,w:W,h:H/2}];                 // Halo 2p: top / bottom
   else rects=[{x:0,y:0,w:W/2,h:H/2},{x:W/2,y:0,w:W/2,h:H/2},{x:0,y:H/2,w:W/2,h:H/2},{x:W/2,y:H/2,w:W/2,h:H/2}]; // quadrants
@@ -3070,7 +3078,7 @@ function layoutViewports(){
 function buildCoopHud(){
   let host=$('coopHud'); if(!host){ host=document.createElement('div'); host.id='coopHud'; $('app').appendChild(host); }
   host.innerHTML=''; if(!_G.splitscreen){ host.style.display='none'; return; } host.style.display='block';
-  joinedPlayers().forEach(p=>{ const v=p.viewport; const w=document.createElement('div'); w.className='coTag'; w.id='coTag'+p.id;
+  localViewPlayers().forEach(p=>{ const v=p.viewport; const w=document.createElement('div'); w.className='coTag'; w.id='coTag'+p.id;
     w.style.left=(v.x+12)+'px'; w.style.top=(v.y+10)+'px'; w.style.setProperty('--pc',PLAYER_TINT[p.id]);
     w.innerHTML=`<div class="coName">P${p.id+1} · <span class="coLv">Lv 1</span> <span class="coRank"></span></div>
       <div class="coBar"><div class="coHp"></div></div><div class="coBar mana"><div class="coMana"></div></div>
@@ -3079,7 +3087,7 @@ function buildCoopHud(){
 }
 function updateCoopHud(){
   if(!_G.splitscreen) return;
-  joinedPlayers().forEach(p=>{ const w=$('coTag'+p.id); if(!w)return;
+  localViewPlayers().forEach(p=>{ const w=$('coTag'+p.id); if(!w)return;
     w.querySelector('.coLv').textContent='Lv '+p.level;
     { const rkEl=w.querySelector('.coRank'); if(rkEl) rkEl.innerHTML=rankBadgeHTML(META.fame,true); }
     w.querySelector('.coHp').style.width=clamp(p.hp/p.maxhp*100,0,100)+'%';
@@ -3275,14 +3283,25 @@ function renderNetHost(){ const wrap=$('nhPeers'); if(!wrap) return; const h=NET
     d.innerHTML=`<span>${live?'🟢':'🟡'} Player ${pid}${live?'':' · connecting…'}</span>`;
     const kb=document.createElement('button'); kb.className='k'; kb.textContent='Kick'; kb.onclick=()=>netKick(rec);
     d.appendChild(kb); wrap.appendChild(d); }); }
+// fully retire a departed peer's character from the host world (kick OR disconnect):
+// drop it from the sim, remove its mesh/pet from the scene, and re-settle the local view.
+function netReleasePlayer(rec){ const p=rec&&rec.player;
+  if(p){ p.joined=false; p.downed=false;
+    if(p.player){ try{ scene.remove(p.player); }catch(_){} p.player=null; }
+    if(p.petMesh){ try{ scene.remove(p.petMesh); }catch(_){} p.petMesh=null; }
+    rec.player=null; }
+  _G.splitscreen = localViewPlayers().length>1; _G.cur=0;
+  try{ layoutViewports(); }catch(_){}
+  try{ buildCoopHud(); }catch(_){}
+  const hud=$('hud'); if(hud) hud.classList.toggle('cohide', _G.splitscreen); }
 function netKick(rec){ if(!rec) return;
   try{ if(rec.gameConn&&rec.gameConn.close) rec.gameConn.close(); }catch(_){}
   try{ if(rec.evtConn&&rec.evtConn.close) rec.evtConn.close(); }catch(_){}
   try{ if(rec.pc&&rec.pc.close) rec.pc.close(); }catch(_){}
   const pid=(rec.player?rec.player.id:0)+1;
-  if(rec.player){ rec.player.joined=false; rec.player.downed=true; }
+  netReleasePlayer(rec);
   if(NET.host) NET.host.conns=NET.host.conns.filter(c=>c!==rec);
-  log('🌐 Kicked Player '+pid+'.'); renderNetHost(); if(typeof buildCoopHud==='function') buildCoopHud(); }
+  log('🌐 Kicked Player '+pid+'.'); renderNetHost(); }
 // wire the host-HUD controls (DOM already parsed — the module runs after <body>)
 { const c=$('nhClose'); if(c) c.onclick=closeNetHostHud;
   const nav=$('openCoopHostBtn'); if(nav) nav.onclick=openNetHostHud;
@@ -7162,7 +7181,7 @@ async function netCreateInvite(){
   const onReady=()=>netHostReady(rec);
   ch.onopen=onReady; evt.onopen=onReady;
   ch.onmessage=e=>{ try{ const m=JSON.parse(e.data); if(m.in && rec.player) rec.player.netPacket=m.in; }catch(_){} };
-  ch.onclose=()=>{ if(rec.player){ rec.player.joined=false; rec.player.downed=true; } };
+  ch.onclose=()=>{ netReleasePlayer(rec); if(NET.host) NET.host.conns=NET.host.conns.filter(c=>c!==rec); if(typeof renderNetHost==='function') renderNetHost(); };
   h.conns.push(rec);
   await pc.setLocalDescription(await pc.createOffer()); await netIceDone(pc);
   return JSON.stringify(pc.localDescription);
@@ -7231,7 +7250,7 @@ async function netRoomHost(status,onPeers){
     conn.on('open',()=>{
       if(conn.label==='game'){ rec.ch=pjChan(conn); rec.gameConn=conn;
         conn.on('data',d=>{ try{ const m=JSON.parse(d); if(m.in && rec.player) rec.player.netPacket=m.in; }catch(_){} });
-        conn.on('close',()=>{ if(rec.player){ rec.player.joined=false; rec.player.downed=true; } if(h.onPeers) h.onPeers(h.conns.filter(c=>c._ready&&c.player&&c.player.joined).length); if(typeof renderNetHost==='function') renderNetHost(); }); }
+        conn.on('close',()=>{ netReleasePlayer(rec); if(h) h.conns=h.conns.filter(c=>c!==rec); if(h.onPeers) h.onPeers(h.conns.filter(c=>c._ready&&c.player&&c.player.joined).length); if(typeof renderNetHost==='function') renderNetHost(); }); }
       else if(conn.label==='evt'){ rec.evt=pjChan(conn); rec.evtConn=conn; }
       netHostReady(rec); }); });
   return code;
@@ -7449,7 +7468,7 @@ function frameBody(){
   }
   // ----- split-screen: render the shared scene once per player viewport -----
   if(camShake>0) camShake=Math.max(0,camShake-dt*4);
-  const J=joinedPlayers(); let cx=0,cz=0; for(const pl of J){ cx+=pl.player.position.x; cz+=pl.player.position.z; }
+  const J=localViewPlayers(); let cx=0,cz=0; for(const pl of J){ cx+=pl.player.position.x; cz+=pl.player.position.z; }
   cx/=J.length; cz/=J.length; dir.position.set(cx+20,42,cz+14); dir.target.position.set(cx,0,cz); dir.target.updateMatrixWorld();
   const H=innerHeight; renderer.setScissorTest(true);
   for(const pl of J){ const v=pl.viewport, cam=pl.cam; if(!v||!cam||!pl.player)continue;
