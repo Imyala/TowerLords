@@ -5321,12 +5321,12 @@ const PET_FAMILIES={
 const FAM_KEYS=Object.keys(PET_FAMILIES);
 // rarity gates ability-slot count AND the level cap — fuse up to push past a cap
 const PET_RARITY=[
-  {nm:'Common',    css:'common', slots:1, maxlvl:60 },
-  {nm:'Uncommon',  css:'rare',   slots:1, maxlvl:110},
-  {nm:'Rare',      css:'epic',   slots:2, maxlvl:170},
-  {nm:'Legendary', css:'legend', slots:2, maxlvl:220},
-  {nm:'Divine',    css:'unique', slots:3, maxlvl:255},
-  {nm:'Mythos',    css:'mythos', slots:3, maxlvl:350},
+  {nm:'Common',    css:'common', slots:1, maxlvl:30 },
+  {nm:'Uncommon',  css:'rare',   slots:1, maxlvl:50 },
+  {nm:'Rare',      css:'epic',   slots:2, maxlvl:90 },
+  {nm:'Legendary', css:'legend', slots:2, maxlvl:110},
+  {nm:'Divine',    css:'unique', slots:3, maxlvl:160},
+  {nm:'Mythos',    css:'mythos', slots:3, maxlvl:220},
 ];
 const PET_SLOT_UNLOCK=[0,2,4];   // ability slot i unlocks at this rarity index: slot0 Common, slot1 Rare, slot2 Divine
 // ---- 50 COMPANION ABILITIES ---- every pet is born with 3 (drawn from this pool); they unlock one at a time as rarity climbs
@@ -5395,7 +5395,7 @@ function abilDesc(id,l){ const d=AB_DEF[id]; if(!d) return '';
   const v=petAbilVal(id,l), dec=(d.d==null?0:d.d), nv=dec?v.toFixed(dec):Math.round(v), sign=(d.neg||d.red)?'−':'+';
   return sign+nv+(d.pct?'%':'')+' '+d.u; }
 function petMagnetVal(p){ let v=0; for(const a of activeAbilities(p)){ const d=AB_DEF[a.type]; if(d&&d.kind==='magnet') v+=petAbilVal(a.type,p.level); } return v; }
-function petLevelCap(p){ return PET_RARITY[p.rarity].maxlvl; }
+function petLevelCap(p){ return (p&&p.capLvl!=null)?p.capLvl:PET_RARITY[p.rarity].maxlvl; }
 function petXpNeed(lv){ return 20+lv*6; }                       // steep-ish; high levels come mostly from fusing
 function petActiveCount(p){ return PET_RARITY[clamp(p?(p.rarity||0):0,0,PET_RARITY.length-1)].slots; }   // how many of the pet's 3 abilities are unlocked
 function activeAbilities(p){ return (p&&p.abilities)?p.abilities.slice(0, petActiveCount(p)):[]; }
@@ -5412,7 +5412,7 @@ function makePet(opts){ opts=opts||{};
   const abilities=[], chosen=new Set();   // born with EXACTLY 3 abilities from the 50-pool; unlocked one at a time as rarity climbs
   const seed=opts.firstAbil||pick(['attack','attack','heal','savage','guard']); abilities.push({type:seed}); chosen.add(seed);
   while(abilities.length<3){ const t=pick(ABIL_KEYS); if(!chosen.has(t)){ chosen.add(t); abilities.push({type:t}); } }
-  return { family, rarity, nameIdx:(opts.nameIdx!=null?opts.nameIdx:randi(0,9999)), level:clamp(opts.level||1,1,PET_RARITY[rarity].maxlvl), xp:0, abilities, hp:undefined, maxhp:undefined, down:0, atkCd:0 };
+  return { family, rarity, nameIdx:(opts.nameIdx!=null?opts.nameIdx:randi(0,9999)), level:clamp(opts.level||1,1,PET_RARITY[rarity].maxlvl), capLvl:PET_RARITY[rarity].maxlvl, xp:0, abilities, hp:undefined, maxhp:undefined, down:0, atkCd:0 };
 }
 function petTierBand(r){ return r<=1?'cu':(r<=3?'rl':'dv'); }
 function petName(p){ const f=PET_FAMILIES[p.family]; const band=f&&f.nm3&&f.nm3[petTierBand(p.rarity)];
@@ -5428,7 +5428,7 @@ function buildPetMesh(p){ const f=PET_FAMILIES[p.family];
 function setActivePet(p){
   if(G.petMesh){ scene.remove(G.petMesh); G.petMesh=null; }
   G.pet=p||null; if(G.pet) ensurePetAbilities(G.pet);
-  if(p){ if(p.maxhp===undefined){ p.maxhp=petMaxHp(p); p.hp=p.maxhp; p.down=0; } G.petMesh=buildPetMesh(p); scene.add(G.petMesh); }
+  if(p){ p.maxhp=petMaxHp(p); p.hp=p.maxhp; p.down=0; G.petMesh=buildPetMesh(p); scene.add(G.petMesh); }   // equipping always restores the companion to full HP (their regen if they lack a heal skill)
   recompute(); refreshPetUI();
 }
 function hatchPet(egg){
@@ -5455,22 +5455,40 @@ function feedPet(item){ if(!G.pet)return;
   if(item._ambrosia){ G.inv=G.inv.filter(x=>x!==item); G.pet.rarity=PET_RARITY.length-1; ensurePetAbilities(G.pet); if(G.petMesh){ scene.remove(G.petMesh); G.petMesh=buildPetMesh(G.pet); scene.add(G.petMesh); } G.pet.level=petLevelCap(G.pet); G.pet.xp=0; recompute(); refreshPetUI(); refreshItemPanels(); log('🍯 Ambrosia — your companion is instantly MAXED to '+PET_RARITY[G.pet.rarity].nm+' Lv '+G.pet.level+'. (dev)'); return; }
   if(item.locked){ log('🔒 '+item.name+' is locked — unlock it first to feed it.'); return; } if(G.pet.level>=petLevelCap(G.pet)){ log('Active pet is at its rarity cap ('+petLevelCap(G.pet)+') — fuse to raise its rarity & cap.'); return; }
   G.inv=G.inv.filter(x=>x!==item); G.pet.xp+=feedXp(item); petLevelUp(G.pet); refreshPetUI(); refreshItemPanels(); }
-function fusePet(fodder){ // fuse a yard pet INTO the active pet
+function fusePet(fodder){ // fuse a SAME-RANK yard pet INTO the active pet to rank it up
   if(!G.pet||fodder===G.pet){ log('Pick a different pet from the yard to fuse into your active pet.'); return; }
+  if(fodder.rarity!==G.pet.rarity){ log('🔗 Fusion needs two pets of the SAME rank — e.g. Common + Common.'); if(sfx.deny)sfx.deny(); return; }
+  const t=G.pet;
   G.pets=G.pets.filter(x=>x!==fodder);
-  const t=G.pet, xpGain=fodder.level*120 + (fodder.rarity+1)*400;
-  t.xp+=xpGain; petLevelUp(t);
-  let msg='+'+xpGain.toLocaleString()+' pet XP';
-  // rank up: fusing a pet of the SAME (or higher) rarity raises your active pet one tier — up to Mythos
-  // (2 Commons → Uncommon, 2 Uncommons → Rare, … 2 Divines → Mythos). Lower-rarity fodder just gives XP.
-  if(t.rarity<PET_RARITY.length-1 && fodder.rarity>=t.rarity){ t.rarity++;
-    ensurePetAbilities(t);   // still 3 fixed abilities — a higher rarity just UNLOCKS the next one
-    msg+=' · ★ RANK UP → '+PET_RARITY[t.rarity].nm; sfx.evolve&&sfx.evolve(); unlockFeat('evolve');
-    if(G.petMesh){ scene.remove(G.petMesh); G.petMesh=buildPetMesh(t); scene.add(G.petMesh); }   // rarity changes appearance
+  let rankMsg='';
+  if(t.rarity<PET_RARITY.length-1){
+    // how close BOTH pets were to their level cap decides the new cap: 2 fully-levelled pets → the next tier's full
+    // cap; anything less → a permanently lower cap. Level both to max before fusing for the best result.
+    const capA=petLevelCap(t)||1, capB=petLevelCap(fodder)||1;
+    const compl=(clamp(t.level/capA,0,1)+clamp(fodder.level/capB,0,1))/2;   // 1.0 = both maxed
+    const prevMax=PET_RARITY[t.rarity].maxlvl, newMax=PET_RARITY[t.rarity+1].maxlvl;
+    t.rarity++;
+    t.capLvl=Math.max(t.level, Math.round(prevMax+(newMax-prevMax)*compl));
+    ensurePetAbilities(t);   // a higher rarity UNLOCKS the next of its 3 fixed abilities
+    if(G.petMesh){ scene.remove(G.petMesh); G.petMesh=buildPetMesh(t); scene.add(G.petMesh); }
     if(G.petMesh) floatText(G.petMesh.position.x,G.petMesh.position.z,'RANK UP!','big',2.2);
+    sfx.evolve&&sfx.evolve(); unlockFeat('evolve');
+    rankMsg=' · ★ '+PET_RARITY[t.rarity].nm+' (max Lv '+t.capLvl+(compl<0.999?' — level both pets to max next time for the full '+newMax+' cap':'')+')';
   }
+  const xpGain=fodder.level*120 + (fodder.rarity+1)*400;
+  t.xp+=xpGain; petLevelUp(t);
+  const msg='+'+xpGain.toLocaleString()+' pet XP'+rankMsg;
   recompute(); banner('🔗 FUSED', msg); log('🔗 Fused '+petName(fodder)+' into '+petName(t)+' — '+msg+'.');
   refreshPetUI(); refreshItemPanels();
+  if(_G.inYard && typeof buildYardMeshes==='function') buildYardMeshes();   // rebuild the roaming pets so the consumed fodder disappears
+}
+// a fallen companion isn't lost — it retreats to the Pet Yard (still owned); re-equip it there to bring it back at full HP
+function petFellToYard(){ const pet=G.pet; if(!pet) return;
+  if(G.petMesh){ scene.remove(G.petMesh); G.petMesh=null; }
+  pet.hp=0; pet.down=0; G.pet=null;
+  recompute(); refreshPetUI();
+  banner('🐾 COMPANION FELL','recover it in the Pet Yard');
+  log('🐾 '+petName(pet)+' fell in battle and retreated to the Pet Yard. Re-equip it there (P) to bring it back at full health.');
 }
 function applyStatPot(it){ G.attr[it.attr]=Math.min(ATTR_CAP,(G.attr[it.attr]||0)+2); recompute(); G.hp=G.maxhp; G.mana=G.maxmana;
   banner('✦ +2 '+it.attrNm.toUpperCase()+' ✦','PERMANENT — drunk forever');
@@ -5500,7 +5518,7 @@ function updatePet(dt){
   pm.userData.body.material.emissiveIntensity=0.7;
   if(nearFoe) pet.hp-=(2+G.floor*0.4)*dt;
   if(pet.hp<pet.maxhp){ const h=Math.min((3+G.S.lifeRegen*0.5)*dt, pet.maxhp-pet.hp); pet.hp+=h; G.run.healOthers+=h; }
-  if(pet.hp<=0){ pet.hp=0; pet.down=5; floatText(pm.position.x,pm.position.z,'pet downed','hurt',1.8); return; }
+  if(pet.hp<=0){ floatText(pm.position.x,pm.position.z,'pet fell!','hurt',2.0); petFellToYard(); return; }
   // Attack ability: fire bolts at the nearest foe
   if(hasAbil(pet,'attack')){ pet.atkCd-=dt;
     if(pet.atkCd<=0){ let best=null,bd=16; for(const e of G.enemies){ const dd=Math.hypot(e.mesh.position.x-pm.position.x,e.mesh.position.z-pm.position.z); if(dd<bd){bd=dd;best=e;} }
@@ -5625,11 +5643,11 @@ function renderPetYard(){
     if(active){ card.insertAdjacentHTML('beforeend','<div class="pcActive">★ ACTIVE</div>'); }
     else {
       const sa=document.createElement('div'); sa.className='bindBtn'; sa.textContent='Equip'; sa.title='Set this pet as your active companion'; sa.onclick=()=>setActivePet(pt); btns.appendChild(sa);
-      const canUp = G.pet && pt.rarity>=G.pet.rarity && G.pet.rarity<PET_RARITY.length-1;
-      const fb=document.createElement('div'); fb.className='bindBtn'+(G.pet?'':' dim'); fb.style.borderColor='var(--gold)'; fb.style.color='var(--gold)';
-      fb.textContent=canUp?('Fuse ▸ '+PET_RARITY[G.pet.rarity+1].nm):'Fuse ▸';
-      fb.title=G.pet?(pt.rarity>=G.pet.rarity?('Fuse into your active pet → rank up'+(G.pet.rarity<PET_RARITY.length-1?' to '+PET_RARITY[G.pet.rarity+1].nm:' (already max)')):('Just XP — fodder must be at least '+PET_RARITY[G.pet.rarity].nm+' to rank up your active pet')):'Equip a pet first';
-      fb.onclick=()=>fusePet(pt); btns.appendChild(fb);
+      const sameRank = G.pet && pt.rarity===G.pet.rarity && G.pet.rarity<PET_RARITY.length-1;
+      if(sameRank){ const fb=document.createElement('div'); fb.className='bindBtn'; fb.style.borderColor='var(--gold)'; fb.style.color='var(--gold)';
+        fb.textContent='Fuse ▸ '+PET_RARITY[G.pet.rarity+1].nm;
+        fb.title='Fuse this '+PET_RARITY[pt.rarity].nm+' into your active '+PET_RARITY[G.pet.rarity].nm+' → rank up to '+PET_RARITY[G.pet.rarity+1].nm+'. Level BOTH pets to their cap first for the full level cap.';
+        fb.onclick=()=>fusePet(pt); btns.appendChild(fb); }
       const se=document.createElement('div'); se.className='bindBtn'; se.style.borderColor='rgba(255,120,140,.5)'; se.style.color='#ff8a9c'; se.textContent='Sell '+petSellValue(pt)+'g'; se.title='Sell this pet for gold'; se.onclick=()=>sellPet(pt); btns.appendChild(se);
       card.appendChild(btns);
     }
@@ -5833,7 +5851,7 @@ function openPetAction(yp){ if(!yp) return; const pet=yp.pet; const gm=$('gameMo
     +'<div class="gm-body">Lv '+pet.level+'/'+petLevelCap(pet)+' · '+rr.nm+(active?' · <b style="color:var(--gold)">ACTIVE</b>':'')+'<br><span style="opacity:.85">'+(abs||'—')+'</span></div>'
     +'<div class="gm-actions">'
       +(active?'':'<button class="gm-btn" id="pyEquip">Equip</button>')
-      +(active?'':'<button class="gm-btn ghost" id="pyFuse">Fuse</button>')
+      +((!active && G.pet && pet.rarity===G.pet.rarity && G.pet.rarity<PET_RARITY.length-1)?'<button class="gm-btn ghost" id="pyFuse">Fuse ▸ '+PET_RARITY[G.pet.rarity+1].nm+'</button>':'')
       +(active?'':'<button class="gm-btn ghost" id="pySell">Sell '+petSellValue(pet)+'g</button>')
       +'<button class="gm-btn ghost" id="pyClose">Close</button>'
     +'</div>';
