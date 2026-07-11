@@ -5768,10 +5768,12 @@ function drawPlayerRing(){
   const cv=$('playerRing'); if(!cv) return;
   const pl=_G.players[0];
   if(!_G.running || _G.splitscreen || _G.modalOpen || anyPanelOpen() || !pl || !pl.player){ cv.style.display='none'; return; }
-  _ringV.set(pl.player.position.x,1.5,pl.player.position.z).project(camera);
-  if(_ringV.z>1){ cv.style.display='none'; return; }
+  const _px=pl.player.position.x, _pz=pl.player.position.z;
+  _ringV.set(_px,0.1,_pz).project(camera); const _fz=_ringV.z, _fx=(_ringV.x*.5+.5)*innerWidth, _fy=(-_ringV.y*.5+.5)*innerHeight;   // feet
+  _ringV.set(_px,2.5,_pz).project(camera); const _hx=(_ringV.x*.5+.5)*innerWidth, _hy=(-_ringV.y*.5+.5)*innerHeight;                 // head
+  if(_fz>1){ cv.style.display='none'; return; }
   const SZ=258; if(cv.width!==SZ){ cv.width=SZ; cv.height=SZ; }
-  const sx=(_ringV.x*.5+.5)*innerWidth, sy=(-_ringV.y*.5+.5)*innerHeight;
+  const sx=(_fx+_hx)/2, sy=(_fy+_hy)/2;   // midpoint of feet & head on screen → perfectly centred on the hero
   cv.style.display='block'; cv.style.left=(sx-SZ/2)+'px'; cv.style.top=(sy-SZ/2)+'px';
   const ctx=cv._c||(cv._c=cv.getContext('2d')); ctx.clearRect(0,0,SZ,SZ);
   const cx=SZ/2, cy=SZ/2, R=84, D=Math.PI/180;
