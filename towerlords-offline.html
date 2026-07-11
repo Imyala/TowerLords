@@ -7560,7 +7560,7 @@ function makePanelDraggable(panelId){
     window.addEventListener('pointermove',move); window.addEventListener('pointerup',up);
     e.preventDefault(); e.stopPropagation(); });
 }
-makePanelDraggable('lootPanel');
+makePanelDraggable('lootPanel'); makePanelDraggable('petPanel'); makePanelDraggable('petYardPanel');
 function takeLoot(pk){ if(!pk||pk.dead) return false; const it=pk.item;
   if(SETTINGS.autoSalvage && isJunk(it)){ pk.dead=true; const g=it.value||0; G.gold+=g; if(typeof flashGold==='function')flashGold(); sfx.gold&&sfx.gold(); cleanDeadPickups(); return true; }
   if(G.inv.length>=G.invCap){ log('🎒 Bag full ('+G.invCap+') — make room or bank loot.'); return false; }
