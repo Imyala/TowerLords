@@ -289,8 +289,12 @@
   .panel h3{font-size:14px;letter-spacing:2px;color:var(--neon);padding:14px 16px 10px;margin-bottom:6px;
     border-bottom:1px solid rgba(86,224,255,.16);background:linear-gradient(180deg,rgba(86,224,255,.08),transparent);
     border-radius:14px 14px 0 0;text-shadow:0 0 12px rgba(86,224,255,.4);}
-  .closeX{position:absolute;top:10px;right:12px;cursor:pointer;font-size:16px;opacity:.6;}
-  .closeX:hover{opacity:1;}
+  .closeX{position:absolute;top:8px;right:9px;cursor:pointer;font-size:17px;line-height:1;opacity:.9;
+    display:flex;align-items:center;justify-content:center;gap:4px;min-width:34px;min-height:34px;padding:5px 9px;
+    border-radius:9px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.22);
+    transition:background .12s,opacity .12s,box-shadow .12s;z-index:3;}
+  .closeX:hover{opacity:1;background:rgba(255,255,255,.16);box-shadow:0 0 12px rgba(0,0,0,.4);}
+  .closeX:active{background:rgba(255,255,255,.26);}
   /* ---- in-game styled modal (replaces the browser confirm) ---- */
   #gameModal{position:absolute;inset:0;z-index:200;display:none;align-items:center;justify-content:center;
     background:rgba(4,5,12,.72);backdrop-filter:blur(3px);pointer-events:auto;padding:18px;}
@@ -954,6 +958,55 @@
     .mItem{font-size:11.5px;padding:5px 7px;gap:6px;}
     .mHdr{padding:2px 5px 6px;margin-bottom:2px;} .mLv b{font-size:16px;}
     .mIc{font-size:13px;width:16px;}
+  }
+  /* ============================================================================
+     Mobile & tablet: the in-game menus were laid out for desktop (fixed pixel
+     widths, side-by-side columns) so on a phone/tablet they spilled off-screen or
+     crushed their columns into unreadable one-word-per-line slivers.  On narrow
+     screens each menu instead opens as a near-fullscreen sheet and its columns
+     stack, so everything is readable and reachable.
+     ============================================================================ */
+  @media (max-width:900px){
+    /* every big menu becomes a fullscreen sheet — no fixed width spilling off the
+       edge, always centred, always fully on-screen (loot toast is left alone) */
+    /* NOTE: no `display` here — that would beat `.hidden{display:none}` (id vs class)
+       and pin every menu permanently open.  The flex-column panels already declare
+       their own display in the base rules; the rest scroll as a block (below). */
+    #charPanel:not(.hidden),#treePanel:not(.hidden),#stashPanel:not(.hidden),
+    #invPanel:not(.hidden),#vendorPanel:not(.hidden),#petPanel:not(.hidden),
+    #petYardPanel:not(.hidden),#scorePanel:not(.hidden),#codexPanel:not(.hidden),
+    #settingsPanel:not(.hidden),#craftPanel:not(.hidden){
+      top:8px!important;left:8px!important;right:8px!important;bottom:8px!important;
+      width:auto!important;height:auto!important;max-width:none!important;max-height:none!important;
+      transform:none!important;padding-bottom:0!important;}
+    /* inner scroll regions grow to fill the sheet and scroll inside it */
+    #csBody,#petScroll,#treeBody,#petYardPanel #petFuse{flex:1;min-height:0;}
+    /* block-scrolling sheets (no dedicated inner scroller) scroll as a whole */
+    #invPanel,#vendorPanel,#stashPanel,#scorePanel,#codexPanel,#settingsPanel,#craftPanel{
+      overflow-y:auto;}
+    /* a large, obvious, easy-to-tap close button */
+    .closeX{top:9px;right:9px;font-size:19px;min-width:42px;min-height:42px;padding:7px 12px;
+      background:rgba(255,255,255,.12);border-color:rgba(255,255,255,.30);}
+
+    /* Inventory: stack the paper-doll over the Inspect/compare pane so Inspect gets
+       the full width instead of a single crushed column reading top-to-bottom */
+    .invWrap{flex-direction:column;gap:12px;}
+    .invLeft{width:100%!important;flex:none;}
+    .invRight{width:100%;flex:none;}
+    .detailPane,.detailPane.blank{min-height:110px;}
+
+    /* Companion: stack the hero card so the ability slots span the full width */
+    .petHero{flex-direction:column;align-items:stretch;gap:14px;}
+    .petPortrait{width:100%!important;min-height:150px;}
+    .petSlots{grid-template-columns:repeat(auto-fit,minmax(140px,1fr));}
+
+    /* Specialisations: let the header + quick-build chips wrap instead of clipping */
+    #treeHead{flex-wrap:wrap;gap:8px 12px;}
+    #treeHead .treeHint{flex-basis:100%;}
+    #quickBuild{overflow-x:auto;}
+
+    /* Stash: two side-by-side lists don't fit a phone — stack them */
+    .invcol{flex-direction:column;}
   }
   /* touchscreens: the keyboard key-badges in the nav are useless — hide them for a tighter menu */
   body.touch-on #stats .mKey{display:none;}
