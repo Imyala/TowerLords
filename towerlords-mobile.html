@@ -7618,14 +7618,14 @@ function netPeerCmd(fn,a){ const pr=NET.peer; if(!pr||!pr.evt||pr.evt.readyState
   try{ pr.evt.send(JSON.stringify({ type:'cmd', fn, a:a||[] })); }catch(_){} }
 // ---- HOST side: apply an incoming guest build action to THAT player, without disturbing the host's own on-screen panels ----
 function netHostRunCmd(rec,fn,a){ const p=rec&&rec.player; if(!p||!p.joined)return; a=a||[];
-  const findItem=uid=>{ if(uid==null)return null; const P=_G.players[_G.cur]; if(!P)return null;
+  const findItem=uid=>{ if(uid==null)return null; const P=p; if(!P)return null;
     if(P.inv) for(const it of P.inv) if(it&&it.uid===uid) return it;
     if(P.slots) for(const it of P.slots) if(it&&it.uid===uid) return it;
     if(P.belt) for(const it of P.belt) if(it&&it.uid===uid) return it;
     if(P.sigSlot&&P.sigSlot.uid===uid) return P.sigSlot;
     if(P.equip) for(const k in P.equip){ const e=P.equip[k]; if(e&&e.uid===uid) return e; if(e&&e.socketed) for(const g of e.socketed) if(g&&g.uid===uid) return g; }
     return null; };
-  const findPet=uid=>{ if(uid==null)return null; const P=_G.players[_G.cur]; if(P&&P.pets) for(const pt of P.pets) if(pt&&pt.uid===uid) return pt; return null; };
+  const findPet=uid=>{ if(uid==null)return null; const P=p; if(P&&P.pets) for(const pt of P.pets) if(pt&&pt.uid===uid) return pt; return null; };
   _G.netApplying=true;   // suppress the shared-DOM re-renders these handlers fire, so the host's own HUD/panels aren't repainted with guest data
   try{ withPlayer(p.id, ()=>{ switch(fn){
     case 'spendAttr':    spendAttr(a[0]); break;
