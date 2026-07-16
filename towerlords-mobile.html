@@ -2396,16 +2396,20 @@ function makeAbnormal(slotFilter){ let pool=ABNORMALS;
 function maybeAbnormal(floor){ return (Math.random() < 0.02+(floor||0)*0.0016) ? makeAbnormal() : null; }
 
 // ---- DEV CHEAT CONSOLE (press ~ / backtick) — TESTING ONLY. TODO(dev): remove this whole block before release. ----
-const devCheatsEnabled=(()=>{ try{
+function isDevCheatsEnabled(){ try{
   const q=new URLSearchParams(location.search||'');
   if(q.get('debug')==='1'||q.get('cheats')==='1') return true;
   const h=(location.hostname||'').toLowerCase();
   return h==='localhost'||h==='127.0.0.1'||h==='::1';
-}catch(_){ return false; } })(); // defensive fallback for restricted/sandboxed location access
+}catch(_){ return false; } } // defensive fallback for restricted/sandboxed location access
+const devCheatsEnabled=isDevCheatsEnabled();
 const CHEAT_HELP='DEV commands (remove before release):\n  gold N · fame N · xp N · level N · heal · god [off]\n  petmax · petfeed · skills · abn [n|all] · items [n]';
 let _cheatEl=null;
 function toggleCheat(){
-  if(!devCheatsEnabled){ if(typeof log==='function') log('Dev cheats disabled. Use ?debug=1 for local testing.'); return; }
+  if(!devCheatsEnabled){
+    if(typeof log==='function') log('Dev cheats disabled. Use ?debug=1 for local testing.');
+    return;
+  }
   if(_cheatEl){ _cheatEl.remove(); _cheatEl=null; return; }
   const box=document.createElement('div'); box.id='cheatConsole';
   box.style.cssText='position:fixed;left:50%;top:12%;transform:translateX(-50%);z-index:99999;background:#0b1020ee;border:1px solid #ff5c78;border-radius:10px;padding:12px 14px;width:min(560px,92vw);box-shadow:0 0 30px #ff5c7844;font-family:monospace;color:#e8edf7';
