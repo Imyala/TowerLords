@@ -2287,7 +2287,7 @@ function makeAbnormal(slotFilter){ let pool=ABNORMALS;
 function maybeAbnormal(floor){ return (Math.random() < 0.02+(floor||0)*0.0016) ? makeAbnormal() : null; }
 
 // ---- DEV CHEAT CONSOLE (press ~ / backtick) — TESTING ONLY. TODO(dev): remove this whole block before release. ----
-const DEV_CHEATS_ENABLED=(()=>{ try{
+const devCheatsEnabled=(()=>{ try{
   const q=new URLSearchParams(location.search||'');
   if(q.get('debug')==='1'||q.get('cheats')==='1') return true;
   const h=(location.hostname||'').toLowerCase();
@@ -2296,7 +2296,7 @@ const DEV_CHEATS_ENABLED=(()=>{ try{
 const CHEAT_HELP='DEV commands (remove before release):\n  gold N · fame N · xp N · level N · heal · god [off]\n  petmax · petfeed · skills · abn [n|all] · items [n]';
 let _cheatEl=null;
 function toggleCheat(){
-  if(!DEV_CHEATS_ENABLED){ if(typeof log==='function') log('Dev cheats disabled. Use ?debug=1 for local testing.'); return; }
+  if(!devCheatsEnabled){ if(typeof log==='function') log('Dev cheats disabled. Use ?debug=1 for local testing.'); return; }
   if(_cheatEl){ _cheatEl.remove(); _cheatEl=null; return; }
   const box=document.createElement('div'); box.id='cheatConsole';
   box.style.cssText='position:fixed;left:50%;top:12%;transform:translateX(-50%);z-index:99999;background:#0b1020ee;border:1px solid #ff5c78;border-radius:10px;padding:12px 14px;width:min(560px,92vw);box-shadow:0 0 30px #ff5c7844;font-family:monospace;color:#e8edf7';
@@ -2312,7 +2312,7 @@ function toggleCheat(){
   setTimeout(()=>inp.focus(),0);
 }
 function runCheat(cmd){ const a=cmd.split(/\s+/), c=a[0].toLowerCase(), n=parseInt(a[1]);
-  if(!DEV_CHEATS_ENABLED) return 'Dev cheats are disabled in this build.';
+  if(!devCheatsEnabled) return 'Dev cheats are disabled in this build.';
   try{ switch(c){
     case 'help': return CHEAT_HELP;
     case 'gold': G.gold=(G.gold||0)+(n||1000); if(typeof flashGold==='function')flashGold(); return 'gold → '+G.gold;
@@ -2862,7 +2862,7 @@ function syncPause(){ G.paused=false; }   // menus never pause gameplay — the 
 
 addEventListener('keydown',e=>{
   const k=e.key.toLowerCase(); keys[k]=true;
-  if(DEV_CHEATS_ENABLED && e.code==='Backquote' && !(document.activeElement && /INPUT|TEXTAREA/.test(document.activeElement.tagName))){ toggleCheat(); e.preventDefault(); return; }   // ~ opens the DEV cheat console (testing only)
+  if(devCheatsEnabled && e.code==='Backquote' && !(document.activeElement && /INPUT|TEXTAREA/.test(document.activeElement.tagName))){ toggleCheat(); e.preventDefault(); return; }   // ~ opens the DEV cheat console (testing only)
   if(_G.modalOpen){ if(k==='escape'){ closeGameModal(); _gmOnOK=null; } return; }
   if(_G.legacyOpen){ if(k==='escape'||k==='l') closeLegacy(); return; }
   if(!G.running) return;
