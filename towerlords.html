@@ -1523,6 +1523,8 @@ const rand=(a,b)=>a+_rngFn()*(b-a);
 const randi=(a,b)=>Math.floor(rand(a,b+1));
 const clamp=(v,a,b)=>v<a?a:v>b?b:v;
 const pick=arr=>arr[Math.floor(_rngFn()*arr.length)];
+function escHtml(v){ return String(v).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function safeCssColor(v, fallback){ return /^#[0-9a-f]{3,8}$/i.test(v||'') ? v : (fallback||'#fff'); }
 
 let renderer, scene, camera, clock, hemi, dir;
 
@@ -3326,18 +3328,18 @@ function chooseDestiny(id){ selDestinyId=id||''; drawDestinyDraft(false); if(sfx
 function drawDestinyDraft(resetPick){
   if(!menuDestinyPicks.length){
     const pool=DESTINIES.slice();
-    for(let destinyIndex=pool.length-1;destinyIndex>0;destinyIndex--){ const swapIndex=randi(0,destinyIndex); const swappedDestiny=pool[destinyIndex]; pool[destinyIndex]=pool[swapIndex]; pool[swapIndex]=swappedDestiny; }
+    for(let i=pool.length-1;i>0;i--){ const j=randi(0,i); const tmp=pool[i]; pool[i]=pool[j]; pool[j]=tmp; }
     menuDestinyPicks=pool.slice(0,3);
   }
   const hasSelectedDestiny=menuDestinyPicks.some(d=>d.id===selDestinyId);
   if(resetPick || !hasSelectedDestiny) selDestinyId=(menuDestinyPicks[0]&&menuDestinyPicks[0].id)||'';
   const wrap=$('destinyCards'), cur=menuDestinyPicks.find(d=>d.id===selDestinyId);
-  if(wrap) wrap.innerHTML=menuDestinyPicks.map(d=>`<div class="destCard${d.id===selDestinyId?' sel':''}" data-dest="${d.id}" style="--dc:${d.col}">
-      <div class="destTop"><div class="destIc">${d.ic}</div><div><div class="destNm">${d.nm}</div><div class="destTag">${d.tag}</div></div></div>
+  if(wrap) wrap.innerHTML=menuDestinyPicks.map(d=>`<div class="destCard${d.id===selDestinyId?' sel':''}" data-dest="${d.id}" style="--dc:${safeCssColor(d.col,'#fff')}">
+      <div class="destTop"><div class="destIc">${escHtml(d.ic)}</div><div><div class="destNm">${escHtml(d.nm)}</div><div class="destTag">${escHtml(d.tag)}</div></div></div>
       <div class="destDs">${d.ds}</div><div class="destPick">${d.id===selDestinyId?'Selected for this climb':'Click to claim this destiny'}</div></div>`).join('');
   if(wrap) [...wrap.querySelectorAll('.destCard')].forEach(el=>el.onclick=()=>chooseDestiny(el.dataset.dest||''));
   const hint=$('destinyHint');
-  if(hint && cur) hint.innerHTML=`<span style="color:${cur.col}">${cur.ic} ${cur.nm}</span> is locked in when you start. It lasts the whole climb, stacks with boss blessings, and makes each run feel different immediately.`;
+  if(hint && cur) hint.innerHTML=`<span style="color:${safeCssColor(cur.col,'#fff')}">${escHtml(cur.ic)} ${escHtml(cur.nm)}</span> is locked in when you start. It lasts the whole climb, stacks with boss blessings, and makes each run feel different immediately.`;
 }
 function rerollDestinyDraft(){ clearDestinyDraft(); drawDestinyDraft(true); if(sfx.evolve)sfx.evolve(); }
 $('destinyReroll').onclick=rerollDestinyDraft;
@@ -3360,7 +3362,7 @@ function refreshContinueBtn(){ const c=$('menuContinue'); if(!c) return; const s
   else c.classList.add('hidden'); }
 function showClimb(){ ['tutorial','deathlog'].forEach(id=>$(id).classList.add('hidden')); $('start').classList.remove('hidden'); $('menuShell').classList.add('hidden'); $('climbScreen').classList.remove('hidden'); $('coopLobby').classList.add('hidden'); $('onlineLobby').classList.add('hidden'); coopLobbyOpen=false; loadMeta(); renderAscSel(); rerollDestinyDraft(); }
 $('menuClimb').onclick=showClimb;
-$('menuContinue').onclick=()=>{ if(!resumeSession()) refreshContinueBtn(); };
+$('menuContinue').onclick=tryResumeSession;
 // ---- DAILY CLIMB: same seeded tower for everyone today, one scored attempt, level playing rules ----
 function refreshDailyBtn(){ const b=$('menuDaily'); if(!b)return; const d=dailyState();
   b.innerHTML = d ? ('🌅 Daily Climb · <span style="color:var(--gold)">scored — floor '+(d.floor||0)+' · '+(d.kills||0)+' kills</span>')
@@ -3383,6 +3385,7 @@ loadMeta(); refreshDailyBtn(); refreshContinueBtn(); refreshMenuRank(); refreshM
   log('🌅 DAILY CLIMB: everyone gets this exact tower today. Your attempt is scored when it ends — climb far, kill lots, die proud.');
 }; }
 $('climbBack').onclick=showMenu;
+function tryResumeSession(){ if(!resumeSession()) refreshContinueBtn(); }
 // ---- local co-op lobby: claim slots with controllers, then start together ----
 let coopLobbyOpen=false, lobbyPads=[], lobbyPrev={}, lobbyBots=0;
 function showCoopLobby(){ ['tutorial','deathlog'].forEach(id=>$(id).classList.add('hidden')); $('start').classList.remove('hidden');
@@ -7004,7 +7007,7 @@ function runWrapHTML(){
   const r=G.run, boons=r.boons||[], asc=(_G.asc||0), destiny=r.destiny||null;
   const stat=(ic,v,l)=>`<div class="wrapStat"><span class="wsi">${ic}</span><div><div class="wsv">${v}</div><div class="wsl">${l}</div></div></div>`;
   const chips=[];
-  if(destiny) chips.push(`<span class="wrapBoon" style="border-color:${destiny.col};color:#fff;background:color-mix(in srgb,${destiny.col} 14%,rgba(176,107,255,.08))"><span class="wbi">${destiny.ic}</span>${destiny.nm}</span>`);
+  if(destiny){ const dc=safeCssColor(destiny.col,'#fff'); chips.push(`<span class="wrapBoon" style="border-color:${dc};color:#fff;background:color-mix(in srgb,${dc} 14%,rgba(176,107,255,.08))"><span class="wbi">${escHtml(destiny.ic)}</span>${escHtml(destiny.nm)}</span>`); }
   for(const b of boons) chips.push(`<span class="wrapBoon"><span class="wbi">${b.ic}</span>${b.nm}</span>`);
   const boonChips = chips.length ? `<div class="wrapBoons">${chips.join('')}</div>` : '';
   const cells=[ stat('⛰','Floor '+G.floor+(asc>0?' · ⛧'+asc:''),'Reached'),
