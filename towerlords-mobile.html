@@ -156,20 +156,14 @@
   #tDash.cool{opacity:.4;}
 
   /* ---- MOBILE BUILD: keep every HUD piece on-screen (no clipping in gameplay) ---- */
-  /* MOBILE top HUD — three columns won't fit a phone. Drop the redundant centre floor banner (the
-     right-hand tower panel already shows the floor + act/biome), clamp that panel so its lines wrap on
-     the right instead of spilling into the centre, and tuck the rampage streak under the level pill on
-     the left. Nothing overlaps anymore. */
   body.touch-on #floorBanner{display:none;}
   body.touch-on #towerInfo{transform:scale(.82);transform-origin:top right;max-width:58vw;}
   body.touch-on #towerInfo .sm{white-space:normal;}
-  /* the top-left pill already shows LV + XP, so the bottom XP/fame bars are redundant clutter on a phone */
   body.touch-on #progressBars{display:none;}
   body.touch-on #buffBar{max-width:96vw;bottom:calc(150px + env(safe-area-inset-bottom));}
   body.touch-on #rampage{left:14px;right:auto;width:180px;text-align:left;transform:scale(.85);transform-origin:top left;top:calc(env(safe-area-inset-top) + 112px);}
   body.touch-on #coach{max-width:88vw;font-size:12px;}
   body.touch-on #dock{padding-bottom:calc(4px + env(safe-area-inset-bottom));}
-  /* the move stick lives on the LEFT half; keep the right-half action buttons clear of the aim zone */
   body.touch-twin #tActs{bottom:calc(196px + 10vh);}
 
   /* bottom progress bars — blue character XP + gold Fame (Torchlight-style stacked pair) */
@@ -289,12 +283,10 @@
   .panel h3{font-size:14px;letter-spacing:2px;color:var(--neon);padding:14px 16px 10px;margin-bottom:6px;
     border-bottom:1px solid rgba(86,224,255,.16);background:linear-gradient(180deg,rgba(86,224,255,.08),transparent);
     border-radius:14px 14px 0 0;text-shadow:0 0 12px rgba(86,224,255,.4);}
-  .closeX{position:absolute;top:8px;right:9px;cursor:pointer;font-size:17px;line-height:1;opacity:.9;
-    display:flex;align-items:center;justify-content:center;gap:4px;min-width:34px;min-height:34px;padding:5px 9px;
-    border-radius:9px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.22);
-    transition:background .12s,opacity .12s,box-shadow .12s;z-index:3;}
-  .closeX:hover{opacity:1;background:rgba(255,255,255,.16);box-shadow:0 0 12px rgba(0,0,0,.4);}
-  .closeX:active{background:rgba(255,255,255,.26);}
+  .closeX{position:absolute;top:10px;right:12px;cursor:pointer;font-size:16px;opacity:.78;
+    min-width:34px;min-height:34px;display:flex;align-items:center;justify-content:center;border-radius:9px;
+    border:1px solid rgba(255,255,255,.2);background:rgba(6,9,18,.58);transition:opacity .12s,border-color .12s,background .12s;}
+  .closeX:hover{opacity:1;border-color:rgba(86,224,255,.45);background:rgba(14,22,38,.82);}
   /* ---- in-game styled modal (replaces the browser confirm) ---- */
   #gameModal{position:absolute;inset:0;z-index:200;display:none;align-items:center;justify-content:center;
     background:rgba(4,5,12,.72);backdrop-filter:blur(3px);pointer-events:auto;padding:18px;}
@@ -324,7 +316,7 @@
   #lootPanel{top:33%;right:7%;width:288px;padding-bottom:12px;border-color:rgba(141,255,217,.35);}   /* off-centre so it never blocks the action · drag its header to move it */
   #playerRing{position:absolute;pointer-events:none;z-index:6;display:none;}
   #lootPanel h3{color:#8effd9;}
-  #netHostHud{position:fixed;top:60px;right:16px;width:300px;max-width:94vw;max-height:84vh;overflow-y:auto;z-index:46;background:rgba(7,10,20,.97);border:1px solid rgba(86,224,255,.42);border-radius:14px;padding:12px 14px 13px;box-shadow:0 0 36px rgba(0,0,0,.72);font-size:12px;}
+  #netHostHud{position:fixed;top:50%;left:3vw;transform:translateY(-50%);width:300px;max-width:94vw;max-height:84vh;overflow-y:auto;z-index:46;background:rgba(7,10,20,.97);border:1px solid rgba(86,224,255,.42);border-radius:14px;padding:12px 14px 13px;box-shadow:0 0 36px rgba(0,0,0,.72);font-size:12px;}
   #netHostHud h3{color:#8effd9;font-size:13px;letter-spacing:2px;display:flex;justify-content:space-between;align-items:center;margin:0 0 8px;cursor:grab;user-select:none;}
   #netHostHud .nhClose{cursor:pointer;opacity:.7;font-size:14px;} #netHostHud .nhClose:hover{opacity:1;}
   #netHostHud .nhStatus{font-size:11px;opacity:.78;text-align:center;margin-bottom:6px;min-height:14px;line-height:1.4;}
@@ -901,11 +893,47 @@
   .draft-card .dc-pick{margin-top:auto;padding-top:14px;font-size:10px;letter-spacing:3px;color:var(--cc,#56e0ff);opacity:.6;text-transform:uppercase;}
   .draft-card:hover .dc-pick{opacity:1;}
   .draft-card.warnly{--cc:#ff6b8a;}
+  .menuShell{display:flex;align-items:flex-start;justify-content:center;gap:26px;flex-wrap:wrap;width:min(980px,96vw);}
   .menuCol{display:flex;flex-direction:column;align-items:center;gap:14px;}
+  .menuPanel{width:340px;max-width:92vw;padding:18px 18px 16px;border-radius:16px;
+    background:linear-gradient(180deg,rgba(15,20,36,.9),rgba(8,11,22,.92));border:1px solid rgba(143,230,255,.16);
+    box-shadow:0 12px 38px rgba(0,0,0,.45),0 0 26px rgba(86,224,255,.08);text-align:left;}
+  .menuPanelHd{font-size:11px;letter-spacing:3.5px;text-transform:uppercase;color:#8fe6ff;opacity:.9;margin-bottom:13px;}
+  .menuStatGrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;}
+  .menuStat{padding:11px 12px 10px;border-radius:12px;background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.08);}
+  .menuStat b{display:block;font-size:15px;color:#fff;line-height:1.2;}
+  .menuStat span{display:block;font-size:10px;letter-spacing:1.2px;text-transform:uppercase;opacity:.55;margin-top:4px;}
+  .menuFeature{display:flex;align-items:flex-start;gap:10px;padding:10px 0;border-top:1px solid rgba(255,255,255,.08);}
+  .menuFeature:first-of-type{border-top:none;padding-top:0;}
+  .menuFeature .mfIc{font-size:18px;line-height:1;flex:none;filter:drop-shadow(0 0 8px rgba(86,224,255,.22));}
+  .menuFeature .mfT{font-size:12.5px;font-weight:bold;color:#f3f7ff;letter-spacing:.25px;}
+  .menuFeature .mfD{font-size:11px;line-height:1.45;opacity:.66;margin-top:3px;}
   .btn.ghost{border-color:rgba(255,255,255,.25);color:var(--ink);background:rgba(255,255,255,.04);font-size:15px;padding:11px 30px;width:280px;}
   .btn.ghost:hover{background:rgba(255,255,255,.12);color:#fff;box-shadow:none;transform:translateY(-2px);}
   .btn.small{font-size:12px;padding:8px 22px;width:auto;letter-spacing:2px;}
   #menuClimb{width:280px;border-color:#8effd9;box-shadow:0 0 20px #8effd944;font-weight:800;}
+  #menuDaily{width:280px;border-color:#ffd24d;color:#ffe6a1;background:linear-gradient(180deg,rgba(60,43,12,.9),rgba(30,21,6,.92));box-shadow:0 0 20px rgba(255,210,77,.18);}
+  #menuDaily:hover{background:linear-gradient(180deg,#ffd24d,#ffb938);color:#1d1506;box-shadow:0 0 28px rgba(255,210,77,.42);}
+  #destinyWrap{width:min(760px,94vw);margin:2px auto 0;padding:18px 18px 16px;border-radius:16px;
+    background:linear-gradient(180deg,rgba(18,14,30,.82),rgba(10,11,22,.92));border:1px solid rgba(176,107,255,.2);
+    box-shadow:0 10px 34px rgba(0,0,0,.4),0 0 26px rgba(176,107,255,.12);}
+  .destinyHd{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;flex-wrap:wrap;margin-bottom:12px;text-align:left;}
+  .destinyHd b{display:block;font-size:16px;letter-spacing:1.2px;}
+  .destinyHd span{display:block;font-size:11px;opacity:.66;line-height:1.45;margin-top:4px;max-width:420px;}
+  #destinyCards{display:flex;gap:14px;justify-content:center;flex-wrap:wrap;}
+  .destCard{width:214px;max-width:100%;padding:16px 15px 14px;border-radius:14px;cursor:pointer;text-align:left;
+    background:linear-gradient(180deg,rgba(21,25,42,.95),rgba(9,11,21,.96));border:1px solid rgba(255,255,255,.08);
+    box-shadow:0 8px 26px rgba(0,0,0,.36);transition:transform .14s,box-shadow .14s,border-color .14s;}
+  .destCard:hover{transform:translateY(-4px);border-color:color-mix(in srgb,var(--dc,#fff) 70%,transparent);box-shadow:0 12px 30px rgba(0,0,0,.48),0 0 22px color-mix(in srgb,var(--dc,#fff) 22%,transparent);}
+  .destCard.sel{border-color:var(--dc,#fff);box-shadow:0 0 0 1px color-mix(in srgb,var(--dc,#fff) 35%,transparent),0 12px 34px rgba(0,0,0,.55),0 0 24px color-mix(in srgb,var(--dc,#fff) 28%,transparent);}
+  .destTop{display:flex;align-items:center;gap:10px;margin-bottom:8px;}
+  .destIc{font-size:28px;line-height:1;filter:drop-shadow(0 0 10px color-mix(in srgb,var(--dc,#fff) 46%,transparent));}
+  .destNm{font-size:16px;font-weight:bold;color:#fff;line-height:1.15;}
+  .destTag{font-size:9.5px;letter-spacing:2px;text-transform:uppercase;color:var(--dc,#fff);opacity:.9;margin-top:2px;}
+  .destDs{font-size:12px;line-height:1.5;color:#dbe4f6;min-height:72px;}
+  .destPick{margin-top:12px;font-size:10px;letter-spacing:2.6px;text-transform:uppercase;color:var(--dc,#fff);opacity:.62;}
+  .destCard.sel .destPick{opacity:1;}
+  #destinyHint{margin-top:12px;font-size:10.5px;letter-spacing:1.1px;opacity:.55;line-height:1.5;}
   /* tutorial */
   #tutCard{width:560px;max-width:88vw;background:rgba(10,14,26,.92);border:1px solid rgba(86,224,255,.22);border-radius:14px;padding:22px 26px;text-align:left;min-height:300px;}
   #tutCard .tut-ic{font-size:34px;}
@@ -944,7 +972,11 @@
     .overlay{padding:16px 12px;}                 /* keep the title & cards off the screen edges */
     h1{font-size:clamp(22px,7vw,42px);letter-spacing:clamp(1px,.7vw,5px);}   /* TOWERLORDS fits on one line */
     .tag{font-size:clamp(10px,2.6vw,12px);letter-spacing:clamp(1px,.6vw,3px);margin:8px 0 16px;}
+    .menuShell{gap:14px;}
     .menuCol{gap:9px;}
+    .menuPanel{padding:14px 14px 12px;}
+    .menuStatGrid{gap:8px;}
+    .menuStat{padding:9px 10px;}
     .btn{font-size:14px;letter-spacing:1.2px;padding:11px 16px;border-radius:9px;}
     .btn.ghost{font-size:12.5px;padding:9px 14px;}
     /* one uniform, comfortable width for every menu button */
@@ -953,65 +985,25 @@
     .modeSel{gap:10px;margin:2px 0 16px;}
     .modeBtn{width:min(340px,100%);padding:11px 14px;}
     .modeBtn b{font-size:15px;}
+    #destinyWrap{padding:14px 13px 12px;}
+    .destCard{width:min(340px,100%);padding:14px 13px 12px;}
+    .destDs{min-height:0;}
     /* in-game HUD: compact the left nav so it doesn't eat the screen / block the stick */
     #stats{width:158px;padding:6px;}
     .mItem{font-size:11.5px;padding:5px 7px;gap:6px;}
     .mHdr{padding:2px 5px 6px;margin-bottom:2px;} .mLv b{font-size:16px;}
     .mIc{font-size:13px;width:16px;}
   }
-  /* ============================================================================
-     Mobile & tablet: the in-game menus were laid out for desktop (fixed pixel
-     widths, side-by-side columns) so on a phone/tablet they spilled off-screen or
-     crushed their columns into unreadable one-word-per-line slivers.  On narrow
-     screens each menu instead opens as a near-fullscreen sheet and its columns
-     stack, so everything is readable and reachable.
-     ============================================================================ */
-  @media (max-width:900px){
-    /* every big menu becomes a fullscreen sheet — no fixed width spilling off the
-       edge, always centred, always fully on-screen (loot toast is left alone) */
-    /* NOTE: no `display` here — that would beat `.hidden{display:none}` (id vs class)
-       and pin every menu permanently open.  The flex-column panels already declare
-       their own display in the base rules; the rest scroll as a block (below). */
-    #charPanel:not(.hidden),#treePanel:not(.hidden),#stashPanel:not(.hidden),
-    #invPanel:not(.hidden),#vendorPanel:not(.hidden),#petPanel:not(.hidden),
-    #petYardPanel:not(.hidden),#scorePanel:not(.hidden),#codexPanel:not(.hidden),
-    #settingsPanel:not(.hidden),#craftPanel:not(.hidden){
-      top:8px!important;left:8px!important;right:8px!important;bottom:8px!important;
-      width:auto!important;height:auto!important;max-width:none!important;max-height:none!important;
-      transform:none!important;padding-bottom:0!important;}
-    /* inner scroll regions grow to fill the sheet and scroll inside it */
-    #csBody,#petScroll,#treeBody,#petYardPanel #petFuse{flex:1;min-height:0;}
-    /* block-scrolling sheets (no dedicated inner scroller) scroll as a whole */
-    #invPanel,#vendorPanel,#stashPanel,#scorePanel,#codexPanel,#settingsPanel,#craftPanel{
-      overflow-y:auto;}
-    /* a large, obvious, easy-to-tap close button */
-    .closeX{top:9px;right:9px;font-size:19px;min-width:42px;min-height:42px;padding:7px 12px;
-      background:rgba(255,255,255,.12);border-color:rgba(255,255,255,.30);}
-
-    /* Inventory: stack the paper-doll over the Inspect/compare pane so Inspect gets
-       the full width instead of a single crushed column reading top-to-bottom */
-    .invWrap{flex-direction:column;gap:12px;}
-    .invLeft{width:100%!important;flex:none;}
-    .invRight{width:100%;flex:none;}
-    .detailPane,.detailPane.blank{min-height:110px;}
-
-    /* Companion: stack the hero card so the ability slots span the full width */
-    .petHero{flex-direction:column;align-items:stretch;gap:14px;}
-    .petPortrait{width:100%!important;min-height:150px;}
-    .petSlots{grid-template-columns:repeat(auto-fit,minmax(140px,1fr));}
-
-    /* Specialisations: let the header + quick-build chips wrap instead of clipping */
-    #treeHead{flex-wrap:wrap;gap:8px 12px;}
-    #treeHead .treeHint{flex-basis:100%;}
-    #quickBuild{overflow-x:auto;}
-
-    /* Stash: two side-by-side lists don't fit a phone — stack them */
-    .invcol{flex-direction:column;}
-  }
   /* touchscreens: the keyboard key-badges in the nav are useless — hide them for a tighter menu */
   body.touch-on #stats .mKey{display:none;}
-  /* touch: collapse the nav behind a ☰ button so it stops eating the screen */
-  #navToggle{display:none;}
+  /* desktop: ☰ collapses the left nav to just the header pill (remembered); touch build restyles below */
+  #navToggle{display:flex;align-items:center;justify-content:center;width:30px;height:30px;flex:none;
+    border-radius:8px;border:1px solid rgba(86,224,255,.4);background:rgba(86,224,255,.1);color:var(--neon);
+    font-size:16px;line-height:1;cursor:pointer;pointer-events:auto;margin-right:5px;transition:background .12s;}
+  #navToggle:hover{background:rgba(86,224,255,.24);}
+  #stats.collapsed{width:max-content;min-width:0;}
+  #stats.collapsed .mItem,#stats.collapsed #rankHud{display:none;}
+  #stats.collapsed .mHdr{border-bottom:none;margin-bottom:0;padding-bottom:0;}
   body.touch-on #navToggle{display:flex;align-items:center;justify-content:center;width:32px;height:32px;flex:none;
     border-radius:8px;border:1px solid rgba(86,224,255,.42);background:rgba(86,224,255,.12);color:var(--neon);
     font-size:18px;line-height:1;cursor:pointer;pointer-events:auto;margin-right:6px;}
@@ -1037,8 +1029,28 @@
   .ascRow.new{color:#fff;} .ascRow.new b{color:#d9b6ff;}
   .ascHint{font-size:10.5px;opacity:.5;letter-spacing:1px;margin-top:9px;line-height:1.4;}
   #deathStats{font-size:16px;line-height:2.1;margin:6px 0 26px;} #deathStats b{color:var(--gold);}
-  #loadErr{position:absolute;inset:0;display:none;align-items:center;justify-content:center;text-align:center;
-    font-size:15px;padding:40px;color:#ff8fa3;line-height:1.7;z-index:99;}
+  #loadErr{position:fixed;inset:0;display:none;align-items:center;justify-content:center;text-align:center;
+    font-size:15px;padding:40px;color:#ff8fa3;line-height:1.7;z-index:200;
+    background:rgba(4,5,12,.985);backdrop-filter:blur(6px);}   /* opaque full-screen — must fully cover the start screen, never overlap it */
+  #loadErr .leInner{max-width:520px;}
+  /* ---- online co-op guest: full HUD, but hide host-only / account controls that a guest can't drive mid-run ---- */
+  body.netGuest #recallBtn, body.netGuest #openLegacyBtn, body.netGuest #openCoopHostBtn,
+  body.netGuest #towerInfo, body.netGuest #floorBanner{ display:none !important; }
+  /* ---- online party HUD: every player's hp/mp on the left, draggable ---- */
+  #partyHud{position:fixed;left:16px;top:224px;width:250px;z-index:44;display:none;
+    background:rgba(8,11,22,.88);border:1px solid rgba(120,150,200,.42);border-radius:14px;
+    box-shadow:0 8px 30px rgba(0,0,0,.6),inset 0 0 0 1px rgba(255,255,255,.04);backdrop-filter:blur(8px);padding:11px 14px 13px;font-size:13px;}
+  #partyHud h3{font-size:12px;letter-spacing:3px;color:#bcd0f0;opacity:.95;margin:0 0 11px;cursor:grab;user-select:none;font-weight:bold;}
+  #partyHud .pRow{margin-bottom:13px;--pc:#56e0ff;}
+  #partyHud .pRow:last-child{margin-bottom:0;}
+  #partyHud .pNm{font-size:14px;font-weight:bold;letter-spacing:.5px;color:var(--pc);margin-bottom:5px;text-shadow:0 0 9px var(--pc);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  #partyHud .pStars span{font-size:13px !important;letter-spacing:1.5px !important;}
+  #partyHud .pBar{height:12px;border-radius:6px;background:rgba(255,255,255,.12);overflow:hidden;margin-top:4px;box-shadow:inset 0 1px 2px rgba(0,0,0,.4);}
+  #partyHud .pBar.mana{height:7px;}
+  #partyHud .pBar i{display:block;height:100%;width:100%;background:linear-gradient(90deg,#ff5470,#ff9bb0);transition:width .12s;box-shadow:0 0 8px rgba(255,84,112,.5);}
+  #partyHud .pBar.mana i{background:linear-gradient(90deg,#3aa0ff,#8ad4ff);box-shadow:0 0 8px rgba(58,160,255,.5);}
+  #partyHud .pRow.down .pNm{color:#ff5470;text-shadow:0 0 9px #ff5470;}
+  #partyHud .pRow.down .pNm::after{content:' · DOWNED';font-size:10px;opacity:.9;}
   /* ---- local co-op (split-screen) ---- */
   #coopHud{position:absolute;inset:0;pointer-events:none;z-index:6;display:none;}
   .coTag{position:absolute;min-width:148px;padding:6px 9px;border-radius:9px;background:rgba(6,9,18,.6);
@@ -1156,13 +1168,11 @@
       <div class="mItem" id="openLegacyBtn"><span class="mKey">L</span><span class="mIc">⚜</span><span class="mLbl">Legacy</span></div>
       <div class="mItem hidden" id="openCoopHostBtn"><span class="mKey">🌐</span><span class="mIc">🌐</span><span class="mLbl">Co-op Host</span></div>
       <div class="mItem" id="openSettingsBtn"><span class="mKey">O</span><span class="mIc">⚙</span><span class="mLbl">Settings</span><span class="mEnd" id="muteInd" style="cursor:pointer">🔊</span></div>
-      <div class="mItem" id="openMenuBtn"><span class="mKey"></span><span class="mIc">🏳</span><span class="mLbl">Main Menu</span></div>
-      <div class="mItem" id="openCheatBtn"><span class="mKey"></span><span class="mIc">🐛</span><span class="mLbl">Dev Console (test)</span></div>
     </div>
 
     <div id="towerInfo" class="ui">
       <div class="big" id="floorBig">1<span style="opacity:.4;font-size:14px">/100</span></div>
-      <div class="sm" id="towerSub">TOWER ASCENT</div>
+      <div class="sm">TOWER ASCENT</div>
       <div class="sm" id="threatTxt" style="margin-top:6px;">THREAT ◆◇◇◇◇◇◇◇</div>
       <div class="sm" id="modTxt" style="margin-top:4px;"></div>
       <div class="sm" id="bountyTxt"></div>
@@ -1367,16 +1377,24 @@
     <h1>TOWERLORDS</h1>
     <div class="tag">ASCEND · BUILD · RAMPAGE · KNOW WHEN TO RETREAT</div>
     <div id="menuRank" class="menuRank hidden"></div>
-    <div id="menuMain" class="menuCol">
-      <button class="btn hidden" id="menuContinue" style="background:linear-gradient(180deg,#1a3a2e,#0f241c);border-color:#3ad18a;color:#bfffdd;box-shadow:0 0 22px rgba(58,209,138,.25)">▶ Continue</button>
-      <button class="btn" id="menuClimb">⛰ Climb the Tower</button>
-      <button class="btn" id="menuBoard">🏆 Leaderboard</button>
-      <button class="btn" id="menuCoop">🎮 Local Co-op</button>
-      <button class="btn" id="menuOnline">🌐 Online Co-op</button>
-      <button class="btn ghost" id="menuTutorial">📖 Tutorial</button>
-      <button class="btn ghost" id="menuSettings">⚙ Settings</button>
-      <button class="btn ghost" id="menuDeaths">💀 Death Log</button>
-      <button class="btn ghost" id="menuLegacy">⚜ Legacy</button>
+    <div id="menuShell" class="menuShell">
+      <div id="menuMain" class="menuCol">
+        <button class="btn hidden" id="menuContinue" style="background:linear-gradient(180deg,#1a3a2e,#0f241c);border-color:#3ad18a;color:#bfffdd;box-shadow:0 0 22px rgba(58,209,138,.25)">▶ Continue</button>
+        <button class="btn" id="menuClimb">⛰ Climb the Tower</button>
+        <button class="btn" id="menuDaily" aria-label="Start the Daily Climb">🌅 Daily Climb</button>
+        <button class="btn" id="menuBoard">🏆 Leaderboard</button>
+        <button class="btn" id="menuCoop">🎮 Local Co-op</button>
+        <button class="btn" id="menuOnline">🌐 Online Co-op</button>
+        <button class="btn ghost" id="menuTutorial">📖 Tutorial</button>
+        <button class="btn ghost" id="menuSettings">⚙ Settings</button>
+        <button class="btn ghost" id="menuDeaths">💀 Death Log</button>
+        <button class="btn ghost" id="menuLegacy">⚜ Legacy</button>
+      </div>
+      <div id="menuPanel" class="menuPanel">
+        <div class="menuPanelHd">Tower Summary</div>
+        <div id="menuStats" class="menuStatGrid"></div>
+        <div id="menuFeatures"></div>
+      </div>
     </div>
     <div id="climbScreen" class="menuCol hidden">
       <div class="modeSel">
@@ -1389,6 +1407,14 @@
         <div class="ascFame" id="ascFame"></div>
         <div class="ascList" id="ascList"></div>
         <div class="ascHint" id="ascHint"></div>
+      </div>
+      <div id="destinyWrap">
+        <div class="destinyHd">
+          <div><b>✦ Choose a Tower Destiny</b><span>Each climb now starts with a permanent rule-bending bonus. Pick the vibe you want, then stack boss blessings on top of it.</span></div>
+          <button class="btn ghost small" id="destinyReroll">↻ New Draft</button>
+        </div>
+        <div id="destinyCards"></div>
+        <div id="destinyHint"></div>
       </div>
       <button class="btn" id="startBtn">▶ ENTER THE TOWER</button>
       <button class="btn ghost small" id="climbBack">← Back to menu</button>
@@ -1537,26 +1563,46 @@ const rand=(a,b)=>a+_rngFn()*(b-a);
 const randi=(a,b)=>Math.floor(rand(a,b+1));
 const clamp=(v,a,b)=>v<a?a:v>b?b:v;
 const pick=arr=>arr[Math.floor(_rngFn()*arr.length)];
+const _escDiv=document.createElement('div');
+function escHtml(v){ _escDiv.textContent=String(v); return _escDiv.innerHTML; }
+function safeCssColor(v, fallback){ return /^#[0-9a-f]{3,8}$/i.test(v||'') ? v : (fallback||'#fff'); }
+function shuffleInPlace(arr){ for(let i=arr.length-1;i>0;i--){ const j=randi(0,i), tmp=arr[i]; arr[i]=arr[j]; arr[j]=tmp; } return arr; }
 
 let renderer, scene, camera, clock, hemi, dir;
 
-// detect a touch/phone device once — used to dial back GPU-heavy settings so mobile stays smooth
-const IS_MOBILE = (window.matchMedia && matchMedia('(pointer:coarse)').matches) || (navigator.maxTouchPoints||0)>0 || ('ontouchstart' in window);
-
+// Robust context creation. A second WebGL context on the same GPU (e.g. host + guest in two
+// windows, which is exactly how you test online co-op) very often fails the default
+// 'high-performance' request but succeeds on a lighter one — so fall back through progressively
+// cheaper options, then an explicit shared canvas/context, before giving up.
+function makeRenderer(){
+  const tries=[
+    {antialias:true,  powerPreference:'high-performance'},
+    {antialias:false, powerPreference:'high-performance'},
+    {antialias:false},
+    {antialias:false, powerPreference:'low-power', failIfMajorPerformanceCaveat:false},
+  ];
+  let err;
+  for(const opt of tries){ try{ const r=new THREE.WebGLRenderer(opt); if(r&&r.getContext&&r.getContext()) return r; }catch(e){ err=e; } }
+  try{ const cv=document.createElement('canvas');
+    const gl=cv.getContext('webgl2')||cv.getContext('webgl')||cv.getContext('experimental-webgl');
+    if(gl) return new THREE.WebGLRenderer({canvas:cv,context:gl,antialias:false}); }catch(e){ err=e; }
+  throw err||new Error('Could not create a WebGL context.');
+}
 function init(){
-  // mobile: skip MSAA (very costly on phone GPUs), cap the pixel ratio, and use cheaper shadows — big smoothness win
-  renderer = new THREE.WebGLRenderer({antialias:!IS_MOBILE, powerPreference:'high-performance'});
-  renderer.setPixelRatio(Math.min(IS_MOBILE?1.5:2, window.devicePixelRatio));
+  renderer = makeRenderer();
+  // a lost context (GPU reset, tab backgrounded too long) would otherwise silently freeze the guest — swallow the default so the browser tries to restore it
+  try{ renderer.domElement.addEventListener('webglcontextlost', e=>e.preventDefault(), false); }catch(_){}
+  renderer.setPixelRatio(Math.min(2,window.devicePixelRatio));
   renderer.setSize(innerWidth, innerHeight);
-  renderer.shadowMap.enabled = true; renderer.shadowMap.type = IS_MOBILE?THREE.PCFShadowMap:THREE.PCFSoftShadowMap;
+  renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
   $('app').insertBefore(renderer.domElement, $('app').firstChild);
   scene = new THREE.Scene();
-  camera = new THREE.PerspectiveCamera(camFov(), innerWidth/innerHeight, 0.1, 500);
+  camera = new THREE.PerspectiveCamera(54, innerWidth/innerHeight, 0.1, 500);
   clock = new THREE.Clock();
   addEventListener('resize',()=>{ camera.aspect=innerWidth/innerHeight; camera.updateProjectionMatrix(); renderer.setSize(innerWidth,innerHeight); layoutViewports(); buildCoopHud(); });
   hemi = new THREE.HemisphereLight(0xbfd4ff, 0x0a0a16, 0.8); scene.add(hemi);
   dir = new THREE.DirectionalLight(0xffffff, 1.15); dir.position.set(20,42,14); dir.castShadow=true;
-  dir.shadow.mapSize.set(IS_MOBILE?1024:2048, IS_MOBILE?1024:2048);
+  dir.shadow.mapSize.set(2048,2048);
   const d=70,c=dir.shadow.camera; c.left=-d;c.right=d;c.top=d;c.bottom=-d;c.near=1;c.far=160; scene.add(dir);
   renderer.setAnimationLoop(frame);
 }
@@ -1898,14 +1944,8 @@ function makeSkillGem(floor, idForce){ const id=idForce||pick(SKILL_IDS), sk=SKI
     value:60+tier*40+floor*3, desc:(sk.toggle?`Toggle aura · bind to slots 5–9 · ${sk.mps} mana/sec while active`:`Active skill · bind to slots 1–4${tier>1?` · +${(tier-1)*15}% power`:''}`)}; }
 // ---- user settings (persist across sessions) ----
 const SETTINGS_KEY='towerlords_settings_v1';
-const SETTINGS={ bigNumbers:true, moveMode:'keyboard', tips:true, autoSalvage:true, music:true, musicVol:75, junkMaxRarity:1, camSway:true, touch:'auto', touchAim:'auto', fov:68 };   // autoSalvage: grey/common drops auto-sell for gold · musicVol: music loudness 0-100 (player-set) · junkMaxRarity: highest rarity index eligible for bulk feed/sell · camSway: directional camera lean · touch: mobile on-screen controls (auto/on/off) · touchAim: auto-aim vs twin-stick · fov: camera field of view (higher = zoomed further out)
-const FOV_MIN=50, FOV_MAX=82;
-function camFov(){ return clamp(SETTINGS.fov|0, FOV_MIN, FOV_MAX); }
-// push the new field of view to every live camera (main + any co-op viewports)
-function applyFov(){ const f=camFov();
-  if(typeof camera!=='undefined' && camera){ camera.fov=f; camera.updateProjectionMatrix(); }
-  if(typeof _G!=='undefined' && _G.players) for(const pl of _G.players){ if(pl.cam){ pl.cam.fov=f; pl.cam.updateProjectionMatrix(); } } }
-function loadSettings(){ try{ const s=localStorage.getItem(SETTINGS_KEY); if(s){ const o=JSON.parse(s); if(typeof o.bigNumbers==='boolean')SETTINGS.bigNumbers=o.bigNumbers; if(o.moveMode==='keyboard'||o.moveMode==='mouse')SETTINGS.moveMode=o.moveMode; if(typeof o.tips==='boolean')SETTINGS.tips=o.tips; if(typeof o.autoSalvage==='boolean')SETTINGS.autoSalvage=o.autoSalvage; if(typeof o.music==='boolean')SETTINGS.music=o.music; if(typeof o.musicVol==='number')SETTINGS.musicVol=clamp(o.musicVol|0,0,100); if(typeof o.junkMaxRarity==='number')SETTINGS.junkMaxRarity=clamp(o.junkMaxRarity|0,0,3); if(typeof o.camSway==='boolean')SETTINGS.camSway=o.camSway; if(o.touch==='auto'||o.touch==='on'||o.touch==='off')SETTINGS.touch=o.touch; if(o.touchAim==='auto'||o.touchAim==='twin')SETTINGS.touchAim=o.touchAim; if(typeof o.fov==='number')SETTINGS.fov=clamp(o.fov|0,FOV_MIN,FOV_MAX); } }catch(e){} }
+const SETTINGS={ bigNumbers:true, moveMode:'keyboard', tips:true, autoSalvage:true, music:true, musicVol:75, junkMaxRarity:1, camSway:true, touch:'auto', touchAim:'auto', navCollapsed:false };   // autoSalvage: grey/common drops auto-sell for gold · musicVol: music loudness 0-100 (player-set) · junkMaxRarity: highest rarity index eligible for bulk feed/sell · camSway: directional camera lean · touch: mobile on-screen controls (auto/on/off) · touchAim: auto-aim vs twin-stick
+function loadSettings(){ try{ const s=localStorage.getItem(SETTINGS_KEY); if(s){ const o=JSON.parse(s); if(typeof o.bigNumbers==='boolean')SETTINGS.bigNumbers=o.bigNumbers; if(o.moveMode==='keyboard'||o.moveMode==='mouse')SETTINGS.moveMode=o.moveMode; if(typeof o.tips==='boolean')SETTINGS.tips=o.tips; if(typeof o.autoSalvage==='boolean')SETTINGS.autoSalvage=o.autoSalvage; if(typeof o.music==='boolean')SETTINGS.music=o.music; if(typeof o.musicVol==='number')SETTINGS.musicVol=clamp(o.musicVol|0,0,100); if(typeof o.junkMaxRarity==='number')SETTINGS.junkMaxRarity=clamp(o.junkMaxRarity|0,0,3); if(typeof o.camSway==='boolean')SETTINGS.camSway=o.camSway; if(o.touch==='auto'||o.touch==='on'||o.touch==='off')SETTINGS.touch=o.touch; if(o.touchAim==='auto'||o.touchAim==='twin')SETTINGS.touchAim=o.touchAim; if(typeof o.navCollapsed==='boolean')SETTINGS.navCollapsed=o.navCollapsed; } }catch(e){} }
 // bulk feed/sell "junk" = anything at or below the chosen quality that isn't a special item or locked
 function junkThreshold(){ return clamp(SETTINGS.junkMaxRarity|0,0,4); }
 function isBulkJunk(it){ return it && !it.isPet && !it.isPot && !it.isFlask && !it.isSkillGem && !it.locked && RARITY.indexOf(it.rarity)<=junkThreshold(); }
@@ -2050,7 +2090,7 @@ function resumeSession(){
   p.stash=s.stash||[]; p.stashStrikes=s.stashStrikes||0;
   _G.fusedRecipes=s.fusedRecipes||{}; if(s.fuseSeq) _fuseSeq=Math.max(_fuseSeq, s.fuseSeq); rebuildFusedSkills();   // rebuild fused active skills
   p.greed=s.greed||1; p.charge=s.charge||0;
-  p.run=s.run||{kills:0,assists:0,healSelf:0,healOthers:0,xp:0,floorTime:0,totalTime:0,floorsCleared:0,boons:[]};
+  p.run=s.run||{kills:0,assists:0,healSelf:0,healOthers:0,xp:0,floorTime:0,totalTime:0,floorsCleared:0,boons:[],destiny:null};
   if(!p.run.boons) p.run.boons=[];
   p.dead=false; p.downed=false; p.downT=0; p.selGem=null; p.petErrand=null; p.invCap=invCapBase();
   G.floor=s.floor||1;
@@ -2414,12 +2454,11 @@ function toggleCheat(){
   if(_cheatEl){ _cheatEl.remove(); _cheatEl=null; return; }
   const box=document.createElement('div'); box.id='cheatConsole';
   box.style.cssText='position:fixed;left:50%;top:12%;transform:translateX(-50%);z-index:99999;background:#0b1020ee;border:1px solid #ff5c78;border-radius:10px;padding:12px 14px;width:min(560px,92vw);box-shadow:0 0 30px #ff5c7844;font-family:monospace;color:#e8edf7';
-  box.innerHTML='<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px"><span style="color:#ff8a9c;font-size:12px;letter-spacing:1px">⚠ DEV CHEAT CONSOLE — testing only</span><button id="cheatClose" type="button" style="background:#2a1520;border:1px solid #ff5c78;color:#ff8a9c;border-radius:6px;font-size:14px;line-height:1;padding:4px 9px;cursor:pointer">✕</button></div>'+
-    '<input id="cheatIn" autocomplete="off" spellcheck="false" placeholder="e.g.  gold 5000  ·  abn all  ·  help" style="width:100%;box-sizing:border-box;background:#05070f;border:1px solid #2a3350;border-radius:6px;color:#8effd9;padding:8px;font-family:monospace;font-size:16px;outline:none">'+
+  box.innerHTML='<div style="color:#ff8a9c;font-size:12px;letter-spacing:1px;margin-bottom:6px">⚠ DEV CHEAT CONSOLE — testing only (remove before release) · ~ closes</div>'+
+    '<input id="cheatIn" autocomplete="off" spellcheck="false" placeholder="e.g.  gold 5000  ·  abn all  ·  help" style="width:100%;box-sizing:border-box;background:#05070f;border:1px solid #2a3350;border-radius:6px;color:#8effd9;padding:8px;font-family:monospace;font-size:14px;outline:none">'+
     '<div id="cheatOut" style="font-size:12px;color:#9fb0d0;margin-top:8px;white-space:pre-wrap;max-height:180px;overflow:auto"></div>';
   document.body.appendChild(box); _cheatEl=box;
   const inp=box.querySelector('#cheatIn'), out=box.querySelector('#cheatOut'); out.textContent=CHEAT_HELP;
-  box.querySelector('#cheatClose').onclick=()=>toggleCheat();
   inp.addEventListener('keydown',ev=>{ ev.stopPropagation();
     if(ev.key==='Enter'){ const v=inp.value.trim(); inp.value=''; if(v) out.textContent=(runCheat(v)||'ok')+'\n\n'+out.textContent; }
     else if(ev.key==='Escape'||ev.code==='Backquote'){ toggleCheat(); } });
@@ -2935,7 +2974,7 @@ const PF = new Set(['id','name','input','cam','viewport','color','joined','playe
   'fervor','fervorT','nearStash','nearVendor','nearPortal','nearScore','nearChest','nearLoot','nearCraft','nearYard','_ph','_sh','aim','in','downed','downT','reviveT']);
 const _G = {
   running:false, paused:false, floor:1, maxFloor:50, seed:0,
-  enemies:[], projectiles:[], eProjectiles:[], pickups:[], decals:[], scenery:[], timed:[], netDeaths:[], chests:[], yardPets:[],
+  enemies:[], projectiles:[], eProjectiles:[], pickups:[], decals:[], scenery:[], timed:[], netDeaths:[], netHits:[], chests:[], yardPets:[],
   portal:null, stashStation:null, vendorStation:null, scoreStation:null, goblin:null, craftStation:null, yardStation:null,
   rects:[], rooms:[], obstacles:[], camps:[], respawns:[], bounds:140,
   shiftT:0, shiftWarned:false, layoutSalt:0, hitstop:0, floorMod:null, bounty:null,
@@ -2980,6 +3019,12 @@ addEventListener('keydown',e=>{
   if(devCheatsEnabled && e.code==='Backquote' && !(document.activeElement && /INPUT|TEXTAREA/.test(document.activeElement.tagName))){ toggleCheat(); e.preventDefault(); return; }   // ~ opens the DEV cheat console (testing only)
   if(_G.modalOpen){ if(k==='escape'){ closeGameModal(); _gmOnOK=null; } return; }
   if(_G.legacyOpen){ if(k==='escape'||k==='l') closeLegacy(); return; }
+  if(_G.netGuest){   // guest: open/close its OWN menus (rendered from the streamed build); movement/skills go up as input packets, not here
+    const gp={c:'charPanel',t:'treePanel',i:'invPanel',p:'petPanel',v:'scorePanel',b:'codexPanel',o:'settingsPanel'}[k];
+    if(gp){ _G.menuOwner=0; _G.cur=0; togglePanel(gp); }
+    else if(k==='escape'){ if(anyPanelOpen()){ PANELS.forEach(p=>$(p).classList.add('hidden')); refreshMenuState(); } }
+    return;
+  }
   if(!G.running) return;
   const pk={c:'charPanel',t:'treePanel',i:'invPanel',p:'petPanel',v:'scorePanel',b:'codexPanel',o:'settingsPanel'}[k];
   if(pk){ _G.menuOwner=0; _G.cur=0; togglePanel(pk); }   // P1's keyboard always manages P1
@@ -2999,7 +3044,11 @@ let mouseCX=innerWidth/2, mouseCY=innerHeight/2;
 addEventListener('mousemove',e=>{ mouseCX=e.clientX; mouseCY=e.clientY; mouse.x=(e.clientX/innerWidth)*2-1; mouse.y=-(e.clientY/innerHeight)*2+1; });
 addEventListener('mousedown',e=>{ if(anyPanelOpen())return; if(e.button===0) mouseDown=true; else if(e.button===2) mouseR=true; });
 addEventListener('mouseup',e=>{ if(e.button===0) mouseDown=false; else if(e.button===2) mouseR=false; });
-addEventListener('contextmenu',e=>{ if(G.running && !anyPanelOpen()) e.preventDefault(); });
+addEventListener('contextmenu',e=>{ if((G.running||_G.netGuest) && !anyPanelOpen()) e.preventDefault(); });   // guest too (G.running is false for the render-only guest) — else the browser menu eats keyup and a key sticks
+// losing focus (right-click menu, alt-tab, dev console) drops keyup/mouseup events → a held key/mouse can stick
+// (guest: "stuck moving down"). Clear all held input whenever the window loses focus or visibility.
+addEventListener('blur',()=>{ for(const k in keys) keys[k]=false; mouseDown=false; mouseR=false; });
+addEventListener('visibilitychange',()=>{ if(document.hidden){ for(const k in keys) keys[k]=false; mouseDown=false; mouseR=false; } });
 
 // ============================================================ LOCAL CO-OP (split-screen, up to 4)
 const PLAYER_COLORS=[0x56e0ff,0xff5c78,0x6dff8c,0xffce4d];
@@ -3007,6 +3056,10 @@ const PLAYER_TINT  =['#56e0ff','#ff5c78','#6dff8c','#ffce4d'];
 // XInput-style button map (Chrome "standard" gamepad)
 const PAD={A:0,B:1,X:2,Y:3,LB:4,RB:5,LT:6,RT:7,BACK:8,START:9,L3:10,R3:11,DU:12,DD:13,DL:14,DR:15};
 function joinedPlayers(){ return _G.players.filter(p=>p.joined); }
+// players that get a LOCAL split-screen viewport on THIS machine (couch co-op only).
+// Online peers are simulated by the host but render on their OWN screens, so they must
+// never split the host's view, claim a viewport, or appear in the local co-op HUD.
+function localViewPlayers(){ return _G.players.filter(p=>p.joined && !p.isRemote); }
 function livePlayers(){ return _G.players.filter(p=>p.joined && !p.downed && p.player); }
 function nearestPlayerTo(x,z){ let best=null,bd=Infinity; for(const p of _G.players){ if(!p.joined||p.downed||!p.player)continue;
   const dx=p.player.position.x-x, dz=p.player.position.z-z, d=dx*dx+dz*dz; if(d<bd){bd=d;best=p;} } return best || _G.players[0]; }
@@ -3060,11 +3113,44 @@ function setupTouchControls(){
   if(ib) ib.addEventListener('pointerdown',e=>{ e.preventDefault(); e.stopPropagation(); if(!G.paused) interact(); }, {passive:false});
   const db=$('tDash');
   if(db) db.addEventListener('pointerdown',e=>{ e.preventDefault(); e.stopPropagation(); if(!G.paused) doDash(); }, {passive:false});
-  // collapsible nav: ☰ toggles the list; picking any item closes it; tapping elsewhere closes it too
+  // collapsible nav: ☰ toggles the list. Touch build uses .open (default collapsed); desktop uses
+  // .collapsed (default expanded) and remembers the choice.
   const nav=$('navToggle'), stats=$('stats');
-  if(nav) nav.addEventListener('pointerdown',e=>{ e.preventDefault(); e.stopPropagation(); stats.classList.toggle('open'); }, {passive:false});
+  if(nav) nav.addEventListener('click',()=>{ if(TOUCH.on){ stats.classList.toggle('open'); }
+    else { stats.classList.toggle('collapsed'); try{ SETTINGS.navCollapsed=stats.classList.contains('collapsed'); saveSettings(); }catch(_){} } });
   if(stats) stats.addEventListener('click',e=>{ if(TOUCH.on && e.target.closest('.mItem')) stats.classList.remove('open'); });
-  document.addEventListener('pointerdown',e=>{ if(TOUCH.on && stats && stats.classList.contains('open') && !stats.contains(e.target)) stats.classList.remove('open'); });
+  if(stats && !TOUCH.on && SETTINGS.navCollapsed) stats.classList.add('collapsed');   // restore desktop collapsed state
+}
+
+// MOBILE BUILD: drive the on-screen Interact button — show it, with the right label,
+// only when the F/interact action would actually do something at the player's spot.
+function updateTouchInteract(){
+  const b=document.getElementById('tInteract'); if(!b) return;
+  const db=document.getElementById('tDash'); if(db) db.classList.toggle('cool', (G.dashCd|0)>0 || !!G.dead || !!G.downed);
+  if(!TOUCH.on || !_G.running || anyPanelOpen() || _G.splitscreen){ b.classList.remove('show'); return; }
+  let label='', ic='✋';
+  if(_G.inYard){
+    if(_G.nearTerminal){ label='Terminal'; ic='🖥'; }
+    else if(_G.nearYardPet){ label='Inspect'; ic='🐾'; }
+    else if(G.nearPortal){ label='Leave'; ic='🚪'; }
+  }
+  else if(G.nearChest){ label='Open'; ic='🧰'; }
+  else if(G.nearLoot){ label='Grab'; ic='🎁'; }
+  else if(G.practice){ if(G.nearPortal){ label='Leave'; ic='🚪'; } }
+  else if(G.inTown){
+    if(G.nearPortal){ label=((_G.returnFloor|0)>1?'Return':'Climb'); ic='⛰'; }
+    else if(G.nearYard){ label='Pet Yard'; ic='🏡'; }
+    else if(G.nearCraft){ label='Craft'; ic='⚒'; }
+    else if(G.nearVendor){ label='Vendor'; ic='💰'; }
+    else if(G.nearStash){ label='Stash'; ic='🗄'; }
+    else if(G.nearScore){ label='Record'; ic='📜'; }
+  } else {
+    if(G.nearPortal && G.portal && G.portal.active){ label='Ascend'; ic='⛰'; }
+    else if(G.nearVendor){ label='Vendor'; ic='💰'; }
+    else if(G.nearStash){ label='Stash'; ic='🗄'; }
+  }
+  if(label){ b.querySelector('.tIc').textContent=ic; b.querySelector('.tLbl').textContent=label; b.classList.add('show'); }
+  else b.classList.remove('show');
 }
 function makeKbmInput(){ return { kind:'kbm', pollActions:false, read(p){
   const inp=p.in; let mx=0,mz=0; if(keys['w'])mz-=1; if(keys['s'])mz+=1; if(keys['a'])mx-=1; if(keys['d'])mx+=1;
@@ -3154,17 +3240,21 @@ function pollJoins(){
 function tintPlayer(grp,color){ if(!grp)return; const body=grp.children[0]; if(body&&body.material){ body.material=body.material.clone(); if(body.material.color)body.material.color.setHex(color); if(body.material.emissive)body.material.emissive.setHex(color); }
   const mk=grp.userData&&grp.userData.marker; if(mk&&mk.material){ mk.material=mk.material.clone(); mk.material.color.setHex(color); } }
 // shared spawn path for every input source (pad / bot / net). makeInput(p)→input source.
-function addPlayer(makeInput){
-  if(_G.players.length>=4) return null;
-  const idx=_G.players.length; const p=makePlayer(idx); p.color=PLAYER_COLORS[idx]; p.joined=true;
-  p.input=makeInput(p); _G.players.push(p);
+function addPlayer(makeInput, opts){
+  let idx=_G.players.findIndex((q,i)=>i>0 && !q.joined);   // reuse a slot left by a departed player so the array & network ids stay bounded across join/kick cycles
+  let p;
+  if(idx>=0){ p=makePlayer(idx); _G.players[idx]=p; }
+  else { if(_G.players.length>=4) return null; idx=_G.players.length; p=makePlayer(idx); _G.players.push(p); }
+  p.color=PLAYER_COLORS[idx]; p.joined=true;
+  if(opts&&opts.isRemote) p.isRemote=true;   // mark BEFORE the split calc so a remote peer never flips the host into split-screen
+  p.input=makeInput(p);
   withPlayer(idx, ()=>{ initPlayerChar(false); });
-  p.cam=new THREE.PerspectiveCamera(camFov(),1,0.1,500);
+  p.cam=new THREE.PerspectiveCamera(54,1,0.1,500);
   const a=_G.players[0].player.position; p.player.position.set(a.x+rand(-3,3),1,a.z+rand(-3,3));
   tintPlayer(p.player,p.color);
-  _G.splitscreen = joinedPlayers().length>1; _G.cur=0;
+  _G.splitscreen = localViewPlayers().length>1; _G.cur=0;   // online peers don't split the host's screen — only extra LOCAL players do
   layoutViewports(); buildCoopHud();
-  if(_G.splitscreen) $('hud').classList.add('cohide');
+  $('hud').classList.toggle('cohide', _G.splitscreen);
   return p;
 }
 function joinPlayer(padIndex){
@@ -3181,25 +3271,28 @@ function joinBotPlayer(){
 }
 // Phase 1 will use this for a remote peer: host fills p.netPacket from the data channel.
 function joinNetPlayer(){
-  const p=addPlayer(()=>makeNetInput()); if(!p) return null;
-  p.isRemote=true; p.name='Peer '+(p.id+1);
+  const p=addPlayer(()=>makeNetInput(), {isRemote:true}); if(!p) return null;
+  p.name='Peer '+(p.id+1);
+  // a remote player's pets are the GUEST's, not the host's — clear the defaults initPlayerChar seeded from the host's
+  // account; the guest streams its own pets up in its join handoff.
+  withPlayer(p.id, ()=>{ if(G.petMesh){ try{ scene.remove(G.petMesh); }catch(_){} G.petMesh=null; } }); p.pets=[]; p.pet=null;
   return p;
 }
 
 // ---- split-screen viewport layout (CSS px, top-left origin) ----
 function layoutViewports(){
-  const J=joinedPlayers(), n=J.length, W=innerWidth, H=innerHeight; let rects;
+  const J=localViewPlayers(), n=J.length, W=innerWidth, H=innerHeight; let rects;
   if(n<=1) rects=[{x:0,y:0,w:W,h:H}];
   else if(n===2) rects=[{x:0,y:0,w:W,h:H/2},{x:0,y:H/2,w:W,h:H/2}];                 // Halo 2p: top / bottom
   else rects=[{x:0,y:0,w:W/2,h:H/2},{x:W/2,y:0,w:W/2,h:H/2},{x:0,y:H/2,w:W/2,h:H/2},{x:W/2,y:H/2,w:W/2,h:H/2}]; // quadrants
-  J.forEach((p,i)=>{ p.viewport=rects[i]; if(!p.cam){ p.cam = (i===0)?camera:new THREE.PerspectiveCamera(camFov(),1,0.1,500); } });
+  J.forEach((p,i)=>{ p.viewport=rects[i]; if(!p.cam){ p.cam = (i===0)?camera:new THREE.PerspectiveCamera(54,1,0.1,500); } });
 }
 
 // ---- compact per-player co-op HUD ----
 function buildCoopHud(){
   let host=$('coopHud'); if(!host){ host=document.createElement('div'); host.id='coopHud'; $('app').appendChild(host); }
   host.innerHTML=''; if(!_G.splitscreen){ host.style.display='none'; return; } host.style.display='block';
-  joinedPlayers().forEach(p=>{ const v=p.viewport; const w=document.createElement('div'); w.className='coTag'; w.id='coTag'+p.id;
+  localViewPlayers().forEach(p=>{ const v=p.viewport; const w=document.createElement('div'); w.className='coTag'; w.id='coTag'+p.id;
     w.style.left=(v.x+12)+'px'; w.style.top=(v.y+10)+'px'; w.style.setProperty('--pc',PLAYER_TINT[p.id]);
     w.innerHTML=`<div class="coName">P${p.id+1} · <span class="coLv">Lv 1</span> <span class="coRank"></span></div>
       <div class="coBar"><div class="coHp"></div></div><div class="coBar mana"><div class="coMana"></div></div>
@@ -3208,12 +3301,36 @@ function buildCoopHud(){
 }
 function updateCoopHud(){
   if(!_G.splitscreen) return;
-  joinedPlayers().forEach(p=>{ const w=$('coTag'+p.id); if(!w)return;
+  localViewPlayers().forEach(p=>{ const w=$('coTag'+p.id); if(!w)return;
     w.querySelector('.coLv').textContent='Lv '+p.level;
     { const rkEl=w.querySelector('.coRank'); if(rkEl) rkEl.innerHTML=rankBadgeHTML(META.fame,true); }
     w.querySelector('.coHp').style.width=clamp(p.hp/p.maxhp*100,0,100)+'%';
     w.querySelector('.coMana').style.width=clamp(p.mana/p.maxmana*100,0,100)+'%';
     w.classList.toggle('down',!!p.downed); });
+}
+// ---- ONLINE party HUD: every player's hp/mp on the left (host reads live players; guest reads the snapshot) — draggable ----
+function buildPartyHud(){ let el=$('partyHud'); if(el) return el;
+  el=document.createElement('div'); el.id='partyHud'; el.innerHTML='<h3>◈ PARTY</h3><div id="partyRows"></div>';
+  $('app').appendChild(el);
+  try{ if(typeof makePanelDraggable==='function') makePanelDraggable('partyHud'); }catch(_){}
+  return el; }
+function updatePartyHud(){
+  let list=null;
+  if(NET.role==='host'){ list=joinedPlayers().map(p=>({ id:p.id, nm:p.name||('Player '+(p.id+1)), lv:p.level||1, hp:p.hp, mh:p.maxhp||1, mp:p.mana, mm:p.maxmana||1, col:PLAYER_TINT[p.id]||'#56e0ff', dn:!!p.downed, fm:(p.isRemote?(p.fame||0):((typeof META!=='undefined'&&META.fame)||0)) })); }
+  else if(NET.role==='peer'){ const s=NET.peer&&NET.peer.lastSnap; if(s&&s.players) list=s.players.map(p=>({ id:p.id, nm:'Player '+(p.id+1), lv:p.lv||1, hp:p.hp, mh:p.mh||1, mp:p.mp||0, mm:p.mm||1, col:PLAYER_TINT[p.id]||'#56e0ff', dn:!!p.dn, fm:p.fm||0 })); }
+  const el=$('partyHud');
+  if(!list || list.length<2){ if(el) el.style.display='none'; return; }   // only meaningful with 2+ players online
+  const host=el||buildPartyHud(); if(host.style.display!=='block') host.style.display='block';
+  const rows=$('partyRows'); const sig=list.map(p=>p.id).join(',');
+  if(host._sig!==sig){ host._sig=sig;
+    rows.innerHTML=list.map(p=>`<div class="pRow" data-pid="${p.id}"><div class="pNm"><span class="pNmTxt"></span> <span class="pStars"></span></div><div class="pBar"><i class="pHp"></i></div><div class="pBar mana"><i class="pMp"></i></div></div>`).join('');
+    list.forEach(p=>{ const r=rows.querySelector('.pRow[data-pid="'+p.id+'"]'); if(r) r.style.setProperty('--pc',p.col); }); }
+  list.forEach(p=>{ const r=rows.querySelector('.pRow[data-pid="'+p.id+'"]'); if(!r)return;
+    r.classList.toggle('down',p.dn);
+    const nm=r.querySelector('.pNmTxt'); if(nm) nm.textContent=p.nm+' · Lv '+p.lv;
+    const st=r.querySelector('.pStars'); if(st && st._fm!==p.fm){ st._fm=p.fm; st.innerHTML=(typeof rankBadgeHTML==='function')?rankBadgeHTML(p.fm||0,true):''; }
+    r.querySelector('.pHp').style.width=clamp(p.hp/(p.mh||1)*100,0,100)+'%';
+    r.querySelector('.pMp').style.width=clamp(p.mp/(p.mm||1)*100,0,100)+'%'; });
 }
 
 // ---- downed / revive (co-op) ----
@@ -3255,6 +3372,7 @@ $('modeHard').onclick=()=>setDiff('hard');
 loadSettings(); setupTouchControls(); applyTouchMode();   // mobile: build on-screen sticks & show them on touchscreens
 // ---- ascension selector ----
 let selAsc=0;
+let selDestinyId='', menuDestinyPicks=[];
 function renderAscSel(){
   const max=META.ascMax||0; selAsc=clamp(selAsc,0,max);
   $('ascTitle').textContent='⛧ ASCENSION '+selAsc;
@@ -3268,6 +3386,40 @@ function renderAscSel(){
 }
 $('ascUp').onclick=()=>{ if(selAsc<(META.ascMax||0)){ selAsc++; renderAscSel(); if(sfx.tick)sfx.tick(); } };
 $('ascDown').onclick=()=>{ if(selAsc>0){ selAsc--; renderAscSel(); if(sfx.tick)sfx.tick(); } };
+function refreshMenuSummary(){
+  const stats=$('menuStats'), feats=$('menuFeatures'); if(!stats||!feats) return;
+  const best=loadBest(), session=loadSession(), daily=dailyState(), rank=fameRank(META.fame);
+  stats.innerHTML = [
+    `<div class="menuStat"><b>${best?('Floor '+best.floor):'No best yet'}</b><span>Best climb</span></div>`,
+    `<div class="menuStat"><b>${session&&session.level?('Floor '+session.floor):'Fresh start'}</b><span>Continue</span></div>`,
+    `<div class="menuStat"><b>${daily?('Floor '+(daily.floor||0)):'Unplayed'}</b><span>Daily climb</span></div>`,
+    `<div class="menuStat"><b>${rank.name}</b><span>${META.fame||0} fame</span></div>`
+  ].join('');
+  feats.innerHTML = [
+    {ic:'🌅',t:'Daily climb is now on the front door',d:'One shared seeded tower every UTC day — perfect for fast score-chasing runs.'},
+    {ic:'✦',t:'Every climb starts with a Tower Destiny',d:'Pick a permanent run-defining bonus before you enter so each build starts with a distinct identity.'},
+    {ic:'🎮',t:'Co-op stays one tap away',d:'Local and online lobbies remain directly on the menu for quick drop-in sessions.'}
+  ].map(f=>`<div class="menuFeature"><div class="mfIc">${f.ic}</div><div><div class="mfT">${f.t}</div><div class="mfD">${f.d}</div></div></div>`).join('');
+}
+function clearDestinyDraft(){ selDestinyId=''; menuDestinyPicks=[]; }
+function chooseDestiny(id){ selDestinyId=id||''; drawDestinyDraft(false); if(sfx.tick)sfx.tick(); }
+function drawDestinyDraft(resetPick){
+  if(!menuDestinyPicks.length){
+    menuDestinyPicks=shuffleInPlace(DESTINIES.slice()).slice(0,3);
+  }
+  const hasSelectedDestiny=menuDestinyPicks.some(d=>d.id===selDestinyId);
+  if(resetPick || !hasSelectedDestiny) selDestinyId=(menuDestinyPicks[0]&&menuDestinyPicks[0].id)||'';
+  const wrap=$('destinyCards'), cur=menuDestinyPicks.find(d=>d.id===selDestinyId);
+  // `d.ds` is authored HTML from the local DESTINIES table so the short perk copy can keep deliberate <b> emphasis.
+  if(wrap) wrap.innerHTML=menuDestinyPicks.map(d=>`<div class="destCard${d.id===selDestinyId?' sel':''}" data-dest="${d.id}" style="--dc:${safeCssColor(d.col,'#fff')}">
+      <div class="destTop"><div class="destIc">${escHtml(d.ic)}</div><div><div class="destNm">${escHtml(d.nm)}</div><div class="destTag">${escHtml(d.tag)}</div></div></div>
+      <div class="destDs">${d.ds}</div><div class="destPick">${d.id===selDestinyId?'Selected for this climb':'Tap to claim this destiny'}</div></div>`).join('');
+  if(wrap) [...wrap.querySelectorAll('.destCard')].forEach(el=>el.onclick=()=>chooseDestiny(el.dataset.dest||''));
+  const hint=$('destinyHint');
+  if(hint && cur) hint.innerHTML=`<span style="color:${safeCssColor(cur.col,'#fff')}">${escHtml(cur.ic)} ${escHtml(cur.nm)}</span> is locked in when you start. It lasts the whole climb, stacks with boss blessings, and makes each run feel different immediately.`;
+}
+function rerollDestinyDraft(){ clearDestinyDraft(); drawDestinyDraft(true); if(sfx.evolve)sfx.evolve(); }
+$('destinyReroll').onclick=rerollDestinyDraft;
 $('reviveBtn').onclick=()=>{ $('death').classList.add('hidden'); if(G.permadead){ G.permadead=false; clearSession(); $('hud').classList.add('hidden'); showMenu(); } else { returnToTown(); } };
 $('victClimbBtn').onclick=()=>{ $('victory').classList.add('hidden'); G.victoryOpen=false; _G.running=true; _G.paused=false; clock.getDelta();
   banner('⛰ ENDLESS ASCENT','the portal is open — the tower rebuilds above you'); log('⛰ Take the portal when ready — NG+'+(ngLevel(G.floor)+1)+' awaits above.'); };
@@ -3276,7 +3428,7 @@ $('shareDeathBtn').onclick=()=>shareCard('death');
 $('shareVictBtn').onclick=()=>shareCard('victory');
 // ---- main menu navigation ----
 function showMenu(){ try{ closeGameModal(); }catch(_){} _G.legacyOpen=false; ['hud','tutorial','deathlog','death','legacyScreen'].forEach(id=>$(id).classList.add('hidden')); PANELS.forEach(p=>$(p).classList.add('hidden'));
-  $('start').classList.remove('hidden'); $('menuMain').classList.remove('hidden'); $('climbScreen').classList.add('hidden'); $('coopLobby').classList.add('hidden'); $('onlineLobby').classList.add('hidden'); coopLobbyOpen=false; G.running=false; G.practice=false; G.tutorial=false; loadMeta(); refreshDailyBtn(); refreshContinueBtn(); refreshMenuRank(); syncPause(); }
+  $('start').classList.remove('hidden'); $('menuShell').classList.remove('hidden'); $('climbScreen').classList.add('hidden'); $('coopLobby').classList.add('hidden'); $('onlineLobby').classList.add('hidden'); coopLobbyOpen=false; G.running=false; G.practice=false; G.tutorial=false; loadMeta(); refreshDailyBtn(); refreshContinueBtn(); refreshMenuRank(); refreshMenuSummary(); syncPause(); }
 // ESC while playing (no panels open) → confirm a return to the main menu, auto-saving first
 function promptExitToMenu(){ if(!G.running) return;
   gameConfirm('Return to the main menu?', 'Your progress is auto-saved — pick <b class="gm-hl">▶ Continue</b> on the menu to resume this run.', ()=>{
@@ -3285,9 +3437,9 @@ function promptExitToMenu(){ if(!G.running) return;
 function refreshContinueBtn(){ const c=$('menuContinue'); if(!c) return; const s=loadSession();
   if(s && s.level){ c.classList.remove('hidden'); c.innerHTML='▶ Continue — '+(s.inTown?'Sanctuary':'Floor '+s.floor)+' · Lv '+s.level+(s.evolves?' ✦×'+s.evolves:''); }
   else c.classList.add('hidden'); }
-function showClimb(){ ['tutorial','deathlog'].forEach(id=>$(id).classList.add('hidden')); $('start').classList.remove('hidden'); $('menuMain').classList.add('hidden'); $('climbScreen').classList.remove('hidden'); $('coopLobby').classList.add('hidden'); coopLobbyOpen=false; loadMeta(); renderAscSel(); }
+function showClimb(){ ['tutorial','deathlog'].forEach(id=>$(id).classList.add('hidden')); $('start').classList.remove('hidden'); $('menuShell').classList.add('hidden'); $('climbScreen').classList.remove('hidden'); $('coopLobby').classList.add('hidden'); $('onlineLobby').classList.add('hidden'); coopLobbyOpen=false; loadMeta(); renderAscSel(); rerollDestinyDraft(); }
 $('menuClimb').onclick=showClimb;
-$('menuContinue').onclick=()=>{ if(!resumeSession()) refreshContinueBtn(); };
+$('menuContinue').onclick=tryResumeSession;
 // ---- DAILY CLIMB: same seeded tower for everyone today, one scored attempt, level playing rules ----
 function refreshDailyBtn(){ const b=$('menuDaily'); if(!b)return; const d=dailyState();
   b.innerHTML = d ? ('🌅 Daily Climb · <span style="color:var(--gold)">scored — floor '+(d.floor||0)+' · '+(d.kills||0)+' kills</span>')
@@ -3298,10 +3450,11 @@ function refreshDailyBtn(){ const b=$('menuDaily'); if(!b)return; const d=dailyS
 function dailyScoreTick(){ if(!G.dailyRun)return;
   const rec={date:dailyKey(), done:true, floor:G.floor, kills:G.run.kills||0, score:runScore({floor:G.floor,kills:G.run.kills||0,time:G.run.totalTime||0})};
   const cur=dailyState(); META.daily=(cur&&(cur.score||0)>rec.score)?cur:rec; saveMeta(); }
-loadMeta(); refreshDailyBtn(); refreshContinueBtn(); refreshMenuRank();   // reflect today's daily state + any saved climb on the menu at boot
+loadMeta(); refreshDailyBtn(); refreshContinueBtn(); refreshMenuRank(); refreshMenuSummary();   // reflect today's daily state + any saved climb on the menu at boot
 { const _md=$('menuDaily'); if(_md) _md.onclick=()=>{
   loadMeta(); const d=dailyState();
   if(d&&d.done){ log('🌅 Today’s Daily is scored — a new tower rises at midnight UTC.'); return; }
+  clearDestinyDraft();   // daily climbs stay destiny-free so everyone races the same ruleset
   selAsc=0; G.hardcore=false; G.diff='normal';             // level playing field: no ascension mods, standard difficulty
   startGame();
   G.seed=dailySeedInt(); G.dailyRun=true; // startGame rolled a random seed — the daily overrides it
@@ -3309,10 +3462,11 @@ loadMeta(); refreshDailyBtn(); refreshContinueBtn(); refreshMenuRank();   // ref
   log('🌅 DAILY CLIMB: everyone gets this exact tower today. Your attempt is scored when it ends — climb far, kill lots, die proud.');
 }; }
 $('climbBack').onclick=showMenu;
+function tryResumeSession(){ if(!resumeSession()) refreshContinueBtn(); }
 // ---- local co-op lobby: claim slots with controllers, then start together ----
 let coopLobbyOpen=false, lobbyPads=[], lobbyPrev={}, lobbyBots=0;
 function showCoopLobby(){ ['tutorial','deathlog'].forEach(id=>$(id).classList.add('hidden')); $('start').classList.remove('hidden');
-  $('menuMain').classList.add('hidden'); $('climbScreen').classList.add('hidden'); $('coopLobby').classList.remove('hidden');
+  $('menuShell').classList.add('hidden'); $('climbScreen').classList.add('hidden'); $('coopLobby').classList.remove('hidden'); $('onlineLobby').classList.add('hidden');
   lobbyPads=[]; lobbyPrev={}; lobbyBots=0; coopLobbyOpen=true; G.hardcore=false; G.diff='normal';
   ['Casual','Normal','Hard'].forEach(k=>{ const el=$('coMode'+k); if(el) el.classList.toggle('sel', k==='Normal'); }); renderCoopLobby(); }
 function renderCoopLobby(){ const host=$('coopSlots'); if(!host) return; host.innerHTML='';
@@ -3346,7 +3500,7 @@ $('coopBack').onclick=showMenu;
 $('coopStartBtn').onclick=startCoop;
 // ---- online co-op lobby (room codes via PeerJS broker; manual-paste WebRTC fallback) ----
 function showOnlineLobby(){ ['tutorial','deathlog'].forEach(id=>$(id).classList.add('hidden')); $('start').classList.remove('hidden');
-  $('menuMain').classList.add('hidden'); $('climbScreen').classList.add('hidden'); $('coopLobby').classList.add('hidden'); $('onlineLobby').classList.remove('hidden');
+  $('menuShell').classList.add('hidden'); $('climbScreen').classList.add('hidden'); $('coopLobby').classList.add('hidden'); $('onlineLobby').classList.remove('hidden');
   $('onlineChoose').classList.remove('hidden'); $('onlineHost').classList.add('hidden'); $('onlineJoin').classList.add('hidden'); }
 function onlineToChoose(){ $('onlineChoose').classList.remove('hidden'); $('onlineHost').classList.add('hidden'); $('onlineJoin').classList.add('hidden'); }
 $('menuOnline').onclick=showOnlineLobby;
@@ -3388,7 +3542,12 @@ $('onGenAnsBtn').onclick=async()=>{ const o=$('onOfferIn').value.trim(); if(!o){
   catch(e){ $('onJoinStatus').textContent='⚠ '+e.message; } };
 $('onCopyAns').onclick=()=>onlineCopy('onAnsOut');
 // ---- ONLINE CO-OP HOST HUD: a floating in-game panel (lives OUTSIDE #start so it stays visible once the run begins) ----
-function openNetHostHud(){ const el=$('netHostHud'); if(el) el.classList.remove('hidden'); const nav=$('openCoopHostBtn'); if(nav) nav.classList.remove('hidden'); renderNetHost(); }
+function openNetHostHud(){ const el=$('netHostHud'); if(el){ el.classList.remove('hidden');
+    const p=(typeof _panelPos!=='undefined')?_panelPos['netHostHud']:null;
+    if(p&&p.left){ el.style.left=p.left; el.style.top=p.top; el.style.right='auto'; el.style.transform='none'; }   // reopen where it was dragged
+    else { el.style.left='3vw'; el.style.right='auto'; el.style.top='50%'; el.style.transform='translateY(-50%)'; }   // default: centred-left, not off the right edge
+  }
+  const nav=$('openCoopHostBtn'); if(nav) nav.classList.remove('hidden'); renderNetHost(); }
 function closeNetHostHud(){ const el=$('netHostHud'); if(el) el.classList.add('hidden'); }
 function renderNetHost(){ const wrap=$('nhPeers'); if(!wrap) return; const h=NET.host;
   const peers=h?h.conns.filter(c=>c.player):[];
@@ -3399,14 +3558,25 @@ function renderNetHost(){ const wrap=$('nhPeers'); if(!wrap) return; const h=NET
     d.innerHTML=`<span>${live?'🟢':'🟡'} Player ${pid}${live?'':' · connecting…'}</span>`;
     const kb=document.createElement('button'); kb.className='k'; kb.textContent='Kick'; kb.onclick=()=>netKick(rec);
     d.appendChild(kb); wrap.appendChild(d); }); }
+// fully retire a departed peer's character from the host world (kick OR disconnect):
+// drop it from the sim, remove its mesh/pet from the scene, and re-settle the local view.
+function netReleasePlayer(rec){ const p=rec&&rec.player;
+  if(p){ p.joined=false; p.downed=false;
+    if(p.player){ try{ scene.remove(p.player); }catch(_){} p.player=null; }
+    if(p.petMesh){ try{ scene.remove(p.petMesh); }catch(_){} p.petMesh=null; }
+    rec.player=null; }
+  _G.splitscreen = localViewPlayers().length>1; _G.cur=0;
+  try{ layoutViewports(); }catch(_){}
+  try{ buildCoopHud(); }catch(_){}
+  const hud=$('hud'); if(hud) hud.classList.toggle('cohide', _G.splitscreen); }
 function netKick(rec){ if(!rec) return;
   try{ if(rec.gameConn&&rec.gameConn.close) rec.gameConn.close(); }catch(_){}
   try{ if(rec.evtConn&&rec.evtConn.close) rec.evtConn.close(); }catch(_){}
   try{ if(rec.pc&&rec.pc.close) rec.pc.close(); }catch(_){}
   const pid=(rec.player?rec.player.id:0)+1;
-  if(rec.player){ rec.player.joined=false; rec.player.downed=true; }
+  netReleasePlayer(rec);
   if(NET.host) NET.host.conns=NET.host.conns.filter(c=>c!==rec);
-  log('🌐 Kicked Player '+pid+'.'); renderNetHost(); if(typeof buildCoopHud==='function') buildCoopHud(); }
+  log('🌐 Kicked Player '+pid+'.'); renderNetHost(); }
 // wire the host-HUD controls (DOM already parsed — the module runs after <body>)
 { const c=$('nhClose'); if(c) c.onclick=closeNetHostHud;
   const nav=$('openCoopHostBtn'); if(nav) nav.onclick=openNetHostHud;
@@ -3467,12 +3637,6 @@ $('openScoreBtn').onclick=()=>togglePanel('scorePanel');
 $('openCodexBtn').onclick=()=>togglePanel('codexPanel');
 $('openSettingsBtn').onclick=()=>togglePanel('settingsPanel');
 $('recallBtn').onclick=()=>startRecall();
-$('openMenuBtn').onclick=()=>promptExitToMenu();   // mobile: no ESC key → return to main menu from the nav
-const openCheatBtn=$('openCheatBtn');
-if(openCheatBtn){
-  if(devCheatsEnabled) openCheatBtn.onclick=()=>toggleCheat();        // mobile: no ~ key → open the DEV cheat console from the nav
-  else openCheatBtn.classList.add('hidden');
-}
 $('muteInd').onclick=(e)=>{ e.stopPropagation(); toggleMute(); };
 document.querySelectorAll('.closeX').forEach(x=>x.onclick=()=>{ $(x.dataset.close).classList.add('hidden'); syncPause(); refreshMenuState(); });
 $('depositAll').onclick=()=>{ if(G.inv?.length){ const n=stashPushMany(G.inv); G.inv=G.inv.slice(n); G.stashStrikes=0; bankCashIn(n); log(n?('Deposited '+n+' item(s)'+(G.inv.length?' — stash full, '+G.inv.length+' left in bag':'')):'Stash full — buy a stash row.'); renderStash();} };
@@ -3625,8 +3789,11 @@ function recompute(){
       if(g.element){ if(sk==='weapon') elem=g.element; else if(elem==='phys') elem=g.element; }
       ailBonus += (g.ailChance||0); }
   }
-  // boss-reward blessings (run-scoped — persist across gear & skill changes for the whole climb)
-  if(G.run && G.run.boons) for(const b of G.run.boons){
+  const runBlessingSources=[];
+  if(G.run && G.run.destiny) runBlessingSources.push(G.run.destiny);
+  if(G.run && G.run.boons) runBlessingSources.push(...G.run.boons);
+  // boss-reward blessings + start-of-run destiny (run-scoped — persist across gear & skill changes for the whole climb)
+  for(const b of runBlessingSources){
     if(b.gives) flags[b.gives]=true;
     if(b.special) special[b.special]=true;
     if(b.eff) for(const k in b.eff) addMod(k, b.eff[k]);
@@ -3635,7 +3802,7 @@ function recompute(){
   const E={ str:A.str+attrItem.str, dex:A.dex+attrItem.dex, int:A.int+attrItem.int, vit:A.vit+attrItem.vit, will:A.will+attrItem.will };
   if(special.igniteBoost) igniteMult=2;
   if(special.dashCdr) dashCdr=0.6;
-  if(G.pet){ const pl=G.pet.level;   // active-pet ability auras — ONLY unlocked abilities apply, each scales with pet level
+  if(G.pet && !G.petErrand && !(G.pet.down>0)){ const pl=G.pet.level;   // pet auras apply ONLY while your companion is actually at your side (not on a sell-run, not downed)
     for(const a of activeAbilities(G.pet)){ const d=AB_DEF[a.type]; if(!d) continue; const v=petAbilVal(a.type,pl);
       if(d.regen==='life') talLifeRegen+=v;
       else if(d.regen==='mana') talManaRegen+=v;
@@ -3643,7 +3810,7 @@ function recompute(){
       else if(d.mod) addMod(d.mod, d.neg? -v : v);
     }
   }
-  G.petMagnet = G.pet ? (7 + petMagnetVal(G.pet)) : 0;
+  G.petMagnet = (G.pet && !G.petErrand && !(G.pet.down>0)) ? (7 + petMagnetVal(G.pet)) : 0;
   // (fame no longer grants any combat power — it's a pure skill rating)
   const S={};
   S.attrBase=A; S.attrItem=attrItem; S.attrEff=E;   // exposed so the Character screen can show base (+gear)
@@ -3690,6 +3857,8 @@ function recompute(){
   S.procs={};
   for(const id in G.alloc){ const t=TALENTMAP[id], rank=G.alloc[id]||0; if(rank>0 && t&&t.procs) for(const pr of t.procs){
     (S.procs[pr.on]||(S.procs[pr.on]=[])).push({type:pr.type, chance:Math.min(1,(pr.chance||1)*rank), amt:pr.amt||0, dur:pr.dur||0, r:pr.r||6}); } }
+  for(const b of runBlessingSources){ const plist=b&&b.procs ? b.procs : (b&&b.proc ? [b.proc] : []); for(const pr of plist){
+    (S.procs[pr.on]||(S.procs[pr.on]=[])).push({type:pr.type, chance:Math.min(1,pr.chance||1), amt:pr.amt||0, dur:pr.dur||0, r:pr.r||6}); } }
   // ascension "Withered": cut all healing / regen / leech
   { const hm=ascEff().healMul; if(hm!==1){ S.lifeRegen*=hm; S.manaRegen*=hm; S.lifesteal*=hm; S.lifeOnHit*=hm; S.lifeOnKill*=hm; } }
   // ---- enemy ADAPTATION: read the player's dominant specialisation so foes can counter it (tanks get stun-locked, speedsters slowed, healers mortally wounded, etc.) ----
@@ -4083,9 +4252,7 @@ function buildProps(type){
   }
 }
 function updateFloorUI(type){
-  const _sub=$('towerSub');
   if(type==='TOWN'){ $('floorTitle').textContent='SANCTUARY'; $('floorType').textContent='TOWN HUB'; $('floorBig').innerHTML='⌂'; $('threatTxt').textContent='SAFE';
-    if(_sub)_sub.textContent='SANCTUARY';
     $('modTxt').innerHTML=''; $('bountyTxt').innerHTML=''; $('shiftTxt').textContent='';   // clear any combat-floor mod/bounty/shift text lingering from the run you just left
     return; }
   $('floorTitle').textContent='FLOOR '+G.floor;
@@ -4093,7 +4260,6 @@ function updateFloorUI(type){
   const ng=ngLevel(G.floor);
   $('floorBig').innerHTML=G.floor+(ng>0?`<span style="color:var(--gold);font-size:14px"> NG+${ng}</span>`:'<span style="opacity:.4;font-size:14px">/'+SUMMIT_FLOOR+'</span>');
   const _act=actOf(G.floor); if(type==='NORMAL') $('floorType').textContent='ACT '+_act.num+' · '+biome.name;
-  if(_sub)_sub.textContent=$('floorType').textContent;   // mirror act/biome/milestone into the tower panel (mobile hides the centre banner)
   $('modTxt').innerHTML = G.floorMod?`<span style="color:${G.floorMod.col}">${G.floorMod.nm}</span>`:'';
   const threat=clamp(Math.ceil(G.floor/8),1,8);
   const TLBL=['','TRIVIAL','LOW','MODERATE','RISKY','DANGEROUS','SEVERE','DEADLY','LETHAL'];
@@ -4903,6 +5069,10 @@ function basicAttack(){
     fireBolt(p.x+dx,p.z+dz,dx,dz,dmg,crit,G.S.pierce+w.pierce,w.size,w.speed,G.S.element,w.life,o);
   }
   if(G.S.abn&&G.S.abn.size) abnFire(shots);   // abnormal weapon quirks tweak the shots we just fired
+  // muzzle flash — so you can always tell you're firing, even when an enemy is right on top of you (renders through it)
+  try{ const mz=new THREE.Mesh(new THREE.SphereGeometry(0.5,8,8), new THREE.MeshBasicMaterial({color:(ELEMENTS[G.S.element]&&ELEMENTS[G.S.element].col)||0x9be7ff,transparent:true,opacity:.75,depthTest:false}));
+    mz.position.set(p.x+Math.sin(baseAng)*0.95, 1.15, p.z+Math.cos(baseAng)*0.95); mz.renderOrder=997; scene.add(mz);
+    G.decals.push({mesh:mz,fade:true,life:.11,t:0}); }catch(_){}
 }
 function fireBolt(x,z,dx,dz,dmg,crit,pierce,size,spd,element,life,o){
   element=element||'phys'; o=o||{};
@@ -4959,6 +5129,7 @@ function useSignature(){
 // ---- pet sell-runs ----
 function petSellable(it){ return it && !it.isFlask && !it.isPot && !it.locked && (it.value||0)>0; }
 function sendPetErrand(){
+  if(NET.role==='peer') return netPeerCmd('sendPetErrand',[]);
   if(!G.pet){ log('No companion to send.'); return; }
   if(G.petErrand){ log('Your companion is already on a sell-run.'); return; }
   if(G.pet.down>0){ log('Your companion is downed — it cannot run errands.'); return; }
@@ -4968,6 +5139,7 @@ function sendPetErrand(){
   if(G.selGem && !G.inv.includes(G.selGem)) G.selGem=null;
   const t=Math.max(14, 34 - (G.pet.rarity||0)*4);   // faster as the pet's rarity rises
   G.petErrand={items:junk.length, gold, t, total:t};
+  recompute();   // pet is away → its combat auras drop until it returns
   log(`🐾 Companion off to town with ${junk.length} item(s) → ~${gold}g, back in ${Math.ceil(t)}s.`);
   banner('🐾 SELL-RUN','companion heading to town'); refreshItemPanels();
 }
@@ -5159,6 +5331,7 @@ function hurtEnemy(e,dmg,crit,element,src,owner){
   if((src||'player')==='player') addCharge(0.5);
   const cls = crit?'crit':(ELEMENTS[element]?ELEMENTS[element].cls:'dmg');
   floatText(e.mesh.position.x,e.mesh.position.z, Math.round(dmg), cls, e.r*0.9+1.7);
+  if(NET.role==='host' && _G.netHits.length<48) _G.netHits.push({x:Math.round(e.mesh.position.x*100)/100, z:Math.round(e.mesh.position.z*100)/100, d:Math.round(dmg), c:cls, y:e.r*0.9+1.7});   // peers show the same damage numbers
   if(crit) G.hitstop=Math.max(G.hitstop||0,.03);
   if(G.S.lifeOnHit>0 && G.hp<G.maxhp){ const h=Math.min(G.S.lifeOnHit*healScale(),G.maxhp-G.hp); G.hp+=h; G.run.healSelf+=h; }
   if(G.S.lifesteal>0 && G.hp<G.maxhp){ const h=Math.min(dmg*G.S.lifesteal*healScale(),G.maxhp-G.hp); G.hp+=h; G.run.healSelf+=h; }
@@ -5209,6 +5382,15 @@ const BOONS=[
  {id:'greed',      nm:'Greed Incarnate',ic:'💰',tag:'Fortune',col:'#ffd24d',eff:{goldPct:70,xpPct:35,dmgPct:5},  ds:'<b>+70%</b> gold and <b>+35%</b> XP. Spoils of the bold.'},
  {id:'momentum',   nm:'Momentum',      ic:'💉',tag:'Mobility',col:'#8effd9',eff:{dashCdrPct:38,asPct:8},         ds:'<b>38%</b> faster dash recharge. <b>+8%</b> attack speed.'},
 ];
+const DESTINIES=[
+ {id:'stormchaser', nm:'Stormchaser', ic:'⛈️', tag:'Tempo', col:'#7fd0ff', eff:{movePct:16,crit:6,dashCdrPct:14}, procs:[{on:'dash',chance:1,type:'haste',dur:2.4},{on:'dash',chance:0.65,type:'nova',amt:1.15,r:6}], ds:'Dashes kick off speed bursts and shockwaves. <b>+16%</b> move speed, <b>+6%</b> crit, much faster dash cycling.'},
+ {id:'emberwake', nm:'Emberwake', ic:'🔥', tag:'Aggro', col:'#ff9a4d', eff:{dmgPct:18,pierce:1,lifePct:-10}, procs:[{on:'kill',chance:0.45,type:'ignite'},{on:'crit',chance:0.2,type:'fervor',amt:12}], ds:'Go all-in on offense: burning kill chains, more pierce, heavier crit-fueled rampage — but a smaller life pool.'},
+ {id:'spellbound', nm:'Spellbound', ic:'✨', tag:'Arcane', col:'#b896ff', eff:{skillDmgPct:22,cdrPct:16,manaPct:18}, procs:[{on:'cast',chance:0.26,type:'nova',amt:1.3,r:7},{on:'cast',chance:0.26,type:'mana',amt:0.06}], ds:'Turn every cast into a spectacle. Stronger spells, faster cooldowns, extra mana, and occasional echo novas.'},
+ {id:'goldenrush', nm:'Golden Rush', ic:'💰', tag:'Fortune', col:'#ffd24d', eff:{goldPct:70,xpPct:32,proj:1,armor:-18}, procs:[{on:'kill',chance:0.28,type:'haste',dur:1.5}], ds:'Greedy runs explode early: more gold, more XP, one extra projectile, and quick bursts after kills — at the cost of armour.'},
+ {id:'ironheart', nm:'Ironheart', ic:'🛡️', tag:'Survival', col:'#8aa0c0', eff:{lifePct:18,armor:34,lifeOnKill:10}, procs:[{on:'hurt',chance:0.22,type:'shield',dur:0.95},{on:'hurt',chance:0.14,type:'heal',amt:0.08}], ds:'Anchor your climb with huge survivability. Thick armour, bonus life, healing on kills, and emergency guards when you get clipped.'},
+ {id:'nightfang', nm:'Nightfang', ic:'🌒', tag:'Predator', col:'#8effd9', eff:{crit:8,critMultPct:30,asPct:10}, procs:[{on:'crit',chance:0.28,type:'fervor',amt:14},{on:'kill',chance:0.3,type:'empower',dur:2.6}], ds:'Play for execution. Big crit stats, faster attacks, rampage spikes on crit, and kill chains that supercharge your next casts.'},
+];
+function destinyById(id){ return DESTINIES.find(d=>d.id===id)||null; }
 function offerBoonDraft(){
   if(_G.draftOpen || !_G.running) return;
   const owned=new Set((G.run.boons||[]).map(b=>b.id));
@@ -5353,7 +5535,18 @@ let camShake=0; function shakeCam(v){ camShake=Math.max(camShake,v); }
 let camWobX=0, camWobZ=0;   // directional camera sway — the view leans opposite to your movement, springing on direction changes
 let camFocus=null;   // smoothed point the camera chases; the camera sits at a FIXED offset from it so the tilt never wobbles
 const _proj=new THREE.Vector3();
+// Floating combat text — pooled/bounded so a burst of hits on an older PC can't tank FPS.
+// Each number used to be a fresh DOM node + its own setTimeout; under heavy damage that piled up
+// hundreds of nodes, CSS animations and timers. Now: cull off-screen, cap the live count (retire the
+// oldest to make room), and reap on ONE shared rAF sweep instead of a timer per number.
+const _fctActive=[]; const FCT_CAP=56; let _fctRAF=false;
+function _fctSweep(){ const now=performance.now();
+  for(let i=_fctActive.length-1;i>=0;i--){ if(now>=_fctActive[i].die){ _fctActive[i].el.remove(); _fctActive.splice(i,1); } }
+  if(_fctActive.length) requestAnimationFrame(_fctSweep); else _fctRAF=false; }
 function floatText(x,z,txt,cls,yOff){ _proj.set(x,yOff||2,z).project(camera); if(_proj.z>1)return;
+  const sx=(_proj.x*.5+.5)*innerWidth, sy=(-_proj.y*.5+.5)*innerHeight;
+  if(sx<-90||sx>innerWidth+90||sy<-90||sy>innerHeight+90) return;   // off-screen → don't spawn a node nobody will see
+  if(_fctActive.length>=FCT_CAP){ const old=_fctActive.shift(); if(old&&old.el) old.el.remove(); }   // bound the DOM so a damage burst can't stall the frame
   const d=document.createElement('div'); d.className='fct '+(cls||'dmg'); d.textContent=txt; let life=850;
   if(SETTINGS.bigNumbers){ d.classList.add('enh'); life=950;
     const s=String(txt), n=parseFloat(s.replace(/[+,]/g,''));
@@ -5362,8 +5555,9 @@ function floatText(x,z,txt,cls,yOff){ _proj.set(x,yOff||2,z).project(camera); if
       const base=(cls==='crit')?30:(cls==='hurt')?22:(cls==='goldtxt')?20:18;
       d.style.fontSize=Math.round(base*scale)+'px'; }
     if(cls==='crit'||cls==='big') d.classList.add('critpop'); }
-  d.style.left=((_proj.x*.5+.5)*innerWidth)+'px'; d.style.top=((-_proj.y*.5+.5)*innerHeight)+'px';
-  $('fct').appendChild(d); setTimeout(()=>d.remove(),life); }
+  d.style.left=sx+'px'; d.style.top=sy+'px';
+  $('fct').appendChild(d); _fctActive.push({el:d, die:performance.now()+life});
+  if(!_fctRAF){ _fctRAF=true; requestAnimationFrame(_fctSweep); } }
 
 // ============================================================ XP / PROGRESSION
 function gainXP(n){
@@ -5449,6 +5643,7 @@ function buyPetSlot(){
   refreshPetUI(); updateHUD();
 }
 function sellPet(p){
+  if(NET.role==='peer') return netPeerCmd('sellPet',[p&&p.uid]);
   if(!p) return;
   if(p===G.pet){ log('Set another pet active before selling your active companion.'); return; }
   const v=petSellValue(p); G.pets=G.pets.filter(x=>x!==p); G.gold+=v; flashGold();
@@ -5571,12 +5766,14 @@ function buildPetMesh(p){ const f=PET_FAMILIES[p.family];
   return grp;
 }
 function setActivePet(p){
+  if(NET.role==='peer') return netPeerCmd('setActivePet',[p&&p.uid]);
   if(G.petMesh){ scene.remove(G.petMesh); G.petMesh=null; }
   G.pet=p||null; if(G.pet) ensurePetAbilities(G.pet);
   if(p){ p.maxhp=petMaxHp(p); p.hp=p.maxhp; p.down=0; G.petMesh=buildPetMesh(p); scene.add(G.petMesh); }   // equipping always restores the companion to full HP (their regen if they lack a heal skill)
   recompute(); refreshPetUI();
 }
 function hatchPet(egg){
+  if(NET.role==='peer') return netPeerCmd('hatchPet',[egg&&egg.uid]);
   if(!G.pets) G.pets=[];
   if(G.pets.length>=petYardCap()){ log('🐾 Pet yard is full ('+petYardCap()+' slots) — sell/fuse a pet, buy a slot, or rank the yard up (P).'); return false; }
   const trained=(egg&&egg.petLevel>1);
@@ -5596,11 +5793,11 @@ function petLevelUp(p){ const cap=petLevelCap(p);
   if(p.level>=cap) p.xp=Math.min(p.xp, petXpNeed(p.level));
   if(p===G.pet) recompute();
 }
-function feedPet(item){ if(!G.pet)return;
+function feedPet(item){ if(NET.role==='peer') return netPeerCmd('feedPet',[item&&item.uid]); if(!G.pet)return;
   if(item._ambrosia){ G.inv=G.inv.filter(x=>x!==item); G.pet.rarity=PET_RARITY.length-1; ensurePetAbilities(G.pet); if(G.petMesh){ scene.remove(G.petMesh); G.petMesh=buildPetMesh(G.pet); scene.add(G.petMesh); } G.pet.level=petLevelCap(G.pet); G.pet.xp=0; recompute(); refreshPetUI(); refreshItemPanels(); log('🍯 Ambrosia — your companion is instantly MAXED to '+PET_RARITY[G.pet.rarity].nm+' Lv '+G.pet.level+'. (dev)'); return; }
   if(item.locked){ log('🔒 '+item.name+' is locked — unlock it first to feed it.'); return; } if(G.pet.level>=petLevelCap(G.pet)){ log('Active pet is at its rarity cap ('+petLevelCap(G.pet)+') — fuse to raise its rarity & cap.'); return; }
   G.inv=G.inv.filter(x=>x!==item); G.pet.xp+=feedXp(item); petLevelUp(G.pet); refreshPetUI(); refreshItemPanels(); }
-function fusePet(fodder){ // fuse a SAME-RANK yard pet INTO the active pet to rank it up
+function fusePet(fodder){ if(NET.role==='peer') return netPeerCmd('fusePet',[fodder&&fodder.uid]);   // fuse a SAME-RANK yard pet INTO the active pet to rank it up
   if(!G.pet||fodder===G.pet){ log('Pick a different pet from the yard to fuse into your active pet.'); return; }
   if(fodder.rarity!==G.pet.rarity){ log('🔗 Fusion needs two pets of the SAME rank — e.g. Common + Common.'); if(sfx.deny)sfx.deny(); return; }
   const t=G.pet;
@@ -5647,7 +5844,7 @@ function updatePet(dt){
   if(!G.pet)return; const pet=G.pet;
   // sell-run errand: pet is away in town, fights nothing, returns with gold
   if(G.petErrand){ G.petErrand.t-=dt; if(G.petMesh) G.petMesh.visible=false;
-    if(G.petErrand.t<=0){ const er=G.petErrand; G.petErrand=null; G.gold+=er.gold; flashGold();
+    if(G.petErrand.t<=0){ const er=G.petErrand; G.petErrand=null; G.gold+=er.gold; flashGold(); recompute();   // back at your side → auras return
       banner('🐾 SELL-RUN DONE','+'+er.gold+' gold'); log(`🐾 Companion returned — sold ${er.items} item(s) for +${er.gold}g.`); unlockFeat('sellrun');
       if(G.petMesh){ G.petMesh.visible=true; G.petMesh.position.set(G.player.position.x,1.2,G.player.position.z+1.5); }
       if(!$('vendorPanel').classList.contains('hidden'))renderVendor(); refreshPetUI(); }
@@ -5671,8 +5868,10 @@ function updatePet(dt){
         const m=new THREE.Mesh(new THREE.SphereGeometry(.22,6,6),M.petBolt); m.position.set(pm.position.x,1.2,pm.position.z); scene.add(m);
         G.projectiles.push({mesh:m,vx:dx/l*40,vz:dz/l*40,dmg:petAbilVal('attack',pet.level)*(1+(G.S.petDmg||0)),life:1.0,crit:false,pierce:0,hit:null,element:'phys',src:'pet'}); } } }
 }
-function refreshItemPanels(){ if(!$('invPanel').classList.contains('hidden'))renderInv(); if(!$('stashPanel').classList.contains('hidden'))renderStash(); if(!$('petPanel').classList.contains('hidden'))renderPet(); if($('petYardPanel')&&!$('petYardPanel').classList.contains('hidden'))renderPetYard(); }
+function refreshItemPanels(){ if(_G.netApplying) return;   // host applying a guest's action → don't repaint the host's own panels with guest data
+  if(!$('invPanel').classList.contains('hidden'))renderInv(); if(!$('stashPanel').classList.contains('hidden'))renderStash(); if(!$('petPanel').classList.contains('hidden'))renderPet(); if($('petYardPanel')&&!$('petYardPanel').classList.contains('hidden'))renderPetYard(); }
 function feedAllJunk(){
+  if(NET.role==='peer') return netPeerCmd('feedAllJunk',[]);
   if(!G.pet){ log('No active pet to feed.'); return; }
   if(G.pet.level>=petLevelCap(G.pet)){ log('Pet at its cap — fuse a yard pet to raise it.'); return; }
   const junk=G.inv.filter(isBulkJunk);
@@ -5683,7 +5882,7 @@ function feedAllJunk(){
   banner('🍖 FED','+'+xp.toLocaleString()+' pet XP'); log('🍖 Fed '+junk.length+' junk item(s) → +'+xp.toLocaleString()+' pet XP.'); sfx.gold&&sfx.gold();
   refreshPetUI(); refreshItemPanels();
 }
-function renderPetYardTools(){
+function renderPetYardTools(){ if(_G.netApplying) return;
   const yt=$('petYardTools'); if(!yt) return;
   const tier=petYardTier(), cap=petYardCap(), tmax=petTierMaxSlots();
   const tierUp = tier<5 ? `<span class="buyRow${META.fame>=petTierUpCost()?'':' cant'}" id="petTierBtn" title="Rank the yard up to hold ${PET_RARITY[tier+1].nm} pets">▲ Tier: ${PET_RARITY[tier+1].nm} · ${petTierUpCost().toLocaleString()} ✦</span>` : `<span class="buyRow maxed">✦ Mythos tier</span>`;
@@ -5693,6 +5892,7 @@ function renderPetYardTools(){
   const sb=$('petSlotBtn'); if(sb) sb.onclick=buyPetSlot;
 }
 function renderPet(){
+  if(_G.netApplying) return;
   const body=$('petBody'); if(!G.pets) G.pets=[];
   if(G.pet) ensurePetAbilities(G.pet); G.pets.forEach(p=>ensurePetAbilities(p));   // repair legacy pets to exactly 3 abilities
   const ft=$('petFeedTools'); if(ft) ft.innerHTML='';
@@ -5771,6 +5971,7 @@ function renderPet(){
 }
 // ---- PET YARD: the only place to equip / fuse / sell pets ----
 function renderPetYard(){
+  if(_G.netApplying) return;
   if(!G.pets) G.pets=[];
   renderPetYardTools();
   const yard=$('petFuse'); if(!yard) return; yard.className='petGrid'; yard.innerHTML='';
@@ -5837,8 +6038,10 @@ function renderPetInfoCard(pet){
   el.classList.remove('hidden');
 }
 function hidePetInfoCard(){ const el=$('petInfoCard'); if(el&&!el.classList.contains('hidden')) el.classList.add('hidden'); }
-function openPetYard(){ $('petPanel').classList.add('hidden'); syncPause(); refreshMenuState(); enterPetYard(); }
-function refreshPetUI(){ if(!$('petPanel').classList.contains('hidden')) renderPet(); if($('petYardPanel')&&!$('petYardPanel').classList.contains('hidden')) renderPetYard(); }
+function openPetYard(){ $('petPanel').classList.add('hidden');
+  if(_G.netGuest){ togglePanel('petYardPanel'); return; }   // the guest has no physical yard area — open its OWN pet roster panel directly
+  syncPause(); refreshMenuState(); enterPetYard(); }
+function refreshPetUI(){ if(_G.netApplying) return; if(!$('petPanel').classList.contains('hidden')) renderPet(); if($('petYardPanel')&&!$('petYardPanel').classList.contains('hidden')) renderPetYard(); }
 // ============================================================ LEGACY UI (data/helpers are defined earlier, near the META block)
 let _legacyFrom=null, _legacyPrevInvuln=null;
 function openLegacy(from){ _legacyFrom=from||'game';
@@ -5902,18 +6105,18 @@ function legacyBuyStat(k){ if(!_G.running) return; loadMeta();
 // ============================================================ PLAYER-CENTRED RING HUD + PET-YARD AREA
 // hp (red, left) · mana (blue, right) · dash cooldown (gold, top) drawn right on the player so you never look away
 const _ringV=new THREE.Vector3();
-function drawPlayerRing(){
-  const cv=$('playerRing'); if(!cv) return;
-  const pl=_G.players[0];
-  if(!_G.running || _G.splitscreen || _G.modalOpen || anyPanelOpen() || !pl || !pl.player){ cv.style.display='none'; return; }
-  _ringV.set(pl.player.position.x,1.5,pl.player.position.z).project(camera);
-  if(_ringV.z>1){ cv.style.display='none'; return; }
+// shared ring renderer — draws the hp·mana·dash arcs centred on any hero/ghost mesh.
+function drawRingOn(mesh, hpF, mpF, dF){
+  const cv=$('playerRing'); if(!cv||!mesh) return;
+  const _px=mesh.position.x, _py=mesh.position.y, _pz=mesh.position.z;   // hero group sits at y≈1 (ghost at y≈0); body spans ~2.2 up → centre on its midpoint
+  _ringV.set(_px,_py,_pz).project(camera); const _fz=_ringV.z, _fx=(_ringV.x*.5+.5)*innerWidth, _fy=(-_ringV.y*.5+.5)*innerHeight;       // feet
+  _ringV.set(_px,_py+2.2,_pz).project(camera); const _hx=(_ringV.x*.5+.5)*innerWidth, _hy=(-_ringV.y*.5+.5)*innerHeight;                 // head
+  if(_fz>1){ cv.style.display='none'; return; }
   const SZ=258; if(cv.width!==SZ){ cv.width=SZ; cv.height=SZ; }
-  const sx=(_ringV.x*.5+.5)*innerWidth, sy=(-_ringV.y*.5+.5)*innerHeight;
+  const sx=(_fx+_hx)/2, sy=(_fy+_hy)/2;   // midpoint of feet & head on screen → perfectly centred on the hero
   cv.style.display='block'; cv.style.left=(sx-SZ/2)+'px'; cv.style.top=(sy-SZ/2)+'px';
   const ctx=cv._c||(cv._c=cv.getContext('2d')); ctx.clearRect(0,0,SZ,SZ);
   const cx=SZ/2, cy=SZ/2, R=84, D=Math.PI/180;
-  const hpF=clamp(pl.hp/(pl.maxhp||1),0,1), mpF=clamp(pl.mana/(pl.maxmana||1),0,1), dF=clamp(1-((pl.dashCd||0)/(pl.dashCdMax||1)),0,1);
   function seg(a0,sweep,frac,col,w,r){ r=r||R; const anti=sweep<0, a0r=a0*D, a1r=(a0+sweep)*D, afr=(a0+sweep*frac)*D;
     ctx.lineCap='round'; ctx.lineWidth=w; ctx.shadowBlur=0;
     ctx.strokeStyle='rgba(2,6,14,0.55)'; ctx.beginPath(); ctx.arc(cx,cy,r,a0r,a1r,anti); ctx.stroke();
@@ -5921,6 +6124,19 @@ function drawPlayerRing(){
   seg(95,110,hpF,'#ff4d6d',8);     // HP — lower-left arc (110° arcs, ~10° gaps → the three read as one clean ring)
   seg(85,-110,mpF,'#4aa8ff',8);    // MANA — lower-right arc (mirrors HP)
   seg(215,110,dF,'#ffce4d',8);     // DASH cooldown — top arc, SAME radius as the others so all three complete one circle
+}
+function drawPlayerRing(){
+  const cv=$('playerRing'); if(!cv) return;
+  const pl=_G.players[0];
+  if(!_G.running || _G.splitscreen || _G.modalOpen || anyPanelOpen() || !pl || !pl.player){ cv.style.display='none'; return; }
+  drawRingOn(pl.player, clamp(pl.hp/(pl.maxhp||1),0,1), clamp(pl.mana/(pl.maxmana||1),0,1), clamp(1-((pl.dashCd||0)/(pl.dashCdMax||1)),0,1));
+}
+// guest: the same on-character ring, anchored to MY ghost and fed by the host's streamed stats
+function drawGuestRing(){
+  const cv=$('playerRing'); if(!cv) return;
+  const pr=NET.peer; const me=pr&&pr.ghosts&&pr.ghosts[NET.localId], st=pr&&pr.me;
+  if(!me || !st || _G.modalOpen || anyPanelOpen()){ cv.style.display='none'; return; }
+  drawRingOn(me, clamp(st.hp/(st.mh||1),0,1), clamp(st.mp/(st.mm||1),0,1), clamp(1-((st.dc||0)/(st.dm||0.5)),0,1));
 }
 
 // ---- loot bag tooltip (hover shows the item's full info) ----
@@ -5956,7 +6172,7 @@ function enterPetYard(){
   const beam=new THREE.Mesh(new THREE.CylinderGeometry(2,2,9,24,1,true), new THREE.MeshBasicMaterial({color:0xff9a3d,transparent:true,opacity:.14,side:THREE.DoubleSide,depthWrite:false})); beam.position.y=4.5;
   pg.add(ring,beam); pg.position.set(0,0,-18); scene.add(pg); G.portal={mesh:pg,x:0,z:-18,active:true,yard:true};
   buildYardMeshes(); buildYardTerminal();
-  $('floorTitle').textContent='PET YARD'; $('floorType').textContent='🏡 SANCTUARY'; $('floorBig').innerHTML='🏡'; { const _s=$('towerSub'); if(_s)_s.textContent='PET YARD'; }
+  $('floorTitle').textContent='PET YARD'; $('floorType').textContent='🏡 SANCTUARY'; $('floorBig').innerHTML='🏡';
   $('threatTxt').textContent='SAFE'; $('modTxt').innerHTML=''; $('bountyTxt').innerHTML=''; $('shiftTxt').textContent=''; $('clearTxt').textContent='';
   log('🏡 PET YARD — your '+G.pets.length+' companion'+(G.pets.length===1?'':'s')+' roam here. Walk over a pet to inspect its stats & skills; step up to the 🖥 Terminal (press F) to view them all & equip. Step in the portal to return.');
   clock.getDelta();
@@ -6017,11 +6233,12 @@ function doFloorShift(){
   if(wasOpen && G.portal){ G.portal.active=true; G.floorKills=G.killGoal||0; G.shiftT=portalShiftT(); G.shiftWarned=false; }   // keep the portal open, keep the floor "cleared", and arm the next 1-min reshuffle
   shakeCam(1.0); G.hitstop=Math.max(G.hitstop||0,.12);
 }
-function spendAttr(k){ if(G.attrPts<=0)return; if((G.attr[k]||0)>=ATTR_CAP){ log('That attribute is at its cap ('+ATTR_CAP+').'); return; } G.attrPts--; G.attr[k]++; recompute(); renderChar(); updatePips(); }
-function updatePips(){ $('pipChar').classList.toggle('on',G.attrPts>0); $('pipTree').classList.toggle('on',G.skillPts>0); $('spNum').textContent=G.skillPts; $('ptsNum').textContent=G.attrPts; renderQuickBuild(); }
+function spendAttr(k){ if(NET.role==='peer') return netPeerCmd('spendAttr',[k]); if(G.attrPts<=0)return; if((G.attr[k]||0)>=ATTR_CAP){ log('That attribute is at its cap ('+ATTR_CAP+').'); return; } G.attrPts--; G.attr[k]++; recompute(); renderChar(); updatePips(); }
+function updatePips(){ if(_G.netApplying) return; $('pipChar').classList.toggle('on',G.attrPts>0); $('pipTree').classList.toggle('on',G.skillPts>0); $('spNum').textContent=G.skillPts; $('ptsNum').textContent=G.attrPts; renderQuickBuild(); }
 
 // ============================================================ SKILL TREE UI
 function investTalent(id){
+  if(NET.role==='peer') return netPeerCmd('investTalent',[id]);
   const t=TALENTMAP[id]; if(!t) return;
   const rank=G.alloc[id]||0;
   if(rank>=t.max) return;
@@ -6036,6 +6253,7 @@ function investTalent(id){
 }
 // ---- one-click "recommended build": pour all available points down a chosen spec (newcomer-friendly) ----
 function autoBuild(si){
+  if(NET.role==='peer') return netPeerCmd('autoBuild',[si]);
   const spec=SPECS[si]; if(!spec) return;
   if(G.skillPts<=0){ log('No skill points to spend — level up to earn more.'); return; }
   let spent=0, grantedSkill=false;
@@ -6058,6 +6276,7 @@ function renderQuickBuild(){
   w.querySelectorAll('.qbBtn').forEach(b=>b.onclick=()=>autoBuild(+b.dataset.si));
 }
 function removeTalent(id){   // right-click to refund a point, if nothing still depends on it
+  if(NET.role==='peer') return netPeerCmd('removeTalent',[id]);
   const t=TALENTMAP[id]; if(!t) return; const rank=G.alloc[id]||0; if(rank<=0) return;
   if(t.grantSkill){ log('Learned skills are permanent — the point can’t be refunded.'); return; }   // no invest/refund gem farming
   G.alloc[id]=rank-1;
@@ -6115,8 +6334,9 @@ function specInner(spec){
   const dvgTag = reach>0 ? `<span class="spts dvgTag" title="Divergence — deep investment in a neighbouring tree lets you dive ${reach} tier${reach>1?'s':''} into this one without climbing its foundation">⇄${reach}</span>` : '';
   return `<div class="specHd"><span class="si">${spec.ic}</span><div class="sttl"><div class="snm">${spec.nm}</div><div class="ssub">${spec.sub}</div></div>${dvgTag}<div class="spts">${spent}</div></div><div class="specGrid">${rows}</div>`;
 }
-function refreshSpec(spec){ const el=$('spec-'+spec.kw); if(el) el.innerHTML=specInner(spec); }
+function refreshSpec(spec){ if(_G.netApplying) return; const el=$('spec-'+spec.kw); if(el) el.innerHTML=specInner(spec); }
 function renderTree(){
+  if(_G.netApplying) return;
   const sp=$('spNum'); if(sp) sp.textContent=G.skillPts;
   renderQuickBuild();
   const cont=$('treeCols'); if(!cont) return;
@@ -6131,20 +6351,21 @@ function renderTree(){
     cont._built=true;
   } else { SPECS.forEach(refreshSpec); }   // reflect external changes (respec / new run) on re-open
 }
-function autoBind(item){ if(G.slots.includes(item))return; const tog=item.isSkillGem&&isToggleId(item.skillId); const lo=tog?4:0, hi=tog?9:4;
+function autoBind(item){ if(NET.role==='peer') return netPeerCmd('autoBind',[item&&item.uid]); if(G.slots.includes(item))return; const tog=item.isSkillGem&&isToggleId(item.skillId); const lo=tog?4:0, hi=tog?9:4;
   let i=-1; for(let s=lo;s<hi;s++){ if(!G.slots[s]){ i=s; break; } } if(i<0)return; G.inv=G.inv.filter(x=>x!==item); G.slots[i]=item; renderActionbar(); }
-function bindSkill(item,i){ if(!item.isSkillGem)return;
+function bindSkill(item,i){ if(NET.role==='peer') return netPeerCmd('bindSkill',[item&&item.uid,i]); if(!item.isSkillGem)return;
   const tog=isToggleId(item.skillId);
   if(tog && i<4){ log('🌀 Toggle auras go in slots 5–9 (passive, drain mana). Active skills use 1–4.'); return; }
   if(!tog && i>=4){ log('⚡ Active skills go in slots 1–4. Slots 5–9 are for toggle auras.'); return; }
   G.inv=G.inv.filter(x=>x!==item); const ex=G.slots.indexOf(item); if(ex>=0)G.slots[ex]=null; if(G.sigSlot===item)G.sigSlot=null; if(G.slots[i])G.inv.push(G.slots[i]); G.slots[i]=item; renderActionbar(); refreshItemPanels(); }
-function unbindSkill(i){ if(!G.slots[i])return; if(G.inv.length>=G.invCap){log('Inventory full.');return;} G.inv.push(G.slots[i]); G.slots[i]=null; renderActionbar(); refreshItemPanels(); }
-function bindSig(item){ if(!item.isSkillGem)return; G.inv=G.inv.filter(x=>x!==item); const ex=G.slots.indexOf(item); if(ex>=0)G.slots[ex]=null; if(G.sigSlot)G.inv.push(G.sigSlot); G.sigSlot=item; renderActionbar(); refreshItemPanels(); }
-function unbindSig(){ if(!G.sigSlot)return; if(G.inv.length>=G.invCap){log('Inventory full.');return;} G.inv.push(G.sigSlot); G.sigSlot=null; renderActionbar(); refreshItemPanels(); }
-function bindFlask(item,i){ if(!item.isFlask)return; G.inv=G.inv.filter(x=>x!==item); const ex=G.belt.indexOf(item); if(ex>=0)G.belt[ex]=null; if(G.belt[i])G.inv.push(G.belt[i]); G.belt[i]=item; renderActionbar(); refreshItemPanels(); }
-function unbindFlask(i){ if(!G.belt[i])return; if(G.inv.length>=G.invCap){log('Inventory full.');return;} G.inv.push(G.belt[i]); G.belt[i]=null; renderActionbar(); refreshItemPanels(); }
+function unbindSkill(i){ if(NET.role==='peer') return netPeerCmd('unbindSkill',[i]); if(!G.slots[i])return; if(G.inv.length>=G.invCap){log('Inventory full.');return;} G.inv.push(G.slots[i]); G.slots[i]=null; renderActionbar(); refreshItemPanels(); }
+function bindSig(item){ if(NET.role==='peer') return netPeerCmd('bindSig',[item&&item.uid]); if(!item.isSkillGem)return; G.inv=G.inv.filter(x=>x!==item); const ex=G.slots.indexOf(item); if(ex>=0)G.slots[ex]=null; if(G.sigSlot)G.inv.push(G.sigSlot); G.sigSlot=item; renderActionbar(); refreshItemPanels(); }
+function unbindSig(){ if(NET.role==='peer') return netPeerCmd('unbindSig',[]); if(!G.sigSlot)return; if(G.inv.length>=G.invCap){log('Inventory full.');return;} G.inv.push(G.sigSlot); G.sigSlot=null; renderActionbar(); refreshItemPanels(); }
+function bindFlask(item,i){ if(NET.role==='peer') return netPeerCmd('bindFlask',[item&&item.uid,i]); if(!item.isFlask)return; G.inv=G.inv.filter(x=>x!==item); const ex=G.belt.indexOf(item); if(ex>=0)G.belt[ex]=null; if(G.belt[i])G.inv.push(G.belt[i]); G.belt[i]=item; renderActionbar(); refreshItemPanels(); }
+function unbindFlask(i){ if(NET.role==='peer') return netPeerCmd('unbindFlask',[i]); if(!G.belt[i])return; if(G.inv.length>=G.invCap){log('Inventory full.');return;} G.inv.push(G.belt[i]); G.belt[i]=null; renderActionbar(); refreshItemPanels(); }
 function autoBeltFlask(item){ if(G.belt.includes(item))return; const i=G.belt.indexOf(null); if(i<0)return; G.inv=G.inv.filter(x=>x!==item); G.belt[i]=item; renderActionbar(); }
 function respec(){
+  if(NET.role==='peer') return netPeerCmd('respec',[]);
   if(!(G.inTown || floorType(G.floor)==='SAFE' || META.fieldRespec)){ log('↺ Respec is only available in a safe zone. Unlock 🔧 Field Respecialisation in the Legacy menu (L) to respec on any floor.'); if(sfx.deny)sfx.deny(); return; }
   let total=0; for(const id in G.alloc) total+=G.alloc[id]||0;
   if(total<=0){ log('Nothing allocated to respec.'); return; }
@@ -6155,6 +6376,7 @@ function respec(){
   log('↺ Respec — '+total+' points refunded ('+cost+'g spent).');
 }
 function renderActionbar(){
+  if(_G.netApplying) return;   // host applying a guest's action → keep the host's own skill bar intact
   const bar=$('actionbar'); bar.innerHTML='';
   for(let i=0;i<9;i++){ const slot=G.slots[i], sk=slot?SKILLS[slot.skillId]:null; const tog=!!(sk&&sk.toggle), on=tog&&auraOn(slot.skillId);
     const d=document.createElement('div'); d.className='slot'+(sk?'':' empty')+(tog?' toggle':'')+(on?' auraOn':'');
@@ -6176,7 +6398,7 @@ function renderSig(){ const s=$('sigSlot'); if(!s)return; const gem=G.sigSlot, s
 
 // ============================================================ CHARACTER UI
 const ATTR_ICON={str:'💪',dex:'🏹',int:'🔮',vit:'❤',will:'🌀'};
-function renderChar(){
+function renderChar(){ if(_G.netApplying) return;
   // ---- header: identity · level/XP · fame ----
   const head=$('csHead');
   if(head){
@@ -6270,6 +6492,7 @@ function renderStash(){
 }
 // ---------------- inventory / equipment ----------------
 function equipItem(it){
+  if(NET.role==='peer') return netPeerCmd('equip',[it&&it.uid]);
   if(it.isGem||it.isSkillGem) return;
   const sk=it.slotKey, cur=G.equip[sk];
   G.inv=G.inv.filter(x=>x!==it); if(cur) G.inv.push(cur);
@@ -6277,7 +6500,19 @@ function equipItem(it){
   G.hp=Math.min(G.hp,G.maxhp); G.mana=Math.min(G.mana,G.maxmana);
   log('Equipped '+it.name); renderInv(); if(!$('charPanel').classList.contains('hidden'))renderChar();
 }
-function unequip(sk){ const it=G.equip[sk]; if(!it)return; if(G.inv.length>=G.invCap){ log('Inventory full — make room first.'); return; }
+// sell a carried item for gold from anywhere (Shift+click in the bag) — works for host and guest (relayed)
+function sellItem(it){ if(!it) return;
+  if(NET.role==='peer') return netPeerCmd('sellItem',[it.uid]);
+  if(it.locked){ log('🔒 Locked — unlock it first to sell.'); if(sfx&&sfx.deny)sfx.deny(); return; }
+  const idx=G.inv.indexOf(it); if(idx<0) return;
+  const v=it.value||0; G.inv.splice(idx,1); G.gold+=v; if(G.selGem===it)G.selGem=null;
+  if(typeof flashGold==='function')flashGold(); if(sfx&&sfx.gold)sfx.gold(); log('💰 Sold '+it.name+' (+'+v+'g)'); refreshItemPanels(); }
+function sellJunk(){ if(NET.role==='peer') return netPeerCmd('sellJunk',[]);
+  const junk=G.inv.filter(it=>it && !it.locked && it.slotKey && !it.isGem && typeof isBulkJunk==='function' && isBulkJunk(it));
+  if(!junk.length){ log('No junk gear in your bag to sell.'); return; }
+  let g=0,n=0; for(const it of junk){ const idx=G.inv.indexOf(it); if(idx>=0){ G.inv.splice(idx,1); g+=(it.value||0); n++; } }
+  G.gold+=g; if(typeof flashGold==='function')flashGold(); if(sfx&&sfx.gold)sfx.gold(); log('💰 Sold '+n+' junk item(s) (+'+g+'g).'); refreshItemPanels(); }
+function unequip(sk){ if(NET.role==='peer') return netPeerCmd('unequip',[sk]); const it=G.equip[sk]; if(!it)return; if(G.inv.length>=G.invCap){ log('Inventory full — make room first.'); return; }
   G.equip[sk]=null; G.inv.push(it); recompute(); renderInv(); if(!$('charPanel').classList.contains('hidden'))renderChar(); }
 function eleColor(el){ return el==='fire'?'#ff9a4d':el==='cold'?'#7fd0ff':el==='light'?'#ffe14d':'#fff'; }
 function itemRow(it,cls,compare){ const d=document.createElement('div'); d.className=cls+' r-'+it.rarity.css+(it.isGem?' isgem':'');
@@ -6305,7 +6540,7 @@ function firstSocketTarget(){   // an item with a free socket — prefer equippe
   for(const it of G.inv){ if(hasFreeSocket(it)) return it; }
   return null;
 }
-function socketGemInto(gem,item){ if(!gem||!gem.isGem||!item||!item.sockets) return false;
+function socketGemInto(gem,item){ if(NET.role==='peer'){ netPeerCmd('socket',[gem&&gem.uid,item&&item.uid]); return true; } if(!gem||!gem.isGem||!item||!item.sockets) return false;
   const si=firstEmptySocket(item); if(si<0){ log('No free socket on '+item.name+'.'); return false; }
   const idx=G.inv.indexOf(gem); if(idx>=0) G.inv.splice(idx,1); item.socketed[si]=gem; if(G.selGem===gem)G.selGem=null;
   recompute(); log('💠 Socketed '+gem.name+' → '+item.name); sfx.pickup&&sfx.pickup();
@@ -6317,7 +6552,7 @@ function unsocketGem(item,si){ const g=item.socketed&&item.socketed[si]; if(!g) 
   recompute(); log('⛏ Unsocketed '+g.name+' (−'+UNSOCKET_FAME+' ✦ fame).'); sfx.drop&&sfx.drop(2);
   renderInv(); if(!$('charPanel').classList.contains('hidden'))renderChar(); return true; }
 // pop a gem straight back to the bag — free, no fame cost (click a filled socket)
-function unsocketFree(item,si){ const g=item.socketed&&item.socketed[si]; if(!g) return false;
+function unsocketFree(item,si){ if(NET.role==='peer'){ netPeerCmd('unsocket',[item&&item.uid,si]); return true; } const g=item.socketed&&item.socketed[si]; if(!g) return false;
   if(G.inv.length>=G.invCap){ log('🎒 Bag full — make room to pop a gem out.'); return false; }
   item.socketed[si]=null; G.inv.push(g); recompute();
   log('⛏ Removed '+g.name+' → bag.'); sfx.drop&&sfx.drop(2);
@@ -6327,6 +6562,7 @@ function unsocketFree(item,si){ const g=item.socketed&&item.socketed[si]; if(!g)
 function stashFromBag(it){ if(!it) return false; if(stashPush(it)){ G.inv=G.inv.filter(x=>x!==it); G.stashStrikes=0; bankCashIn(1); refreshItemPanels(); return true; } return false; }
 function quickUse(it){
   if(!it) return;
+  if(NET.role==='peer') return netPeerCmd('quickUse',[it.uid]);
   if(it.isGem){ const tgt=firstSocketTarget(); if(tgt) socketGemInto(it,tgt); else log('No item has a free socket right now.'); }
   else if(it.isSkillGem){ if(G.slots.includes(it)||G.sigSlot===it) return; if(G.slots.indexOf(null)>=0){ autoBind(it); log('✦ Bound '+it.name); refreshItemPanels(); } else log('Skill bar full — unbind one first.'); }
   else if(it.isFlask){ if(G.belt.includes(it)) return; if(G.belt.indexOf(null)>=0){ autoBeltFlask(it); log('🧪 Equipped '+it.name); refreshItemPanels(); } else log('Belt full — unbind a flask first.'); }
@@ -6337,6 +6573,7 @@ function quickUse(it){
 let _dragGem=null;   // gem currently being dragged onto a socketed item
 function wireSockets(d,it){
   d.querySelectorAll('.sock').forEach(ch=>{ ch.onclick=(ev)=>{ ev.stopPropagation(); const si=+ch.dataset.si, g=it.socketed[si];
+    if(NET.role==='peer'){ if(g) netPeerCmd('unsocket',[it.uid,si]); else if(G.selGem){ netPeerCmd('socket',[G.selGem.uid,it.uid]); G.selGem=null; } return; }   // guest → host
     if(g){ if(G.inv.length>=G.invCap){ log('Inventory full — cannot remove gem.'); return; } it.socketed[si]=null; G.inv.push(g); recompute(); renderInv(); if(!$('charPanel').classList.contains('hidden'))renderChar(); }
     else if(G.selGem){ const idx=G.inv.indexOf(G.selGem); if(idx<0){G.selGem=null;return;} it.socketed[si]=G.selGem; G.inv.splice(idx,1); G.selGem=null; recompute(); renderInv(); if(!$('charPanel').classList.contains('hidden'))renderChar(); log('💠 Gem socketed.'); }
   }; });
@@ -6516,15 +6753,17 @@ function stashAllGear(){ const keep=[]; let n=0;
   G.inv=keep; if(n){ G.stashStrikes=0; bankCashIn(n); log('⇩ Stashed '+n+' gear item(s) — survives death.'); } else log('No loose gear to stash.');
   renderInv();
 }
-function renderInv(){
+function renderInv(){ if(_G.netApplying) return;
   $('bagCount').textContent=G.inv.length; $('bagCap').textContent=G.invCap; clearItemDetail();
   // ---- bag toolbar (sort modes + quick-stash) ----
   const tools=$('bagTools'); if(tools){
     tools.innerHTML=['slot','rarity','new'].map(m=>`<span class="st${BAG_SORT===m?' on':''}" data-sort="${m}">${m}</span>`).join('')
       +`<span class="st" id="stashAllBtn" style="border-color:rgba(255,206,77,.4);color:var(--gold)">⇩ All gear</span>`
+      +`<span class="st" id="sellJunkBtn" style="border-color:rgba(255,120,140,.4);color:#ff8a9c" title="Sell all junk (grey/blue) gear in your bag for gold">💰 Sell junk</span>`
       +rowBuyChip('buyInvRowBtn', (META.invRows||0)>=INV_ROWS_MAX, invRowCost());
     tools.querySelectorAll('[data-sort]').forEach(b=>b.onclick=()=>{ BAG_SORT=b.dataset.sort; renderInv(); });
     const sa=$('stashAllBtn'); if(sa) sa.onclick=stashAllGear;
+    const sj=$('sellJunkBtn'); if(sj) sj.onclick=sellJunk;
     const bi=$('buyInvRowBtn'); if(bi) bi.onclick=buyInvRow;
   }
   // ---- equipped paper-doll ----
@@ -6552,6 +6791,7 @@ function renderInv(){
     if(it.isGem) click=()=>{ G.selGem=(G.selGem===it)?null:it; renderInv(); };
     else if(it.isSkillGem||it.isFlask||it.isPet||it.isPot) click=()=>showItemDetail(it,{kind:'bag'});
     else click=()=>equipItem(it);
+    { const _base=click; click=()=>{ if(typeof keys!=='undefined' && keys['shift']){ sellItem(it); return; } _base(); }; }   // Shift+click sells any bag item for gold
     const si=it.isSkillGem?G.slots.indexOf(it):-1, bi=it.isFlask?G.belt.indexOf(it):-1;
     const bound = si>=0?SLOT_LABEL[si] : (it.isSkillGem&&G.sigSlot===it)?'⇧' : bi>=0?FLASK_LABEL[bi] : '';
     bag.appendChild(itemTile(it,{ctx:{kind:'bag'}, sel:(it.isGem&&G.selGem===it), bound, onclick:click}));
@@ -6837,20 +7077,24 @@ function buildIdentity(){
   if(bn.has('glasscannon')) tags.unshift('Glass Cannon');
   else if(bn.has('manabulwark')) tags.unshift('Mana Shield');
   else if(bn.has('twincast')) tags.unshift('Twin Cast');
+  if(G.run && G.run.destiny) tags.unshift(G.run.destiny.tag);
   const tagStr=tags.slice(0,3).join(' · ');
   return `${elIc} ${elN} ${wpn}${tagStr?' · '+tagStr:''}`;
 }
 function runWrapHTML(){
-  const r=G.run, boons=r.boons||[], asc=(_G.asc||0);
+  const r=G.run, boons=r.boons||[], asc=(_G.asc||0), destiny=r.destiny||null;
   const stat=(ic,v,l)=>`<div class="wrapStat"><span class="wsi">${ic}</span><div><div class="wsv">${v}</div><div class="wsl">${l}</div></div></div>`;
-  const boonChips = boons.length ? `<div class="wrapBoons">${boons.map(b=>`<span class="wrapBoon"><span class="wbi">${b.ic}</span>${b.nm}</span>`).join('')}</div>` : '';
+  const chips=[];
+  if(destiny){ const dc=safeCssColor(destiny.col,'#fff'); chips.push(`<span class="wrapBoon" style="border-color:${dc};color:#fff;background:color-mix(in srgb,${dc} 24%,rgba(176,107,255,.08))"><span class="wbi">${escHtml(destiny.ic)}</span>${escHtml(destiny.nm)}</span>`); }
+  for(const b of boons) chips.push(`<span class="wrapBoon"><span class="wbi">${b.ic}</span>${b.nm}</span>`);
+  const boonChips = chips.length ? `<div class="wrapBoons">${chips.join('')}</div>` : '';
   const cells=[ stat('⛰','Floor '+G.floor+(asc>0?' · ⛧'+asc:''),'Reached'),
                 stat('💥',(r.bigHit||0).toLocaleString(),'Biggest hit'),
                 stat('⚔',(r.kills||0).toLocaleString(),'Kills'),
                 stat('💰','×'+(r.greedPeak||1).toFixed(1),'Peak greed') ];
   return `<div class="wrapCard"><div class="wrapEye">⛰ The Climb</div>
     <div class="wrapId">${buildIdentity()}</div>
-    <div class="wrapSub">${boons.length?(boons.length+' blessing'+(boons.length>1?'s':'')+' claimed'):'No blessings claimed'} · ${fmtTime(r.totalTime)} climbed</div>
+    <div class="wrapSub">${destiny?('Destiny chosen · '):''}${boons.length?(boons.length+' blessing'+(boons.length>1?'s':'')+' claimed'):'No blessings claimed yet'} · ${fmtTime(r.totalTime)} climbed</div>
     ${boonChips}<div class="wrapGrid">${cells.join('')}</div></div>`;
 }
 function renderSettings(){
@@ -6870,10 +7114,6 @@ function renderSettings(){
         <span id="musVolVal" style="width:38px;text-align:right;font-variant-numeric:tabular-nums;opacity:.8">${SETTINGS.musicVol}%</span></div></div>
     <div class="setRow"><div class="lbl">Camera sway<small>The view leans as you move &amp; springs on direction changes — more kinetic, less stiff</small></div>
       <div class="tog${SETTINGS.camSway?' on':''}" id="togSway"><div class="knob"></div></div></div>
-    <div class="setRow"><div class="lbl">Field of view<small>How far the camera zooms out from your character — higher shows more of the room</small></div>
-      <div style="display:flex;align-items:center;gap:10px;min-width:150px">
-        <input type="range" min="${FOV_MIN}" max="${FOV_MAX}" step="1" value="${camFov()}" id="fovSlide" style="flex:1;accent-color:#56e0ff">
-        <span id="fovVal" style="width:38px;text-align:right;font-variant-numeric:tabular-nums;opacity:.8">${camFov()}°</span></div></div>
     <div style="margin:16px 16px 6px;font-size:11px;opacity:.6;letter-spacing:1px;text-transform:uppercase">Movement</div>
     <div style="display:flex;gap:8px;margin:0 16px 14px;">
       <div class="segBtn${mm==='keyboard'?' sel':''}" data-mm="keyboard">⌨ Keyboard<small>WASD to move · cursor to aim · L-click attack</small></div>
@@ -6906,9 +7146,6 @@ function renderSettings(){
       mv.oninput=()=>{ SETTINGS.musicVol=clamp(mv.value|0,0,100); const vv=$('musVolVal'); if(vv)vv.textContent=SETTINGS.musicVol+'%'; initAudio(); applyMusicVol(); };   // live while dragging
       mv.onchange=()=>{ SETTINGS.musicVol=clamp(mv.value|0,0,100); saveSettings(); log('🎵 Music volume '+SETTINGS.musicVol+'%.'); }; } }   // persist on release
   $('togSway').onclick=()=>{ SETTINGS.camSway=!SETTINGS.camSway; saveSettings(); renderSettings(); log(SETTINGS.camSway?'🎥 Camera sway on.':'Camera sway off.'); };
-  { const fs=$('fovSlide'); if(fs){
-      fs.oninput=()=>{ SETTINGS.fov=clamp(fs.value|0,FOV_MIN,FOV_MAX); const fv=$('fovVal'); if(fv)fv.textContent=SETTINGS.fov+'°'; applyFov(); };   // live while dragging
-      fs.onchange=()=>{ SETTINGS.fov=clamp(fs.value|0,FOV_MIN,FOV_MAX); saveSettings(); log('🎥 Field of view '+SETTINGS.fov+'°.'); }; } }
   { const eb=$('extractBtn'); if(eb) eb.onclick=extractToMenu; }
   b.querySelectorAll('[data-mm]').forEach(el=>el.onclick=()=>{ SETTINGS.moveMode=el.dataset.mm; saveSettings(); renderSettings();
     log(SETTINGS.moveMode==='mouse'?'🖱 Mouse-move: hold left-click to move, right-click to attack.':'⌨ Keyboard: WASD to move, left-click to attack.'); });
@@ -6988,7 +7225,7 @@ function enterPractice(){
   G.belt=[makeFlask(1,'life'),makeFlask(1,'mana'),makeFlask(1,'swift'),null,null]; G.charge=100; G.sigSlot=makeSkillGem(1,'gMeteor'); G.sigCd=0; G.swiftT=0; G.petErrand=null;
   G.floorMod=null; G.bounty=null;
   if(G.petMesh){ scene.remove(G.petMesh); G.petMesh=null; } G.pet=null; G.pets=[]; G.petMagnet=0;
-  G.run={kills:0,assists:0,healSelf:0,healOthers:0,xp:0,floorTime:0,totalTime:0,floorsCleared:0,boons:[]};
+  G.run={kills:0,assists:0,healSelf:0,healOthers:0,xp:0,floorTime:0,totalTime:0,floorsCleared:0,boons:[],destiny:null};
   G.practice=true; G.inTown=false; G.hardcore=false; G.diff='normal'; G.seed=randi(0,9999);
   _G.players.length=1; const _p0=_G.players[0]; _p0.joined=true; _p0.color=PLAYER_COLORS[0]; _p0.input=_p0.input||makeKbmInput(); _G.cur=0; _G.splitscreen=false;   // ensure P1 has an input source so the player can actually move
   _G.asc=0; _G.ascEff=ascEffects(0);   // the practice arena is never ascended
@@ -7012,7 +7249,7 @@ function buildPracticeArena(){
   const ring=new THREE.Mesh(new THREE.TorusGeometry(2.4,.35,12,32), new THREE.MeshStandardMaterial({color:0xff9a3d,emissive:0xff9a3d,emissiveIntensity:1.6})); ring.rotation.x=Math.PI/2; ring.position.y=2.4;
   const beam=new THREE.Mesh(new THREE.CylinderGeometry(2,2,9,24,1,true), new THREE.MeshBasicMaterial({color:0xff9a3d,transparent:true,opacity:.14,side:THREE.DoubleSide,depthWrite:false})); beam.position.y=4.5;
   pg.add(ring,beam); pg.position.set(0,0,22); scene.add(pg); G.portal={mesh:pg,x:0,z:22,active:true,practice:true};
-  $('floorTitle').textContent='PRACTICE ARENA'; $('floorType').textContent='🎯 NO STAKES'; $('floorBig').innerHTML='🎯'; { const _s=$('towerSub'); if(_s)_s.textContent='PRACTICE'; }
+  $('floorTitle').textContent='PRACTICE ARENA'; $('floorType').textContent='🎯 NO STAKES'; $('floorBig').innerHTML='🎯';
   $('threatTxt').textContent='SAFE'; $('modTxt').innerHTML=''; $('bountyTxt').innerHTML=''; $('shiftTxt').textContent='';
   log('🎯 Practice freely — these dummies are harmless and never die. Step into the orange portal to return to the menu.');
 }
@@ -7171,7 +7408,7 @@ function initPlayerChar(){
   if(G.petMesh){ scene.remove(G.petMesh); G.petMesh=null; } G.pet=null; G.pets=[]; G.petMagnet=0;
   // pets are account-bound: a fresh character inherits every companion you own (permanent across deaths)
   if(META.savedPets && META.savedPets.pets && META.savedPets.pets.length){ G.pets=META.savedPets.pets.map(x=>Object.assign({},x)); const _pi=(META.savedPets.idx!=null?META.savedPets.idx:-1); G.pet=(_pi>=0 && G.pets[_pi])?G.pets[_pi]:null; }
-  G.run={kills:0,assists:0,healSelf:0,healOthers:0,xp:0,floorTime:0,totalTime:0,floorsCleared:0,boons:[]};
+  G.run={kills:0,assists:0,healSelf:0,healOthers:0,xp:0,floorTime:0,totalTime:0,floorsCleared:0,boons:[],destiny:null};
   recompute(); G.hp=G.maxhp; G.mana=G.maxmana;
   if(!G.player){ G.player=createPlayer(); tintPlayer(G.player, G.color); }
 }
@@ -7203,6 +7440,9 @@ function startGameConfirmed(after){
   _G.players.length=1; const p0=_G.players[0]; p0.joined=true; p0.color=PLAYER_COLORS[0]; p0.input=p0.input||makeKbmInput();
   _G.cur=0; _G.splitscreen=false; $('hud').classList.remove('cohide');
   initPlayerChar();
+  const chosenDestiny=(!G.practice && !G.tutorial && selDestinyId)?destinyById(selDestinyId):null;
+  if(chosenDestiny) G.run.destiny=(typeof structuredClone==='function') ? structuredClone(chosenDestiny) : { ...chosenDestiny, eff:{...(chosenDestiny.eff||{})}, procs:(chosenDestiny.procs||[]).map(p=>({ ...p })) };
+  recompute(); G.hp=G.maxhp; G.mana=G.maxmana;
   initAudio(); startAmbient();
   // FIRST-EVER RUN: skip the hub entirely — straight into Act I combat within seconds.
   // The sanctuary (stash/vendor/tree shopping) unlocks naturally on your first return.
@@ -7212,10 +7452,12 @@ function startGameConfirmed(after){
   else generateTown();
   renderActionbar(); updatePips();
   layoutViewports(); buildCoopHud();
+  if(chosenDestiny) log('✦ Tower Destiny — '+chosenDestiny.nm+': '+chosenDestiny.tag+'.');
   if(!firstRun) log('Spend your 3 starting skill points in the tree (T), then enter the portal to climb. Plug in a controller and press START to add a co-op player.');
   clock.getDelta();
   G.tutorial=false;
   maybeDailyBonus();
+  if(chosenDestiny) banner('✦ '+chosenDestiny.nm.toUpperCase(), 'Tower Destiny · '+chosenDestiny.tag);
   if(after) after();
 }
 // big friendly controls card for the very first minute of play — fades on its own
@@ -7231,37 +7473,6 @@ function showFirstRunHints(){
   setTimeout(()=>{ d.style.opacity='0'; setTimeout(()=>d.remove(),1400); },11000);
 }
 
-// MOBILE BUILD: drive the on-screen Interact button — show it, with the right label,
-// only when the F/interact action would actually do something at the player's spot.
-function updateTouchInteract(){
-  const b=document.getElementById('tInteract'); if(!b) return;
-  const db=document.getElementById('tDash'); if(db) db.classList.toggle('cool', (G.dashCd|0)>0 || !!G.dead || !!G.downed);
-  if(!TOUCH.on || !_G.running || anyPanelOpen() || _G.splitscreen){ b.classList.remove('show'); return; }
-  let label='', ic='✋';
-  // chests & loot bags take priority — these are the "tap to open" targets the player walks onto
-  if(_G.inYard){
-    if(_G.nearTerminal){ label='Terminal'; ic='🖥'; }
-    else if(_G.nearYardPet){ label='Inspect'; ic='🐾'; }
-    else if(G.nearPortal){ label='Leave'; ic='🚪'; }
-  }
-  else if(G.nearChest){ label='Open'; ic='🧰'; }
-  else if(G.nearLoot){ label='Grab'; ic='🎁'; }
-  else if(G.practice){ if(G.nearPortal){ label='Leave'; ic='🚪'; } }
-  else if(G.inTown){
-    if(G.nearPortal){ label=((_G.returnFloor|0)>1?'Return':'Climb'); ic='⛰'; }
-    else if(G.nearYard){ label='Pet Yard'; ic='🏡'; }
-    else if(G.nearCraft){ label='Craft'; ic='⚒'; }
-    else if(G.nearVendor){ label='Vendor'; ic='💰'; }
-    else if(G.nearStash){ label='Stash'; ic='🗄'; }
-    else if(G.nearScore){ label='Record'; ic='📜'; }
-  } else {
-    if(G.nearPortal && G.portal && G.portal.active){ label='Ascend'; ic='⛰'; }
-    else if(G.nearVendor){ label='Vendor'; ic='💰'; }
-    else if(G.nearStash){ label='Stash'; ic='🗄'; }
-  }
-  if(label){ b.querySelector('.tIc').textContent=ic; b.querySelector('.tLbl').textContent=label; b.classList.add('show'); }
-  else b.classList.remove('show');
-}
 // floating labels over hub/floor stations so you know what each glowing object does
 function ensureLabel(id,txt){ let e=document.getElementById(id); if(!e){ e=document.createElement('div'); e.id=id; e.className='worldLabel'; document.getElementById('worldLabels').appendChild(e); } if(e.textContent!==txt) e.textContent=txt; return e; }
 function updateWorldLabels(){
@@ -7270,10 +7481,10 @@ function updateWorldLabels(){
   const IDS=['lblStash','lblVendor','lblScore','lblPortal','lblCraft'];
   if(_G.splitscreen || !_G.running){ host.style.display='none'; return; } host.style.display='block';
   const items=[];
-  if(G.stashStation) items.push(['lblStash','🗄 STASH — bank loot',G.stashStation.x,G.stashStation.z]);
-  if(G.vendorStation) items.push(['lblVendor','💰 VENDOR — sell · gamble · reforge',G.vendorStation.x,G.vendorStation.z]);
-  if(G.scoreStation) items.push(['lblScore','📜 RECORD',G.scoreStation.x,G.scoreStation.z]);
-  if(G.portal && (G.inTown||G.portal.active)) items.push(['lblPortal', G.inTown?((_G.returnFloor|0)>1?('⛰ Return to Floor '+_G.returnFloor):'⛰ Climb the Tower'):'⛰ Ascend',G.portal.x,G.portal.z]);
+  if(G.stashStation) items.push(['lblStash','🗄 STASH — bank loot (F)',G.stashStation.x,G.stashStation.z]);
+  if(G.vendorStation) items.push(['lblVendor','💰 VENDOR — sell · gamble · reforge (F)',G.vendorStation.x,G.vendorStation.z]);
+  if(G.scoreStation) items.push(['lblScore','📜 RECORD (F)',G.scoreStation.x,G.scoreStation.z]);
+  if(G.portal && (G.inTown||G.portal.active)) items.push(['lblPortal', G.inTown?((_G.returnFloor|0)>1?('⛰ Return to Floor '+_G.returnFloor+' (F)'):'⛰ Climb the Tower (F)'):'⛰ Ascend (F)',G.portal.x,G.portal.z]);
   if(G.craftStation) items.push(['lblCraft','⚒ CRAFTING BENCH',G.craftStation.x,G.craftStation.z]);
   const seen=new Set(), _pp=(G.player?G.player.position:{x:0,z:0}), LBL_R=8;
   for(const [id,txt,x,z] of items){ seen.add(id);
@@ -7321,6 +7532,7 @@ function netHostReady(rec){ if(rec._ready) return; if(rec.ch.readyState!=='open'
   rec._ready=true; rec.awaiting=false; rec.player=joinNetPlayer();
   try{ rec.evt.send(JSON.stringify({type:'hello',id:rec.player.id,seed:_G.seed,floor:_G.floor})); }catch(_){}
   try{ rec.evt.send(serializeFloorLayout()); }catch(_){}     // send the current floor so the peer can build it
+  try{ rec.evt.send(JSON.stringify({type:'build', b:serializePlayerBuild(rec.player)})); rec._buildSig=buildSig(rec.player); }catch(_){}   // seed the guest's full character (build changes stream on-demand after)
   banner('🌐 PEER JOINED','online co-op'); log('🌐 A friend connected as Player '+(rec.player.id+1)+'.');
   if(NET.host&&NET.host.onPeers) NET.host.onPeers(NET.host.conns.filter(c=>c._ready).length); }
 async function netCreateInvite(){
@@ -7331,8 +7543,9 @@ async function netCreateInvite(){
   const rec={pc,ch,evt,player:null,awaiting:true,_ready:false};
   const onReady=()=>netHostReady(rec);
   ch.onopen=onReady; evt.onopen=onReady;
+  evt.onmessage=e=>netHostOnPeerEvt(rec, e.data);   // guest → host build actions / saved-char handoff
   ch.onmessage=e=>{ try{ const m=JSON.parse(e.data); if(m.in && rec.player) rec.player.netPacket=m.in; }catch(_){} };
-  ch.onclose=()=>{ if(rec.player){ rec.player.joined=false; rec.player.downed=true; } };
+  ch.onclose=()=>{ netReleasePlayer(rec); if(NET.host) NET.host.conns=NET.host.conns.filter(c=>c!==rec); if(typeof renderNetHost==='function') renderNetHost(); };
   h.conns.push(rec);
   await pc.setLocalDescription(await pc.createOffer()); await netIceDone(pc);
   return JSON.stringify(pc.localDescription);
@@ -7345,7 +7558,117 @@ async function netAcceptAnswer(answerStr){ const h=NET.host; if(!h)return false;
   await rec.pc.setRemoteDescription(JSON.parse(answerStr.trim())); return true; }
 function netHostBroadcast(){ const h=NET.host; if(!h)return; const buf=serializeSnapshot();
   for(const c of h.conns){ if(c.ch&&c.ch.readyState==='open'){ try{ c.ch.send(buf); }catch(_){} } }
-  if(_G.netDeaths.length) _G.netDeaths.length=0; }   // deaths delivered — clear the per-broadcast queue
+  if(_G.netDeaths.length) _G.netDeaths.length=0; if(_G.netHits.length) _G.netHits.length=0;   // deaths + damage numbers delivered — clear the per-broadcast queues
+  // stream each peer's full BUILD (attr/tree/gear/skills/inventory) on the reliable channel whenever it changes —
+  // level-ups, loot, respec, point spends all shift the signature, so the guest's menus & HUD stay in sync.
+  for(const c of h.conns){ if(c.player&&c.player.joined&&c.evt&&c.evt.readyState==='open'){ const sig=buildSig(c.player);
+    if(sig!==c._buildSig){ c._buildSig=sig; try{ c.evt.send(JSON.stringify({type:'build', b:serializePlayerBuild(c.player)})); }catch(_){} } } } }
+
+// ============================================================ ONLINE CO-OP — FULL BUILD SYNC (guest plays its OWN character)
+// The host is authoritative: it runs the sim for every player. To make the guest feel like a full game — its own
+// build, HUD, skill bar, inventory, skill tree — the host streams the guest's complete character state, and the
+// guest sends build ACTIONS (allocate, equip, bind, respec…) back up as commands the host applies to that player.
+let _uidSeq=1;
+function _stampUid(it){ if(it && it.uid==null) it.uid=_uidSeq++; return it; }
+function _stampItem(it){ if(!it)return it; _stampUid(it); if(it.socketed) for(const g of it.socketed) if(g) _stampUid(g); return it; }
+function _stampPlayer(p){ if(!p)return; if(p.inv) p.inv.forEach(_stampItem); if(p.slots) p.slots.forEach(_stampItem);
+  if(p.belt) p.belt.forEach(_stampItem); if(p.sigSlot) _stampItem(p.sigSlot); if(p.equip) for(const k in p.equip) _stampItem(p.equip[k]);
+  if(p.pets) p.pets.forEach(_stampUid); }   // pets get uids too so the guest can equip/fuse/sell its OWN pets by reference
+// compact structural signature — changes whenever the build (not the fast HUD values) changes, so we only resend on real edits
+function buildSig(p){ if(!p)return''; _stampPlayer(p);
+  const iu=a=>a?a.map(x=>x?x.uid:0).join(','):'';
+  const eu=e=>{ let s=''; for(const k in e){ const it=e[k]; s+=k+':'+(it?it.uid+(it.socketed?'.'+it.socketed.map(g=>g?g.uid:0).join('-'):''):'0')+';'; } return s; };
+  let al=''; for(const k in p.alloc){ if(p.alloc[k]) al+=k+p.alloc[k]+','; }
+  const A=p.attr||{};
+  const petSig=(p.pets||[]).map(x=>x?(x.uid+'.'+x.level+'.'+x.rarity+(x===p.pet?'A':'')):'0').join(',');   // catches equip/fuse/sell/feed
+  return [p.level,p.xpNeed,p.attrPts,p.skillPts,p.skillGranted,p.evolves,al,iu(p.inv),eu(p.equip||{}),iu(p.slots),iu(p.belt),
+    p.sigSlot?p.sigSlot.uid:0, A.str+'.'+A.dex+'.'+A.int+'.'+A.vit+'.'+A.will, petSig, Math.round((p.greed||1)*100), p.invCap|0].join('|'); }
+function serializePlayerBuild(p){ if(!p)return null; _stampPlayer(p);
+  try{ return { name:p.name, gold:p.gold|0, level:p.level|0, xp:p.xp, xpNeed:p.xpNeed, xpMode:p.xpMode||'use',
+    attrPts:p.attrPts|0, skillPts:p.skillPts|0, skillGranted:p.skillGranted|0, evolves:p.evolves|0, invCap:p.invCap|0,
+    attr:p.attr, alloc:p.alloc, equip:p.equip, inv:p.inv, belt:p.belt, slots:p.slots, sigSlot:p.sigSlot,
+    pets:p.pets, petIdx:(p.pet&&p.pets)?p.pets.indexOf(p.pet):-1, greed:p.greed||1,
+    run:{ boons:(p.run&&p.run.boons)||[], destiny:(p.run&&p.run.destiny)||null } }; }catch(e){ return null; } }
+function applyPlayerBuild(p,b){ if(!p||!b)return;
+  p.name=b.name||p.name; p.gold=b.gold|0; p.level=b.level||1; p.xp=b.xp||0; p.xpNeed=b.xpNeed||(typeof xpForLevel==='function'?xpForLevel(p.level):20);
+  p.xpMode=b.xpMode||'use'; p.attrPts=b.attrPts|0; p.skillPts=b.skillPts|0; p.skillGranted=b.skillGranted|0; p.evolves=b.evolves|0;
+  if(b.invCap) p.invCap=b.invCap; p.attr=b.attr||p.attr; p.alloc=b.alloc||{}; p.equip=b.equip||p.equip;
+  p.inv=b.inv||[]; p.belt=b.belt||p.belt; p.slots=b.slots||p.slots; p.sigSlot=b.sigSlot||null;
+  p.pets=b.pets||p.pets||[]; p.pet=(b.petIdx>=0&&p.pets&&p.pets[b.petIdx])?p.pets[b.petIdx]:null; p.greed=b.greed||1;
+  p.run=p.run||{}; p.run.boons=(b.run&&b.run.boons)||p.run.boons||[]; p.run.destiny=(b.run&&b.run.destiny)||p.run.destiny||null;
+  withPlayer(p.id, ()=>{ recompute(); }); }
+// ---- GUEST side: receive my build, receive my live vitals, render the FULL hud from them ----
+function netPeerApplyBuild(b){ const p=_G.players[0]; if(!p||!b)return; applyPlayerBuild(p,b);
+  // reflect the new build in any open menu + the always-on skill bar
+  withPlayer(0, ()=>{ if(typeof renderActionbar==='function') renderActionbar(); if(typeof refreshItemPanels==='function') refreshItemPanels();
+    if(!$('charPanel').classList.contains('hidden')&&typeof renderChar==='function') renderChar();
+    if(!$('treePanel').classList.contains('hidden')&&typeof renderTree==='function') renderTree();
+    if(typeof updatePips==='function') updatePips(); }); }
+function netApplyLive(sp){ const p=_G.players[0]; if(!p||!sp)return;
+  p.hp=sp.hp; if(sp.mh) p.maxhp=sp.mh; p.mana=sp.mp!=null?sp.mp:p.mana; if(sp.mm) p.maxmana=sp.mm;
+  p.level=sp.lv||p.level; if(sp.xp!=null)p.xp=sp.xp; if(sp.xn)p.xpNeed=sp.xn; if(sp.g!=null)p.gold=sp.g;
+  p.dashCd=sp.dc||0; if(sp.dm)p.dashCdMax=sp.dm; p.charge=sp.sg||0; if(sp.cm)p.chargeMax=sp.cm;
+  p.fervor=sp.fv||0; p.fervorT=sp.ft||0; p.swiftT=sp.sw||0; p.flowT=sp.fw||0; p.invuln=sp.iv||0;
+  p.stunT=sp.su||0; p.slowT=sp.sl||0; p.weakT=sp.wk||0; p.healCutT=sp.hc||0; p.recallT=sp.rc||0; p.downed=!!sp.dn;
+  if(sp.cd){ p.cd=p.cd||{}; for(let i=0;i<sp.cd.length;i++) p.cd[i]=sp.cd[i]; }
+  if(sp.fl&&p.belt){ for(let i=0;i<p.belt.length;i++){ if(p.belt[i]) p.belt[i].chg=sp.fl[i]||0; } } }
+// ---- GUEST side: send a build action up to the host (it runs the real handler on my authoritative character) ----
+function isPeer(){ return NET.role==='peer'; }
+function netPeerCmd(fn,a){ const pr=NET.peer; if(!pr||!pr.evt||pr.evt.readyState!=='open')return;
+  try{ pr.evt.send(JSON.stringify({ type:'cmd', fn, a:a||[] })); }catch(_){} }
+// ---- HOST side: apply an incoming guest build action to THAT player, without disturbing the host's own on-screen panels ----
+function netHostRunCmd(rec,fn,a){ const p=rec&&rec.player; if(!p||!p.joined)return; a=a||[];
+  const findItem=uid=>{ if(uid==null)return null; const P=p; if(!P)return null;
+    if(P.inv) for(const it of P.inv) if(it&&it.uid===uid) return it;
+    if(P.slots) for(const it of P.slots) if(it&&it.uid===uid) return it;
+    if(P.belt) for(const it of P.belt) if(it&&it.uid===uid) return it;
+    if(P.sigSlot&&P.sigSlot.uid===uid) return P.sigSlot;
+    if(P.equip) for(const k in P.equip){ const e=P.equip[k]; if(e&&e.uid===uid) return e; if(e&&e.socketed) for(const g of e.socketed) if(g&&g.uid===uid) return g; }
+    return null; };
+  const findPet=uid=>{ if(uid==null)return null; const P=p; if(P&&P.pets) for(const pt of P.pets) if(pt&&pt.uid===uid) return pt; return null; };
+  _G.netApplying=true;   // suppress the shared-DOM re-renders these handlers fire, so the host's own HUD/panels aren't repainted with guest data
+  try{ withPlayer(p.id, ()=>{ switch(fn){
+    case 'spendAttr':    spendAttr(a[0]); break;
+    case 'investTalent': investTalent(a[0]); break;
+    case 'removeTalent': removeTalent(a[0]); break;
+    case 'autoBuild':    autoBuild(a[0]); break;
+    case 'respec':       respec(); break;
+    case 'equip':        { const it=findItem(a[0]); if(it) equipItem(it); break; }
+    case 'unequip':      unequip(a[0]); break;
+    case 'autoBind':     { const it=findItem(a[0]); if(it) autoBind(it); break; }
+    case 'bindSkill':    { const it=findItem(a[0]); if(it) bindSkill(it,a[1]); break; }
+    case 'unbindSkill':  unbindSkill(a[0]); break;
+    case 'bindSig':      { const it=findItem(a[0]); if(it) bindSig(it); break; }
+    case 'unbindSig':    unbindSig(); break;
+    case 'bindFlask':    { const it=findItem(a[0]); if(it) bindFlask(it,a[1]); break; }
+    case 'unbindFlask':  unbindFlask(a[0]); break;
+    case 'quickUse':     { const it=findItem(a[0]); if(it) quickUse(it); break; }
+    case 'socket':       { const g=findItem(a[0]), it=findItem(a[1]); if(g&&it) socketGemInto(g,it); break; }
+    case 'unsocket':     { const it=findItem(a[0]); if(it) unsocketFree(it,a[1]|0); break; }
+    case 'sellItem':     { const it=findItem(a[0]); if(it) sellItem(it); break; }
+    case 'sellJunk':     sellJunk(); break;
+    case 'setXpMode':    { G.xpMode=(a[0]==='collect')?'collect':'use'; break; }
+    case 'setActivePet': { const pt=findPet(a[0]); if(pt) setActivePet(pt); break; }   // pet yard: the guest manages its OWN pets
+    case 'fusePet':      { const pt=findPet(a[0]); if(pt) fusePet(pt); break; }
+    case 'sellPet':      { const pt=findPet(a[0]); if(pt) sellPet(pt); break; }
+    case 'feedPet':      { const it=findItem(a[0]); if(it) feedPet(it); break; }
+    case 'feedAllJunk':  if(typeof feedAllJunk==='function') feedAllJunk(); break;
+    case 'sendPetErrand':if(typeof sendPetErrand==='function') sendPetErrand(); break;
+    case 'hatchPet':     { const it=findItem(a[0]); if(it) hatchPet(it); break; }
+  } }); }catch(e){ console.error('[net] guest cmd failed',fn,e); }
+  _G.netApplying=false;
+  const c=NET.host&&NET.host.conns&&NET.host.conns.find(x=>x===rec); if(c) c._buildSig='';   // force an immediate build resend so the guest sees the result
+}
+function netHostOnPeerEvt(rec,data){ if(!rec)return;
+  try{ const m=JSON.parse(data);
+    if(m.type==='char'){ if(rec.player && m.b){
+        if(m.b.petsOnly){ rec.player.pets=(m.b.pets||[]).map(x=>Object.assign({},x)); rec.player.pet=(m.b.petIdx>=0&&rec.player.pets[m.b.petIdx])?rec.player.pets[m.b.petIdx]:null; withPlayer(rec.player.id,()=>{ try{ recompute(); }catch(_){} }); }   // give the guest its OWN pets
+        else applyPlayerBuild(rec.player, m.b); }
+      if(rec) rec._buildSig=''; }   // returning guest keeps its saved build/pets
+    else if(m.type==='fame'){ if(rec.player) rec.player.fame=m.v|0; }   // guest's account fame → its party-HUD rank
+    else if(m.type==='cmd'){ netHostRunCmd(rec, m.fn, m.a); }
+  }catch(_){}
+}
 
 // ---- PEER: render-only guest; sends input up, draws the host's snapshots ----
 function netPeerStart(){ if(NET.role==='host')return null; NET.role='peer'; NET.peer={ pc:null, ch:null, evt:null, ghosts:{}, lastSnap:null }; return NET.peer; }
@@ -7401,8 +7724,8 @@ async function netRoomHost(status,onPeers){
     conn.on('open',()=>{
       if(conn.label==='game'){ rec.ch=pjChan(conn); rec.gameConn=conn;
         conn.on('data',d=>{ try{ const m=JSON.parse(d); if(m.in && rec.player) rec.player.netPacket=m.in; }catch(_){} });
-        conn.on('close',()=>{ if(rec.player){ rec.player.joined=false; rec.player.downed=true; } if(h.onPeers) h.onPeers(h.conns.filter(c=>c._ready&&c.player&&c.player.joined).length); if(typeof renderNetHost==='function') renderNetHost(); }); }
-      else if(conn.label==='evt'){ rec.evt=pjChan(conn); rec.evtConn=conn; }
+        conn.on('close',()=>{ netReleasePlayer(rec); if(h) h.conns=h.conns.filter(c=>c!==rec); if(h.onPeers) h.onPeers(h.conns.filter(c=>c._ready&&c.player&&c.player.joined).length); if(typeof renderNetHost==='function') renderNetHost(); }); }
+      else if(conn.label==='evt'){ rec.evt=pjChan(conn); rec.evtConn=conn; conn.on('data',d=>netHostOnPeerEvt(rec,d)); }   // guest → host build actions / saved-char handoff
       netHostReady(rec); }); });
   return code;
 }
@@ -7441,41 +7764,95 @@ function netPeerOnEvt(data){ const pr=NET.peer; if(!pr)return;   // 'evt' channe
   try{ const m=JSON.parse(data);
     if(m.type==='hello'){ NET.localId=m.id; _G.seed=m.seed; netPeerEnter(); }
     else if(m.type==='floor'){ netPeerBuildFloor(m); }
+    else if(m.type==='build'){ netPeerApplyBuild(m.b); }   // my full character (attr/tree/gear/skills/inventory)
   }catch(_){}
 }
 function netPeerSendInput(){ const pr=NET.peer; if(!pr||!pr.ch||pr.ch.readyState!=='open')return;
   const p=_G.players[0]; if(!p)return; if(p.input) p.input.read(p);   // fills p.in.mx/mz + p.aim (raycast) + p.in.atk
+  const inMenu=anyPanelOpen()||_G.modalOpen;   // don't walk/fire/cast while managing your build
   // aim direction relative to our OWN ghost so the host aims our shots/facing correctly
   let ax=0,az=0; const me=pr.ghosts[NET.localId];
   if(me && p.in.hasAim){ const dx=p.aim.x-me.position.x, dz=p.aim.z-me.position.z, dl=Math.hypot(dx,dz)||1; ax=dx/dl; az=dz/dl; }
-  // action keys → btn edges (the guest's keydown handler is inert, so read keys[] directly): F interact, Space dash, QER skills, 123 flasks, Shift signature
-  const btn={ interact:!!keys['f'], dash:!!keys[' '], q:!!keys['q'], e:!!keys['e'], r:!!keys['r'], f1:!!keys['1'], f2:!!keys['2'], f3:!!keys['3'], sig:!!keys['shift'] };
-  try{ pr.ch.send(JSON.stringify({ in:{ mx:p.in.mx||0, mz:p.in.mz||0, ax, az, atk:!!p.in.atk, btn } })); }catch(_){}
+  // action keys → btn edges (the guest's keydown handler is inert, so read keys[] directly). Keys MATCH the on-screen HUD:
+  // skills 1–9, flasks Q/E/R/Z/X, Space dash, ⇧ signature, F interact. Host maps s0–s8→useSlot, k0–k4→useFlask.
+  const K=inMenu?(()=>false):(kk=>!!keys[kk]);
+  const btn={ interact:K('f'), dash:K(' '), sig:K('shift'),
+    s0:K('1'),s1:K('2'),s2:K('3'),s3:K('4'),s4:K('5'),s5:K('6'),s6:K('7'),s7:K('8'),s8:K('9'),
+    k0:K('q'),k1:K('e'),k2:K('r'),k3:K('z'),k4:K('x') };
+  const mx=inMenu?0:(p.in.mx||0), mz=inMenu?0:(p.in.mz||0), atk=inMenu?false:!!p.in.atk;
+  try{ pr.ch.send(JSON.stringify({ in:{ mx, mz, ax, az, atk, btn } })); }catch(_){}
 }
 function netPeerEnter(){   // enter a lightweight render-only state (no local world sim)
+  if(!scene || !renderer){   // engine never started (WebGL failed) — don't get silently stuck on the join screen; show the reason
+    const le=$('loadErr'); if(le){ le.style.display='flex'; if(!le.querySelector('.leInner')){ const d=document.createElement('div'); d.className='leInner'; d.textContent='⚠ Can\'t render the game — your browser has no WebGL context. Close other 3D/game tabs and reload, then rejoin.'; le.replaceChildren(d); } }
+    return; }
   _G.netGuest=true; _G.running=false;
   _G.players[0].input = _G.players[0].input || makeKbmInput();   // the guest needs an input source so read() captures its WASD/mouse/aim
   if(!NET.peer.ground){ const gnd=new THREE.Mesh(new THREE.PlaneGeometry(400,400), new THREE.MeshStandardMaterial({color:0x0d1320,roughness:1}));
     gnd.rotation.x=-Math.PI/2; gnd.position.y=0; scene.add(gnd); NET.peer.ground=gnd; }   // placeholder until the floor layout arrives
-  $('start').classList.add('hidden'); $('hud').classList.add('hidden');
-  banner('🌐 ONLINE CO-OP','guest view — the host runs the world'); }
+  // the guest gets the FULL HUD — health orbs, mana, skill bar with live cooldowns, flasks, xp, gold, rampage/buffs —
+  // driven by the host's streamed build (recomputed locally) + live vitals. Host-only controls are hidden.
+  $('start').classList.add('hidden'); $('hud').classList.remove('hidden'); document.body.classList.add('netGuest');
+  const ring=$('playerRing'); if(ring && ring.parentElement!==$('app')){ $('app').appendChild(ring); }   // keep the on-hero ring above the world
+  // send my saved character up so a returning guest keeps its own build (a fresh guest starts fresh but still
+  // brings its OWN account pets, so the Pet Yard shows the guest's pets — never the host's).
+  try{ const s=(typeof loadSession==='function')?loadSession():null;
+    const sp=(typeof META!=='undefined'&&META.savedPets)?META.savedPets:null;
+    if(s && s.level && NET.peer && NET.peer.evt){ NET.peer.evt.send(JSON.stringify({ type:'char', b:{
+      name:s.name, gold:s.gold, level:s.level, xp:s.xp, xpNeed:s.xpNeed, xpMode:s.xpMode, attrPts:s.attrPts, skillPts:s.skillPts,
+      skillGranted:s.skillGranted, evolves:s.evolves, invCap:s.invCap, attr:s.attr, alloc:s.alloc, equip:s.equip, inv:s.inv,
+      belt:s.belt, slots:s.slots, sigSlot:s.sigSlot, pets:s.pets, petIdx:s.petIdx, greed:s.greed, run:s.run } })); }
+    else if(sp && sp.pets && sp.pets.length && NET.peer && NET.peer.evt){ NET.peer.evt.send(JSON.stringify({ type:'char', b:{ petsOnly:true, pets:sp.pets, petIdx:(sp.idx!=null?sp.idx:-1) } })); }
+    if(NET.peer && NET.peer.evt){ NET.peer.evt.send(JSON.stringify({ type:'fame', v:(typeof META!=='undefined'&&META.fame)||0 })); }   // my rank stars for the party HUD
+  }catch(_){}
+  banner('🌐 ONLINE CO-OP','your own build · the host runs the world'); }
 // ---- floor layout sync (Phase 2 finish): host streams the room/wall/pillar layout once per floor; peer rebuilds it ----
+function netFloorProps(){ const P=[]; const rr=v=>Math.round(v*100)/100;
+  const st=(o,t)=>{ if(o&&o.x!=null) P.push({t,x:rr(o.x),z:rr(o.z)}); };
+  st(G.portal,'portal'); st(G.vendorStation,'vendor'); st(G.stashStation,'stash'); st(G.scoreStation,'score');
+  st(G.craftStation,'craft'); st(G.yardStation,'yard'); st(G.yardTerminal,'yardterm');   // goblin roams → streamed via snapshot, not the static prop list
+  for(const c of (G.chests||[])) if(c&&!c.opened) P.push({t:'chest',x:rr(c.x),z:rr(c.z)});
+  for(const tr of (G.traps||[])) if(tr) P.push({t:'trap',x:rr(tr.x),z:rr(tr.z),s:tr.type||'turret'});
+  return P; }
 function serializeFloorLayout(){ const bi=Math.max(0,BIOMES.indexOf(biome));
-  return JSON.stringify({ type:'floor', bi, bounds:G.bounds,
+  return JSON.stringify({ type:'floor', bi, bounds:G.bounds, town:!!G.inTown,
     rects:(G.rects||[]).map(r=>({x0:r.x0,x1:r.x1,z0:r.z0,z1:r.z1})),
     rooms:(G.rooms||[]).map(r=>({cx:r.cx,cz:r.cz,rw:r.rw,rh:r.rh,x0:r.x0,x1:r.x1,z0:r.z0,z1:r.z1})),
-    obs:(G.obstacles||[]).map(o=>({x:Math.round(o.x*100)/100,z:Math.round(o.z*100)/100,r:Math.round(o.r*100)/100,h:o.h||3.5})) }); }
+    obs:(G.obstacles||[]).map(o=>({x:Math.round(o.x*100)/100,z:Math.round(o.z*100)/100,r:Math.round(o.r*100)/100,h:o.h||3.5})),
+    props: netFloorProps() }); }
+// guest: build a recognizable ghost mesh for each streamed world prop (station/chest/turret) at its position
+function netBuildProp(pr){ if(!pr) return; const x=pr.x, z=pr.z; let m=null;
+  const box=(w,h,d,col,em)=>{ const g=new THREE.Mesh(new THREE.BoxGeometry(w,h,d), new THREE.MeshStandardMaterial({color:col,emissive:em!=null?em:col,emissiveIntensity:.45,roughness:.5,metalness:.35})); g.position.set(x,h/2,z); return g; };
+  switch(pr.t){
+    case 'portal': { const g=new THREE.Group(); const ring=new THREE.Mesh(new THREE.TorusGeometry(1.9,0.28,10,26), new THREE.MeshStandardMaterial({color:0x56e0ff,emissive:0x56e0ff,emissiveIntensity:1.2})); ring.rotation.x=Math.PI/2; ring.position.y=2.2;
+      const beam=new THREE.Mesh(new THREE.CylinderGeometry(1.7,1.7,8,20,1,true), new THREE.MeshBasicMaterial({color:0x56e0ff,transparent:true,opacity:.12,side:THREE.DoubleSide,depthWrite:false})); beam.position.y=4; g.add(ring,beam); g.position.set(x,0,z); m=g; break; }
+    case 'vendor':   m=box(2.4,2,1.8,0xffce4d); break;
+    case 'stash':    m=box(2.4,1.6,1.8,0x3aa0ff); break;
+    case 'craft':    m=box(2.2,1.8,1.8,0xff9a3d); break;
+    case 'yardterm': m=box(2.0,2.4,0.4,0x2aa0ff); break;
+    case 'yard': { const g=new THREE.Mesh(new THREE.TorusGeometry(1.9,0.28,10,24), new THREE.MeshStandardMaterial({color:0x2a5a2a,emissive:0x3aff8a,emissiveIntensity:.5,flatShading:true})); g.rotation.x=Math.PI/2; g.position.set(x,2.1,z); m=g; break; }
+    case 'score': { const g=new THREE.Mesh(new THREE.TorusKnotGeometry(0.85,0.26,50,8), new THREE.MeshStandardMaterial({color:0xc89bff,emissive:0xc89bff,emissiveIntensity:.6,flatShading:true})); g.position.set(x,1.9,z); m=g; break; }
+    case 'chest': { m=box(1.5,0.9,1.1,0x8a5a28,0xffce4d); m.position.y=0.45; break; }
+    case 'trap': { const c=pr.s==='turret'?0x1a5a3a:pr.s==='ring'?0x6a1a8a:pr.s==='dart'?0x8a6a1a:0x8a1a2a;
+      const g=new THREE.Group(); const base=new THREE.Mesh(new THREE.CylinderGeometry(0.5,0.72,1.1,8), new THREE.MeshStandardMaterial({color:c,emissive:c,emissiveIntensity:.7,metalness:.5}));
+      base.position.y=0.55; const eye=new THREE.Mesh(new THREE.SphereGeometry(0.32,10,10), new THREE.MeshStandardMaterial({color:0xff5470,emissive:0xff5470,emissiveIntensity:1.3})); eye.position.y=1.15; g.add(base,eye); g.position.set(x,0,z); m=g; break; }
+    default: m=box(1.4,1.4,1.4,0x8899bb);
+  }
+  if(m){ scene.add(m); G.scenery.push(m); }   // G.scenery is cleared on the next floor build
+}
 function netPeerBuildFloor(L){
   biome = BIOMES[L.bi % BIOMES.length];
   scene.background=new THREE.Color(biome.fog); scene.fog=new THREE.Fog(biome.fog,46,150); if(typeof hemi!=='undefined'&&hemi) hemi.groundColor.setHex(biome.fog);
   clearWorld();                                  // drop the previous floor's geometry (peer enemies/bullets are separate ghost pools)
-  G.rects=L.rects; G.rooms=L.rooms; G.bounds=L.bounds;
+  G.rects=L.rects; G.rooms=L.rooms; G.bounds=L.bounds; G.inTown=!!L.town;
   buildFloorMeshes(); buildWalls();              // reuse the real builders — they read G.rects/G.rooms/biome
   const pmat=new THREE.MeshStandardMaterial({color:biome.wall, roughness:.8});   // pillars from the streamed obstacle list
   for(const o of (L.obs||[])){ const h=o.h||3.5; const m=new THREE.Mesh(new THREE.CylinderGeometry(o.r*0.78,o.r*0.84,h,8),pmat); m.position.set(o.x,h/2,o.z); m.castShadow=true; scene.add(m); G.scenery.push(m); G.obstacles.push({x:o.x,z:o.z,r:o.r,h}); }
+  for(const pr of (L.props||[])) netBuildProp(pr);   // stations · chests · turret-traps so the guest sees the same world, not an empty floor
   if(NET.peer.ground){ scene.remove(NET.peer.ground); NET.peer.ground=null; }   // remove the placeholder plane
   for(const k in NET.peer.eg){ scene.remove(NET.peer.eg[k]); } NET.peer.eg={};   // clear stale enemy/bullet/loot ghosts from the old floor
   for(const k in NET.peer.bg){ scene.remove(NET.peer.bg[k]); } NET.peer.bg={};
+  for(const k in (NET.peer.pbg||{})){ scene.remove(NET.peer.pbg[k]); } NET.peer.pbg={};
   for(const k in (NET.peer.lg||{})){ scene.remove(NET.peer.lg[k]); } NET.peer.lg={};
   if(NET.peer._built) banner('⬇ NEW AREA','the host moved the party'); NET.peer._built=true;   // first build is silent; later = a transition
 }
@@ -7485,17 +7862,27 @@ function nearAnyPlayer(x,z,r){ const r2=r*r; for(const p of _G.players){ if(!p.j
 function serializeSnapshot(){
   const rnd=v=>Math.round(v*100)/100;
   const players=joinedPlayers().map(p=>({ id:p.id, x:rnd(p.player.position.x), z:rnd(p.player.position.z),
-    r:rnd(p.player.rotation.y), hp:Math.round(p.hp), mh:Math.round(p.maxhp||1), c:p.color, dn:p.downed?1:0 }));
+    r:rnd(p.player.rotation.y), hp:Math.round(p.hp), mh:Math.round(p.maxhp||1), c:p.color, dn:p.downed?1:0,
+    mp:Math.round(p.mana||0), mm:Math.round(p.maxmana||1), dc:rnd(p.dashCd||0), dm:rnd(p.dashCdMax||0.5), lv:p.level||1,
+    // full live HUD vitals so the guest's real HUD (orbs, skill-bar cooldowns, flasks, xp, gold, buffs) tracks the host sim
+    xp:Math.round(p.xp||0), xn:Math.round(p.xpNeed||1), g:p.gold|0, sg:rnd(p.charge||0), cm:p.chargeMax||100,
+    fv:rnd(p.fervor||0), ft:rnd(p.fervorT||0), sw:rnd(p.swiftT||0), fw:rnd(p.flowT||0), iv:rnd(p.invuln||0),
+    su:rnd(p.stunT||0), sl:rnd(p.slowT||0), wk:rnd(p.weakT||0), hc:rnd(p.healCutT||0), rc:rnd(p.recallT||0),
+    cd:(p.cd?[0,1,2,3,4,5,6,7,8].map(i=>rnd(p.cd[i]||0)):[]), fl:(p.belt?p.belt.map(f=>f?rnd(f.chg||0):0):[]),
+    fm:(p.isRemote?(p.fame||0):((typeof META!=='undefined'&&META.fame)||0)) }));   // account fame → party-HUD rank stars
   const en=[];   // enemies near any player (cull for bandwidth)
   for(const e of _G.enemies){ const x=e.mesh.position.x, z=e.mesh.position.z; if(!nearAnyPlayer(x,z,46))continue;
     if(e._nid==null)e._nid=_nid++; en.push({ i:e._nid, x:rnd(x), z:rnd(z), s:rnd(e.scale||1), c:e.color||0xff5c78, b:e.boss?1:0, h:e.maxhp?Math.round(e.hp/e.maxhp*100):100, f:e.hitFlash>0?1:0 }); }
   const pj=[];   // enemy projectiles near any player
   for(const b of _G.eProjectiles){ const x=b.mesh.position.x, z=b.mesh.position.z; if(!nearAnyPlayer(x,z,46))continue;
     if(b._nid==null)b._nid=_nid++; pj.push({ i:b._nid, x:rnd(x), z:rnd(z) }); }
+  const pb=[];   // PLAYER projectiles near any player — so the guest sees everyone's shots (its own & allies')
+  for(const b of _G.projectiles){ if(!b.mesh)continue; const x=b.mesh.position.x, z=b.mesh.position.z; if(!nearAnyPlayer(x,z,46))continue;
+    if(b._nid==null)b._nid=_nid++; if(pb.length<160) pb.push({ i:b._nid, x:rnd(x), z:rnd(z), c:(ELEMENTS[b.element]&&ELEMENTS[b.element].col)||0x9be7ff, s:rnd((b.mesh.geometry&&b.mesh.geometry.parameters&&b.mesh.geometry.parameters.radius)||0.4) }); }
   const lt=[];   // loot/pickups near any player (so peers see & walk to their own soulbound drops)
   for(const pk of _G.pickups){ if(pk.dead)continue; const x=pk.mesh.position.x, z=pk.mesh.position.z; if(!nearAnyPlayer(x,z,46))continue;
     if(pk._nid==null)pk._nid=_nid++; lt.push({ i:pk._nid, x:rnd(x), z:rnd(z), k:pk.kind==='loot'?'l':pk.kind==='crystal'?'c':'g', o:pk.owner!=null?pk.owner:-1, col:pk.rcol||0x8effd9 }); }
-  return JSON.stringify({ t:performance.now()|0, players, en, pj, dd:_G.netDeaths, lt }); }
+  return JSON.stringify({ t:performance.now()|0, players, en, pj, pb, dd:_G.netDeaths, ht:_G.netHits, lt }); }
 function makeGhost(color){ const g=new THREE.Group();
   const body=new THREE.Mesh(new THREE.CylinderGeometry(0.55,0.55,1.7,12), new THREE.MeshStandardMaterial({color,emissive:color,emissiveIntensity:.55,roughness:.4}));
   body.position.y=1.05; g.add(body);
@@ -7505,12 +7892,14 @@ function makeEnemyGhost(color,scale,boss){ const s=scale||1;
   const m=new THREE.Mesh(boss?new THREE.IcosahedronGeometry(1.4*s,0):new THREE.IcosahedronGeometry(0.8*s,0), new THREE.MeshStandardMaterial({color,emissive:color,emissiveIntensity:.4,roughness:.5}));
   m.position.y=s; scene.add(m); return m; }
 function makeBulletGhost(){ const m=new THREE.Mesh(new THREE.SphereGeometry(0.36,8,8), M.ebolt); m.position.y=1.1; scene.add(m); return m; }
+function makePlayerBoltGhost(color,size){ const c=color||0x9be7ff; const m=new THREE.Mesh(new THREE.SphereGeometry(Math.max(0.22,size||0.4),8,8), new THREE.MeshStandardMaterial({color:c,emissive:c,emissiveIntensity:1.1})); m.position.y=1.1; scene.add(m); return m; }
 function applySnapshot(s){ const pr=NET.peer; if(!pr||!s)return;
   // players
   if(s.players){ for(const sp of s.players){ let g=pr.ghosts[sp.id]; if(!g){ g=makeGhost(sp.c||0x56e0ff); pr.ghosts[sp.id]=g; g.position.set(sp.x,0,sp.z); }
       g.userData.tx=sp.x; g.userData.tz=sp.z; g.userData.tr=sp.r||0; g.userData.hp=sp.hp; g.userData.mh=sp.mh;
       const dn=!!sp.dn; if(dn!==g.userData.dn){ g.userData.dn=dn; g.rotation.x=dn?Math.PI/2:0;   // lay knocked-out allies on their side
-        const body=g.children[0]; if(body&&body.material) body.material.emissiveIntensity=dn?0.12:0.55; } }
+        const body=g.children[0]; if(body&&body.material) body.material.emissiveIntensity=dn?0.12:0.55; }
+      if(sp.id===NET.localId){ pr.me={ hp:sp.hp, mh:sp.mh||1, mp:sp.mp!=null?sp.mp:0, mm:sp.mm||1, dc:sp.dc||0, dm:sp.dm||0.5, lv:sp.lv||1, dn }; netApplyLive(sp); } }   // MY own stats → guest HUD + ring, and feed the full HUD
     const live=new Set(s.players.map(p=>p.id));
     for(const id in pr.ghosts){ if(!live.has(+id)){ scene.remove(pr.ghosts[id]); delete pr.ghosts[id]; } } }
   // enemies (pooled by net-id; lerped toward target in render)
@@ -7518,12 +7907,17 @@ function applySnapshot(s){ const pr=NET.peer; if(!pr||!s)return;
   for(const e of (s.en||[])){ eLive.add(e.i); let g=pr.eg[e.i]; if(!g){ g=makeEnemyGhost(e.c,e.s,e.b); pr.eg[e.i]=g; g.position.set(e.x,e.s||1,e.z); } g.userData.tx=e.x; g.userData.tz=e.z;
     if(e.f && g.material){ g.material.emissiveIntensity=1.6; } else if(g.material){ g.material.emissiveIntensity=.4; } }
   for(const id in pr.eg){ if(!eLive.has(+id)){ scene.remove(pr.eg[id]); delete pr.eg[id]; } }
-  // enemy projectiles (snap to position — they move fast)
+  // enemy projectiles — interpolate toward the latest position so they glide instead of stepping at 18Hz
   pr.bg=pr.bg||{}; const bLive=new Set();
-  for(const b of (s.pj||[])){ bLive.add(b.i); let g=pr.bg[b.i]; if(!g){ g=makeBulletGhost(); pr.bg[b.i]=g; } g.position.x=b.x; g.position.z=b.z; }
+  for(const b of (s.pj||[])){ bLive.add(b.i); let g=pr.bg[b.i]; if(!g){ g=makeBulletGhost(); pr.bg[b.i]=g; g.position.set(b.x,1.1,b.z); } g.userData.tx=b.x; g.userData.tz=b.z; }
   for(const id in pr.bg){ if(!bLive.has(+id)){ scene.remove(pr.bg[id]); delete pr.bg[id]; } }
+  // PLAYER projectiles — so the guest sees everyone's shots fly (its own and allies'), interpolated too
+  pr.pbg=pr.pbg||{}; const pbLive=new Set();
+  for(const b of (s.pb||[])){ pbLive.add(b.i); let g=pr.pbg[b.i]; if(!g){ g=makePlayerBoltGhost(b.c,b.s); pr.pbg[b.i]=g; g.position.set(b.x,1.1,b.z); } g.userData.tx=b.x; g.userData.tz=b.z; }
+  for(const id in pr.pbg){ if(!pbLive.has(+id)){ scene.remove(pr.pbg[id]); delete pr.pbg[id]; } }
   // enemy deaths → replay the burst FX the host saw (reuses burst/ringFx; peer animates G.decals in netGuestRender)
   for(const d of (s.dd||[])){ burst(d.x,d.z,d.c||0xff5c78); if(d.b){ ringFx(d.x,d.z,7,0xffce4d); ringFx(d.x,d.z,4,d.c||0xff5c78); } }
+  for(const h of (s.ht||[])){ floatText(h.x, h.z, h.d, h.c||'dmg', h.y||2); }   // damage numbers the host dealt → shown on the guest too
   // loot/pickups (own soulbound drops shown bright; allies' shown dim so you know what's yours)
   pr.lg=pr.lg||{}; const ltLive=new Set();
   for(const pk of (s.lt||[])){ ltLive.add(pk.i); let g=pr.lg[pk.i]; if(!g){ g=makeLootGhost(pk.k,pk.col); pr.lg[pk.i]=g; }
@@ -7537,12 +7931,18 @@ function makeLootGhost(kind,color){ const c=color||0x8effd9;
 function netGuestRender(raw){ const pr=NET.peer; if(!pr)return; const k=Math.min(1,raw*12);
   for(const id in pr.ghosts){ const g=pr.ghosts[id], u=g.userData; if(u.tx!=null){ g.position.x+=(u.tx-g.position.x)*k; g.position.z+=(u.tz-g.position.z)*k; g.rotation.y=u.tr||0; } }
   if(pr.eg) for(const id in pr.eg){ const g=pr.eg[id], u=g.userData; if(u.tx!=null){ g.position.x+=(u.tx-g.position.x)*k; g.position.z+=(u.tz-g.position.z)*k; g.rotation.y+=raw*2; } }
+  const kb=Math.min(1,raw*22);   // bullets move fast → snappier catch-up so they glide without lagging behind
+  if(pr.bg) for(const id in pr.bg){ const g=pr.bg[id], u=g.userData; if(u.tx!=null){ g.position.x+=(u.tx-g.position.x)*kb; g.position.z+=(u.tz-g.position.z)*kb; } }
+  if(pr.pbg) for(const id in pr.pbg){ const g=pr.pbg[id], u=g.userData; if(u.tx!=null){ g.position.x+=(u.tx-g.position.x)*kb; g.position.z+=(u.tz-g.position.z)*kb; } }
   if(pr.lg) for(const id in pr.lg){ const g=pr.lg[id]; g.rotation.y+=raw*3; g.position.y=.7+Math.sin(performance.now()*0.005+g.position.x)*0.12; }   // bob/spin loot
   updateDecals(Math.min(0.05,raw));   // animate hit/death bursts the host streamed
   const me=pr.ghosts[NET.localId]; const fx=me?me.position.x:0, fz=me?me.position.z:0;
   camera.position.lerp(new THREE.Vector3(fx,24,fz+13),0.2); camera.lookAt(fx,1.2,fz);
   if(typeof dir!=='undefined'&&dir){ dir.position.set(fx+20,42,fz+14); dir.target.position.set(fx,0,fz); dir.target.updateMatrixWorld(); }
-  renderer.setScissorTest(false); renderer.setViewport(0,0,innerWidth,innerHeight); renderer.render(scene,camera); }
+  renderer.setScissorTest(false); renderer.setViewport(0,0,innerWidth,innerHeight); renderer.render(scene,camera);
+  drawGuestRing();
+  withPlayer(0, ()=>{ try{ updateHUD(); }catch(_){} });   // full HUD (orbs, skill bar, flasks, xp, gold, buffs) from the streamed build + vitals
+}
 
 const SIM_DT=1/60; let _acc=0;   // fixed-timestep accumulator (decouples sim cadence from render fps)
 // keep the host simulating when its tab is hidden (rAF pauses there). Browsers throttle background
@@ -7619,7 +8019,7 @@ function frameBody(){
   }
   // ----- split-screen: render the shared scene once per player viewport -----
   if(camShake>0) camShake=Math.max(0,camShake-dt*4);
-  const J=joinedPlayers(); let cx=0,cz=0; for(const pl of J){ cx+=pl.player.position.x; cz+=pl.player.position.z; }
+  const J=localViewPlayers(); let cx=0,cz=0; for(const pl of J){ cx+=pl.player.position.x; cz+=pl.player.position.z; }
   cx/=J.length; cz/=J.length; dir.position.set(cx+20,42,cz+14); dir.target.position.set(cx,0,cz); dir.target.updateMatrixWorld();
   const H=innerHeight; renderer.setScissorTest(true);
   for(const pl of J){ const v=pl.viewport, cam=pl.cam; if(!v||!cam||!pl.player)continue;
@@ -7699,8 +8099,10 @@ function updatePlayerStep(dt){
   // gamepad action edges (keyboard P1 fires these from the keydown handler instead)
   if(pObj.input && pObj.input.pollActions && !G.paused){ const inp=pObj.in;
     if(padEdge(inp,'dash')) doDash();
-    if(padEdge(inp,'q')) useSlot(0); if(padEdge(inp,'e')) useSlot(1); if(padEdge(inp,'r')) useSlot(2);
-    if(padEdge(inp,'f1')) useFlask(0); if(padEdge(inp,'f2')) useFlask(1); if(padEdge(inp,'f3')) useFlask(2);
+    if(padEdge(inp,'q')) useSlot(0); if(padEdge(inp,'e')) useSlot(1); if(padEdge(inp,'r')) useSlot(2);   // gamepad (3 skills)
+    if(padEdge(inp,'f1')) useFlask(0); if(padEdge(inp,'f2')) useFlask(1); if(padEdge(inp,'f3')) useFlask(2);   // gamepad (3 flasks)
+    for(let _s=0;_s<9;_s++) if(padEdge(inp,'s'+_s)) useSlot(_s);      // online guest: full keyboard skills 1–9
+    for(let _f=0;_f<5;_f++) if(padEdge(inp,'k'+_f)) useFlask(_f);     // online guest: full keyboard flasks Q/E/R/Z/X
     if(padEdge(inp,'sig')) useSignature();
     if(padEdge(inp,'interact')) interact();
     if(padEdge(inp,'menu')){ openCoopMenu(pObj.id); inp.prev=inp.btn?Object.assign({},inp.btn):{}; return; }   // open this player's own menu
@@ -7738,16 +8140,16 @@ function updatePlayerStations(dt){
   const p=G.player.position, isP0=(_G.cur===0);
   if(G.portal){ if(isP0){ G.portal.mesh.children[0].rotation.z+=dt*1.5; G.portal.mesh.visible=G.portal.active; G.portal.mesh.children[0].material.emissiveIntensity=1.5; }
     const d=Math.hypot(p.x-G.portal.x,p.z-G.portal.z); G.nearPortal=d<3.8 && G.portal.active;
-    if(G.nearPortal){ if(!G._ph){ log(G.practice?'▣ Tap Use to leave the practice arena':G.inTown?((_G.returnFloor|0)>1?'▣ Tap Use to return to Floor '+_G.returnFloor:'▣ Tap Use to enter the Tower'):'▣ Tap Use to ascend'); G._ph=true; } } else G._ph=false; }
+    if(G.nearPortal){ if(!G._ph){ log(G.practice?'▣ Press F to leave the practice arena':G.inTown?((_G.returnFloor|0)>1?'▣ Press F to return to Floor '+_G.returnFloor:'▣ Press F to enter the Tower'):'▣ Press F to ascend'); G._ph=true; } } else G._ph=false; }
   if(G.stashStation){ if(isP0) G.stashStation.mesh.children[1].rotation.y+=dt; const d=Math.hypot(p.x-G.stashStation.x,p.z-G.stashStation.z);
     const near=d<4.2; if(isP0){ if(near && !G.nearStash && !G.inTown && $('stashPanel').classList.contains('hidden')) togglePanel('stashPanel'); if(!near && G.nearStash && !$('stashPanel').classList.contains('hidden')){ $('stashPanel').classList.add('hidden'); syncPause(); } } G.nearStash=near; } else G.nearStash=false;
   if(G.vendorStation){ if(isP0) G.vendorStation.mesh.children[1].rotation.y+=dt*1.5; const d=Math.hypot(p.x-G.vendorStation.x,p.z-G.vendorStation.z);
     const near=d<4.4; if(isP0){ if(near && !G.nearVendor && !G.inTown && $('vendorPanel').classList.contains('hidden')) togglePanel('vendorPanel'); if(!near && G.nearVendor && !$('vendorPanel').classList.contains('hidden')){ $('vendorPanel').classList.add('hidden'); syncPause(); } } G.nearVendor=near; } else G.nearVendor=false;
   if(G.scoreStation){ if(isP0) G.scoreStation.mesh.rotation.y+=dt*0.6; const d=Math.hypot(p.x-G.scoreStation.x,p.z-G.scoreStation.z); G.nearScore=d<4.4;
-    if(G.nearScore){ if(!G._sh){ log('▣ Tap Use to view your record'); G._sh=true; } } else G._sh=false; } else G.nearScore=false;
+    if(G.nearScore){ if(!G._sh){ log('▣ Press F to view your record'); G._sh=true; } } else G._sh=false; } else G.nearScore=false;
   // crafting bench (sanctuary)
   if(G.craftStation){ if(isP0) G.craftStation.mesh.children[1].rotation.y+=dt*0.9; const d=Math.hypot(p.x-G.craftStation.x,p.z-G.craftStation.z); G.nearCraft=d<4.2;
-    if(isP0){ if(G.nearCraft){ if(!_G._crh){ log('⚒ Tap Use at the bench to craft.'); _G._crh=true; } } else _G._crh=false; } } else G.nearCraft=false;
+    if(isP0){ if(G.nearCraft){ if(!_G._crh){ log('⚒ Press F at the bench to craft.'); _G._crh=true; } } else _G._crh=false; } } else G.nearCraft=false;
   // pet yard gate (sanctuary)
   if(G.yardStation){ if(isP0) G.yardStation.mesh.children[1].rotation.y+=dt*0.9; const d=Math.hypot(p.x-G.yardStation.x,p.z-G.yardStation.z); G.nearYard=d<4.2;
     if(isP0){ if(G.nearYard){ if(!_G._pyg){ log('🏡 Press F to enter the Pet Yard.'); _G._pyg=true; } } else _G._pyg=false; } } else G.nearYard=false;
@@ -7755,7 +8157,7 @@ function updatePlayerStations(dt){
   let _nc=null,_ncd=1e9;
   if(G.chests) for(const c of G.chests){ if(c.opened)continue; if(isP0 && c.lid){ c.lid.rotation.x=Math.sin(performance.now()*0.002+c.x)*0.06; } const cd=Math.hypot(p.x-c.x,p.z-c.z); if(cd<_ncd){ _ncd=cd; _nc=c; } }
   G.nearChest=(_nc && _ncd<3.0)?_nc:null;
-  if(isP0){ if(G.nearChest){ if(!_G._chh){ log('🧰 A chest! Tap Use to open it.'); _G._chh=true; } } else _G._chh=false; }
+  if(isP0){ if(G.nearChest){ if(!_G._chh){ log('🧰 A chest! Press F to open it.'); _G._chh=true; } } else _G._chh=false; }
   if(isP0 && _G.tutorial) tutorialTick(dt);
 }
 
@@ -7969,7 +8371,7 @@ function enterTutorialFloor(){
   G.belt=[makeFlask(1,'life'),makeFlask(1,'mana'),null,null,null]; G.charge=100; G.sigSlot=null; G.sigCd=0; G.swiftT=0; G.petErrand=null;
   G.floorMod=null; G.bounty=null;
   if(G.petMesh){ scene.remove(G.petMesh); G.petMesh=null; } G.pet=null; G.pets=[]; G.petMagnet=0;
-  G.run={kills:0,assists:0,healSelf:0,healOthers:0,xp:0,floorTime:0,totalTime:0,floorsCleared:0,boons:[]};
+  G.run={kills:0,assists:0,healSelf:0,healOthers:0,xp:0,floorTime:0,totalTime:0,floorsCleared:0,boons:[],destiny:null};
   G.practice=true; G.tutorial=true; G.inTown=false; G.hardcore=false; G.diff='normal'; G.seed=randi(0,9999);
   _G.players.length=1; const _p0=_G.players[0]; _p0.joined=true; _p0.color=PLAYER_COLORS[0]; _p0.input=_p0.input||makeKbmInput(); _G.cur=0; _G.splitscreen=false;   // ensure P1 has an input source so the player can actually move
   _G.asc=0; _G.ascEff=ascEffects(0);
@@ -7994,7 +8396,7 @@ function buildTutorialFloor(){
   const ring=new THREE.Mesh(new THREE.TorusGeometry(2.4,.35,12,32), new THREE.MeshStandardMaterial({color:0x56e0ff,emissive:0x56e0ff,emissiveIntensity:1.6})); ring.rotation.x=Math.PI/2; ring.position.y=2.4;
   const beam=new THREE.Mesh(new THREE.CylinderGeometry(2,2,9,24,1,true), new THREE.MeshBasicMaterial({color:0x56e0ff,transparent:true,opacity:.14,side:THREE.DoubleSide,depthWrite:false})); beam.position.y=4.5;
   pg.add(ring,beam); pg.position.set(0,0,-22); scene.add(pg); G.portal={mesh:pg,x:0,z:-22,active:true,tutorial:true};
-  $('floorTitle').textContent='TUTORIAL'; $('floorType').textContent='🎓 LEARN'; $('floorBig').innerHTML='🎓'; { const _s=$('towerSub'); if(_s)_s.textContent='TUTORIAL'; }
+  $('floorTitle').textContent='TUTORIAL'; $('floorType').textContent='🎓 LEARN'; $('floorBig').innerHTML='🎓';
   $('threatTxt').textContent='SAFE'; $('modTxt').innerHTML=''; $('bountyTxt').innerHTML=''; $('shiftTxt').textContent='';
   coach('tut_move','🎮','Move & attack','Move with <b>WASD</b>, aim with the <b>mouse</b>, hold <b>left-click</b> to fire. <b>Space</b> dashes — you are invulnerable mid-dash. Defeat the training foes ahead.');
 }
@@ -8260,9 +8662,15 @@ function updateFameBar(){
   const fc=$('fameCap'); if(fc){ fc.style.color=fr.col; fc.textContent='★ '+fr.stars+'/7 · '+fr.name+(fr.stars>=7?' · MAX':' · '+Math.round(famePct)+'%'); }
 }
 // ---- player buff/status stack: surface active timed states as a Torchlight-style icon row ----
+const ABN_LABEL={ reverseRun:{ic:'↩',nm:'Reversed Move'}, drunkShots:{ic:'🌀',nm:'Weaving Shots'}, homingHate:{ic:'🎯',nm:'Homing Shots'},
+  bouncyShots:{ic:'🪀',nm:'Bouncy Shots'}, boomerangs:{ic:'🪃',nm:'Boomerangs'}, giantBolts:{ic:'⚫',nm:'Giant Bolts'},
+  backfire:{ic:'💥',nm:'Backfire'}, splitshot:{ic:'🔱',nm:'Splitshot'}, lowHpBonus:{ic:'🩸',nm:'Desperate Power'} };
 function renderBuffs(){
   const bar=$('buffBar'); if(!bar) return;
   const list=[]; const st=fervorStacks();
+  if(G.run && G.run.destiny) list.push({id:'destiny',ic:G.run.destiny.ic,nm:G.run.destiny.nm,col:G.run.destiny.col});
+  // active ABNORMAL item effects — shown so you always know what's affecting you (and can find which gear to swap)
+  if(G.S && G.S.abn && G.S.abn.forEach){ G.S.abn.forEach(k=>{ const l=ABN_LABEL[k]; list.push({id:'abn_'+k, ic:l?l.ic:'❔', nm:l?l.nm:('Abnormal: '+k), col:'#c89bff'}); }); }
   // --- offensive / tempo ---
   if(st>0)                  list.push({id:'ramp', ic:'🔥', nm:'Rampage ×'+(1+st), t:Math.max(0,G.fervorT||0), col:'#ff9a3d', pulse:st>=4});
   if(G.swiftT>0)            list.push({id:'swift',ic:'💨', nm:'Swift',            t:G.swiftT,  col:'#8effd9'});
@@ -8333,6 +8741,7 @@ function updateHUD(){
   $('petChip').textContent = G.petErrand ? `Sell-run ${Math.ceil(G.petErrand.t)}s` : G.pet ? `${PET_FAMILIES[G.pet.family].ic} Lv ${G.pet.level}${(G.pets&&G.pets.length>1)?' ·'+G.pets.length:''}` : 'Pet Yard —';
   const bt=$('bountyTxt'); if(bt){ const b=G.bounty; bt.innerHTML = b ? `◈ ${b.nm}: ${b.failed?'<span style="color:var(--hp)">failed</span>':b.done?'<span style="color:var(--xp)">✓ done</span>':b.id==='kills'?`${b.have}/${b.need}`:b.descTxt}` : ''; }
   updateBossBar();
+  updatePartyHud();   // online: show every player's hp/mp (draggable)
 }
 // ---- boss health bar (top of screen) + off-screen roaming indicator so the player always knows a lord is out there ----
 function updateBossBar(){
@@ -8362,7 +8771,7 @@ function updateBossBar(){
 }
 
 try { init(); }
-catch(err){ $('loadErr').style.display='flex'; $('loadErr').innerHTML='⚠ Failed to start the 3D engine.<br>'+err.message+'<br><br>(Three.js loads from a CDN — needs an internet connection.)'; console.error(err); }
+catch(err){ $('loadErr').style.display='flex'; $('loadErr').innerHTML='<div class="leInner">⚠ Failed to start the 3D engine.<br>'+(err&&err.message||err)+'<br><br>Your browser couldn\'t open a WebGL context. If you\'re testing co-op with two windows on one PC, the GPU may be out of contexts — close other 3D/game tabs and reload. (Three.js also loads from a CDN, so an internet connection is required.)</div>'; console.error(err); }
 </script>
 </body>
 </html>
