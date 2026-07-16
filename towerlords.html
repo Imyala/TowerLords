@@ -857,11 +857,47 @@
   .draft-card .dc-pick{margin-top:auto;padding-top:14px;font-size:10px;letter-spacing:3px;color:var(--cc,#56e0ff);opacity:.6;text-transform:uppercase;}
   .draft-card:hover .dc-pick{opacity:1;}
   .draft-card.warnly{--cc:#ff6b8a;}
+  .menuShell{display:flex;align-items:flex-start;justify-content:center;gap:26px;flex-wrap:wrap;width:min(980px,96vw);}
   .menuCol{display:flex;flex-direction:column;align-items:center;gap:14px;}
+  .menuPanel{width:340px;max-width:92vw;padding:18px 18px 16px;border-radius:16px;
+    background:linear-gradient(180deg,rgba(15,20,36,.9),rgba(8,11,22,.92));border:1px solid rgba(143,230,255,.16);
+    box-shadow:0 12px 38px rgba(0,0,0,.45),0 0 26px rgba(86,224,255,.08);text-align:left;}
+  .menuPanelHd{font-size:11px;letter-spacing:3.5px;text-transform:uppercase;color:#8fe6ff;opacity:.9;margin-bottom:13px;}
+  .menuStatGrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;}
+  .menuStat{padding:11px 12px 10px;border-radius:12px;background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.08);}
+  .menuStat b{display:block;font-size:15px;color:#fff;line-height:1.2;}
+  .menuStat span{display:block;font-size:10px;letter-spacing:1.2px;text-transform:uppercase;opacity:.55;margin-top:4px;}
+  .menuFeature{display:flex;align-items:flex-start;gap:10px;padding:10px 0;border-top:1px solid rgba(255,255,255,.08);}
+  .menuFeature:first-of-type{border-top:none;padding-top:0;}
+  .menuFeature .mfIc{font-size:18px;line-height:1;flex:none;filter:drop-shadow(0 0 8px rgba(86,224,255,.22));}
+  .menuFeature .mfT{font-size:12.5px;font-weight:bold;color:#f3f7ff;letter-spacing:.25px;}
+  .menuFeature .mfD{font-size:11px;line-height:1.45;opacity:.66;margin-top:3px;}
   .btn.ghost{border-color:rgba(255,255,255,.25);color:var(--ink);background:rgba(255,255,255,.04);font-size:15px;padding:11px 30px;width:280px;}
   .btn.ghost:hover{background:rgba(255,255,255,.12);color:#fff;box-shadow:none;transform:translateY(-2px);}
   .btn.small{font-size:12px;padding:8px 22px;width:auto;letter-spacing:2px;}
   #menuClimb{width:280px;border-color:#8effd9;box-shadow:0 0 20px #8effd944;font-weight:800;}
+  #menuDaily{width:280px;border-color:#ffd24d;color:#ffe6a1;background:linear-gradient(180deg,rgba(60,43,12,.9),rgba(30,21,6,.92));box-shadow:0 0 20px rgba(255,210,77,.18);}
+  #menuDaily:hover{background:linear-gradient(180deg,#ffd24d,#ffb938);color:#1d1506;box-shadow:0 0 28px rgba(255,210,77,.42);}
+  #destinyWrap{width:min(760px,94vw);margin:2px auto 0;padding:18px 18px 16px;border-radius:16px;
+    background:linear-gradient(180deg,rgba(18,14,30,.82),rgba(10,11,22,.92));border:1px solid rgba(176,107,255,.2);
+    box-shadow:0 10px 34px rgba(0,0,0,.4),0 0 26px rgba(176,107,255,.12);}
+  .destinyHd{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;flex-wrap:wrap;margin-bottom:12px;text-align:left;}
+  .destinyHd b{display:block;font-size:16px;letter-spacing:1.2px;}
+  .destinyHd span{display:block;font-size:11px;opacity:.66;line-height:1.45;margin-top:4px;max-width:420px;}
+  #destinyCards{display:flex;gap:14px;justify-content:center;flex-wrap:wrap;}
+  .destCard{width:214px;max-width:100%;padding:16px 15px 14px;border-radius:14px;cursor:pointer;text-align:left;
+    background:linear-gradient(180deg,rgba(21,25,42,.95),rgba(9,11,21,.96));border:1px solid rgba(255,255,255,.08);
+    box-shadow:0 8px 26px rgba(0,0,0,.36);transition:transform .14s,box-shadow .14s,border-color .14s;}
+  .destCard:hover{transform:translateY(-4px);border-color:color-mix(in srgb,var(--dc,#fff) 70%,transparent);box-shadow:0 12px 30px rgba(0,0,0,.48),0 0 22px color-mix(in srgb,var(--dc,#fff) 22%,transparent);}
+  .destCard.sel{border-color:var(--dc,#fff);box-shadow:0 0 0 1px color-mix(in srgb,var(--dc,#fff) 35%,transparent),0 12px 34px rgba(0,0,0,.55),0 0 24px color-mix(in srgb,var(--dc,#fff) 28%,transparent);}
+  .destTop{display:flex;align-items:center;gap:10px;margin-bottom:8px;}
+  .destIc{font-size:28px;line-height:1;filter:drop-shadow(0 0 10px color-mix(in srgb,var(--dc,#fff) 46%,transparent));}
+  .destNm{font-size:16px;font-weight:bold;color:#fff;line-height:1.15;}
+  .destTag{font-size:9.5px;letter-spacing:2px;text-transform:uppercase;color:var(--dc,#fff);opacity:.9;margin-top:2px;}
+  .destDs{font-size:12px;line-height:1.5;color:#dbe4f6;min-height:72px;}
+  .destPick{margin-top:12px;font-size:10px;letter-spacing:2.6px;text-transform:uppercase;color:var(--dc,#fff);opacity:.62;}
+  .destCard.sel .destPick{opacity:1;}
+  #destinyHint{margin-top:12px;font-size:10.5px;letter-spacing:1.1px;opacity:.55;line-height:1.5;}
   /* tutorial */
   #tutCard{width:560px;max-width:88vw;background:rgba(10,14,26,.92);border:1px solid rgba(86,224,255,.22);border-radius:14px;padding:22px 26px;text-align:left;min-height:300px;}
   #tutCard .tut-ic{font-size:34px;}
@@ -900,7 +936,11 @@
     .overlay{padding:16px 12px;}                 /* keep the title & cards off the screen edges */
     h1{font-size:clamp(22px,7vw,42px);letter-spacing:clamp(1px,.7vw,5px);}   /* TOWERLORDS fits on one line */
     .tag{font-size:clamp(10px,2.6vw,12px);letter-spacing:clamp(1px,.6vw,3px);margin:8px 0 16px;}
+    .menuShell{gap:14px;}
     .menuCol{gap:9px;}
+    .menuPanel{padding:14px 14px 12px;}
+    .menuStatGrid{gap:8px;}
+    .menuStat{padding:9px 10px;}
     .btn{font-size:14px;letter-spacing:1.2px;padding:11px 16px;border-radius:9px;}
     .btn.ghost{font-size:12.5px;padding:9px 14px;}
     /* one uniform, comfortable width for every menu button */
@@ -909,6 +949,9 @@
     .modeSel{gap:10px;margin:2px 0 16px;}
     .modeBtn{width:min(340px,100%);padding:11px 14px;}
     .modeBtn b{font-size:15px;}
+    #destinyWrap{padding:14px 13px 12px;}
+    .destCard{width:min(340px,100%);padding:14px 13px 12px;}
+    .destDs{min-height:0;}
     /* in-game HUD: compact the left nav so it doesn't eat the screen / block the stick */
     #stats{width:158px;padding:6px;}
     .mItem{font-size:11.5px;padding:5px 7px;gap:6px;}
@@ -1294,16 +1337,24 @@
     <h1>TOWERLORDS</h1>
     <div class="tag">ASCEND · BUILD · RAMPAGE · KNOW WHEN TO RETREAT</div>
     <div id="menuRank" class="menuRank hidden"></div>
-    <div id="menuMain" class="menuCol">
-      <button class="btn hidden" id="menuContinue" style="background:linear-gradient(180deg,#1a3a2e,#0f241c);border-color:#3ad18a;color:#bfffdd;box-shadow:0 0 22px rgba(58,209,138,.25)">▶ Continue</button>
-      <button class="btn" id="menuClimb">⛰ Climb the Tower</button>
-      <button class="btn" id="menuBoard">🏆 Leaderboard</button>
-      <button class="btn" id="menuCoop">🎮 Local Co-op</button>
-      <button class="btn" id="menuOnline">🌐 Online Co-op</button>
-      <button class="btn ghost" id="menuTutorial">📖 Tutorial</button>
-      <button class="btn ghost" id="menuSettings">⚙ Settings</button>
-      <button class="btn ghost" id="menuDeaths">💀 Death Log</button>
-      <button class="btn ghost" id="menuLegacy">⚜ Legacy</button>
+    <div id="menuShell" class="menuShell">
+      <div id="menuMain" class="menuCol">
+        <button class="btn hidden" id="menuContinue" style="background:linear-gradient(180deg,#1a3a2e,#0f241c);border-color:#3ad18a;color:#bfffdd;box-shadow:0 0 22px rgba(58,209,138,.25)">▶ Continue</button>
+        <button class="btn" id="menuClimb">⛰ Climb the Tower</button>
+        <button class="btn" id="menuDaily" aria-label="Start the Daily Climb">🌅 Daily Climb</button>
+        <button class="btn" id="menuBoard">🏆 Leaderboard</button>
+        <button class="btn" id="menuCoop">🎮 Local Co-op</button>
+        <button class="btn" id="menuOnline">🌐 Online Co-op</button>
+        <button class="btn ghost" id="menuTutorial">📖 Tutorial</button>
+        <button class="btn ghost" id="menuSettings">⚙ Settings</button>
+        <button class="btn ghost" id="menuDeaths">💀 Death Log</button>
+        <button class="btn ghost" id="menuLegacy">⚜ Legacy</button>
+      </div>
+      <div id="menuPanel" class="menuPanel">
+        <div class="menuPanelHd">Tower Summary</div>
+        <div id="menuStats" class="menuStatGrid"></div>
+        <div id="menuFeatures"></div>
+      </div>
     </div>
     <div id="climbScreen" class="menuCol hidden">
       <div class="modeSel">
@@ -1316,6 +1367,14 @@
         <div class="ascFame" id="ascFame"></div>
         <div class="ascList" id="ascList"></div>
         <div class="ascHint" id="ascHint"></div>
+      </div>
+      <div id="destinyWrap">
+        <div class="destinyHd">
+          <div><b>✦ Choose a Tower Destiny</b><span>Each climb now starts with a permanent rule-bending bonus. Pick the vibe you want, then stack boss blessings on top of it.</span></div>
+          <button class="btn ghost small" id="destinyReroll">↻ New Draft</button>
+        </div>
+        <div id="destinyCards"></div>
+        <div id="destinyHint"></div>
       </div>
       <button class="btn" id="startBtn">▶ ENTER THE TOWER</button>
       <button class="btn ghost small" id="climbBack">← Back to menu</button>
@@ -1464,6 +1523,10 @@ const rand=(a,b)=>a+_rngFn()*(b-a);
 const randi=(a,b)=>Math.floor(rand(a,b+1));
 const clamp=(v,a,b)=>v<a?a:v>b?b:v;
 const pick=arr=>arr[Math.floor(_rngFn()*arr.length)];
+const _escDiv=document.createElement('div');
+function escHtml(v){ _escDiv.textContent=String(v); return _escDiv.innerHTML; }
+function safeCssColor(v, fallback){ return /^#[0-9a-f]{3,8}$/i.test(v||'') ? v : (fallback||'#fff'); }
+function shuffleInPlace(arr){ for(let i=arr.length-1;i>0;i--){ const j=randi(0,i), tmp=arr[i]; arr[i]=arr[j]; arr[j]=tmp; } return arr; }
 
 let renderer, scene, camera, clock, hemi, dir;
 
@@ -1987,7 +2050,7 @@ function resumeSession(){
   p.stash=s.stash||[]; p.stashStrikes=s.stashStrikes||0;
   _G.fusedRecipes=s.fusedRecipes||{}; if(s.fuseSeq) _fuseSeq=Math.max(_fuseSeq, s.fuseSeq); rebuildFusedSkills();   // rebuild fused active skills
   p.greed=s.greed||1; p.charge=s.charge||0;
-  p.run=s.run||{kills:0,assists:0,healSelf:0,healOthers:0,xp:0,floorTime:0,totalTime:0,floorsCleared:0,boons:[]};
+  p.run=s.run||{kills:0,assists:0,healSelf:0,healOthers:0,xp:0,floorTime:0,totalTime:0,floorsCleared:0,boons:[],destiny:null};
   if(!p.run.boons) p.run.boons=[];
   p.dead=false; p.downed=false; p.downT=0; p.selGem=null; p.petErrand=null; p.invCap=invCapBase();
   G.floor=s.floor||1;
@@ -3233,6 +3296,7 @@ $('modeHard').onclick=()=>setDiff('hard');
 loadSettings(); setupTouchControls(); applyTouchMode();   // mobile: build on-screen sticks & show them on touchscreens
 // ---- ascension selector ----
 let selAsc=0;
+let selDestinyId='', menuDestinyPicks=[];
 function renderAscSel(){
   const max=META.ascMax||0; selAsc=clamp(selAsc,0,max);
   $('ascTitle').textContent='⛧ ASCENSION '+selAsc;
@@ -3246,6 +3310,40 @@ function renderAscSel(){
 }
 $('ascUp').onclick=()=>{ if(selAsc<(META.ascMax||0)){ selAsc++; renderAscSel(); if(sfx.tick)sfx.tick(); } };
 $('ascDown').onclick=()=>{ if(selAsc>0){ selAsc--; renderAscSel(); if(sfx.tick)sfx.tick(); } };
+function refreshMenuSummary(){
+  const stats=$('menuStats'), feats=$('menuFeatures'); if(!stats||!feats) return;
+  const best=loadBest(), session=loadSession(), daily=dailyState(), rank=fameRank(META.fame);
+  stats.innerHTML = [
+    `<div class="menuStat"><b>${best?('Floor '+best.floor):'No best yet'}</b><span>Best climb</span></div>`,
+    `<div class="menuStat"><b>${session&&session.level?('Floor '+session.floor):'Fresh start'}</b><span>Continue</span></div>`,
+    `<div class="menuStat"><b>${daily?('Floor '+(daily.floor||0)):'Unplayed'}</b><span>Daily climb</span></div>`,
+    `<div class="menuStat"><b>${rank.name}</b><span>${META.fame||0} fame</span></div>`
+  ].join('');
+  feats.innerHTML = [
+    {ic:'🌅',t:'Daily climb is now on the front door',d:'One shared seeded tower every UTC day — perfect for fast score-chasing runs.'},
+    {ic:'✦',t:'Every climb starts with a Tower Destiny',d:'Pick a permanent run-defining bonus before you enter so each build starts with a distinct identity.'},
+    {ic:'🎮',t:'Co-op stays one tap away',d:'Local and online lobbies remain directly on the menu for quick drop-in sessions.'}
+  ].map(f=>`<div class="menuFeature"><div class="mfIc">${f.ic}</div><div><div class="mfT">${f.t}</div><div class="mfD">${f.d}</div></div></div>`).join('');
+}
+function clearDestinyDraft(){ selDestinyId=''; menuDestinyPicks=[]; }
+function chooseDestiny(id){ selDestinyId=id||''; drawDestinyDraft(false); if(sfx.tick)sfx.tick(); }
+function drawDestinyDraft(resetPick){
+  if(!menuDestinyPicks.length){
+    menuDestinyPicks=shuffleInPlace(DESTINIES.slice()).slice(0,3);
+  }
+  const hasSelectedDestiny=menuDestinyPicks.some(d=>d.id===selDestinyId);
+  if(resetPick || !hasSelectedDestiny) selDestinyId=(menuDestinyPicks[0]&&menuDestinyPicks[0].id)||'';
+  const wrap=$('destinyCards'), cur=menuDestinyPicks.find(d=>d.id===selDestinyId);
+  // `d.ds` is authored HTML from the local DESTINIES table so the short perk copy can keep deliberate <b> emphasis.
+  if(wrap) wrap.innerHTML=menuDestinyPicks.map(d=>`<div class="destCard${d.id===selDestinyId?' sel':''}" data-dest="${d.id}" style="--dc:${safeCssColor(d.col,'#fff')}">
+      <div class="destTop"><div class="destIc">${escHtml(d.ic)}</div><div><div class="destNm">${escHtml(d.nm)}</div><div class="destTag">${escHtml(d.tag)}</div></div></div>
+      <div class="destDs">${d.ds}</div><div class="destPick">${d.id===selDestinyId?'Selected for this climb':'Click to claim this destiny'}</div></div>`).join('');
+  if(wrap) [...wrap.querySelectorAll('.destCard')].forEach(el=>el.onclick=()=>chooseDestiny(el.dataset.dest||''));
+  const hint=$('destinyHint');
+  if(hint && cur) hint.innerHTML=`<span style="color:${safeCssColor(cur.col,'#fff')}">${escHtml(cur.ic)} ${escHtml(cur.nm)}</span> is locked in when you start. It lasts the whole climb, stacks with boss blessings, and makes each run feel different immediately.`;
+}
+function rerollDestinyDraft(){ clearDestinyDraft(); drawDestinyDraft(true); if(sfx.evolve)sfx.evolve(); }
+$('destinyReroll').onclick=rerollDestinyDraft;
 $('reviveBtn').onclick=()=>{ $('death').classList.add('hidden'); if(G.permadead){ G.permadead=false; clearSession(); $('hud').classList.add('hidden'); showMenu(); } else { returnToTown(); } };
 $('victClimbBtn').onclick=()=>{ $('victory').classList.add('hidden'); G.victoryOpen=false; _G.running=true; _G.paused=false; clock.getDelta();
   banner('⛰ ENDLESS ASCENT','the portal is open — the tower rebuilds above you'); log('⛰ Take the portal when ready — NG+'+(ngLevel(G.floor)+1)+' awaits above.'); };
@@ -3254,7 +3352,7 @@ $('shareDeathBtn').onclick=()=>shareCard('death');
 $('shareVictBtn').onclick=()=>shareCard('victory');
 // ---- main menu navigation ----
 function showMenu(){ try{ closeGameModal(); }catch(_){} _G.legacyOpen=false; ['hud','tutorial','deathlog','death','legacyScreen'].forEach(id=>$(id).classList.add('hidden')); PANELS.forEach(p=>$(p).classList.add('hidden'));
-  $('start').classList.remove('hidden'); $('menuMain').classList.remove('hidden'); $('climbScreen').classList.add('hidden'); $('coopLobby').classList.add('hidden'); $('onlineLobby').classList.add('hidden'); coopLobbyOpen=false; G.running=false; G.practice=false; G.tutorial=false; loadMeta(); refreshDailyBtn(); refreshContinueBtn(); refreshMenuRank(); syncPause(); }
+  $('start').classList.remove('hidden'); $('menuShell').classList.remove('hidden'); $('climbScreen').classList.add('hidden'); $('coopLobby').classList.add('hidden'); $('onlineLobby').classList.add('hidden'); coopLobbyOpen=false; G.running=false; G.practice=false; G.tutorial=false; loadMeta(); refreshDailyBtn(); refreshContinueBtn(); refreshMenuRank(); refreshMenuSummary(); syncPause(); }
 // ESC while playing (no panels open) → confirm a return to the main menu, auto-saving first
 function promptExitToMenu(){ if(!G.running) return;
   gameConfirm('Return to the main menu?', 'Your progress is auto-saved — pick <b class="gm-hl">▶ Continue</b> on the menu to resume this run.', ()=>{
@@ -3263,9 +3361,9 @@ function promptExitToMenu(){ if(!G.running) return;
 function refreshContinueBtn(){ const c=$('menuContinue'); if(!c) return; const s=loadSession();
   if(s && s.level){ c.classList.remove('hidden'); c.innerHTML='▶ Continue — '+(s.inTown?'Sanctuary':'Floor '+s.floor)+' · Lv '+s.level+(s.evolves?' ✦×'+s.evolves:''); }
   else c.classList.add('hidden'); }
-function showClimb(){ ['tutorial','deathlog'].forEach(id=>$(id).classList.add('hidden')); $('start').classList.remove('hidden'); $('menuMain').classList.add('hidden'); $('climbScreen').classList.remove('hidden'); $('coopLobby').classList.add('hidden'); coopLobbyOpen=false; loadMeta(); renderAscSel(); }
+function showClimb(){ ['tutorial','deathlog'].forEach(id=>$(id).classList.add('hidden')); $('start').classList.remove('hidden'); $('menuShell').classList.add('hidden'); $('climbScreen').classList.remove('hidden'); $('coopLobby').classList.add('hidden'); $('onlineLobby').classList.add('hidden'); coopLobbyOpen=false; loadMeta(); renderAscSel(); rerollDestinyDraft(); }
 $('menuClimb').onclick=showClimb;
-$('menuContinue').onclick=()=>{ if(!resumeSession()) refreshContinueBtn(); };
+$('menuContinue').onclick=tryResumeSession;
 // ---- DAILY CLIMB: same seeded tower for everyone today, one scored attempt, level playing rules ----
 function refreshDailyBtn(){ const b=$('menuDaily'); if(!b)return; const d=dailyState();
   b.innerHTML = d ? ('🌅 Daily Climb · <span style="color:var(--gold)">scored — floor '+(d.floor||0)+' · '+(d.kills||0)+' kills</span>')
@@ -3276,10 +3374,11 @@ function refreshDailyBtn(){ const b=$('menuDaily'); if(!b)return; const d=dailyS
 function dailyScoreTick(){ if(!G.dailyRun)return;
   const rec={date:dailyKey(), done:true, floor:G.floor, kills:G.run.kills||0, score:runScore({floor:G.floor,kills:G.run.kills||0,time:G.run.totalTime||0})};
   const cur=dailyState(); META.daily=(cur&&(cur.score||0)>rec.score)?cur:rec; saveMeta(); }
-loadMeta(); refreshDailyBtn(); refreshContinueBtn(); refreshMenuRank();   // reflect today's daily state + any saved climb on the menu at boot
+loadMeta(); refreshDailyBtn(); refreshContinueBtn(); refreshMenuRank(); refreshMenuSummary();   // reflect today's daily state + any saved climb on the menu at boot
 { const _md=$('menuDaily'); if(_md) _md.onclick=()=>{
   loadMeta(); const d=dailyState();
   if(d&&d.done){ log('🌅 Today’s Daily is scored — a new tower rises at midnight UTC.'); return; }
+  clearDestinyDraft();   // daily climbs stay destiny-free so everyone races the same ruleset
   selAsc=0; G.hardcore=false; G.diff='normal';             // level playing field: no ascension mods, standard difficulty
   startGame();
   G.seed=dailySeedInt(); G.dailyRun=true; // startGame rolled a random seed — the daily overrides it
@@ -3287,10 +3386,11 @@ loadMeta(); refreshDailyBtn(); refreshContinueBtn(); refreshMenuRank();   // ref
   log('🌅 DAILY CLIMB: everyone gets this exact tower today. Your attempt is scored when it ends — climb far, kill lots, die proud.');
 }; }
 $('climbBack').onclick=showMenu;
+function tryResumeSession(){ if(!resumeSession()) refreshContinueBtn(); }
 // ---- local co-op lobby: claim slots with controllers, then start together ----
 let coopLobbyOpen=false, lobbyPads=[], lobbyPrev={}, lobbyBots=0;
 function showCoopLobby(){ ['tutorial','deathlog'].forEach(id=>$(id).classList.add('hidden')); $('start').classList.remove('hidden');
-  $('menuMain').classList.add('hidden'); $('climbScreen').classList.add('hidden'); $('coopLobby').classList.remove('hidden');
+  $('menuShell').classList.add('hidden'); $('climbScreen').classList.add('hidden'); $('coopLobby').classList.remove('hidden'); $('onlineLobby').classList.add('hidden');
   lobbyPads=[]; lobbyPrev={}; lobbyBots=0; coopLobbyOpen=true; G.hardcore=false; G.diff='normal';
   ['Casual','Normal','Hard'].forEach(k=>{ const el=$('coMode'+k); if(el) el.classList.toggle('sel', k==='Normal'); }); renderCoopLobby(); }
 function renderCoopLobby(){ const host=$('coopSlots'); if(!host) return; host.innerHTML='';
@@ -3324,7 +3424,7 @@ $('coopBack').onclick=showMenu;
 $('coopStartBtn').onclick=startCoop;
 // ---- online co-op lobby (room codes via PeerJS broker; manual-paste WebRTC fallback) ----
 function showOnlineLobby(){ ['tutorial','deathlog'].forEach(id=>$(id).classList.add('hidden')); $('start').classList.remove('hidden');
-  $('menuMain').classList.add('hidden'); $('climbScreen').classList.add('hidden'); $('coopLobby').classList.add('hidden'); $('onlineLobby').classList.remove('hidden');
+  $('menuShell').classList.add('hidden'); $('climbScreen').classList.add('hidden'); $('coopLobby').classList.add('hidden'); $('onlineLobby').classList.remove('hidden');
   $('onlineChoose').classList.remove('hidden'); $('onlineHost').classList.add('hidden'); $('onlineJoin').classList.add('hidden'); }
 function onlineToChoose(){ $('onlineChoose').classList.remove('hidden'); $('onlineHost').classList.add('hidden'); $('onlineJoin').classList.add('hidden'); }
 $('menuOnline').onclick=showOnlineLobby;
@@ -3613,8 +3713,11 @@ function recompute(){
       if(g.element){ if(sk==='weapon') elem=g.element; else if(elem==='phys') elem=g.element; }
       ailBonus += (g.ailChance||0); }
   }
-  // boss-reward blessings (run-scoped — persist across gear & skill changes for the whole climb)
-  if(G.run && G.run.boons) for(const b of G.run.boons){
+  const runBlessingSources=[];
+  if(G.run && G.run.destiny) runBlessingSources.push(G.run.destiny);
+  if(G.run && G.run.boons) runBlessingSources.push(...G.run.boons);
+  // boss-reward blessings + start-of-run destiny (run-scoped — persist across gear & skill changes for the whole climb)
+  for(const b of runBlessingSources){
     if(b.gives) flags[b.gives]=true;
     if(b.special) special[b.special]=true;
     if(b.eff) for(const k in b.eff) addMod(k, b.eff[k]);
@@ -3678,6 +3781,8 @@ function recompute(){
   S.procs={};
   for(const id in G.alloc){ const t=TALENTMAP[id], rank=G.alloc[id]||0; if(rank>0 && t&&t.procs) for(const pr of t.procs){
     (S.procs[pr.on]||(S.procs[pr.on]=[])).push({type:pr.type, chance:Math.min(1,(pr.chance||1)*rank), amt:pr.amt||0, dur:pr.dur||0, r:pr.r||6}); } }
+  for(const b of runBlessingSources){ const plist=b&&b.procs ? b.procs : (b&&b.proc ? [b.proc] : []); for(const pr of plist){
+    (S.procs[pr.on]||(S.procs[pr.on]=[])).push({type:pr.type, chance:Math.min(1,pr.chance||1), amt:pr.amt||0, dur:pr.dur||0, r:pr.r||6}); } }
   // ascension "Withered": cut all healing / regen / leech
   { const hm=ascEff().healMul; if(hm!==1){ S.lifeRegen*=hm; S.manaRegen*=hm; S.lifesteal*=hm; S.lifeOnHit*=hm; S.lifeOnKill*=hm; } }
   // ---- enemy ADAPTATION: read the player's dominant specialisation so foes can counter it (tanks get stun-locked, speedsters slowed, healers mortally wounded, etc.) ----
@@ -5201,6 +5306,15 @@ const BOONS=[
  {id:'greed',      nm:'Greed Incarnate',ic:'💰',tag:'Fortune',col:'#ffd24d',eff:{goldPct:70,xpPct:35,dmgPct:5},  ds:'<b>+70%</b> gold and <b>+35%</b> XP. Spoils of the bold.'},
  {id:'momentum',   nm:'Momentum',      ic:'💉',tag:'Mobility',col:'#8effd9',eff:{dashCdrPct:38,asPct:8},         ds:'<b>38%</b> faster dash recharge. <b>+8%</b> attack speed.'},
 ];
+const DESTINIES=[
+ {id:'stormchaser', nm:'Stormchaser', ic:'⛈️', tag:'Tempo', col:'#7fd0ff', eff:{movePct:16,crit:6,dashCdrPct:14}, procs:[{on:'dash',chance:1,type:'haste',dur:2.4},{on:'dash',chance:0.65,type:'nova',amt:1.15,r:6}], ds:'Dashes kick off speed bursts and shockwaves. <b>+16%</b> move speed, <b>+6%</b> crit, much faster dash cycling.'},
+ {id:'emberwake', nm:'Emberwake', ic:'🔥', tag:'Aggro', col:'#ff9a4d', eff:{dmgPct:18,pierce:1,lifePct:-10}, procs:[{on:'kill',chance:0.45,type:'ignite'},{on:'crit',chance:0.2,type:'fervor',amt:12}], ds:'Go all-in on offense: burning kill chains, more pierce, heavier crit-fueled rampage — but a smaller life pool.'},
+ {id:'spellbound', nm:'Spellbound', ic:'✨', tag:'Arcane', col:'#b896ff', eff:{skillDmgPct:22,cdrPct:16,manaPct:18}, procs:[{on:'cast',chance:0.26,type:'nova',amt:1.3,r:7},{on:'cast',chance:0.26,type:'mana',amt:0.06}], ds:'Turn every cast into a spectacle. Stronger spells, faster cooldowns, extra mana, and occasional echo novas.'},
+ {id:'goldenrush', nm:'Golden Rush', ic:'💰', tag:'Fortune', col:'#ffd24d', eff:{goldPct:70,xpPct:32,proj:1,armor:-18}, procs:[{on:'kill',chance:0.28,type:'haste',dur:1.5}], ds:'Greedy runs explode early: more gold, more XP, one extra projectile, and quick bursts after kills — at the cost of armour.'},
+ {id:'ironheart', nm:'Ironheart', ic:'🛡️', tag:'Survival', col:'#8aa0c0', eff:{lifePct:18,armor:34,lifeOnKill:10}, procs:[{on:'hurt',chance:0.22,type:'shield',dur:0.95},{on:'hurt',chance:0.14,type:'heal',amt:0.08}], ds:'Anchor your climb with huge survivability. Thick armour, bonus life, healing on kills, and emergency guards when you get clipped.'},
+ {id:'nightfang', nm:'Nightfang', ic:'🌒', tag:'Predator', col:'#8effd9', eff:{crit:8,critMultPct:30,asPct:10}, procs:[{on:'crit',chance:0.28,type:'fervor',amt:14},{on:'kill',chance:0.3,type:'empower',dur:2.6}], ds:'Play for execution. Big crit stats, faster attacks, rampage spikes on crit, and kill chains that supercharge your next casts.'},
+];
+function destinyById(id){ return DESTINIES.find(d=>d.id===id)||null; }
 function offerBoonDraft(){
   if(_G.draftOpen || !_G.running) return;
   const owned=new Set((G.run.boons||[]).map(b=>b.id));
@@ -6886,20 +7000,24 @@ function buildIdentity(){
   if(bn.has('glasscannon')) tags.unshift('Glass Cannon');
   else if(bn.has('manabulwark')) tags.unshift('Mana Shield');
   else if(bn.has('twincast')) tags.unshift('Twin Cast');
+  if(G.run && G.run.destiny) tags.unshift(G.run.destiny.tag);
   const tagStr=tags.slice(0,3).join(' · ');
   return `${elIc} ${elN} ${wpn}${tagStr?' · '+tagStr:''}`;
 }
 function runWrapHTML(){
-  const r=G.run, boons=r.boons||[], asc=(_G.asc||0);
+  const r=G.run, boons=r.boons||[], asc=(_G.asc||0), destiny=r.destiny||null;
   const stat=(ic,v,l)=>`<div class="wrapStat"><span class="wsi">${ic}</span><div><div class="wsv">${v}</div><div class="wsl">${l}</div></div></div>`;
-  const boonChips = boons.length ? `<div class="wrapBoons">${boons.map(b=>`<span class="wrapBoon"><span class="wbi">${b.ic}</span>${b.nm}</span>`).join('')}</div>` : '';
+  const chips=[];
+  if(destiny){ const dc=safeCssColor(destiny.col,'#fff'); chips.push(`<span class="wrapBoon" style="border-color:${dc};color:#fff;background:color-mix(in srgb,${dc} 24%,rgba(176,107,255,.08))"><span class="wbi">${escHtml(destiny.ic)}</span>${escHtml(destiny.nm)}</span>`); }
+  for(const b of boons) chips.push(`<span class="wrapBoon"><span class="wbi">${b.ic}</span>${b.nm}</span>`);
+  const boonChips = chips.length ? `<div class="wrapBoons">${chips.join('')}</div>` : '';
   const cells=[ stat('⛰','Floor '+G.floor+(asc>0?' · ⛧'+asc:''),'Reached'),
                 stat('💥',(r.bigHit||0).toLocaleString(),'Biggest hit'),
                 stat('⚔',(r.kills||0).toLocaleString(),'Kills'),
                 stat('💰','×'+(r.greedPeak||1).toFixed(1),'Peak greed') ];
   return `<div class="wrapCard"><div class="wrapEye">⛰ The Climb</div>
     <div class="wrapId">${buildIdentity()}</div>
-    <div class="wrapSub">${boons.length?(boons.length+' blessing'+(boons.length>1?'s':'')+' claimed'):'No blessings claimed'} · ${fmtTime(r.totalTime)} climbed</div>
+    <div class="wrapSub">${destiny?('Destiny chosen · '):''}${boons.length?(boons.length+' blessing'+(boons.length>1?'s':'')+' claimed'):'No blessings claimed yet'} · ${fmtTime(r.totalTime)} climbed</div>
     ${boonChips}<div class="wrapGrid">${cells.join('')}</div></div>`;
 }
 function renderSettings(){
@@ -7030,7 +7148,7 @@ function enterPractice(){
   G.belt=[makeFlask(1,'life'),makeFlask(1,'mana'),makeFlask(1,'swift'),null,null]; G.charge=100; G.sigSlot=makeSkillGem(1,'gMeteor'); G.sigCd=0; G.swiftT=0; G.petErrand=null;
   G.floorMod=null; G.bounty=null;
   if(G.petMesh){ scene.remove(G.petMesh); G.petMesh=null; } G.pet=null; G.pets=[]; G.petMagnet=0;
-  G.run={kills:0,assists:0,healSelf:0,healOthers:0,xp:0,floorTime:0,totalTime:0,floorsCleared:0,boons:[]};
+  G.run={kills:0,assists:0,healSelf:0,healOthers:0,xp:0,floorTime:0,totalTime:0,floorsCleared:0,boons:[],destiny:null};
   G.practice=true; G.inTown=false; G.hardcore=false; G.diff='normal'; G.seed=randi(0,9999);
   _G.players.length=1; const _p0=_G.players[0]; _p0.joined=true; _p0.color=PLAYER_COLORS[0]; _p0.input=_p0.input||makeKbmInput(); _G.cur=0; _G.splitscreen=false;   // ensure P1 has an input source so the player can actually move
   _G.asc=0; _G.ascEff=ascEffects(0);   // the practice arena is never ascended
@@ -7213,7 +7331,7 @@ function initPlayerChar(){
   if(G.petMesh){ scene.remove(G.petMesh); G.petMesh=null; } G.pet=null; G.pets=[]; G.petMagnet=0;
   // pets are account-bound: a fresh character inherits every companion you own (permanent across deaths)
   if(META.savedPets && META.savedPets.pets && META.savedPets.pets.length){ G.pets=META.savedPets.pets.map(x=>Object.assign({},x)); const _pi=(META.savedPets.idx!=null?META.savedPets.idx:-1); G.pet=(_pi>=0 && G.pets[_pi])?G.pets[_pi]:null; }
-  G.run={kills:0,assists:0,healSelf:0,healOthers:0,xp:0,floorTime:0,totalTime:0,floorsCleared:0,boons:[]};
+  G.run={kills:0,assists:0,healSelf:0,healOthers:0,xp:0,floorTime:0,totalTime:0,floorsCleared:0,boons:[],destiny:null};
   recompute(); G.hp=G.maxhp; G.mana=G.maxmana;
   if(!G.player){ G.player=createPlayer(); tintPlayer(G.player, G.color); }
 }
@@ -7245,6 +7363,9 @@ function startGameConfirmed(after){
   _G.players.length=1; const p0=_G.players[0]; p0.joined=true; p0.color=PLAYER_COLORS[0]; p0.input=p0.input||makeKbmInput();
   _G.cur=0; _G.splitscreen=false; $('hud').classList.remove('cohide');
   initPlayerChar();
+  const chosenDestiny=(!G.practice && !G.tutorial && selDestinyId)?destinyById(selDestinyId):null;
+  if(chosenDestiny) G.run.destiny=(typeof structuredClone==='function') ? structuredClone(chosenDestiny) : { ...chosenDestiny, eff:{...(chosenDestiny.eff||{})}, procs:(chosenDestiny.procs||[]).map(p=>({ ...p })) };
+  recompute(); G.hp=G.maxhp; G.mana=G.maxmana;
   initAudio(); startAmbient();
   // FIRST-EVER RUN: skip the hub entirely — straight into Act I combat within seconds.
   // The sanctuary (stash/vendor/tree shopping) unlocks naturally on your first return.
@@ -7254,10 +7375,12 @@ function startGameConfirmed(after){
   else generateTown();
   renderActionbar(); updatePips();
   layoutViewports(); buildCoopHud();
+  if(chosenDestiny) log('✦ Tower Destiny — '+chosenDestiny.nm+': '+chosenDestiny.tag+'.');
   if(!firstRun) log('Spend your 3 starting skill points in the tree (T), then enter the portal to climb. Plug in a controller and press START to add a co-op player.');
   clock.getDelta();
   G.tutorial=false;
   maybeDailyBonus();
+  if(chosenDestiny) banner('✦ '+chosenDestiny.nm.toUpperCase(), 'Tower Destiny · '+chosenDestiny.tag);
   if(after) after();
 }
 // big friendly controls card for the very first minute of play — fades on its own
@@ -7387,14 +7510,14 @@ function serializePlayerBuild(p){ if(!p)return null; _stampPlayer(p);
     attrPts:p.attrPts|0, skillPts:p.skillPts|0, skillGranted:p.skillGranted|0, evolves:p.evolves|0, invCap:p.invCap|0,
     attr:p.attr, alloc:p.alloc, equip:p.equip, inv:p.inv, belt:p.belt, slots:p.slots, sigSlot:p.sigSlot,
     pets:p.pets, petIdx:(p.pet&&p.pets)?p.pets.indexOf(p.pet):-1, greed:p.greed||1,
-    run:{ boons:(p.run&&p.run.boons)||[] } }; }catch(e){ return null; } }
+    run:{ boons:(p.run&&p.run.boons)||[], destiny:(p.run&&p.run.destiny)||null } }; }catch(e){ return null; } }
 function applyPlayerBuild(p,b){ if(!p||!b)return;
   p.name=b.name||p.name; p.gold=b.gold|0; p.level=b.level||1; p.xp=b.xp||0; p.xpNeed=b.xpNeed||(typeof xpForLevel==='function'?xpForLevel(p.level):20);
   p.xpMode=b.xpMode||'use'; p.attrPts=b.attrPts|0; p.skillPts=b.skillPts|0; p.skillGranted=b.skillGranted|0; p.evolves=b.evolves|0;
   if(b.invCap) p.invCap=b.invCap; p.attr=b.attr||p.attr; p.alloc=b.alloc||{}; p.equip=b.equip||p.equip;
   p.inv=b.inv||[]; p.belt=b.belt||p.belt; p.slots=b.slots||p.slots; p.sigSlot=b.sigSlot||null;
   p.pets=b.pets||p.pets||[]; p.pet=(b.petIdx>=0&&p.pets&&p.pets[b.petIdx])?p.pets[b.petIdx]:null; p.greed=b.greed||1;
-  p.run=p.run||{}; p.run.boons=(b.run&&b.run.boons)||p.run.boons||[];
+  p.run=p.run||{}; p.run.boons=(b.run&&b.run.boons)||p.run.boons||[]; p.run.destiny=(b.run&&b.run.destiny)||p.run.destiny||null;
   withPlayer(p.id, ()=>{ recompute(); }); }
 // ---- GUEST side: receive my build, receive my live vitals, render the FULL hud from them ----
 function netPeerApplyBuild(b){ const p=_G.players[0]; if(!p||!b)return; applyPlayerBuild(p,b);
@@ -8170,7 +8293,7 @@ function enterTutorialFloor(){
   G.belt=[makeFlask(1,'life'),makeFlask(1,'mana'),null,null,null]; G.charge=100; G.sigSlot=null; G.sigCd=0; G.swiftT=0; G.petErrand=null;
   G.floorMod=null; G.bounty=null;
   if(G.petMesh){ scene.remove(G.petMesh); G.petMesh=null; } G.pet=null; G.pets=[]; G.petMagnet=0;
-  G.run={kills:0,assists:0,healSelf:0,healOthers:0,xp:0,floorTime:0,totalTime:0,floorsCleared:0,boons:[]};
+  G.run={kills:0,assists:0,healSelf:0,healOthers:0,xp:0,floorTime:0,totalTime:0,floorsCleared:0,boons:[],destiny:null};
   G.practice=true; G.tutorial=true; G.inTown=false; G.hardcore=false; G.diff='normal'; G.seed=randi(0,9999);
   _G.players.length=1; const _p0=_G.players[0]; _p0.joined=true; _p0.color=PLAYER_COLORS[0]; _p0.input=_p0.input||makeKbmInput(); _G.cur=0; _G.splitscreen=false;   // ensure P1 has an input source so the player can actually move
   _G.asc=0; _G.ascEff=ascEffects(0);
@@ -8467,6 +8590,7 @@ const ABN_LABEL={ reverseRun:{ic:'↩',nm:'Reversed Move'}, drunkShots:{ic:'🌀
 function renderBuffs(){
   const bar=$('buffBar'); if(!bar) return;
   const list=[]; const st=fervorStacks();
+  if(G.run && G.run.destiny) list.push({id:'destiny',ic:G.run.destiny.ic,nm:G.run.destiny.nm,col:G.run.destiny.col});
   // active ABNORMAL item effects — shown so you always know what's affecting you (and can find which gear to swap)
   if(G.S && G.S.abn && G.S.abn.forEach){ G.S.abn.forEach(k=>{ const l=ABN_LABEL[k]; list.push({id:'abn_'+k, ic:l?l.ic:'❔', nm:l?l.nm:('Abnormal: '+k), col:'#c89bff'}); }); }
   // --- offensive / tempo ---
