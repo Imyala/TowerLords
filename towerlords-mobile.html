@@ -1524,6 +1524,7 @@
     <div id="runWrap"></div>
     <div id="deathScore" style="width:300px;margin:0 auto 22px;"></div>
     <button class="btn" id="reviveBtn">🏛 RETURN TO SANCTUARY</button>
+    <button class="btn ghost" id="tryAgainBtn" style="background:linear-gradient(180deg,#1a1a2a,#0f0f1c);border-color:rgba(86,224,255,.5);color:#cde">⚔ TRY AGAIN</button>
     <button class="btn ghost small" id="shareDeathBtn">📸 Share card</button>
   </div>
 
@@ -3421,6 +3422,7 @@ function drawDestinyDraft(resetPick){
 function rerollDestinyDraft(){ clearDestinyDraft(); drawDestinyDraft(true); if(sfx.evolve)sfx.evolve(); }
 $('destinyReroll').onclick=rerollDestinyDraft;
 $('reviveBtn').onclick=()=>{ $('death').classList.add('hidden'); if(G.permadead){ G.permadead=false; clearSession(); $('hud').classList.add('hidden'); showMenu(); } else { returnToTown(); } };
+$('tryAgainBtn').onclick=()=>{ $('death').classList.add('hidden'); clearSession(); startGame(); };
 $('victClimbBtn').onclick=()=>{ $('victory').classList.add('hidden'); G.victoryOpen=false; _G.running=true; _G.paused=false; clock.getDelta();
   banner('⛰ ENDLESS ASCENT','the portal is open — the tower rebuilds above you'); log('⛰ Take the portal when ready — NG+'+(ngLevel(G.floor)+1)+' awaits above.'); };
 $('victTownBtn').onclick=()=>{ $('victory').classList.add('hidden'); G.victoryOpen=false; returnToTown(); log('🏛 You return in triumph. The tower will be taller next time.'); };
@@ -3877,7 +3879,16 @@ function dr(){ const a=G.S.armor; return clamp(a/(a+55+G.floor*8),0,0.78); }
 function fervorMult(){ return 1 + Math.min(G.fervor,100)/100*0.6; }   // up to +60% dmg
 function fervorAS(){ return 1 + Math.min(G.fervor,100)/100*0.6; }      // up to +60% atk speed
 function fervorStacks(){ return Math.floor(G.fervor/20); }
-function addFervor(n){ G.fervor=Math.min(120,G.fervor+n*((G.S&&G.S.fervorRate)||1)); G.fervorT=3.2; }
+function addFervor(n){ const prev=G.fervor; G.fervor=Math.min(120,G.fervor+n*((G.S&&G.S.fervorRate)||1)); G.fervorT=3.2;
+  if(prev<100 && G.fervor>=100 && G.player){ const p=G.player.position; floatText(p.x,p.z,'🔥 MAX RAMPAGE!','big',5); shakeCam(0.5); tone(880,0.22,'sawtooth',0.18); } }
+// ---- kill chain: consecutive kill streak announced with multi-kill labels ----
+function announceKillChain(n, x, z){
+  const labels={2:'DOUBLE!',3:'TRIPLE!',4:'ULTRA KILL!',5:'MONSTER KILL!',6:'UNSTOPPABLE!',7:'GODLIKE!!!'};
+  const lbl=labels[Math.min(n,7)]||(n>=8?'GODLIKE!!!':null); if(!lbl) return;
+  floatText(x,z,lbl,n>=5?'big':'crit',n>=4?4.2:3.4); if(n>=5&&sfx.evolve)sfx.evolve();
+  if(typeof navigator!=='undefined'&&navigator.vibrate){ navigator.vibrate(n>=5?[40,20,80]:n>=3?30:15); } }
+// mobile haptic helper — wraps navigator.vibrate safely
+function haptic(p){ try{ if(navigator.vibrate) navigator.vibrate(p); }catch(_){} }
 
 // ============================================================ DUNGEON GEN
 function clearWorld(){
@@ -4259,7 +4270,7 @@ function updateFloorUI(type){
   $('floorType').textContent = type==='BOSS'?'⚔ GUARDIAN MILESTONE':type==='SAFE'?'🛡 ADMINISTRATOR SAFE ZONE':biome.name;
   const ng=ngLevel(G.floor);
   $('floorBig').innerHTML=G.floor+(ng>0?`<span style="color:var(--gold);font-size:14px"> NG+${ng}</span>`:'<span style="opacity:.4;font-size:14px">/'+SUMMIT_FLOOR+'</span>');
-  const _act=actOf(G.floor); if(type==='NORMAL') $('floorType').textContent='ACT '+_act.num+' · '+biome.name;
+  const _act=actOf(G.floor); if(type==='NORMAL'){ const _fi=((G.floor-1)%10)+1; $('floorType').textContent='ACT '+_act.num+' · '+_fi+'/10 · '+biome.name; }
   $('modTxt').innerHTML = G.floorMod?`<span style="color:${G.floorMod.col}">${G.floorMod.nm}</span>`:'';
   const threat=clamp(Math.ceil(G.floor/8),1,8);
   const TLBL=['','TRIVIAL','LOW','MODERATE','RISKY','DANGEROUS','SEVERE','DEADLY','LETHAL'];
@@ -5448,6 +5459,8 @@ function killEnemy(e){
     if(e.boss && e.nemTraits && e.nemTraits.some(t=>t.loot2)) dropLoot(ex,ez, uChanceBase||undefined, pid);   // Gluttonous lords burst with stolen loot
   }); }
   if(e.affixIds && e.affixIds.length){ const k=e._killer!=null?e._killer:(_G.cur||0); withPlayer(k, ()=> dropLoot(ex,ez, e.elite?0.12:0.03, k, pick(e.affixIds))); }   // affixed foes always drop one themed item
+  // kill-chain multi-kill announcement (single-player only; resets when rampage expires)
+  if(!e.boss && !_G.splitscreen && !NET.role){ G._killChain=(G._killChain||0)+1; announceKillChain(G._killChain,ex,ez); }
   G.hitstop=Math.max(G.hitstop||0, e.boss?0.3:0.04);
   if(e.boss){ unlockFeat('firstboss');
     const offPost=e.roaming||e.assist;      // a NEMESIS encounter — doesn't open portals or grant guardian rewards
@@ -5475,6 +5488,7 @@ function killEnemy(e){
   if(!e.boss && floorType(G.floor)==='NORMAL' && G.portal && !G.portal.active){
     G.floorKills=(G.floorKills||0)+1;
     if(G.floorKills>=(G.killGoal||999)){ G.portal.active=true; G.shiftT=portalShiftT(); G.shiftWarned=false; banner('✦ PORTAL OPEN','press F to ascend whenever you are ready'); log('✦ Floor cleared — the portal is open and stays open. The layout reshuffles every minute, but the portal remains.'); if(sfx.evolve)sfx.evolve();
+      if(G.player){ const _cp=G.player.position; floatText(_cp.x,_cp.z,'✦ FLOOR CLEARED!','big',5.2); ringFx(_cp.x,_cp.z,9,0x56e0ff); ringFx(_cp.x,_cp.z,5,0xffce4d); } haptic([30,10,60]);
       coach('portal','✦','Floor cleared','Stand on the glowing <b>portal</b> and press <b>F</b> to descend. It stays open — but the floor <b>reshuffles</b> if you linger too long, so loot up and move on.'); }
   }
   burst(e.mesh.position.x,e.mesh.position.z,e.color);
@@ -5616,7 +5630,7 @@ function levelUpFx(lvl, grant){
   const p=G.player?G.player.position:{x:0,z:0};
   banner('LEVEL '+lvl,'+1 ATTRIBUTE'+(grant>0?' · +'+grant+' SKILL POINT'+(grant>1?'S':''):''));
   if(G.player){ floatText(p.x,p.z,'LEVEL '+lvl,'big',3.6); ringFx(p.x,p.z,7,0xffce4d); ringFx(p.x,p.z,4,0x56e0ff); burst(p.x,p.z,0xffce4d); }
-  shakeCam(.6); G.hitstop=Math.max(G.hitstop||0,.12);
+  shakeCam(.6); G.hitstop=Math.max(G.hitstop||0,.12); haptic([50,30,100]);
 }
 // ============================================================ PETS (RotMG-style yard, families, abilities, fusion)
 const PET_YARD_CAP=50;   // absolute hard cap on yard size (enough to grind Commons all the way up to a Mythos)
@@ -6948,18 +6962,19 @@ function die(){ if(G.dead)return;
       const q=voiceLine(gbDef.key,'kill');
       killQuote=`<span style="color:var(--gold);font-style:italic">“${q}”</span><span style="opacity:.6"> — ${lastKiller} (has slain you ×${gr.k})</span><br>`; } }
   const ascBadge = (_G.asc||0)>0 ? `<span style="color:#d9b6ff">⛧ Ascension ${_G.asc}</span><br>` : '';
-  msg = ascBadge + (G._newBest?`<span style="color:var(--gold)">★ NEW BEST RUN!</span><br>`:'') + `<span style="opacity:.85">Felled by <b style="color:var(--hp)">${lastKiller}</b>.</span><br>` + killQuote + msg;
+  const bestBadge = G._newBest ? `<span style="display:inline-block;background:linear-gradient(90deg,rgba(255,206,77,.2),rgba(255,206,77,.05));border:1px solid rgba(255,206,77,.55);border-radius:6px;padding:3px 10px;color:var(--gold);font-weight:bold;letter-spacing:2px;animation:fxflash .7s ease-out">🏆 NEW PERSONAL BEST!</span><br>` : '';
+  msg = bestBadge + ascBadge + `<span style="opacity:.85">Felled by <b style="color:var(--hp)">${lastKiller}</b>.</span><br>` + killQuote + msg;
   const h1=$('death').querySelector('h1');
   if(_soft){
-    G.permadead=false; h1.textContent='YOU FELL';
+    G.permadead=false; h1.textContent='YOU FELL'; h1.style.color='';
     $('deathStats').innerHTML=`${msg}Reached <b>Floor ${G.floor}</b> · Level <b>${G.level}</b> · <b>${G.gold}</b> gold.<br><span style="color:var(--xp)">CASUAL — your gear, items &amp; stash are safe. Dust yourself off and climb again.</span>`;
     $('reviveBtn').textContent='🏛 RETURN TO SANCTUARY';
   } else if(G.hardcore && secondDeath){
-    G.permadead=true; h1.textContent='PERMADEATH';
+    G.permadead=true; h1.textContent='PERMADEATH'; h1.style.color='';
     $('deathStats').innerHTML=`${msg}Your character is lost for good.<br>Reached <b>Floor ${G.floor}</b> · Level <b>${G.level}</b> · <b>${G.gold}</b> gold.<br><span style="color:var(--hp)">HARDCORE — there is no return.</span>`;
     $('reviveBtn').textContent='⚔ NEW CHARACTER';
   } else {
-    G.permadead=false; h1.textContent='YOU FELL';
+    G.permadead=false; h1.textContent='YOU FELL'; h1.style.color=G._newBest?'var(--gold)':'';
     if(secondDeath) G.stashStrikes=0;   // consequence applied — counter resets
     const surv = (!secondDeath && G.stash.length>0) ? `<span style="color:var(--gold)">Stash survived (1st death).</span><br>` : '';
     const warn = G.hardcore ? `<span style="color:var(--hp);opacity:.85">HARDCORE: a second death is permanent.</span>` : '';
@@ -6967,6 +6982,9 @@ function die(){ if(G.dead)return;
     $('deathStats').innerHTML=`Reached <b>Floor ${G.floor}</b> · Level <b>${G.level}</b><br>Lost <b>${carried}</b> carried item(s)${gearLost?` and <b>${gearLost}</b> equipped item(s)/flask(s)`:''}.<br>${gforfeit}${msg}${surv}${warn}`;
     $('reviveBtn').textContent='🏛 RETURN TO SANCTUARY';
   }
+  // show/hide TRY AGAIN based on game mode (not available in permadeath)
+  const tryBtn=$('tryAgainBtn'); if(tryBtn) tryBtn.style.display=G.permadead?'none':'';
+  haptic(G.permadead?[100,50,200]:[80,40,120]);
   recordDeath(deathRec);
   $('runWrap').innerHTML=runWrapHTML();   // celebratory "the climb" wrap-up — build identity, blessings, highlights
   let dailyRow='';
@@ -8072,8 +8090,7 @@ function updatePlayerStep(dt){
   if(G.hp<G.maxhp){ const h=Math.min(G.S.lifeRegen*healScale()*dt,G.maxhp-G.hp); G.hp+=h; G.run.healSelf+=h; }
   G.mana=Math.min(G.maxmana,G.mana+G.S.manaRegen*dt);
   abnTick(dt);   // toggle-aura mana drain + continuous abnormal effects
-  if(G.fervor>0){ G.fervorT-=dt; if(G.fervorT<=0){ G.fervor=Math.max(0,G.fervor-dt*30); } }
-  // face the aim point
+  if(G.fervor>0){ G.fervorT-=dt; if(G.fervorT<=0){ G.fervor=Math.max(0,G.fervor-dt*30); if(G.fervor===0) G._killChain=0; } }  // face the aim point
   G.player.rotation.y=Math.atan2(aimPoint.x-p.x,aimPoint.z-p.z);
   // dash + flow timers
   G.dashCd=Math.max(0,G.dashCd-dt); if(G.flowT>0)G.flowT-=dt;
@@ -8734,7 +8751,11 @@ function updateHUD(){
   if(G.fervor>0){ rmp.classList.add('show'); $('rampFill').style.width=clamp(G.fervor,0,100)+'%'; $('rampLabel').textContent='RAMPAGE x'+(1+st)+'  (+'+Math.round(Math.min(G.fervor,100)/100*60)+'% dmg/spd)'; } else rmp.classList.remove('show');
   const v=$('vignette'); v.classList.toggle('low',G.hp/G.maxhp<0.3); v.classList.toggle('rage',st>=4);
   const cx2=$('clearTxt');
-  if(cx2){ if(!G.practice && !G.inTown && floorType(G.floor)==='NORMAL'){ cx2.innerHTML = G.portal&&G.portal.active ? '<span style="color:var(--xp)">✓ PORTAL OPEN</span>' : `⚔ CLEAR THE FLOOR ${G.floorKills||0}/${G.killGoal||0}`; } else cx2.textContent=''; }
+  if(cx2){ if(!G.practice && !G.inTown && floorType(G.floor)==='NORMAL'){
+    if(G.portal&&G.portal.active){ cx2.innerHTML='<span style="color:var(--xp)">✓ PORTAL OPEN</span>'; }
+    else { const _kf=G.floorKills||0, _kg=G.killGoal||1, _kp=Math.round(_kf/_kg*100);
+      cx2.innerHTML=`<div style="display:flex;align-items:center;gap:5px;font-size:10px">⚔ <div style="flex:1;height:5px;background:rgba(255,255,255,.12);border-radius:3px;overflow:hidden"><div style="height:100%;width:${_kp}%;background:linear-gradient(90deg,var(--neon),var(--xp));transition:width .2s"></div></div><span style="opacity:.8">${_kf}/${_kg}</span></div>`; }
+  } else cx2.textContent=''; }
   const sx=$('shiftTxt');
   if(!G.practice && floorType(G.floor)!=='SAFE' && G.portal&&G.portal.active && G.shiftT<=60){ sx.textContent='⟳ Floor reshuffles in '+Math.max(0,Math.ceil(G.shiftT))+'s · portal stays open'; sx.classList.remove('urgent'); }
   else { sx.textContent=''; sx.classList.remove('urgent'); }
