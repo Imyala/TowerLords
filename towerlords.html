@@ -2334,9 +2334,9 @@ function maybeAbnormal(floor){ return (Math.random() < 0.02+(floor||0)*0.0016) ?
 
 // ---- DEV CHEAT CONSOLE (press ~ / backtick) — TESTING ONLY. TODO(dev): remove this whole block before release. ----
 function isDevCheatsEnabled(){ try{
-  const q=new URLSearchParams(location.search||'');
+  const q=new URLSearchParams(location.search);
   if(q.get('debug')==='1'||q.get('cheats')==='1') return true;
-  const h=(location.hostname||'').toLowerCase();
+  const h=location.hostname.toLowerCase();
   return h==='localhost'||h==='127.0.0.1'||h==='::1';
 }catch(_){ return false; } // defensive fallback for restricted/sandboxed location access
 }
