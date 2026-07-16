@@ -2299,7 +2299,7 @@ const CHEAT_HELP='DEV commands (remove before release):\n  gold N · fame N · x
 let _cheatEl=null;
 function toggleCheat(){
   if(!devCheatsEnabled){
-    if(typeof log==='function') log('Dev cheats disabled. Use ?debug=1 for local testing.');
+    if(typeof log==='function') log('Dev cheats disabled. Use ?debug=1 or run on localhost.');
     return;
   }
   if(_cheatEl){ _cheatEl.remove(); _cheatEl=null; return; }
