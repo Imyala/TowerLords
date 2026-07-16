@@ -2401,7 +2401,8 @@ function isDevCheatsEnabled(){ try{
   if(q.get('debug')==='1'||q.get('cheats')==='1') return true;
   const h=(location.hostname||'').toLowerCase();
   return h==='localhost'||h==='127.0.0.1'||h==='::1';
-}catch(_){ return false; } } // defensive fallback for restricted/sandboxed location access
+}catch(_){ return false; } // defensive fallback for restricted/sandboxed location access
+}
 const devCheatsEnabled=isDevCheatsEnabled();
 const CHEAT_HELP='DEV commands (remove before release):\n  gold N · fame N · xp N · level N · heal · god [off]\n  petmax · petfeed · skills · abn [n|all] · items [n]';
 let _cheatEl=null;
