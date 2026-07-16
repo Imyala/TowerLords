@@ -1351,7 +1351,7 @@
         <button class="btn ghost" id="menuLegacy">⚜ Legacy</button>
       </div>
       <div id="menuPanel" class="menuPanel">
-        <div class="menuPanelHd">Tonight’s Tower</div>
+        <div class="menuPanelHd">Tower Summary</div>
         <div id="menuStats" class="menuStatGrid"></div>
         <div id="menuFeatures"></div>
       </div>
@@ -2048,7 +2048,6 @@ function resumeSession(){
   p.greed=s.greed||1; p.charge=s.charge||0;
   p.run=s.run||{kills:0,assists:0,healSelf:0,healOthers:0,xp:0,floorTime:0,totalTime:0,floorsCleared:0,boons:[],destiny:null};
   if(!p.run.boons) p.run.boons=[];
-  if(p.run.destiny==null) p.run.destiny=null;
   p.dead=false; p.downed=false; p.downT=0; p.selGem=null; p.petErrand=null; p.invCap=invCapBase();
   G.floor=s.floor||1;
   initAudio(); startAmbient();
@@ -3322,10 +3321,12 @@ function refreshMenuSummary(){
     {ic:'🎮',t:'Co-op stays one tap away',d:'Local and online lobbies remain directly on the menu for quick drop-in sessions.'}
   ].map(f=>`<div class="menuFeature"><div class="mfIc">${f.ic}</div><div><div class="mfT">${f.t}</div><div class="mfD">${f.d}</div></div></div>`).join('');
 }
+function clearDestinyDraft(){ selDestinyId=''; menuDestinyPicks=[]; }
+function chooseDestiny(id){ selDestinyId=id||''; drawDestinyDraft(false); if(sfx.tick)sfx.tick(); }
 function drawDestinyDraft(resetPick){
   if(!menuDestinyPicks.length){
     const pool=DESTINIES.slice();
-    for(let i=pool.length-1;i>0;i--){ const j=randi(0,i); const t=pool[i]; pool[i]=pool[j]; pool[j]=t; }
+    for(let currentIndex=pool.length-1;currentIndex>0;currentIndex--){ const randomIndex=randi(0,currentIndex); const temp=pool[currentIndex]; pool[currentIndex]=pool[randomIndex]; pool[randomIndex]=temp; }
     menuDestinyPicks=pool.slice(0,3);
   }
   if(resetPick || !menuDestinyPicks.some(d=>d.id===selDestinyId)) selDestinyId=(menuDestinyPicks[0]&&menuDestinyPicks[0].id)||'';
@@ -3333,11 +3334,11 @@ function drawDestinyDraft(resetPick){
   if(wrap) wrap.innerHTML=menuDestinyPicks.map(d=>`<div class="destCard${d.id===selDestinyId?' sel':''}" data-dest="${d.id}" style="--dc:${d.col}">
       <div class="destTop"><div class="destIc">${d.ic}</div><div><div class="destNm">${d.nm}</div><div class="destTag">${d.tag}</div></div></div>
       <div class="destDs">${d.ds}</div><div class="destPick">${d.id===selDestinyId?'Selected for this climb':'Click to claim this destiny'}</div></div>`).join('');
-  if(wrap) [...wrap.querySelectorAll('.destCard')].forEach(el=>el.onclick=()=>{ selDestinyId=el.dataset.dest||''; drawDestinyDraft(false); if(sfx.tick)sfx.tick(); });
+  if(wrap) [...wrap.querySelectorAll('.destCard')].forEach(el=>el.onclick=()=>chooseDestiny(el.dataset.dest||''));
   const hint=$('destinyHint');
   if(hint && cur) hint.innerHTML=`<span style="color:${cur.col}">${cur.ic} ${cur.nm}</span> is locked in when you start. It lasts the whole climb, stacks with boss blessings, and makes each run feel different immediately.`;
 }
-function rerollDestinyDraft(){ menuDestinyPicks=[]; drawDestinyDraft(true); if(sfx.evolve)sfx.evolve(); }
+function rerollDestinyDraft(){ clearDestinyDraft(); drawDestinyDraft(true); if(sfx.evolve)sfx.evolve(); }
 $('destinyReroll').onclick=rerollDestinyDraft;
 $('reviveBtn').onclick=()=>{ $('death').classList.add('hidden'); if(G.permadead){ G.permadead=false; clearSession(); $('hud').classList.add('hidden'); showMenu(); } else { returnToTown(); } };
 $('victClimbBtn').onclick=()=>{ $('victory').classList.add('hidden'); G.victoryOpen=false; _G.running=true; _G.paused=false; clock.getDelta();
@@ -3373,7 +3374,7 @@ loadMeta(); refreshDailyBtn(); refreshContinueBtn(); refreshMenuRank(); refreshM
 { const _md=$('menuDaily'); if(_md) _md.onclick=()=>{
   loadMeta(); const d=dailyState();
   if(d&&d.done){ log('🌅 Today’s Daily is scored — a new tower rises at midnight UTC.'); return; }
-  selDestinyId=''; menuDestinyPicks=[];
+  clearDestinyDraft();
   selAsc=0; G.hardcore=false; G.diff='normal';             // level playing field: no ascension mods, standard difficulty
   startGame();
   G.seed=dailySeedInt(); G.dailyRun=true; // startGame rolled a random seed — the daily overrides it
