@@ -3326,10 +3326,11 @@ function chooseDestiny(id){ selDestinyId=id||''; drawDestinyDraft(false); if(sfx
 function drawDestinyDraft(resetPick){
   if(!menuDestinyPicks.length){
     const pool=DESTINIES.slice();
-    for(let currentIndex=pool.length-1;currentIndex>0;currentIndex--){ const randomIndex=randi(0,currentIndex); const temp=pool[currentIndex]; pool[currentIndex]=pool[randomIndex]; pool[randomIndex]=temp; }
+    for(let destinyIndex=pool.length-1;destinyIndex>0;destinyIndex--){ const swapIndex=randi(0,destinyIndex); const swappedDestiny=pool[destinyIndex]; pool[destinyIndex]=pool[swapIndex]; pool[swapIndex]=swappedDestiny; }
     menuDestinyPicks=pool.slice(0,3);
   }
-  if(resetPick || !menuDestinyPicks.some(d=>d.id===selDestinyId)) selDestinyId=(menuDestinyPicks[0]&&menuDestinyPicks[0].id)||'';
+  const hasSelectedDestiny=menuDestinyPicks.some(d=>d.id===selDestinyId);
+  if(resetPick || !hasSelectedDestiny) selDestinyId=(menuDestinyPicks[0]&&menuDestinyPicks[0].id)||'';
   const wrap=$('destinyCards'), cur=menuDestinyPicks.find(d=>d.id===selDestinyId);
   if(wrap) wrap.innerHTML=menuDestinyPicks.map(d=>`<div class="destCard${d.id===selDestinyId?' sel':''}" data-dest="${d.id}" style="--dc:${d.col}">
       <div class="destTop"><div class="destIc">${d.ic}</div><div><div class="destNm">${d.nm}</div><div class="destTag">${d.tag}</div></div></div>
@@ -3374,7 +3375,7 @@ loadMeta(); refreshDailyBtn(); refreshContinueBtn(); refreshMenuRank(); refreshM
 { const _md=$('menuDaily'); if(_md) _md.onclick=()=>{
   loadMeta(); const d=dailyState();
   if(d&&d.done){ log('🌅 Today’s Daily is scored — a new tower rises at midnight UTC.'); return; }
-  clearDestinyDraft();
+  clearDestinyDraft();   // daily climbs stay destiny-free so everyone races the same ruleset
   selAsc=0; G.hardcore=false; G.diff='normal';             // level playing field: no ascension mods, standard difficulty
   startGame();
   G.seed=dailySeedInt(); G.dailyRun=true; // startGame rolled a random seed — the daily overrides it
@@ -7359,7 +7360,7 @@ function startGameConfirmed(after){
   _G.cur=0; _G.splitscreen=false; $('hud').classList.remove('cohide');
   initPlayerChar();
   const chosenDestiny=(!G.practice && !G.tutorial && selDestinyId)?destinyById(selDestinyId):null;
-  if(chosenDestiny) G.run.destiny=JSON.parse(JSON.stringify(chosenDestiny));
+  if(chosenDestiny) G.run.destiny=(typeof structuredClone==='function') ? structuredClone(chosenDestiny) : JSON.parse(JSON.stringify(chosenDestiny));
   recompute(); G.hp=G.maxhp; G.mana=G.maxmana;
   initAudio(); startAmbient();
   // FIRST-EVER RUN: skip the hub entirely — straight into Act I combat within seconds.
