@@ -1349,7 +1349,7 @@
         <button class="btn ghost" id="menuSettings">⚙ Settings</button>
         <button class="btn ghost" id="menuDeaths">💀 Death Log</button>
         <button class="btn ghost" id="menuLegacy">⚜ Legacy</button>
-        <div id="menuEnterHint" style="font-size:10px;opacity:.35;text-align:center;letter-spacing:1px;margin-top:4px">ENTER to start</div>
+        <div id="menuEnterHint" style="font-size:10px;opacity:.5;text-align:center;letter-spacing:1px;margin-top:4px">ENTER to start</div>
       </div>
       <div id="menuPanel" class="menuPanel">
         <div class="menuPanelHd">Tower Summary</div>
@@ -3816,8 +3816,8 @@ function addFervor(n){ const prev=G.fervor; G.fervor=Math.min(120,G.fervor+n*((G
   if(prev<100 && G.fervor>=100 && G.player){ const p=G.player.position; floatText(p.x,p.z,'🔥 MAX RAMPAGE!','big',5); shakeCam(0.5); tone(880,0.22,'sawtooth',0.18); } }
 // ---- kill chain: consecutive kill streak announced with multi-kill labels ----
 function announceKillChain(n, x, z){
-  const labels={2:'DOUBLE!',3:'TRIPLE!',4:'ULTRA KILL!',5:'MONSTER KILL!',6:'UNSTOPPABLE!',7:'GODLIKE!!!'};
-  const lbl=labels[Math.min(n,7)]||(n>=8?'GODLIKE!!!':null); if(!lbl) return;
+  const labels={2:'DOUBLE!',3:'TRIPLE!',4:'ULTRA KILL!',5:'MONSTER KILL!',6:'UNSTOPPABLE!'};
+  const lbl=n>=7?'GODLIKE!!!':labels[n]; if(!lbl) return;
   floatText(x,z,lbl,n>=5?'big':'crit',n>=4?4.2:3.4); if(n>=5&&sfx.evolve)sfx.evolve();
 }
 

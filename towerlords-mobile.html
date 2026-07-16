@@ -3881,14 +3881,14 @@ function fervorAS(){ return 1 + Math.min(G.fervor,100)/100*0.6; }      // up to 
 function fervorStacks(){ return Math.floor(G.fervor/20); }
 function addFervor(n){ const prev=G.fervor; G.fervor=Math.min(120,G.fervor+n*((G.S&&G.S.fervorRate)||1)); G.fervorT=3.2;
   if(prev<100 && G.fervor>=100 && G.player){ const p=G.player.position; floatText(p.x,p.z,'🔥 MAX RAMPAGE!','big',5); shakeCam(0.5); tone(880,0.22,'sawtooth',0.18); } }
-// ---- kill chain: consecutive kill streak announced with multi-kill labels ----
-function announceKillChain(n, x, z){
-  const labels={2:'DOUBLE!',3:'TRIPLE!',4:'ULTRA KILL!',5:'MONSTER KILL!',6:'UNSTOPPABLE!',7:'GODLIKE!!!'};
-  const lbl=labels[Math.min(n,7)]||(n>=8?'GODLIKE!!!':null); if(!lbl) return;
-  floatText(x,z,lbl,n>=5?'big':'crit',n>=4?4.2:3.4); if(n>=5&&sfx.evolve)sfx.evolve();
-  if(typeof navigator!=='undefined'&&navigator.vibrate){ navigator.vibrate(n>=5?[40,20,80]:n>=3?30:15); } }
 // mobile haptic helper — wraps navigator.vibrate safely
 function haptic(p){ try{ if(navigator.vibrate) navigator.vibrate(p); }catch(_){} }
+// ---- kill chain: consecutive kill streak announced with multi-kill labels ----
+function announceKillChain(n, x, z){
+  const labels={2:'DOUBLE!',3:'TRIPLE!',4:'ULTRA KILL!',5:'MONSTER KILL!',6:'UNSTOPPABLE!'};
+  const lbl=n>=7?'GODLIKE!!!':labels[n]; if(!lbl) return;
+  floatText(x,z,lbl,n>=5?'big':'crit',n>=4?4.2:3.4); if(n>=5&&sfx.evolve)sfx.evolve();
+  haptic(n>=5?[40,20,80]:n>=3?30:15); }
 
 // ============================================================ DUNGEON GEN
 function clearWorld(){
