@@ -283,8 +283,10 @@
   .panel h3{font-size:14px;letter-spacing:2px;color:var(--neon);padding:14px 16px 10px;margin-bottom:6px;
     border-bottom:1px solid rgba(86,224,255,.16);background:linear-gradient(180deg,rgba(86,224,255,.08),transparent);
     border-radius:14px 14px 0 0;text-shadow:0 0 12px rgba(86,224,255,.4);}
-  .closeX{position:absolute;top:10px;right:12px;cursor:pointer;font-size:16px;opacity:.6;}
-  .closeX:hover{opacity:1;}
+  .closeX{position:absolute;top:10px;right:12px;cursor:pointer;font-size:16px;opacity:.78;
+    min-width:34px;min-height:34px;display:flex;align-items:center;justify-content:center;border-radius:9px;
+    border:1px solid rgba(255,255,255,.2);background:rgba(6,9,18,.58);transition:opacity .12s,border-color .12s,background .12s;}
+  .closeX:hover{opacity:1;border-color:rgba(86,224,255,.45);background:rgba(14,22,38,.82);}
   /* ---- in-game styled modal (replaces the browser confirm) ---- */
   #gameModal{position:absolute;inset:0;z-index:200;display:none;align-items:center;justify-content:center;
     background:rgba(4,5,12,.72);backdrop-filter:blur(3px);pointer-events:auto;padding:18px;}
@@ -3411,7 +3413,7 @@ function drawDestinyDraft(resetPick){
   // `d.ds` is authored HTML from the local DESTINIES table so the short perk copy can keep deliberate <b> emphasis.
   if(wrap) wrap.innerHTML=menuDestinyPicks.map(d=>`<div class="destCard${d.id===selDestinyId?' sel':''}" data-dest="${d.id}" style="--dc:${safeCssColor(d.col,'#fff')}">
       <div class="destTop"><div class="destIc">${escHtml(d.ic)}</div><div><div class="destNm">${escHtml(d.nm)}</div><div class="destTag">${escHtml(d.tag)}</div></div></div>
-      <div class="destDs">${d.ds}</div><div class="destPick">${d.id===selDestinyId?'Selected for this climb':'Click to claim this destiny'}</div></div>`).join('');
+      <div class="destDs">${d.ds}</div><div class="destPick">${d.id===selDestinyId?'Selected for this climb':'Tap to claim this destiny'}</div></div>`).join('');
   if(wrap) [...wrap.querySelectorAll('.destCard')].forEach(el=>el.onclick=()=>chooseDestiny(el.dataset.dest||''));
   const hint=$('destinyHint');
   if(hint && cur) hint.innerHTML=`<span style="color:${safeCssColor(cur.col,'#fff')}">${escHtml(cur.ic)} ${escHtml(cur.nm)}</span> is locked in when you start. It lasts the whole climb, stacks with boss blessings, and makes each run feel different immediately.`;
@@ -6499,8 +6501,9 @@ function equipItem(it){
   log('Equipped '+it.name); renderInv(); if(!$('charPanel').classList.contains('hidden'))renderChar();
 }
 // sell a carried item for gold from anywhere (Shift+click in the bag) — works for host and guest (relayed)
-function sellItem(it){ if(NET.role==='peer') return netPeerCmd('sellItem',[it&&it.uid]);
-  if(!it) return; if(it.locked){ log('🔒 Locked — unlock it first to sell.'); if(sfx&&sfx.deny)sfx.deny(); return; }
+function sellItem(it){ if(!it) return;
+  if(NET.role==='peer') return netPeerCmd('sellItem',[it.uid]);
+  if(it.locked){ log('🔒 Locked — unlock it first to sell.'); if(sfx&&sfx.deny)sfx.deny(); return; }
   const idx=G.inv.indexOf(it); if(idx<0) return;
   const v=it.value||0; G.inv.splice(idx,1); G.gold+=v; if(G.selGem===it)G.selGem=null;
   if(typeof flashGold==='function')flashGold(); if(sfx&&sfx.gold)sfx.gold(); log('💰 Sold '+it.name+' (+'+v+'g)'); refreshItemPanels(); }
@@ -7781,7 +7784,7 @@ function netPeerSendInput(){ const pr=NET.peer; if(!pr||!pr.ch||pr.ch.readyState
 }
 function netPeerEnter(){   // enter a lightweight render-only state (no local world sim)
   if(!scene || !renderer){   // engine never started (WebGL failed) — don't get silently stuck on the join screen; show the reason
-    const le=$('loadErr'); if(le){ le.style.display='flex'; if(!le.innerHTML) le.innerHTML='<div class="leInner">⚠ Can\'t render the game — your browser has no WebGL context. Close other 3D/game tabs and reload, then rejoin.</div>'; }
+    const le=$('loadErr'); if(le){ le.style.display='flex'; if(!le.querySelector('.leInner')){ const d=document.createElement('div'); d.className='leInner'; d.textContent='⚠ Can\'t render the game — your browser has no WebGL context. Close other 3D/game tabs and reload, then rejoin.'; le.replaceChildren(d); } }
     return; }
   _G.netGuest=true; _G.running=false;
   _G.players[0].input = _G.players[0].input || makeKbmInput();   // the guest needs an input source so read() captures its WASD/mouse/aim
