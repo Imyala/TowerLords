@@ -3463,10 +3463,10 @@ $('openCodexBtn').onclick=()=>togglePanel('codexPanel');
 $('openSettingsBtn').onclick=()=>togglePanel('settingsPanel');
 $('recallBtn').onclick=()=>startRecall();
 $('openMenuBtn').onclick=()=>promptExitToMenu();   // mobile: no ESC key → return to main menu from the nav
-const _openCheatBtn=$('openCheatBtn');
-if(_openCheatBtn){
-  if(devCheatsEnabled) _openCheatBtn.onclick=()=>toggleCheat();        // mobile: no ~ key → open the DEV cheat console from the nav
-  else _openCheatBtn.classList.add('hidden');
+const openCheatBtn=$('openCheatBtn');
+if(openCheatBtn){
+  if(devCheatsEnabled) openCheatBtn.onclick=()=>toggleCheat();        // mobile: no ~ key → open the DEV cheat console from the nav
+  else openCheatBtn.classList.add('hidden');
 }
 $('muteInd').onclick=(e)=>{ e.stopPropagation(); toggleMute(); };
 document.querySelectorAll('.closeX').forEach(x=>x.onclick=()=>{ $(x.dataset.close).classList.add('hidden'); syncPause(); refreshMenuState(); });
