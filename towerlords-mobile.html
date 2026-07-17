@@ -1154,20 +1154,24 @@
   /* ---- in-game skill bar: the icons were 40px & cramped → hard to press.
          Bigger cells, bigger icons, roomier gaps. The bar wraps, so growing
          the cells just flows onto a second row on very narrow phones. ---- */
-  body.touch-on #dock{gap:6px 6px;bottom:8px;}
-  /* 9 skill slots can't fit one comfortable row on a phone, so wrap them into a tidy,
-     balanced 5+4 pad (max-width ≈ 5 cells) with big cells & roomy gaps to stop mis-taps */
-  body.touch-on #dock .actionbar{gap:6px;max-width:276px;justify-content:center;margin:0 auto;}
-  body.touch-on #dock .actionbar .slot{width:48px;height:48px;border-radius:11px;}
-  body.touch-on #dock .actionbar .slot .ic{font-size:25px;}
+  body.touch-on #dock{gap:7px 7px;bottom:8px;}
+  /* Declutter: on a phone, hide the EMPTY skill/flask placeholders so the bar shows only
+     the skills you actually have — big, well-separated, thumb-sized targets. As you learn
+     more skills they simply appear. The bar auto-centres and wraps if you fill many slots. */
+  body.touch-on #dock .actionbar .slot.empty{display:none;}
+  body.touch-on #dock .belt .flask.empty{display:none;}
+  body.touch-on #dock .actionbar{gap:8px;max-width:320px;justify-content:center;margin:0 auto;}
+  body.touch-on #dock .actionbar .slot{width:54px;height:54px;border-radius:13px;}
+  body.touch-on #dock .actionbar .slot .ic{font-size:28px;}
   body.touch-on #dock .actionbar .slot .mc{font-size:10px;bottom:2px;right:5px;}
-  body.touch-on #dock .slot{width:50px;height:50px;}          /* dash + signature */
-  body.touch-on #dock .slot .ic{font-size:25px;}
-  body.touch-on #dock .slot.dash .ic{font-size:28px;}
-  body.touch-on #dock .flask{width:40px;height:54px;}
-  body.touch-on #dock .flask .ic{font-size:21px;}
-  body.touch-on #dock .orb{width:52px;height:52px;}
-  body.touch-on #dock .orb .txt .num{font-size:15px;}
+  body.touch-on #dock .belt{gap:8px;}
+  body.touch-on #dock .slot{width:54px;height:54px;}          /* dash + signature */
+  body.touch-on #dock .slot .ic{font-size:27px;}
+  body.touch-on #dock .slot.dash .ic{font-size:30px;}
+  body.touch-on #dock .flask{width:46px;height:58px;border-radius:10px;}
+  body.touch-on #dock .flask .ic{font-size:24px;}
+  body.touch-on #dock .orb{width:54px;height:54px;}
+  body.touch-on #dock .orb .txt .num{font-size:16px;}
 
   /* ---- SKILL TREE (Specialisations): the desktop header packed title +
          points + respec + a long click-hint + close into one row, so on a
@@ -1181,14 +1185,18 @@
   body.touch-on #treeHead .closeX{margin-left:auto;min-width:40px;min-height:40px;}
   body.touch-on #quickBuild{padding:9px 12px;gap:9px;}
   body.touch-on .qbBtn{padding:9px 12px;font-size:13px;}
-  body.touch-on #treeCols{padding:12px 10px 16px;gap:12px;justify-content:flex-start;}
+  body.touch-on #treeCols{padding:12px 12px 16px;gap:14px;justify-content:flex-start;}
   /* justify-content:flex-start (not center) so the first tree column is reachable when the row overflows horizontally */
-  body.touch-on .spec{width:min(230px,82vw);}
+  /* CRITICAL: size each column to its OWN widest row (foundation rows hold up to 5 nodes).
+     A fixed narrow width let those rows spill out and overlap the neighbouring trees — an
+     unreadable mess. max-content makes every column exactly as wide as it needs, so the
+     flex gap always separates them cleanly. Columns scroll horizontally. */
+  body.touch-on .spec{width:max-content;min-width:min(206px,78vw);padding:14px 12px 20px;}
+  body.touch-on .trow{min-height:50px;gap:8px;flex-wrap:nowrap;}
   /* fatter, easier-to-tap talent nodes — enlarge ONLY the small tiers so the
      rarity-scaled big/keystone nodes (rar2-5) keep their larger sizes */
-  body.touch-on .talent.rar0 .tbox{width:46px;height:46px;} body.touch-on .talent.rar0 .tic{font-size:21px;}
-  body.touch-on .talent.rar1 .tbox{width:48px;height:48px;} body.touch-on .talent.rar1 .tic{font-size:22px;}
-  body.touch-on .trow{min-height:52px;gap:10px;}
+  body.touch-on .talent.rar0 .tbox{width:45px;height:45px;} body.touch-on .talent.rar0 .tic{font-size:20px;}
+  body.touch-on .talent.rar1 .tbox{width:46px;height:46px;} body.touch-on .talent.rar1 .tic{font-size:21px;}
   body.touch-on .talent .trank{font-size:10px;padding:2px 7px;}
 
   /* ---- INVENTORY: two fixed-width columns didn't fit a phone → stack them. ---- */
