@@ -859,9 +859,11 @@
   .scoreBest.empty .bestSub{margin-top:12px;line-height:1.55;}
 
   /* overlays */
-  .overlay{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  .overlay{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:safe center;
     background:rgba(4,5,12,.92);backdrop-filter:blur(4px);text-align:center;pointer-events:auto;z-index:50;
-    overflow-y:auto;padding:18px 0;}   /* tall menus (climb setup, tutorial) scroll instead of clipping on short screens */
+    overflow-y:auto;-webkit-overflow-scrolling:touch;padding:18px 0;}
+    /* safe center: when the menu is taller than the screen it aligns to the TOP so the title & top buttons stay
+       reachable by scrolling — plain "center" clips the overflow equally top & bottom and the top becomes unscrollable */
   h1{font-size:clamp(30px,10vw,58px);letter-spacing:clamp(3px,2vw,10px);max-width:100%;background:linear-gradient(90deg,#56e0ff,#b06bff,#ff9a3d);
     -webkit-background-clip:text;background-clip:text;color:transparent;text-shadow:0 0 50px rgba(176,107,255,.3);}
   .tag{opacity:.7;font-size:clamp(11px,3vw,14px);letter-spacing:clamp(2px,1vw,4px);margin:10px 0 28px;padding:0 12px;max-width:100%;}
@@ -1142,6 +1144,89 @@
   #bossSpeech .bsName{display:block;font-size:11px;font-weight:bold;letter-spacing:2px;color:var(--gold);text-transform:uppercase;margin-bottom:3px;}
   #bossSpeech .bsLine{font-size:16px;line-height:1.4;color:#ffeec4;font-style:italic;text-shadow:0 2px 6px #000;}
   @keyframes bsIn{from{opacity:0;transform:translate(-50%,10px);}to{opacity:1;transform:translate(-50%,0);}}
+
+  /* ======================================================================
+     MOBILE UX PASS — bigger tap targets & phone-friendly menu layouts.
+     Scoped to body.touch-on (the game's own "mobile mode" flag) so nothing
+     changes for mouse/keyboard players. Placed last so it wins cascade ties.
+     ====================================================================== */
+
+  /* ---- in-game skill bar: the icons were 40px & cramped → hard to press.
+         Bigger cells, bigger icons, roomier gaps. The bar wraps, so growing
+         the cells just flows onto a second row on very narrow phones. ---- */
+  body.touch-on #dock{gap:6px 6px;bottom:8px;}
+  /* 9 skill slots can't fit one comfortable row on a phone, so wrap them into a tidy,
+     balanced 5+4 pad (max-width ≈ 5 cells) with big cells & roomy gaps to stop mis-taps */
+  body.touch-on #dock .actionbar{gap:6px;max-width:276px;justify-content:center;margin:0 auto;}
+  body.touch-on #dock .actionbar .slot{width:48px;height:48px;border-radius:11px;}
+  body.touch-on #dock .actionbar .slot .ic{font-size:25px;}
+  body.touch-on #dock .actionbar .slot .mc{font-size:10px;bottom:2px;right:5px;}
+  body.touch-on #dock .slot{width:50px;height:50px;}          /* dash + signature */
+  body.touch-on #dock .slot .ic{font-size:25px;}
+  body.touch-on #dock .slot.dash .ic{font-size:28px;}
+  body.touch-on #dock .flask{width:40px;height:54px;}
+  body.touch-on #dock .flask .ic{font-size:21px;}
+  body.touch-on #dock .orb{width:52px;height:52px;}
+  body.touch-on #dock .orb .txt .num{font-size:15px;}
+
+  /* ---- SKILL TREE (Specialisations): the desktop header packed title +
+         points + respec + a long click-hint + close into one row, so on a
+         phone the hint collapsed into a tall unreadable column. Reflow it. ---- */
+  body.touch-on #treePanel{inset:6px;}
+  body.touch-on #treeHead{flex-wrap:wrap;gap:8px 12px;padding:10px 12px;align-items:center;}
+  body.touch-on #treeHead h3{font-size:13px;letter-spacing:1.5px;}
+  body.touch-on #treeHead .sp{font-size:13px;}
+  body.touch-on #treeHead .treeHint{display:none;}   /* references left/right-click — meaningless & space-hungry on touch */
+  body.touch-on #treeHead #respec{padding:9px 14px;font-size:12px;}
+  body.touch-on #treeHead .closeX{margin-left:auto;min-width:40px;min-height:40px;}
+  body.touch-on #quickBuild{padding:9px 12px;gap:9px;}
+  body.touch-on .qbBtn{padding:9px 12px;font-size:13px;}
+  body.touch-on #treeCols{padding:12px 10px 16px;gap:12px;justify-content:flex-start;}
+  /* justify-content:flex-start (not center) so the first tree column is reachable when the row overflows horizontally */
+  body.touch-on .spec{width:min(230px,82vw);}
+  /* fatter, easier-to-tap talent nodes — enlarge ONLY the small tiers so the
+     rarity-scaled big/keystone nodes (rar2-5) keep their larger sizes */
+  body.touch-on .talent.rar0 .tbox{width:46px;height:46px;} body.touch-on .talent.rar0 .tic{font-size:21px;}
+  body.touch-on .talent.rar1 .tbox{width:48px;height:48px;} body.touch-on .talent.rar1 .tic{font-size:22px;}
+  body.touch-on .trow{min-height:52px;gap:10px;}
+  body.touch-on .talent .trank{font-size:10px;padding:2px 7px;}
+
+  /* ---- INVENTORY: two fixed-width columns didn't fit a phone → stack them. ---- */
+  body.touch-on #invPanel{width:96vw;padding-bottom:16px;}
+  body.touch-on .invWrap{flex-direction:column;gap:14px;padding:0 12px;}
+  body.touch-on .invLeft{width:100%;flex:none;}
+  body.touch-on .invRight{width:100%;min-width:0;}
+  body.touch-on .invSec{padding:0 12px;}
+  body.touch-on .eqGrid{grid-template-columns:repeat(3,1fr);}   /* compact paper-doll so the bag isn't buried under 6 huge slots */
+  body.touch-on .detailPane,body.touch-on .detailPane.blank{min-height:150px;}
+  body.touch-on .bagGrid{grid-template-columns:repeat(auto-fill,minmax(60px,1fr));max-height:40vh;}
+  body.touch-on .eqGrid,body.touch-on .slotRow,body.touch-on .bagGrid{padding:10px;}
+  body.touch-on .dp-acts .vbtn{min-width:96px;font-size:14px;padding:11px 8px;}   /* easier-to-tap equip/sell buttons */
+  body.touch-on .sock,body.touch-on .dp-socks .ds{width:42px;height:42px;font-size:21px;}
+
+  /* ---- STASH / VENDOR: keep them within the viewport & readable on a phone. ---- */
+  body.touch-on #stashPanel{right:50%;left:auto;transform:translate(50%,-50%);width:min(320px,94vw);}
+  body.touch-on #vendorPanel{width:94vw;}
+
+  /* ---- PET / COMPANION: the hero card + 3-across ability slots were cramped
+         and clipped off-screen. Slim the portrait, stack the slots. ---- */
+  body.touch-on #petPanel{width:96vw;}
+  body.touch-on .petHero{gap:12px;padding:14px;margin:14px 10px 0;align-items:flex-start;}
+  body.touch-on .petPortrait{width:100px;height:216px;flex:none;}   /* fixed height so it doesn't stretch into a giant column beside the tall info stack */
+  body.touch-on .petPortrait .pIc{font-size:52px;}
+  body.touch-on .petName{font-size:18px;}
+  body.touch-on .petSlots{grid-template-columns:1fr;gap:8px;}   /* one readable row per ability slot */
+  body.touch-on .petAbSlot{padding:10px 12px;}
+  body.touch-on .petSec{margin:16px 10px 0;}
+  body.touch-on #petYardPanel{width:96vw;}
+  body.touch-on .petGrid,body.touch-on #petYardPanel #petFuse{grid-template-columns:1fr;}
+  body.touch-on .petCard .pcBtns .vbtn{flex:1;padding:10px 6px;font-size:12.5px;}
+
+  /* ---- generic: bigger close targets & comfy score/codex/settings widths ---- */
+  body.touch-on .panel .closeX{min-width:40px;min-height:40px;font-size:18px;}
+  body.touch-on #scorePanel,body.touch-on #codexPanel,body.touch-on #settingsPanel{width:94vw;}
+  body.touch-on .scoreCols{flex-direction:column;}
+  body.touch-on .scoreColSide{width:100%;}
 </style>
 </head>
 <body>
@@ -3652,7 +3737,7 @@ function clearPanelPos(id){ const el=$(id); if(el){ el.style.left=''; el.style.r
 const _panelPos={};                                   // remembers where each menu was last dragged to
 const _POS_CENTERED=new Set(['settingsPanel']);       // settings (and the ESC exit prompt, a modal) stay centred
 function applyPanelPos(id){ const el=$(id); if(!el) return;
-  if(_POS_CENTERED.has(id)){ el.style.left=''; el.style.right=''; el.style.top=''; el.style.transform=''; return; }   // keep the CSS centring
+  if(TOUCH.on || _POS_CENTERED.has(id)){ el.style.left=''; el.style.right=''; el.style.top=''; el.style.transform=''; return; }   // touch/mobile: clear inline offsets so the phone-friendly CSS layout (full-screen tree, centred panels) takes over; desktop keeps its off-centre placement below
   const p=_panelPos[id];
   if(p&&p.left){ el.style.left=p.left; el.style.top=p.top; el.style.right='auto'; el.style.transform='none'; }        // reopen where you left it
   else { el.style.left='3vw'; el.style.right='auto'; el.style.top='50%'; el.style.transform='translateY(-50%)'; } }   // default off-centre so menus don't cover the centred hero
