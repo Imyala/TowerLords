@@ -1,0 +1,291 @@
+<!DOCTYPE html><html><head><meta charset="utf-8"><title>Skeleton models preview</title>
+<style>
+  body{margin:0;background:#12100e;color:#d9d2bf;font:12px sans-serif}
+  #hud{position:fixed;top:10px;left:12px;line-height:1.5;text-shadow:0 1px 2px #000;pointer-events:none}
+  #hud b{color:#f0e6c8}
+  #tag{position:fixed;bottom:14px;left:0;right:0;text-align:center;font-size:14px;letter-spacing:1px;color:#e7dcc0;text-shadow:0 1px 3px #000;pointer-events:none}
+</style>
+<script type="importmap">{ "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js" } }</script>
+</head><body>
+<div id="hud"><b>10 SKELETON ENEMIES</b> — concept-art pass<br>drag to orbit · scroll to zoom<br>walk cycle running</div>
+<div id="tag"></div>
+<script type="module">
+import * as THREE from 'three';
+const rand=(a,b)=>a+Math.random()*(b-a);
+
+// ============================================================ SKELETON — concept-art pass
+// One builder, ten variants. Every figure hangs off ONE root node (userData.body) so the
+// engine's existing bob / hit-flash / telegraph animation drives it unchanged. userData.humanoid
+// makes it FACE its heading; userData.arms / userData.legs get a walk-swing in the enemy loop.
+// Shared skeletal base (skull, ribcage, spine, pelvis, bone limbs); opts.variant swaps the gear.
+function makeSkeletonMesh(scale,opts){
+  opts=opts||{}; const s=scale||1; const v=opts.variant||'skirmisher';
+  const mat=(c,e,ei,r)=>new THREE.MeshStandardMaterial({color:c,emissive:(e==null?c:e),emissiveIntensity:(ei==null?.3:ei),roughness:(r==null?.6:r),flatShading:true});
+  const bone   = mat(opts.bone||0xe9e3cf, 0x6b6350, .34, .5);
+  const boneLo = mat(0xcabf9f, 0x4a4436, .3, .6);
+  const cloth  = mat(opts.cloth||0x6a2725, 0x1c0c0b, .32, .9);   // scarf / cape — dried-blood red
+  const hoodM  = mat(opts.hood||0x2a2630, 0x0c0a10, .28, .92);   // dark cowl
+  const leather= mat(0x4a3826, 0x1c1208, .3, .85);
+  const wood   = mat(0x6b4f2e, 0x231708, .3, .85);
+  const metal  = mat(0x9aa0aa, 0x3a3f48, .38, .38);
+  const metalD = mat(0x50555e, 0x1f2228, .3, .55);
+  const dark   = mat(0x120e0a, 0x000000, 0, .95);
+  const gold   = mat(0xcaa23a, 0x6b4f14, .55, .4);
+  const glowC  = opts.glow || 0x9a6bff;                          // socket glow (mage/reaper/commander)
+  const glowMat= mat(glowC, glowC, 1.1, .3);
+  const flameM = mat(0xb27bff, 0xb27bff, 1.4, .3);
+
+  const grp=new THREE.Group();
+  grp.userData.humanoid=true; grp.userData.arms=[]; grp.userData.legs=[];
+
+  // ---- root torso node (everything parents here) ----
+  const body=new THREE.Mesh(new THREE.CylinderGeometry(.055*s,.05*s,.6*s,5), bone);  // spine
+  // body base y is FORCED to scale*.95 by the game's enemy loop every frame — build limbs to that baseline so feet rest on the floor
+  body.castShadow=true; body.position.y=.95*s; grp.add(body); grp.userData.body=body;
+
+  // ribcage — flattened rings, tighter toward the sternum
+  for(let i=0;i<4;i++){ const r=(.19-i*.022)*s;
+    const rib=new THREE.Mesh(new THREE.TorusGeometry(r,.016*s,4,10), bone);
+    rib.rotation.x=Math.PI/2; rib.scale.set(1,.72,1); rib.position.y=(.24-i*.085)*s; body.add(rib); }
+  const sternum=new THREE.Mesh(new THREE.BoxGeometry(.03*s,.34*s,.02*s), bone); sternum.position.set(0,.08*s,.15*s); body.add(sternum);
+  // collarbones + shoulder knobs
+  for(const sd of [-1,1]){ const clav=new THREE.Mesh(new THREE.CylinderGeometry(.02*s,.02*s,.2*s,4), bone);
+    clav.rotation.z=Math.PI/2; clav.position.set(sd*.1*s,.26*s,.08*s); body.add(clav);
+    const sh=new THREE.Mesh(new THREE.SphereGeometry(.06*s,6,5), bone); sh.position.set(sd*.2*s,.26*s,0); body.add(sh); }
+  // pelvis
+  const pelvis=new THREE.Mesh(new THREE.BoxGeometry(.26*s,.14*s,.16*s), bone); pelvis.position.y=-.24*s; body.add(pelvis);
+  const pelvis2=new THREE.Mesh(new THREE.ConeGeometry(.14*s,.14*s,5), bone); pelvis2.rotation.x=Math.PI; pelvis2.position.y=-.32*s; body.add(pelvis2);
+
+  // ---- SKULL ----
+  const head=new THREE.Group(); head.position.y=.5*s; body.add(head);
+  const neck=new THREE.Mesh(new THREE.CylinderGeometry(.04*s,.045*s,.1*s,5), bone); neck.position.y=-.11*s; head.add(neck);
+  const cranium=new THREE.Mesh(new THREE.SphereGeometry(.2*s,10,8), bone); cranium.scale.set(1,1.04,1.08); head.add(cranium);
+  // brow ridge
+  const brow=new THREE.Mesh(new THREE.BoxGeometry(.3*s,.05*s,.06*s), bone); brow.position.set(0,.03*s,.16*s); head.add(brow);
+  // eye sockets (deep) + optional glow
+  for(const sd of [-1,1]){ const socket=new THREE.Mesh(new THREE.SphereGeometry(.062*s,7,6), dark); socket.scale.set(1.1,1,.7); socket.position.set(sd*.085*s,-.01*s,.16*s); head.add(socket);
+    if(opts.glow){ const eye=new THREE.Mesh(new THREE.SphereGeometry(.035*s,6,5), glowMat); eye.position.set(sd*.085*s,-.01*s,.185*s); head.add(eye); } }
+  // nasal cavity
+  const nose=new THREE.Mesh(new THREE.ConeGeometry(.03*s,.09*s,3), dark); nose.rotation.x=Math.PI; nose.position.set(0,-.075*s,.19*s); head.add(nose);
+  // upper jaw + teeth
+  const jaw=new THREE.Mesh(new THREE.BoxGeometry(.22*s,.09*s,.17*s), bone); jaw.position.set(0,-.16*s,.06*s); head.add(jaw);
+  for(let i=0;i<6;i++){ const t=new THREE.Mesh(new THREE.BoxGeometry(.022*s,.05*s,.02*s), boneLo);
+    t.position.set((i-2.5)*.036*s,-.19*s,.15*s); head.add(t); }
+  // cheekbones
+  for(const sd of [-1,1]){ const ch=new THREE.Mesh(new THREE.SphereGeometry(.05*s,5,4), bone); ch.scale.set(1,.6,.8); ch.position.set(sd*.15*s,-.04*s,.1*s); head.add(ch); }
+
+  // ---- LIMBS (bones = shaft + knuckle knobs). Arm groups pivot at the shoulder, legs at the hip ----
+  function boneSeg(len,rad,m){ const g=new THREE.Group();
+    const sh=new THREE.Mesh(new THREE.CylinderGeometry(rad*.7,rad*.7,len,5), m); g.add(sh);
+    const a=new THREE.Mesh(new THREE.SphereGeometry(rad,5,4), m); a.position.y=len/2; g.add(a);
+    const b=new THREE.Mesh(new THREE.SphereGeometry(rad,5,4), m); b.position.y=-len/2; g.add(b); return g; }
+  const arms={};
+  for(const sd of [-1,1]){ const arm=new THREE.Group();
+    const upper=boneSeg(.32*s,.05*s,bone); upper.position.y=-.16*s; arm.add(upper);
+    const fore =boneSeg(.3*s,.045*s,bone); fore.position.y=-.47*s; arm.add(fore);
+    const hand =new THREE.Mesh(new THREE.SphereGeometry(.06*s,5,4), bone); hand.position.y=-.64*s; arm.add(hand);
+    arm.position.set(sd*.22*s,.26*s,0); body.add(arm); grp.userData.arms.push(arm); arms[sd]=arm; }
+  for(const sd of [-1,1]){ const leg=new THREE.Group();
+    const thigh=boneSeg(.34*s,.06*s,bone); thigh.position.y=-.17*s; leg.add(thigh);
+    const shin =boneSeg(.34*s,.05*s,bone); shin.position.y=-.51*s; leg.add(shin);
+    const foot =new THREE.Mesh(new THREE.BoxGeometry(.13*s,.06*s,.24*s), bone); foot.position.set(0,-.7*s,.06*s); leg.add(foot);
+    leg.position.set(sd*.11*s,-.22*s,0); body.add(leg); grp.userData.legs.push(leg); }
+
+  // ============================================================ GEAR BUILDERS
+  function sword(len,col){ const g=new THREE.Group(); const m=col?mat(col,col,.4,.4):metal;
+    const blade=new THREE.Mesh(new THREE.BoxGeometry(.05*s,len,.016*s), m); blade.position.y=len/2; g.add(blade);
+    const tip=new THREE.Mesh(new THREE.ConeGeometry(.032*s,.13*s,4), m); tip.position.y=len; g.add(tip);
+    const guard=new THREE.Mesh(new THREE.BoxGeometry(.17*s,.03*s,.035*s), gold); g.add(guard);
+    const grip=new THREE.Mesh(new THREE.CylinderGeometry(.02*s,.02*s,.13*s,5), leather); grip.position.y=-.08*s; g.add(grip);
+    const pom=new THREE.Mesh(new THREE.SphereGeometry(.03*s,5,4), gold); pom.position.y=-.15*s; g.add(pom); return g; }
+  function curvedSword(){ const g=new THREE.Group();
+    const b1=new THREE.Mesh(new THREE.BoxGeometry(.045*s,.34*s,.016*s), metal); b1.position.set(.02*s,.18*s,0); b1.rotation.z=-.12; g.add(b1);
+    const b2=new THREE.Mesh(new THREE.BoxGeometry(.04*s,.22*s,.016*s), metal); b2.position.set(.09*s,.46*s,0); b2.rotation.z=-.5; g.add(b2);
+    const tip=new THREE.Mesh(new THREE.ConeGeometry(.028*s,.1*s,4), metal); tip.position.set(.17*s,.56*s,0); tip.rotation.z=-.9; g.add(tip);
+    const guard=new THREE.Mesh(new THREE.BoxGeometry(.14*s,.03*s,.03*s), gold); g.add(guard);
+    const grip=new THREE.Mesh(new THREE.CylinderGeometry(.018*s,.018*s,.12*s,5), cloth); grip.position.y=-.07*s; g.add(grip); return g; }
+  function roundShield(sz){ sz=sz||1; const g=new THREE.Group();
+    const disc=new THREE.Mesh(new THREE.CylinderGeometry(.26*s*sz,.26*s*sz,.05*s,14), wood); disc.rotation.x=Math.PI/2; g.add(disc);
+    const rim=new THREE.Mesh(new THREE.TorusGeometry(.26*s*sz,.028*s,6,16), metalD); g.add(rim);
+    const boss=new THREE.Mesh(new THREE.SphereGeometry(.06*s,7,6), metalD); boss.position.z=.05*s; g.add(boss);
+    // skull emblem
+    const em=new THREE.Mesh(new THREE.SphereGeometry(.1*s*sz,7,6), boneLo); em.scale.set(1,1.05,.5); em.position.z=.045*s; g.add(em);
+    for(const sd of [-1,1]){ const eh=new THREE.Mesh(new THREE.SphereGeometry(.028*s*sz,5,4), dark); eh.position.set(sd*.04*s*sz,.02*s,.08*s); g.add(eh); } return g; }
+  function towerShield(){ const g=new THREE.Group();
+    const face=new THREE.Mesh(new THREE.BoxGeometry(.4*s,.66*s,.05*s), wood); g.add(face);
+    const band1=new THREE.Mesh(new THREE.BoxGeometry(.44*s,.06*s,.06*s), metalD); band1.position.y=.22*s; g.add(band1);
+    const band2=band1.clone(); band2.position.y=-.22*s; g.add(band2);
+    const rim=new THREE.Mesh(new THREE.BoxGeometry(.44*s,.7*s,.02*s), metalD); rim.position.z=-.02*s; g.add(rim);
+    const em=new THREE.Mesh(new THREE.SphereGeometry(.12*s,7,6), boneLo); em.scale.set(1,1.1,.5); em.position.z=.05*s; g.add(em);
+    for(const sd of [-1,1]){ const eh=new THREE.Mesh(new THREE.SphereGeometry(.035*s,5,4), dark); eh.position.set(sd*.05*s,.03*s,.09*s); g.add(eh); } return g; }
+  function coneHelm(){ const g=new THREE.Group();
+    const dome=new THREE.Mesh(new THREE.ConeGeometry(.22*s,.34*s,8), metal); dome.position.y=.13*s; g.add(dome);
+    const rim=new THREE.Mesh(new THREE.TorusGeometry(.21*s,.025*s,5,12), metalD); rim.position.y=.02*s; g.add(rim);
+    const nose=new THREE.Mesh(new THREE.BoxGeometry(.04*s,.16*s,.04*s), metal); nose.position.set(0,-.03*s,.2*s); g.add(nose); return g; }
+  function hornHelm(){ const g=new THREE.Group();
+    const dome=new THREE.Mesh(new THREE.SphereGeometry(.23*s,9,7,0,Math.PI*2,0,Math.PI*0.62), metal); dome.position.y=.05*s; g.add(dome);
+    const rim=new THREE.Mesh(new THREE.TorusGeometry(.22*s,.03*s,5,14), metalD); rim.position.y=.02*s; g.add(rim);
+    for(const sd of [-1,1]){ const horn=new THREE.Mesh(new THREE.ConeGeometry(.06*s,.34*s,6), boneLo);
+      horn.position.set(sd*.2*s,.16*s,0); horn.rotation.z=sd*-1.15; horn.rotation.x=-.2; g.add(horn); } return g; }
+  function hood(){ const g=new THREE.Group();
+    const h=new THREE.Mesh(new THREE.SphereGeometry(.28*s,10,8,0,Math.PI*2,0,Math.PI*0.68), hoodM); h.position.y=.02*s; h.scale.set(1.05,1.1,1.15); g.add(h);
+    const brim=new THREE.Mesh(new THREE.ConeGeometry(.3*s,.22*s,10,1,true), hoodM); brim.position.set(0,-.02*s,.02*s); g.add(brim); return g; }
+  function cloak(col){ const m=col?mat(col,0x0c0a10,.28,.92):hoodM; const g=new THREE.Group();
+    const cape=new THREE.Mesh(new THREE.ConeGeometry(.34*s,.95*s,9,1,true), m); cape.position.set(0,-.1*s,-.05*s); cape.scale.set(1,1,.8); g.add(cape);
+    const shoulders=new THREE.Mesh(new THREE.SphereGeometry(.3*s,10,6,0,Math.PI*2,0,Math.PI*0.5), m); shoulders.position.y=.24*s; g.add(shoulders); return g; }
+  function crown(){ const g=new THREE.Group();
+    const band=new THREE.Mesh(new THREE.CylinderGeometry(.2*s,.2*s,.08*s,10,1,true), gold); band.position.y=.16*s; g.add(band);
+    for(let i=0;i<7;i++){ const a=i/7*Math.PI*2; const sp=new THREE.Mesh(new THREE.ConeGeometry(.03*s,.14*s,4), gold);
+      sp.position.set(Math.cos(a)*.2*s,.26*s,Math.sin(a)*.2*s); g.add(sp); }
+    const jewel=new THREE.Mesh(new THREE.OctahedronGeometry(.04*s,0), mat(0xff3b5b,0xff3b5b,1,.3)); jewel.position.set(0,.18*s,.2*s); g.add(jewel); return g; }
+
+  // ============================================================ VARIANT ASSEMBLY
+  function put(o,x,y,z,rx,ry,rz){ o.position.set(x*s,y*s,z*s); if(rx)o.rotation.x=rx; if(ry)o.rotation.y=ry; if(rz)o.rotation.z=rz; body.add(o); return o; }
+
+  if(v==='skirmisher'){
+    const sc=new THREE.Mesh(new THREE.TorusGeometry(.13*s,.04*s,5,10), cloth); sc.rotation.x=1.2; put(sc,0,.4,.02);
+    put(sword(.42),.3,-.28,.12,0,0,-.15);
+    const sh=roundShield(); put(sh,-.32,-.02,.06,0,-.5,0);
+  } else if(v==='archer'){
+    put(hood(),0,.5,0); // hood over skull (add to head instead for better fit)
+    body.children[body.children.length-1].position.set(0,.52*s,-.02*s);
+    // bow held out front
+    const bowG=new THREE.Group();
+    const b=new THREE.Mesh(new THREE.TorusGeometry(.32*s,.02*s,5,14,Math.PI*1.25), wood); b.rotation.z=Math.PI*0.5+Math.PI*0.375; bowG.add(b);
+    const str=new THREE.Mesh(new THREE.CylinderGeometry(.006*s,.006*s,.56*s,4), mat(0xccc0a0,0x555,.2,.6)); bowG.add(str);
+    const arr=new THREE.Mesh(new THREE.CylinderGeometry(.008*s,.008*s,.42*s,4), wood); arr.rotation.z=Math.PI/2; arr.position.y=0; bowG.add(arr);
+    const ah=new THREE.Mesh(new THREE.ConeGeometry(.02*s,.06*s,4), metal); ah.rotation.z=-Math.PI/2; ah.position.x=.24*s; bowG.add(ah);
+    put(bowG,.28,-.05,.28,0,0,0);
+    // quiver on back
+    const q=new THREE.Mesh(new THREE.CylinderGeometry(.06*s,.05*s,.36*s,7), leather); put(q,-.14,.12,-.16,.3,0,.3);
+    for(let i=0;i<3;i++){ const fl=new THREE.Mesh(new THREE.ConeGeometry(.02*s,.1*s,4), cloth); put(fl,-.14+i*.03,.34,-.18,.3,0,.3); }
+    // tattered cape
+    const cp=new THREE.Mesh(new THREE.ConeGeometry(.28*s,.7*s,8,1,true), mat(0x4a4030,0x1a160c,.3,.9)); put(cp,0,-.02,-.08); cp.scale.set(1,1,.7);
+  } else if(v==='spearman'){
+    put(coneHelm(),0,.52,0);
+    // spear
+    const spear=new THREE.Group();
+    const shaft=new THREE.Mesh(new THREE.CylinderGeometry(.02*s,.025*s,1.5*s,5), wood); spear.add(shaft);
+    const tip=new THREE.Mesh(new THREE.ConeGeometry(.06*s,.28*s,4), metal); tip.position.y=.85*s; spear.add(tip);
+    const collar=new THREE.Mesh(new THREE.CylinderGeometry(.035*s,.035*s,.1*s,5), metalD); collar.position.y=.66*s; spear.add(collar);
+    put(spear,.28,-.05,.1,-.16,0,-.12);
+    const sh=roundShield(); put(sh,-.32,-.02,.06,0,-.5,0);
+  } else if(v==='mage'){
+    put(hood(),0,.5,0); body.children[body.children.length-1].position.set(0,.54*s,-.02*s);
+    put(cloak(0x2a2436),0,0,0);
+    // staff with flaming skull
+    const staff=new THREE.Group();
+    const shaft=new THREE.Mesh(new THREE.CylinderGeometry(.022*s,.028*s,1.55*s,6), mat(0x3a3040,0x150f1c,.3,.85)); staff.add(shaft);
+    const claw=new THREE.Mesh(new THREE.TorusGeometry(.08*s,.02*s,5,10,Math.PI*1.3), boneLo); claw.position.y=.78*s; claw.rotation.x=Math.PI/2; staff.add(claw);
+    const sk=new THREE.Mesh(new THREE.SphereGeometry(.1*s,8,7), boneLo); sk.position.y=.88*s; staff.add(sk);
+    const jw=new THREE.Mesh(new THREE.BoxGeometry(.1*s,.05*s,.09*s), boneLo); jw.position.y=.82*s; staff.add(jw);
+    for(const sd of [-1,1]){ const so=new THREE.Mesh(new THREE.SphereGeometry(.028*s,5,4), glowMat); so.position.set(sd*.04*s,.9*s,.07*s); staff.add(so); }
+    for(let i=0;i<3;i++){ const fl=new THREE.Mesh(new THREE.ConeGeometry(.05*s-i*.012*s,.22*s,5), flameM); fl.position.set(rand(-.03,.03)*s,1.02*s+i*.03*s,rand(-.03,.03)*s); staff.add(fl); }
+    put(staff,.3,-.02,.06,0,0,-.06);
+    // spell orb in left hand
+    const orb=new THREE.Mesh(new THREE.IcosahedronGeometry(.11*s,0), flameM); put(orb,-.3,-.34,.14);
+  } else if(v==='bomber'){
+    const cap=new THREE.Mesh(new THREE.SphereGeometry(.22*s,9,6,0,Math.PI*2,0,Math.PI*0.55), metalD); put(cap,0,.55,0);
+    const spike=new THREE.Mesh(new THREE.ConeGeometry(.03*s,.12*s,5), metal); put(spike,0,.72,0);
+    // lit bomb in right hand
+    const bombG=new THREE.Group();
+    const ball=new THREE.Mesh(new THREE.SphereGeometry(.16*s,10,8), mat(0x1c1c20,0x050506,.2,.7)); bombG.add(ball);
+    const fuse=new THREE.Mesh(new THREE.CylinderGeometry(.012*s,.012*s,.12*s,4), leather); fuse.position.set(.04*s,.2*s,0); fuse.rotation.z=-.3; bombG.add(fuse);
+    const spark=new THREE.Mesh(new THREE.SphereGeometry(.045*s,6,5), mat(0xffb43a,0xffb43a,1.5,.3)); spark.position.set(.08*s,.27*s,0); bombG.add(spark);
+    put(bombG,.32,-.42,.14);
+  } else if(v==='guardian'){
+    put(hornHelm(),0,.52,0);
+    // pauldrons
+    for(const sd of [-1,1]){ const pd=new THREE.Mesh(new THREE.SphereGeometry(.12*s,8,6,0,Math.PI*2,0,Math.PI*0.55), metal); put(pd,sd*.24,.26,0); }
+    // breastplate
+    const bp=new THREE.Mesh(new THREE.CylinderGeometry(.2*s,.16*s,.34*s,8), metalD); put(bp,0,.06,.02);
+    put(sword(.5),.32,-.24,.12,0,0,-.12);
+    const sh=towerShield(); sh.scale.set(.85,.85,.85); put(sh,-.34,-.06,.06,0,-.4,0);
+  } else if(v==='dualwielder'){
+    const band=new THREE.Mesh(new THREE.TorusGeometry(.2*s,.03*s,5,12), cloth); band.rotation.x=Math.PI/2; put(band,0,.56,0);
+    const tail=new THREE.Mesh(new THREE.ConeGeometry(.04*s,.2*s,4), cloth); put(tail,-.16,.5,-.1,0,0,.5);
+    put(curvedSword(),.28,-.3,.1,0,0,-.2);
+    const c2=curvedSword(); c2.scale.x=-1; put(c2,-.28,-.3,.1,0,0,.2);
+  } else if(v==='reaper'){
+    put(cloak(0x1a1720),0,0,0);
+    const hd=hood(); hd.scale.set(1.15,1.15,1.15); put(hd,0,.52,-.02);
+    // scythe
+    const sc=new THREE.Group();
+    const shaft=new THREE.Mesh(new THREE.CylinderGeometry(.022*s,.026*s,1.7*s,6), mat(0x2a231a,0x120c06,.3,.85)); sc.add(shaft);
+    const socket=new THREE.Mesh(new THREE.CylinderGeometry(.04*s,.04*s,.12*s,6), metalD); socket.position.y=.85*s; sc.add(socket);
+    const blade=new THREE.Mesh(new THREE.TorusGeometry(.34*s,.03*s,4,14,Math.PI*0.72), metal); blade.position.set(.02*s,.9*s,0); blade.rotation.z=-.3; sc.add(blade);
+    const edge=new THREE.Mesh(new THREE.ConeGeometry(.05*s,.16*s,4), metal); edge.position.set(.34*s,1.12*s,0); edge.rotation.z=1.2; sc.add(edge);
+    put(sc,.3,0,.06,0,0,-.04);
+  } else if(v==='shieldbearer'){
+    put(coneHelm(),0,.52,0);
+    const sh=towerShield(); put(sh,-.34,-.04,.08,0,-.35,0);
+    // flanged mace
+    const mace=new THREE.Group();
+    const handle=new THREE.Mesh(new THREE.CylinderGeometry(.022*s,.022*s,.5*s,5), leather); mace.add(handle);
+    const headB=new THREE.Mesh(new THREE.IcosahedronGeometry(.09*s,0), metalD); headB.position.y=.3*s; mace.add(headB);
+    for(let i=0;i<4;i++){ const fl=new THREE.Mesh(new THREE.ConeGeometry(.04*s,.08*s,4), metal); const a=i/4*Math.PI*2; fl.position.set(Math.cos(a)*.09*s,.3*s,Math.sin(a)*.09*s); fl.rotation.z=Math.PI/2-a; mace.add(fl); }
+    put(mace,.32,-.3,.12,0,0,-.1);
+  } else if(v==='commander'){
+    put(crown(),0,.5,0);
+    put(cloak(0x5a1620),0,0,0);   // royal red cape
+    for(const sd of [-1,1]){ const pd=new THREE.Mesh(new THREE.SphereGeometry(.11*s,8,6,0,Math.PI*2,0,Math.PI*0.55), gold); put(pd,sd*.24,.26,0); }
+    put(sword(.5,0xd8c060),.3,-.24,.12,0,0,-.12);
+    // banner pole with tattered skull flag
+    const ban=new THREE.Group();
+    const pole=new THREE.Mesh(new THREE.CylinderGeometry(.02*s,.02*s,1.8*s,6), wood); ban.add(pole);
+    const flag=new THREE.Mesh(new THREE.BoxGeometry(.02*s,.5*s,.42*s), mat(0x6a1622,0x200608,.3,.9)); flag.position.set(0,.55*s,.24*s); ban.add(flag);
+    const em=new THREE.Mesh(new THREE.SphereGeometry(.1*s,7,6), boneLo); em.scale.set(1,1.1,.4); em.position.set(-.02*s,.6*s,.24*s); ban.add(em);
+    const fin=new THREE.Mesh(new THREE.ConeGeometry(.03*s,.14*s,5), gold); fin.position.y=.92*s; ban.add(fin);
+    put(ban,-.34,-.02,-.02,0,0,.04);
+  }
+
+  if(opts.scaleBody){ body.scale.multiplyScalar(opts.scaleBody); }
+  return grp;
+}
+
+// ============================================================ PREVIEW STAGE
+const VARIANTS=[
+  ['skirmisher','1. Skirmisher → grunt',{}],
+  ['archer','2. Archer → archer',{}],
+  ['spearman','3. Spearman → lancer',{}],
+  ['mage','4. Bone Mage → caster',{glow:0x9a6bff}],
+  ['bomber','5. Bomb Skeleton → bomber',{}],
+  ['guardian','6. Guardian → brute',{scaleBody:1.15}],
+  ['dualwielder','7. Dual Wielder → berserker',{}],
+  ['reaper','8. Scythe Reaper → revenant',{glow:0xff3b3b}],
+  ['shieldbearer','9. Shieldbearer → bulwark',{scaleBody:1.1}],
+  ['commander','10. Bone Commander → shaman',{glow:0xff3b3b}],
+];
+const scene=new THREE.Scene(); scene.background=new THREE.Color(0x1a1713); scene.fog=new THREE.Fog(0x1a1713,14,46);
+const cam=new THREE.PerspectiveCamera(48,innerWidth/innerHeight,.1,120); cam.position.set(0,3,10);
+const ren=new THREE.WebGLRenderer({antialias:true}); ren.setSize(innerWidth,innerHeight); ren.shadowMap.enabled=true; document.body.appendChild(ren.domElement);
+addEventListener('resize',()=>{ cam.aspect=innerWidth/innerHeight; cam.updateProjectionMatrix(); ren.setSize(innerWidth,innerHeight); });
+scene.add(new THREE.HemisphereLight(0xaebcd6,0x201c16,1.05));
+const sun=new THREE.DirectionalLight(0xffe6c2,1.7); sun.position.set(5,9,4); sun.castShadow=true; sun.shadow.mapSize.set(1024,1024); scene.add(sun);
+const rim=new THREE.DirectionalLight(0x6a7bff,.5); rim.position.set(-5,3,-4); scene.add(rim);
+const ground=new THREE.Mesh(new THREE.CircleGeometry(30,40), new THREE.MeshStandardMaterial({color:0x241f18,roughness:1})); ground.rotation.x=-Math.PI/2; ground.receiveShadow=true; scene.add(ground);
+
+const figs=[]; const cols=5, sp=2.4;
+VARIANTS.forEach((V,i)=>{ const g=makeSkeletonMesh(1.0,{variant:V[0],...V[2]});
+  const cx=(i%cols-(cols-1)/2)*sp, cz=(Math.floor(i/cols)-0.5)*sp*1.5;
+  g.position.set(cx,0,cz); g.userData.phase=i*0.7; scene.add(g); figs.push(g); });
+
+let ry=0.2, rx=0.05, drag=false, lx=0, ly=0, dist=10;
+addEventListener('mousedown',e=>{drag=true;lx=e.clientX;ly=e.clientY});
+addEventListener('mouseup',()=>drag=false);
+addEventListener('mousemove',e=>{ if(drag){ ry+=(e.clientX-lx)*0.008; rx=Math.max(-.3,Math.min(.7,rx+(e.clientY-ly)*0.005)); lx=e.clientX; ly=e.clientY; } });
+addEventListener('wheel',e=>{ dist=Math.max(4,Math.min(24,dist+e.deltaY*0.01)); },{passive:true});
+const tag=document.getElementById('tag');
+tag.textContent=VARIANTS.map(v=>v[1]).join('     ·     ');
+
+function tick(t){ requestAnimationFrame(tick);
+  for(const g of figs){ const b=g.userData.body; const ph=g.userData.phase;
+    b.position.y=0.95+Math.sin(t*0.004+ph)*0.05;   // mirrors the in-game baseline (scale*.95)
+    const sw=Math.sin(t*0.006+ph)*0.4; const L=g.userData.legs,A=g.userData.arms;
+    if(L){ L[0].rotation.x=sw; L[1].rotation.x=-sw; }
+    if(A){ A[0].rotation.x=-sw*0.6; A[1].rotation.x=sw*0.6; }
+    b.rotation.y=Math.sin(t*0.0006+ph)*0.5; }
+  cam.position.set(Math.sin(ry)*dist*Math.cos(rx),3+Math.sin(rx)*dist*0.5,Math.cos(ry)*dist*Math.cos(rx));
+  cam.lookAt(0,1,0); ren.render(scene,cam); }
+tick(0);
+</script></body></html>

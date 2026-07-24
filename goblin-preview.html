@@ -1,0 +1,81 @@
+<!DOCTYPE html><html><head><meta charset="utf-8"><title>Goblin model preview</title>
+<style>body{margin:0;background:#1a1f1a;color:#cfe6cf;font:12px sans-serif}#hud{position:fixed;top:10px;left:12px}</style>
+<script type="importmap">{ "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js" } }</script>
+</head><body><div id="hud">GOBLIN — Swarmling model · drag to orbit · variants: plain / gold (bag) / loot-guzzler (belly)</div>
+<script type="module">
+import * as THREE from 'three';
+const rand=(a,b)=>a+Math.random()*(b-a);
+function makeGoblinMesh(scale,opts){
+  opts=opts||{}; const s=scale||1;
+  const skin=new THREE.MeshStandardMaterial({color:opts.skin||0x7a9440, emissive:opts.skin||0x7a9440, emissiveIntensity:.28, roughness:.62, flatShading:true});
+  const leather=new THREE.MeshStandardMaterial({color:opts.leather||0x5a4630, emissive:0x241a10, emissiveIntensity:.3, roughness:.85, flatShading:true});
+  const bone=new THREE.MeshStandardMaterial({color:0xe8e2cc, emissive:0x6b6350, emissiveIntensity:.35, roughness:.5, flatShading:true});
+  const dark=new THREE.MeshStandardMaterial({color:0x1c130c, roughness:.9, flatShading:true});
+  const grp=new THREE.Group();
+  // torso — the root animated node (bob / hit-flash / telegraph all drive this one mesh)
+  const body=new THREE.Mesh(new THREE.CylinderGeometry(.30*s,.40*s,.62*s,7), skin);
+  body.castShadow=true; body.position.y=.95*s; grp.add(body); grp.userData.body=body; grp.userData.humanoid=true;
+  // ragged tunic + belt + skull charm
+  const tunic=new THREE.Mesh(new THREE.ConeGeometry(.45*s,.6*s,7,1,true), leather); tunic.position.y=-.14*s; body.add(tunic);
+  const belt=new THREE.Mesh(new THREE.TorusGeometry(.36*s,.05*s,5,10), dark); belt.rotation.x=Math.PI/2; belt.position.y=-.02*s; body.add(belt);
+  const charm=new THREE.Mesh(new THREE.SphereGeometry(.085*s,6,5), bone); charm.position.set(.07*s,.16*s,.30*s); body.add(charm);
+  // head — oversized, slightly squashed (chibi)
+  const head=new THREE.Mesh(new THREE.SphereGeometry(.44*s,9,7), skin); head.scale.set(1.06,.9,1); head.position.y=.72*s; head.castShadow=true; body.add(head);
+  // patched hood (cap) + bone stud
+  const hood=new THREE.Mesh(new THREE.SphereGeometry(.5*s,8,6,0,Math.PI*2,0,Math.PI*0.60), leather); hood.position.y=.09*s; head.add(hood);
+  const stud=new THREE.Mesh(new THREE.SphereGeometry(.06*s,5,4), bone); stud.position.set(.26*s,.30*s,.30*s); head.add(stud);
+  // HUGE ears — flattened cones raked out and up, with a hint of droop variance per goblin
+  const rake=rand(1.75,2.05);
+  for(const sd of [-1,1]){ const ear=new THREE.Mesh(new THREE.ConeGeometry(.14*s,.66*s,4), skin);
+    ear.position.set(sd*.44*s,.08*s,-.02*s); ear.rotation.z=sd*-rake; ear.scale.set(1,1,.42); head.add(ear); }
+  // long hooked nose
+  const nose=new THREE.Mesh(new THREE.ConeGeometry(.09*s,.30*s,5), skin); nose.rotation.x=Math.PI/2; nose.position.set(0,-.03*s,.48*s); head.add(nose);
+  // amber lamp-eyes + pupils (they glow — packs read as eye-clusters in the dark)
+  const eyeMat=new THREE.MeshStandardMaterial({color:0xf0c24a, emissive:0xd89a2a, emissiveIntensity:.9, flatShading:true});
+  for(const sd of [-1,1]){ const eye=new THREE.Mesh(new THREE.SphereGeometry(.10*s,6,5), eyeMat); eye.position.set(sd*.18*s,.08*s,.36*s); head.add(eye);
+    const pup=new THREE.Mesh(new THREE.SphereGeometry(.038*s,4,4), dark); pup.position.set(sd*.18*s,.08*s,.445*s); head.add(pup); }
+  // snaggle-tooth grin: dark slit + three bone teeth
+  const mouth=new THREE.Mesh(new THREE.BoxGeometry(.30*s,.07*s,.06*s), dark); mouth.position.set(0,-.19*s,.40*s); head.add(mouth);
+  for(let i=0;i<3;i++){ const tooth=new THREE.Mesh(new THREE.ConeGeometry(.028*s,.07*s,4), bone);
+    tooth.position.set((i-1)*.09*s,-.225*s,.42*s); tooth.rotation.x=Math.PI; head.add(tooth); }
+  // arms (swing in the walk cycle)
+  grp.userData.arms=[];
+  for(const sd of [-1,1]){ const arm=new THREE.Mesh(new THREE.CylinderGeometry(.075*s,.065*s,.44*s,5), skin);
+    arm.position.set(sd*.36*s,.10*s,0); arm.rotation.z=sd*0.42; body.add(arm); grp.userData.arms.push(arm); }
+  // stone-tipped spear in the off hand (skippable for the fat merchants)
+  if(!opts.noSpear){ const spear=new THREE.Group();
+    const shaft=new THREE.Mesh(new THREE.CylinderGeometry(.035*s,.05*s,1.3*s,5), leather); spear.add(shaft);
+    const tip=new THREE.Mesh(new THREE.ConeGeometry(.10*s,.30*s,4), new THREE.MeshStandardMaterial({color:0x8a8f98,emissive:0x3a3f48,emissiveIntensity:.4,flatShading:true}));
+    tip.position.y=.78*s; spear.add(tip);
+    const wrap=new THREE.Mesh(new THREE.CylinderGeometry(.055*s,.055*s,.16*s,5), dark); wrap.position.y=.30*s; spear.add(wrap);
+    spear.position.set(.46*s,.02*s,.14*s); spear.rotation.z=-0.16; spear.rotation.x=-0.22; body.add(spear); }
+  // loot sack on the back (gold / loot-guzzler variants)
+  if(opts.bag){ const bag=new THREE.Mesh(new THREE.SphereGeometry(.30*s,7,6), new THREE.MeshStandardMaterial({color:0x8a6a3a,emissive:0x6b4a1a,emissiveIntensity:.4,roughness:.8,flatShading:true}));
+    bag.scale.set(1,1.15,.8); bag.position.set(-.12*s,.12*s,-.40*s); body.add(bag);
+    const tie=new THREE.Mesh(new THREE.CylinderGeometry(.05*s,.07*s,.12*s,5), dark); tie.position.set(-.12*s,.48*s,-.40*s); body.add(tie); }
+  if(opts.belly){ body.scale.set(1.25,1,1.25); }   // the loot-guzzler arrives pre-fattened
+  // stubby legs (walk cycle)
+  grp.userData.legs=[];
+  for(const sd of [-1,1]){ const leg=new THREE.Mesh(new THREE.CylinderGeometry(.09*s,.115*s,.36*s,5), skin);
+    leg.position.set(sd*.16*s,-.50*s,0); body.add(leg); grp.userData.legs.push(leg); }
+  return grp;
+}
+const scene=new THREE.Scene(); scene.background=new THREE.Color(0x232a23); scene.fog=new THREE.Fog(0x232a23,10,40);
+const cam=new THREE.PerspectiveCamera(50,innerWidth/innerHeight,.1,100); cam.position.set(0,2.4,6);
+const ren=new THREE.WebGLRenderer({antialias:true}); ren.setSize(innerWidth,innerHeight); ren.shadowMap.enabled=true; document.body.appendChild(ren.domElement);
+scene.add(new THREE.HemisphereLight(0xbfd4ff,0x2a3320,1.1));
+const sun=new THREE.DirectionalLight(0xffe0b0,1.6); sun.position.set(4,7,3); sun.castShadow=true; scene.add(sun);
+const ground=new THREE.Mesh(new THREE.CircleGeometry(20,32), new THREE.MeshStandardMaterial({color:0x2e3a2a,roughness:1})); ground.rotation.x=-Math.PI/2; ground.receiveShadow=true; scene.add(ground);
+const g1=makeGoblinMesh(1.0); g1.position.x=-2; scene.add(g1);
+const g2=makeGoblinMesh(1.0,{leather:0x8a6a1a,bag:true,noSpear:true}); scene.add(g2);
+const g3=makeGoblinMesh(1.15,{skin:0x6fae4a,belly:true,bag:true,noSpear:true}); g3.position.x=2.3; scene.add(g3);
+let ry=0, drag=false, lx=0;
+addEventListener('mousedown',e=>{drag=true;lx=e.clientX}); addEventListener('mouseup',()=>drag=false);
+addEventListener('mousemove',e=>{ if(drag){ ry+=(e.clientX-lx)*0.01; lx=e.clientX; } });
+function tick(t){ requestAnimationFrame(tick);
+  for(const g of [g1,g2,g3]){ const b=g.userData.body; b.position.y=0.95+Math.sin(t*0.004+g.position.x)*0.1;
+    const sw=Math.sin(t*0.012+g.position.x)*0.5; const L=g.userData.legs,A=g.userData.arms;
+    if(L){L[0].rotation.x=sw;L[1].rotation.x=-sw;} if(A){A[0].rotation.x=-sw*0.7;A[1].rotation.x=sw*0.7;} }
+  cam.position.set(Math.sin(ry)*6,2.4,Math.cos(ry)*6); cam.lookAt(0,1,0); ren.render(scene,cam); }
+tick(0);
+</script></body></html>
