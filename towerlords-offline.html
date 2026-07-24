@@ -134,7 +134,7 @@
 
   /* bottom progress bars — blue character XP + gold Fame (Torchlight-style stacked pair) */
   /* bottom-centre progress widget: readable XP + Fame bars (level / next-level progress) */
-  #progressBars{position:absolute;bottom:122px;left:50%;transform:translateX(-50%);width:min(440px,44vw);display:flex;flex-direction:column;gap:5px;pointer-events:none;z-index:5;}
+  #progressBars{position:absolute;bottom:122px;left:50%;transform:translateX(-50%);width:min(440px,44vw);display:flex;flex-direction:column;gap:5px;pointer-events:none;z-index:13;}
   #xpStrip{position:relative;height:21px;border-radius:11px;background:rgba(6,10,20,.78);border:1px solid rgba(86,224,255,.32);overflow:hidden;box-shadow:0 3px 12px rgba(0,0,0,.55);}
   #xpStripFill{position:absolute;inset:0;width:0%;background:linear-gradient(90deg,var(--xp),var(--neon));box-shadow:0 0 16px var(--xp);transition:width .2s ease;border-radius:11px;}
   #fameStrip{position:relative;height:16px;border-radius:9px;background:rgba(6,10,20,.78);border:1px solid rgba(255,206,77,.3);overflow:hidden;box-shadow:0 3px 12px rgba(0,0,0,.55);}
@@ -174,7 +174,7 @@
   .slot.sig.ready .ic{text-shadow:0 0 10px var(--gold);}
 
   /* floating combat text */
-  #fct{position:absolute;inset:0;pointer-events:none;overflow:hidden;z-index:8;}
+  #fct{position:absolute;inset:0;pointer-events:none;overflow:hidden;z-index:14;}
   .fct{position:absolute;transform:translate(-50%,-50%);font-weight:bold;font-size:18px;
     text-shadow:0 2px 5px rgba(0,0,0,.95);animation:fctRise .85s cubic-bezier(.2,.7,.3,1) forwards;white-space:nowrap;}
   .fct.dmg{color:#fff;} .fct.crit{font-size:33px;color:var(--gold);text-shadow:0 0 14px rgba(255,206,77,.8),0 2px 5px #000;}
@@ -222,7 +222,7 @@
 
   /* toast log */
   #log{bottom:210px;left:50%;transform:translateX(-50%);width:540px;max-width:92vw;text-align:center;font-size:13px;
-    display:flex;flex-direction:column-reverse;gap:3px;pointer-events:none;z-index:6;}
+    display:flex;flex-direction:column-reverse;gap:3px;pointer-events:none;z-index:14;}
   #log div{opacity:0;animation:toast 3s forwards;}
   @keyframes toast{8%{opacity:1;}80%{opacity:1;}100%{opacity:0;}}
 
@@ -404,6 +404,12 @@
   /* centering that still scrolls: with 7 columns, justify-content:center CLIPS the left edge — margin-auto edges center without clipping */
   #treeCols{justify-content:flex-start;}
   #treeCols>.spec:first-child{margin-left:auto;} #treeCols>.spec:last-child{margin-right:auto;}
+  /* desktop/laptop: if the columns don't fit, WRAP them onto more rows (scroll DOWN) instead of forcing a sideways scroll or a browser zoom-out */
+  @media (max-width:1400px) and (pointer:fine){
+    #treeCols{flex-wrap:wrap;justify-content:center;align-content:flex-start;overflow-x:hidden;overflow-y:auto;gap:14px;}
+    #treeCols>.spec:first-child{margin-left:0;} #treeCols>.spec:last-child{margin-right:0;}
+    .spec{width:min(300px,44vw);}
+  }
   /* touch devices: the tooltip docks at the bottom of the screen instead of chasing a cursor */
   #treeTip.dock{position:fixed!important;left:10px!important;right:10px!important;top:auto!important;bottom:78px!important;max-width:none!important;z-index:99;pointer-events:none;}
   /* ---- MOBILE / TOUCH: the tree, character & pet panels fit and respond to fingers ---- */
@@ -1414,7 +1420,7 @@
         <div class="ascList" id="ascList"></div>
         <div class="ascHint" id="ascHint"></div>
       </div>
-      <div id="destinyWrap">
+      <div id="destinyWrap" class="hidden">
         <div class="destinyHd">
           <div><b>✦ Choose a Tower Destiny</b><span>Each climb now starts with a permanent rule-bending bonus. Pick the vibe you want, then stack boss blessings on top of it.</span></div>
           <button class="btn ghost small" id="destinyReroll">↻ New Draft</button>
@@ -1656,6 +1662,7 @@ const sfx={
     noiseBurst(0.3,0.1); setTimeout(()=>tone(196,0.5,'square',0.1,392),380); },
   boom:()=>{ const t=performance.now(); if(t-(sfx._lb||0)<120)return; sfx._lb=t; tone(58,0.26,'square',0.15,28); noiseBurst(0.2,0.13); },   // heavy detonation — bombs, boss impacts (was silently missing)
   deny:()=>{ tone(140,0.12,'square',0.09,110); setTimeout(()=>tone(110,0.14,'square',0.08,90),90); },                                       // flat two-note "no" (was silently missing)
+  crack:()=>{ tone(180,0.05,'square',0.14,60); noiseBurst(0.22,0.16); setTimeout(()=>tone(90,0.28,'square',0.14,40),40); },                 // a weapon overheats & warps — sharp snap into a low groan
 };
 function startAmbient(){ if(!actx||ambStarted)return; ambStarted=true;
   [55,82.4,110].forEach((f,i)=>{ const o=actx.createOscillator(); o.type='sine'; o.frequency.value=f*(1+i*0.002); const g=actx.createGain(); g.gain.value=0.5/(i+1); o.connect(g); g.connect(ambGain); o.start();
@@ -2013,11 +2020,12 @@ function makeSkillGem(floor, idForce){ const id=idForce||pick(SKILL_IDS), sk=SKI
     value:60+tier*40+floor*3, desc:(sk.toggle?`Toggle aura · bind to slots 5–9 · ${sk.mps} mana/sec while active`:`Active skill · bind to slots 1–4${tier>1?` · +${(tier-1)*15}% power`:''}`)}; }
 // ---- user settings (persist across sessions) ----
 const SETTINGS_KEY='towerlords_settings_v1';
-const SETTINGS={ bigNumbers:true, moveMode:'keyboard', tips:true, autoSalvage:true, music:true, musicVol:75, junkMaxRarity:1, camSway:true, touch:'auto', touchAim:'auto', navCollapsed:false };   // autoSalvage: grey/common drops auto-sell for gold · musicVol: music loudness 0-100 (player-set) · junkMaxRarity: highest rarity index eligible for bulk feed/sell · camSway: directional camera lean · touch: mobile on-screen controls (auto/on/off) · touchAim: auto-aim vs twin-stick
-function loadSettings(){ try{ const s=localStorage.getItem(SETTINGS_KEY); if(s){ const o=JSON.parse(s); if(typeof o.bigNumbers==='boolean')SETTINGS.bigNumbers=o.bigNumbers; if(o.moveMode==='keyboard'||o.moveMode==='mouse')SETTINGS.moveMode=o.moveMode; if(typeof o.tips==='boolean')SETTINGS.tips=o.tips; if(typeof o.autoSalvage==='boolean')SETTINGS.autoSalvage=o.autoSalvage; if(typeof o.music==='boolean')SETTINGS.music=o.music; if(typeof o.musicVol==='number')SETTINGS.musicVol=clamp(o.musicVol|0,0,100); if(typeof o.junkMaxRarity==='number')SETTINGS.junkMaxRarity=clamp(o.junkMaxRarity|0,0,3); if(typeof o.camSway==='boolean')SETTINGS.camSway=o.camSway; if(o.touch==='auto'||o.touch==='on'||o.touch==='off')SETTINGS.touch=o.touch; if(o.touchAim==='auto'||o.touchAim==='twin')SETTINGS.touchAim=o.touchAim; if(typeof o.navCollapsed==='boolean')SETTINGS.navCollapsed=o.navCollapsed; } }catch(e){} }
+const DEFAULT_KEYBINDS={ up:'w',down:'s',left:'a',right:'d', dash:' ', sig:'shift', interact:'f', recall:'h', slot1:'1',slot2:'2',slot3:'3',slot4:'4',slot5:'5',slot6:'6',slot7:'7',slot8:'8',slot9:'9', flask1:'q',flask2:'e',flask3:'r',flask4:'z',flask5:'x' };
+const SETTINGS={ bigNumbers:true, moveMode:'keyboard', tips:true, autoSalvage:true, music:true, musicVol:75, junkMaxRarity:1, camSway:true, touch:'auto', touchAim:'auto', navCollapsed:false, keybinds:{...DEFAULT_KEYBINDS} };   // autoSalvage: grey/common drops auto-sell for gold · musicVol: music loudness 0-100 (player-set) · junkMaxRarity: highest rarity index eligible for bulk feed/sell · camSway: directional camera lean · touch: mobile on-screen controls (auto/on/off) · touchAim: auto-aim vs twin-stick
+function loadSettings(){ try{ const s=localStorage.getItem(SETTINGS_KEY); if(s){ const o=JSON.parse(s); if(typeof o.bigNumbers==='boolean')SETTINGS.bigNumbers=o.bigNumbers; if(o.moveMode==='keyboard'||o.moveMode==='mouse')SETTINGS.moveMode=o.moveMode; if(typeof o.tips==='boolean')SETTINGS.tips=o.tips; if(typeof o.autoSalvage==='boolean')SETTINGS.autoSalvage=o.autoSalvage; if(typeof o.music==='boolean')SETTINGS.music=o.music; if(typeof o.musicVol==='number')SETTINGS.musicVol=clamp(o.musicVol|0,0,100); if(typeof o.junkMaxRarity==='number')SETTINGS.junkMaxRarity=clamp(o.junkMaxRarity|0,0,3); if(typeof o.camSway==='boolean')SETTINGS.camSway=o.camSway; if(o.touch==='auto'||o.touch==='on'||o.touch==='off')SETTINGS.touch=o.touch; if(o.touchAim==='auto'||o.touchAim==='twin')SETTINGS.touchAim=o.touchAim; if(typeof o.navCollapsed==='boolean')SETTINGS.navCollapsed=o.navCollapsed; if(o.keybinds&&typeof o.keybinds==='object'){ SETTINGS.keybinds=SETTINGS.keybinds||{...DEFAULT_KEYBINDS}; for(const a in DEFAULT_KEYBINDS){ if(typeof o.keybinds[a]==='string') SETTINGS.keybinds[a]=o.keybinds[a]; } } } }catch(e){} }
 // bulk feed/sell "junk" = anything at or below the chosen quality that isn't a special item or locked
 function junkThreshold(){ return clamp(SETTINGS.junkMaxRarity|0,0,4); }
-function isBulkJunk(it){ return it && !it.isPet && !it.isPot && !it.isFlask && !it.isSkillGem && !it.locked && RARITY.indexOf(it.rarity)<=junkThreshold(); }
+function isBulkJunk(it){ if(!it||it.isPet||it.isPot||it.isFlask||it.isSkillGem||it.locked||it.unique) return false; const _ri=RARITY.indexOf(it.rarity); return _ri>=0 && _ri<=junkThreshold(); }   // uniques & out-of-array rarities (mythos) are NEVER junk
 function saveSettings(){ try{ localStorage.setItem(SETTINGS_KEY, JSON.stringify(SETTINGS)); }catch(e){} }
 // ---- death log (persist last 40 runs) ----
 const DEATHLOG_KEY='towerlords_deathlog_v1';
@@ -3251,25 +3259,53 @@ addEventListener('keydown',e=>{
       if(k.toUpperCase()===G.typeCast.seq[G.typeCast.i]){ G.typeCast.i++; showTypeCast(); tone(660+G.typeCast.i*120,0.05,'square',0.05); if(G.typeCast.i>=4) endTypeCast(true); }
       else endTypeCast(false);
       e.preventDefault(); return; } }
+  // ---- REBINDABLE combat keybinds: dash / signature / interact / recall / skills 1-9 / flasks (any key or mouse button) ----
+  { const _act=actionForKey(k); if(_act){ doAction(_act); e.preventDefault(); return; } }
   const pk={c:'charPanel',t:'treePanel',i:'invPanel',p:'petPanel',v:'scorePanel',b:'codexPanel',o:'settingsPanel'}[k];
   if(pk){ _G.menuOwner=0; _G.cur=0; togglePanel(pk); }   // P1's keyboard always manages P1
   else if(k==='m'){ toggleMute(); }
-  else if(k==='f'){ interact(); }
-  else if(k==='h'){ startRecall(); }   // quick recall to the sanctuary (RotMG nexus-style)
   else if(k==='g'){ if(!G.paused) throwGold(); }    // WEAPONIZED GOLD: throw a fistful of your purse
   else if(k==='j'){ if(!G.paused) goldPlating(); }  // GOLD PLATING: buy a coin shield on the spot
   else if(k==='l'){ openLegacy('game'); }   // fame-spent legacy (titles, field respec, swift recall, character boons)
   else if(k==='escape'){ if(anyPanelOpen()){ PANELS.forEach(p=>$(p).classList.add('hidden')); syncPause(); refreshMenuState(); } else { promptExitToMenu(); } }
-  else if(k===' '){ if(!G.paused) doDash(); }
-  else if(k==='shift'){ if(!G.paused) useSignature(); }
-  else { const fi=FLASK_KEYS.indexOf(k); if(fi>=0){ if(!G.paused) useFlask(fi); }
-         else { const si=SLOT_KEYS.indexOf(k); if(si>=0 && !G.paused) useSlot(si); } }
-  if([' ','w','a','s','d','q','e','r','z','x'].includes(k)) e.preventDefault();
+  if(isMoveKey(k)) e.preventDefault();
 });
 addEventListener('keyup',e=>keys[e.key.toLowerCase()]=false);
+// ===== CUSTOM KEYBINDS: any key OR mouse button -> movement / abilities / skills / flasks =====
+const MOVE_ACTIONS={up:1,down:1,left:1,right:1};
+function actionForKey(token){ const kb=SETTINGS.keybinds||DEFAULT_KEYBINDS; for(const a in kb){ if(!MOVE_ACTIONS[a] && kb[a]===token) return a; } return null; }
+function isMoveKey(k){ const kb=SETTINGS.keybinds||DEFAULT_KEYBINDS; return k===kb.up||k===kb.down||k===kb.left||k===kb.right; }
+function doAction(a){ if(_G&&_G.modalOpen) return true;
+  if(a==='dash'){ if(!G.paused) doDash(); }
+  else if(a==='sig'){ if(!G.paused) useSignature(); }
+  else if(a==='interact'){ interact(); }
+  else if(a==='recall'){ startRecall(); }
+  else { let m=/^slot([1-9])$/.exec(a); if(m){ if(!G.paused) useSlot(+m[1]-1); return true; } m=/^flask([1-5])$/.exec(a); if(m){ if(!G.paused) useFlask(+m[1]-1); } }
+  return true; }
+function kbKeyLabel(v){ if(v==null||v==='') return '—'; const mm=/^mouse(\d)$/.exec(v); if(mm){ return ['L-Click','M-Click','R-Click','Mouse 4','Mouse 5'][+mm[1]]||('Mouse '+mm[1]); }
+  if(v===' ') return 'Space'; if(v==='arrowup')return '↑'; if(v==='arrowdown')return '↓'; if(v==='arrowleft')return '←'; if(v==='arrowright')return '→';
+  return v.length===1?v.toUpperCase():(v.charAt(0).toUpperCase()+v.slice(1)); }
+const KEYBIND_ROWS=[['Move up','up'],['Move down','down'],['Move left','left'],['Move right','right'],['Dash','dash'],['Signature ultimate','sig'],['Interact','interact'],['Recall to sanctuary','recall'],['Skill 1','slot1'],['Skill 2','slot2'],['Skill 3','slot3'],['Skill 4','slot4'],['Skill 5','slot5'],['Skill 6','slot6'],['Skill 7','slot7'],['Skill 8','slot8'],['Skill 9','slot9'],['Flask 1','flask1'],['Flask 2','flask2'],['Flask 3','flask3'],['Flask 4','flask4'],['Flask 5','flask5']];
+function keybindHTML(){ const kb=SETTINGS.keybinds||DEFAULT_KEYBINDS;
+  let h='<div style="margin:16px 16px 6px;font-size:11px;opacity:.6;letter-spacing:1px;text-transform:uppercase">Keybinds — click a button, then press any key or mouse button (Esc cancels)</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:6px 12px;margin:0 16px 10px">';
+  for(const row of KEYBIND_ROWS){ h+='<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:12px"><span style="opacity:.85">'+row[0]+'</span><button class="segBtn kbBtn" data-kb="'+row[1]+'" style="flex:0 0 auto;min-width:74px;padding:4px 8px;font-size:11px;text-align:center">'+kbKeyLabel(kb[row[1]])+'</button></div>'; }
+  h+='</div><div style="margin:0 16px 14px"><button class="segBtn" id="kbReset" style="padding:4px 10px;font-size:11px">↺ Reset to defaults</button> <span style="font-size:10px;opacity:.5">Movement accepts keyboard keys only.</span></div>';
+  return h; }
+let _rebinding=null;
+function wireKeybinds(b){ b.querySelectorAll('.kbBtn').forEach(btn=>btn.onclick=()=>startRebind(btn.dataset.kb, btn));
+  const rb=$('kbReset'); if(rb) rb.onclick=()=>{ SETTINGS.keybinds={...DEFAULT_KEYBINDS}; saveSettings(); renderSettings(); log('↺ Keybinds reset to defaults.'); }; }
+function startRebind(action, btn){ if(_rebinding) return; _rebinding=action; if(btn){ btn.textContent='… press'; btn.classList.add('sel'); }
+  const done=(val)=>{ cleanup(); if(val!=null){ const moveOnly=!!MOVE_ACTIONS[action];
+      if(moveOnly && /^mouse/.test(val)){ log('Movement must be a keyboard key.'); }
+      else { for(const a in SETTINGS.keybinds){ if(a!==action && SETTINGS.keybinds[a]===val) SETTINGS.keybinds[a]=''; } SETTINGS.keybinds[action]=val; saveSettings(); log('Bound '+action+' → '+kbKeyLabel(val)); } }
+    renderSettings(); };
+  const onKey=(e)=>{ e.preventDefault(); e.stopPropagation(); const k=e.key.toLowerCase(); done(k==='escape'?null:k); };
+  const onMouse=(e)=>{ e.preventDefault(); e.stopPropagation(); done('mouse'+e.button); };
+  function cleanup(){ _rebinding=null; window.removeEventListener('keydown',onKey,true); window.removeEventListener('mousedown',onMouse,true); }
+  window.addEventListener('keydown',onKey,true); window.addEventListener('mousedown',onMouse,true); }
 let mouseCX=innerWidth/2, mouseCY=innerHeight/2;
 addEventListener('mousemove',e=>{ mouseCX=e.clientX; mouseCY=e.clientY; mouse.x=(e.clientX/innerWidth)*2-1; mouse.y=-(e.clientY/innerHeight)*2+1; });
-addEventListener('mousedown',e=>{ if(anyPanelOpen())return; if(e.button===0) mouseDown=true; else if(e.button===2) mouseR=true; });
+addEventListener('mousedown',e=>{ if(anyPanelOpen())return; const _act=actionForKey('mouse'+e.button); if(_act){ if(!G.paused) doAction(_act); if(e.button===1)e.preventDefault(); return; } if(e.button===0) mouseDown=true; else if(e.button===2) mouseR=true; });
 addEventListener('mouseup',e=>{ if(e.button===0) mouseDown=false; else if(e.button===2) mouseR=false; });
 addEventListener('wheel',e=>{ if(anyPanelOpen()||!G.running||G.inTown) return;   // SCROLL WHEEL OVERDRIVE: spin the wheel up → frantic attack speed, paid in mana
   if(e.deltaY<0 && G.mana>2){ G.od=Math.min(20,(G.od||0)+1); if(G.od===20&&!G._odMax){ G._odMax=true; floatText(G.player.position.x,G.player.position.z,'⚙ MAX OVERDRIVE','crit',3); } if(G.od<20)G._odMax=false; } },{passive:true});
@@ -3346,7 +3382,7 @@ function setupTouchControls(){
   if(stats && !TOUCH.on && SETTINGS.navCollapsed) stats.classList.add('collapsed');   // restore desktop collapsed state
 }
 function makeKbmInput(){ return { kind:'kbm', pollActions:false, read(p){
-  const inp=p.in; let mx=0,mz=0; if(keys['w'])mz-=1; if(keys['s'])mz+=1; if(keys['a'])mx-=1; if(keys['d'])mx+=1;
+  const inp=p.in; let mx=0,mz=0; const _kb=SETTINGS.keybinds||DEFAULT_KEYBINDS; if(keys[_kb.up])mz-=1; if(keys[_kb.down])mz+=1; if(keys[_kb.left])mx-=1; if(keys[_kb.right])mx+=1;
   if(TOUCH.on && (TOUCH.move.mx||TOUCH.move.mz) && !anyPanelOpen()){ mx=TOUCH.move.mx; mz=TOUCH.move.mz; }   // touch stick overrides WASD
   inp.mx=mx; inp.mz=mz;
   if(TOUCH.on){   // touch aiming replaces the mouse raycast entirely
@@ -3634,7 +3670,7 @@ function promptExitToMenu(){ if(!G.running) return;
 function refreshContinueBtn(){ const c=$('menuContinue'); if(!c) return; const s=loadSession();
   if(s && s.level){ c.classList.remove('hidden'); c.innerHTML='▶ Continue — '+(s.inTown?'Sanctuary':'Floor '+s.floor)+' · Lv '+s.level+(s.evolves?' ✦×'+s.evolves:''); }
   else c.classList.add('hidden'); }
-function showClimb(){ ['tutorial','deathlog'].forEach(id=>$(id).classList.add('hidden')); $('start').classList.remove('hidden'); $('menuShell').classList.add('hidden'); $('climbScreen').classList.remove('hidden'); $('coopLobby').classList.add('hidden'); $('onlineLobby').classList.add('hidden'); coopLobbyOpen=false; loadMeta(); renderAscSel(); rerollDestinyDraft(); }
+function showClimb(){ ['tutorial','deathlog'].forEach(id=>$(id).classList.add('hidden')); $('start').classList.remove('hidden'); $('menuShell').classList.add('hidden'); $('climbScreen').classList.remove('hidden'); $('coopLobby').classList.add('hidden'); $('onlineLobby').classList.add('hidden'); coopLobbyOpen=false; loadMeta(); renderAscSel(); }   // Tower Destiny picker removed from the start menu
 $('menuClimb').onclick=showClimb;
 $('menuContinue').onclick=tryResumeSession;
 // ---- DAILY CLIMB: same seeded tower for everyone today, one scored attempt, level playing rules ----
@@ -3654,7 +3690,7 @@ loadMeta(); refreshDailyBtn(); refreshContinueBtn(); refreshMenuRank(); refreshM
   clearDestinyDraft();   // daily climbs stay destiny-free so everyone races the same ruleset
   selAsc=0; G.hardcore=false; G.diff='normal';             // level playing field: no ascension mods, standard difficulty
   startGame();
-  G.seed=dailySeedInt(); G.dailyRun=true; // startGame rolled a random seed — the daily overrides it
+  G.seed=dailySeedInt(); G.dailyRun=true; dailyScoreTick(); // startGame rolled a random seed — the daily overrides it; mark it PLAYED immediately so a fast death still counts
   banner('🌅 DAILY CLIMB — '+dailyKey(),'one attempt · the whole world races this tower');
   log('🌅 DAILY CLIMB: everyone gets this exact tower today. Your attempt is scored when it ends — climb far, kill lots, die proud.');
 }; }
@@ -4208,7 +4244,7 @@ function generateFloor(anchor){
   if(((G.floor-1)%SUMMIT_FLOOR)%10===0){ const ngl=ngLevel(G.floor);
     banner('ACT '+act.num+' — '+biome.name.toUpperCase()+(ngl>0?' ⛰NG+'+ngl:''), act.sub);
     log('⌖ Act '+act.num+' — '+biome.name+': '+act.sub+'.');
-    actBeat(act); }   // first entry ever: the Tower itself speaks one line (STORY_BIBLE §6)
+    actBeat(act); actBeatRun(act); }   // once-ever authored line + a fresh ADAPTIVE line EVERY run (species rolled for this climb)
   if(G.floor%SUMMIT_FLOOR===0) log('👑 The summit. THE TOWER LORD holds this floor.');
   scene.background=new THREE.Color(biome.fog);
   scene.fog=new THREE.Fog(biome.fog, 46, 150);
@@ -4303,6 +4339,7 @@ function generateFloor(anchor){
       log('🪙 Your DEAD DROP glints somewhere on this floor — '+META.cache.gold+'g crushed into the stone. Walk over it.'); }
     maybeSpawnKeptOne(rooms);      // rare: a cocoon from the Tower's cellar (STORY_BIBLE §7)
     maybeSpawnFragment(rooms);     // rare: a lore fragment (STORY_BIBLE §8)
+    maybeSpawnPage(rooms);         // adaptive: a STORY PAGE for this act — reveals this run's plot (run journal)
     // NEMESIS: at most ONE lord may be roaming any floor, off his post and hunting (first meetings
     // only). Gated by this run's encounter budget — a typical climb meets 1-3 roaming lords total,
     // a rare climb none, a rarer climb many. 11%/floor spreads them out unpredictably.
@@ -5000,6 +5037,373 @@ function makeSkeletonMesh(scale,opts){
   return grp;
 }
 
+
+// ============================================================ ENEMY FAMILY MODELS (concept-art pass 2)
+// ============================================================ ENEMY MODELS — concept-art pass 2
+// Five themed FAMILIES (slime, ghoul/ghost, troll, ratman, orc) built to the same contract as the
+// goblin & skeleton: ONE root node (userData.body) so the engine's bob / hit-flash / telegraph drive
+// it unchanged; userData.humanoid = FACE heading (no spin); userData.arms / userData.legs = walk-swing.
+// The game forces body.position.y = scale*.95 every frame, so standing figures build limbs to that
+// baseline (feet ~0). Short creatures (slimes) translate their body geometry downward to compensate.
+// Everything uses cheap primitives + flatShading so packs stay fast. Uses globals: THREE, rand.
+
+function _mat(c,e,ei,r){ return new THREE.MeshStandardMaterial({color:c,emissive:(e==null?c:e),emissiveIntensity:(ei==null?.3:ei),roughness:(r==null?.6:r),flatShading:true}); }
+function _limb(s,len,r1,r2,m){ const g=new THREE.Group();
+  const sh=new THREE.Mesh(new THREE.CylinderGeometry(r1*s,r2*s,len*s,6), m); g.add(sh);
+  const a=new THREE.Mesh(new THREE.SphereGeometry(r1*s,6,5), m); a.position.y=len*s/2; g.add(a);
+  const b=new THREE.Mesh(new THREE.SphereGeometry(r2*s,6,5), m); b.position.y=-len*s/2; g.add(b); return g; }
+
+// ---- shared gear / weapons (materials passed in so each enemy owns its own instances) ----
+function _wood(){ return _mat(0x5c4225,0x1c1208,.28,.85); }
+function _iron(){ return _mat(0x8f959f,0x363b44,.34,.4); }
+function _ironD(){ return _mat(0x484d56,0x1c1f25,.3,.55); }
+function _gold(){ return _mat(0xc9a23a,0x6b4f14,.5,.4); }
+function _leather(){ return _mat(0x4a3826,0x1c1208,.3,.85); }
+function _boneMat(){ return _mat(0xd9d2ba,0x5f584a,.34,.5); }
+
+function _axe(s,big){ const g=new THREE.Group(); const w=_wood(),m=_iron();
+  const haft=new THREE.Mesh(new THREE.CylinderGeometry(.03*s,.035*s,(big?1.0:.72)*s,6), w); g.add(haft);
+  const hd=(big?.9:.65);
+  const head=new THREE.Mesh(new THREE.CylinderGeometry(.02*s,.02*s,.28*s*hd,4), m); head.rotation.z=Math.PI/2; head.position.y=(big?.42:.3)*s; head.scale.set(1,1,.4); g.add(head);
+  const blade=new THREE.Mesh(new THREE.CircleGeometry(.2*s*hd,8,0,Math.PI), m); blade.position.set(.14*s,(big?.42:.3)*s,0); blade.rotation.y=Math.PI/2; g.add(blade);
+  const blade2=blade.clone(); blade2.rotation.y=-Math.PI/2; blade2.position.z=-.001; g.add(blade2); return g; }
+function _greatAxe(s){ const g=new THREE.Group(); const w=_wood(),m=_iron();
+  const haft=new THREE.Mesh(new THREE.CylinderGeometry(.035*s,.04*s,1.3*s,6), w); g.add(haft);
+  for(const sd of [-1,1]){ const blade=new THREE.Mesh(new THREE.CircleGeometry(.26*s,10,0,Math.PI), m); blade.position.set(sd*.16*s,.5*s,0); blade.rotation.y=sd*Math.PI/2; g.add(blade); } return g; }
+function _sword(s,len,col){ const g=new THREE.Group(); const m=col?_mat(col,col,.4,.4):_iron();
+  const blade=new THREE.Mesh(new THREE.BoxGeometry(.05*s,len*s,.016*s), m); blade.position.y=len*s/2; g.add(blade);
+  const tip=new THREE.Mesh(new THREE.ConeGeometry(.032*s,.13*s,4), m); tip.position.y=len*s; g.add(tip);
+  const guard=new THREE.Mesh(new THREE.BoxGeometry(.16*s,.03*s,.03*s), _gold()); g.add(guard);
+  const grip=new THREE.Mesh(new THREE.CylinderGeometry(.02*s,.02*s,.13*s,5), _leather()); grip.position.y=-.08*s; g.add(grip); return g; }
+function _dagger(s){ const g=new THREE.Group(); const m=_iron();
+  const b=new THREE.Mesh(new THREE.BoxGeometry(.035*s,.26*s,.012*s), m); b.position.y=.13*s; g.add(b);
+  const tip=new THREE.Mesh(new THREE.ConeGeometry(.024*s,.09*s,4), m); tip.position.y=.26*s; g.add(tip);
+  const guard=new THREE.Mesh(new THREE.BoxGeometry(.1*s,.02*s,.02*s), _ironD()); g.add(guard); return g; }
+function _curvedBlade(s,len){ const g=new THREE.Group(); const m=_iron();
+  const b1=new THREE.Mesh(new THREE.BoxGeometry(.045*s,len*s*.6,.016*s), m); b1.position.set(.02*s,len*s*.3,0); b1.rotation.z=-.12; g.add(b1);
+  const b2=new THREE.Mesh(new THREE.BoxGeometry(.04*s,len*s*.45,.016*s), m); b2.position.set(.1*s,len*s*.72,0); b2.rotation.z=-.55; g.add(b2);
+  const tip=new THREE.Mesh(new THREE.ConeGeometry(.028*s,.1*s,4), m); tip.position.set(.2*s,len*s*.92,0); tip.rotation.z=-.95; g.add(tip);
+  const guard=new THREE.Mesh(new THREE.BoxGeometry(.12*s,.03*s,.03*s), _ironD()); g.add(guard); return g; }
+function _club(s,spiked){ const g=new THREE.Group(); const w=_mat(0x6b4f2e,0x231708,.3,.85);
+  const haft=new THREE.Mesh(new THREE.CylinderGeometry(.04*s,.05*s,.55*s,6), w); g.add(haft);
+  const head=new THREE.Mesh(new THREE.CylinderGeometry(.13*s,.1*s,.34*s,7), w); head.position.y=.42*s; g.add(head);
+  if(spiked){ const m=_iron(); for(let i=0;i<7;i++){ const sp=new THREE.Mesh(new THREE.ConeGeometry(.03*s,.1*s,4), m);
+    const a=i/7*Math.PI*2, yy=.34*s+(i%2)*.12*s; sp.position.set(Math.cos(a)*.13*s,yy,Math.sin(a)*.13*s); sp.rotation.z=Math.PI/2-a; sp.rotation.x=Math.sin(a); g.add(sp); } } return g; }
+function _mace(s){ const g=new THREE.Group(); const m=_ironD(),i=_iron();
+  const handle=new THREE.Mesh(new THREE.CylinderGeometry(.022*s,.022*s,.5*s,5), _leather()); g.add(handle);
+  const head=new THREE.Mesh(new THREE.IcosahedronGeometry(.1*s,0), m); head.position.y=.3*s; g.add(head);
+  for(let k=0;k<5;k++){ const fl=new THREE.Mesh(new THREE.ConeGeometry(.04*s,.09*s,4), i); const a=k/5*Math.PI*2; fl.position.set(Math.cos(a)*.1*s,.3*s,Math.sin(a)*.1*s); fl.rotation.z=Math.PI/2-a; g.add(fl); } return g; }
+function _spear(s){ const g=new THREE.Group();
+  const shaft=new THREE.Mesh(new THREE.CylinderGeometry(.02*s,.025*s,1.5*s,5), _wood()); g.add(shaft);
+  const tip=new THREE.Mesh(new THREE.ConeGeometry(.06*s,.28*s,4), _iron()); tip.position.y=.85*s; g.add(tip); return g; }
+function _bow(s){ const g=new THREE.Group();
+  const b=new THREE.Mesh(new THREE.TorusGeometry(.34*s,.02*s,5,14,Math.PI*1.15), _wood()); b.rotation.z=Math.PI*0.925; g.add(b);
+  const str=new THREE.Mesh(new THREE.CylinderGeometry(.006*s,.006*s,.6*s,4), _mat(0xccc0a0,0x555,.2,.6)); g.add(str);
+  const arr=new THREE.Mesh(new THREE.CylinderGeometry(.008*s,.008*s,.5*s,4), _wood()); arr.rotation.z=Math.PI/2; g.add(arr);
+  const ah=new THREE.Mesh(new THREE.ConeGeometry(.02*s,.06*s,4), _iron()); ah.rotation.z=-Math.PI/2; ah.position.x=.28*s; g.add(ah); return g; }
+function _roundShield(s,sz){ sz=sz||1; const g=new THREE.Group(); const w=_wood(),md=_ironD(),bl=_boneMat();
+  const disc=new THREE.Mesh(new THREE.CylinderGeometry(.26*s*sz,.26*s*sz,.05*s,14), w); disc.rotation.x=Math.PI/2; g.add(disc);
+  const rim=new THREE.Mesh(new THREE.TorusGeometry(.26*s*sz,.028*s,6,16), md); g.add(rim);
+  const em=new THREE.Mesh(new THREE.SphereGeometry(.1*s*sz,7,6), bl); em.scale.set(1,1.05,.5); em.position.z=.05*s; g.add(em);
+  for(const sd of [-1,1]){ const eh=new THREE.Mesh(new THREE.SphereGeometry(.028*s*sz,5,4), _mat(0x120e0a,0,0,.9)); eh.position.set(sd*.04*s*sz,.02*s,.09*s); g.add(eh); } return g; }
+function _kiteShield(s){ const g=new THREE.Group(); const w=_mat(0x5a2a24,0x1c0a08,.3,.8),md=_ironD(),bl=_boneMat();
+  const top=new THREE.Mesh(new THREE.BoxGeometry(.36*s,.4*s,.05*s), w); top.position.y=.14*s; g.add(top);
+  const btm=new THREE.Mesh(new THREE.ConeGeometry(.255*s,.42*s,4), w); btm.rotation.x=Math.PI/2; btm.rotation.z=Math.PI/4; btm.position.y=-.16*s; btm.scale.set(1,1,.12); g.add(btm);
+  const rim=new THREE.Mesh(new THREE.TorusGeometry(.2*s,.02*s,4,12), md); rim.position.y=.14*s; g.add(rim);
+  const em=new THREE.Mesh(new THREE.SphereGeometry(.11*s,7,6), bl); em.scale.set(1,1.1,.4); em.position.set(0,.1*s,.05*s); g.add(em); return g; }
+function _staffSkull(s,glow){ const g=new THREE.Group(); const bl=_boneMat(), gm=_mat(glow||0x9a6bff,glow||0x9a6bff,1.1,.3), fm=_mat(glow||0x9a6bff,glow||0x9a6bff,1.4,.3);
+  const shaft=new THREE.Mesh(new THREE.CylinderGeometry(.022*s,.028*s,1.5*s,6), _mat(0x3a3040,0x150f1c,.3,.85)); g.add(shaft);
+  const sk=new THREE.Mesh(new THREE.SphereGeometry(.1*s,8,7), bl); sk.position.y=.82*s; g.add(sk);
+  const jw=new THREE.Mesh(new THREE.BoxGeometry(.1*s,.05*s,.09*s), bl); jw.position.y=.76*s; g.add(jw);
+  for(const sd of [-1,1]){ const so=new THREE.Mesh(new THREE.SphereGeometry(.028*s,5,4), gm); so.position.set(sd*.04*s,.84*s,.07*s); g.add(so); }
+  for(let i=0;i<3;i++){ const fl=new THREE.Mesh(new THREE.ConeGeometry(.05*s-i*.012*s,.22*s,5), fm); fl.position.set(rand(-.03,.03)*s,.98*s+i*.03*s,rand(-.03,.03)*s); g.add(fl); } return g; }
+function _banner(s,flagCol){ const g=new THREE.Group();
+  const pole=new THREE.Mesh(new THREE.CylinderGeometry(.02*s,.02*s,1.8*s,6), _wood()); g.add(pole);
+  const flag=new THREE.Mesh(new THREE.BoxGeometry(.02*s,.5*s,.42*s), _mat(flagCol||0x6a1622,0x200608,.3,.9)); flag.position.set(0,.55*s,.24*s); g.add(flag);
+  const em=new THREE.Mesh(new THREE.SphereGeometry(.1*s,7,6), _boneMat()); em.scale.set(1,1.1,.4); em.position.set(-.02*s,.6*s,.24*s); g.add(em);
+  const fin=new THREE.Mesh(new THREE.ConeGeometry(.03*s,.14*s,5), _gold()); fin.position.y=.92*s; g.add(fin); return g; }
+
+// ---- shared humanoid rig. cfg: {skin, torsoR, torsoH, headY, hunch, armLen, legLen, armThick, buildHead} ----
+function _rig(s,cfg){
+  const grp=new THREE.Group(); grp.userData.humanoid=true; grp.userData.arms=[]; grp.userData.legs=[];
+  const tR=cfg.torsoR||.3, tH=cfg.torsoH||.66, hunch=cfg.hunch||0;
+  const body=new THREE.Mesh(new THREE.CylinderGeometry(tR*.8,tR,tH*s,7), cfg.skin);
+  body.castShadow=true; body.position.y=.95*s; grp.add(body); grp.userData.body=body;
+  // chest / belly mass
+  const chest=new THREE.Mesh(new THREE.SphereGeometry(tR*1.05,9,7), cfg.skin); chest.scale.set(1,.85,.9); chest.position.set(0,tH*s*.28,hunch*.12*s); body.add(chest);
+  // rounded back / hump for hunched brutes
+  if(hunch>0.2){ const hump=new THREE.Mesh(new THREE.SphereGeometry(tR*.9,8,6), cfg.skin); hump.position.set(0,tH*s*.32,-hunch*.18*s); body.add(hump); }
+  // neck + head (delegated)
+  const head=new THREE.Group(); head.position.set(0,(cfg.headY||.5)*s,hunch*.22*s); body.add(head);
+  const neck=new THREE.Mesh(new THREE.CylinderGeometry(tR*.35,tR*.4,.12*s,5), cfg.skin); neck.position.y=-.1*s; neck.rotation.x=hunch*.5; head.add(neck);
+  if(cfg.buildHead) cfg.buildHead(head, s, cfg);
+  // shoulders + arms
+  const aL=cfg.armLen||.62, aTh=cfg.armThick||.06;
+  for(const sd of [-1,1]){ const arm=new THREE.Group();
+    const upper=_limb(s,aL*.52,aTh,aTh*.9,cfg.skin); upper.position.y=-aL*.26*s; arm.add(upper);
+    const fore=_limb(s,aL*.5,aTh*.9,aTh*.8,cfg.skin); fore.position.y=-aL*.76*s; arm.add(fore);
+    const hand=new THREE.Mesh(new THREE.SphereGeometry(aTh*1.2*s,6,5), cfg.skin); hand.position.y=-aL*1.02*s; arm.add(hand);
+    arm.position.set(sd*(tR+.02)*s,tH*s*.32,hunch*.1*s); arm.rotation.x=hunch*.6; body.add(arm); grp.userData.arms.push(arm); }
+  // hips + legs
+  const lL=cfg.legLen||.9, lTh=cfg.legThick||.07;
+  for(const sd of [-1,1]){ const leg=new THREE.Group();
+    const thigh=_limb(s,lL*.4,lTh,lTh*.85,cfg.skin); thigh.position.y=-lL*.2*s; leg.add(thigh);
+    const shin=_limb(s,lL*.4,lTh*.85,lTh*.7,cfg.skin); shin.position.y=-lL*.58*s; leg.add(shin);
+    const foot=new THREE.Mesh(new THREE.BoxGeometry(.13*s,.07*s,.26*s), cfg.skin); foot.position.set(0,-lL*.8*s,.06*s); leg.add(foot);
+    leg.position.set(sd*.13*s,-tH*s*.36,0); body.add(leg); grp.userData.legs.push(leg); }
+  return grp;
+}
+function _put(body,o,s,x,y,z,rx,ry,rz){ o.position.set(x*s,y*s,z*s); if(rx)o.rotation.x=rx; if(ry)o.rotation.y=ry; if(rz)o.rotation.z=rz; body.add(o); return o; }
+
+// ============================================================ ORCS
+function makeOrcMesh(scale,opts){ opts=opts||{}; const s=scale||1; const v=opts.variant||'grunt';
+  const skin=_mat(opts.skin||0x5f7a3a,0x1c2810,.3,.7), tusk=_boneMat(), armor=_ironD(), leather=_leather();
+  function head(h,s){ const sk=skin;
+    const skull=new THREE.Mesh(new THREE.SphereGeometry(.2*s,9,8), sk); skull.scale.set(1,.95,1.05); h.add(skull);
+    const jaw=new THREE.Mesh(new THREE.BoxGeometry(.24*s,.12*s,.2*s), sk); jaw.position.set(0,-.14*s,.05*s); h.add(jaw);
+    const brow=new THREE.Mesh(new THREE.BoxGeometry(.3*s,.06*s,.06*s), sk); brow.position.set(0,.04*s,.17*s); h.add(brow);
+    for(const sd of [-1,1]){ const ear=new THREE.Mesh(new THREE.ConeGeometry(.06*s,.2*s,4), sk); ear.position.set(sd*.22*s,.05*s,-.02*s); ear.rotation.z=sd*-1.2; h.add(ear);
+      const eye=new THREE.Mesh(new THREE.SphereGeometry(.03*s,5,4), _mat(0xff7a1a,0xff7a1a,1,.3)); eye.position.set(sd*.08*s,.02*s,.18*s); h.add(eye);
+      const tk=new THREE.Mesh(new THREE.ConeGeometry(.03*s,.12*s,4), tusk); tk.position.set(sd*.07*s,-.14*s,.15*s); h.add(tk); } }
+  const cfg={skin,torsoR:.32,torsoH:.7,headY:.5,hunch:.12,armLen:.66,legLen:.9,armThick:.08,buildHead:head};
+  if(v==='brute'||v==='warboss'){ cfg.torsoR=.4; cfg.armLen=.74; cfg.armThick=.11; cfg.hunch=.22; }
+  const g=_rig(s,cfg), body=g.userData.body;
+  // shoulder pauldrons on most
+  if(v!=='archer'&&v!=='shaman'){ for(const sd of [-1,1]){ const pd=new THREE.Mesh(new THREE.SphereGeometry(cfg.torsoR*.9,8,6,0,Math.PI*2,0,Math.PI*.55), armor); _put(body,pd,s,sd*(cfg.torsoR+.02),cfg.torsoH*.32,0); const sp=new THREE.Mesh(new THREE.ConeGeometry(.04*s,.12*s,4), _iron()); _put(body,sp,s,sd*(cfg.torsoR+.05),cfg.torsoH*.42,0,0,0,sd*-.5); } }
+  const loin=new THREE.Mesh(new THREE.ConeGeometry(cfg.torsoR*1.1,.4*s,7,1,true), _mat(0x6a2a1a,0x200a06,.3,.85)); _put(body,loin,s,0,-cfg.torsoH*.28,0);
+  if(v==='grunt'||v==='raider'){ _put(body,_axe(s),s,.34,-.2,.14,0,0,-.15); if(v==='raider'){ const a2=_axe(s); _put(body,a2,s,-.34,-.2,.14,0,0,.15); } else { _put(body,_roundShield(s),s,-.34,-.02,.08,0,-.5,0); } }
+  else if(v==='warrior'){ _put(body,_axe(s),s,.34,-.2,.14,0,0,-.15); const sh=_roundShield(s,1.15); _put(body,sh,s,-.36,-.02,.08,0,-.5,0); const bp=new THREE.Mesh(new THREE.CylinderGeometry(cfg.torsoR*.7,cfg.torsoR*.6,.34*s,8), armor); _put(body,bp,s,0,cfg.torsoH*.06,.04); }
+  else if(v==='archer'){ _put(body,_bow(s),s,.26,-.05,.28); const q=new THREE.Mesh(new THREE.CylinderGeometry(.06*s,.05*s,.36*s,7), leather); _put(body,q,s,-.14,.12,-.16,.3,0,.3); for(let i=0;i<3;i++){ const fl=new THREE.Mesh(new THREE.ConeGeometry(.02*s,.1*s,4), _mat(0x6a2a1a,0x200a06,.3,.9)); _put(body,fl,s,-.14+i*.03,.34,-.18,.3,0,.3); } }
+  else if(v==='brute'){ _put(body,_club(s,true),s,.42,-.24,.14,0,0,-.12); const bp=new THREE.Mesh(new THREE.CylinderGeometry(cfg.torsoR*.8,cfg.torsoR*.7,.4*s,8), armor); _put(body,bp,s,0,cfg.torsoH*.06,.04); }
+  else if(v==='shaman'){ _put(body,_staffSkull(s,0x9adf3a),s,.3,-.02,.06,0,0,-.06); const hood=new THREE.Mesh(new THREE.SphereGeometry(.26*s,10,8,0,Math.PI*2,0,Math.PI*.62), _mat(0x3a2e1a,0x140f08,.3,.9)); _put(body,hood,s,0,.54,-.02); const cloak=new THREE.Mesh(new THREE.ConeGeometry(cfg.torsoR*1.15,.9*s,9,1,true), _mat(0x3a2e1a,0x140f08,.3,.9)); _put(body,cloak,s,0,-.1,-.05); }
+  else if(v==='berserker'){ _put(body,_greatAxe(s),s,.3,-.05,.14,0,0,-.1); }
+  else if(v==='warboss'){ const helm=new THREE.Mesh(new THREE.SphereGeometry(.24*s,9,7,0,Math.PI*2,0,Math.PI*.6), armor); _put(body,helm,s,0,.52,0); for(const sd of [-1,1]){ const horn=new THREE.Mesh(new THREE.ConeGeometry(.05*s,.3*s,6), tusk); _put(body,horn,s,sd*.2,.62,0,0,0,sd*-1.1); } _put(body,_greatAxe(s),s,.32,-.05,.14,0,0,-.1); const b=_banner(s,0x6a1622); _put(body,b,s,-.34,-.02,-.04,0,0,.05); }
+  else if(v==='slayer'){ _put(body,_greatAxe(s),s,.3,-.05,.14,0,0,-.1); const bp=new THREE.Mesh(new THREE.CylinderGeometry(cfg.torsoR*.7,cfg.torsoR*.6,.34*s,8), armor); _put(body,bp,s,0,cfg.torsoH*.06,.04); }
+  else if(v==='overseer'){ const whip=new THREE.Group(); for(let i=0;i<5;i++){ const seg=new THREE.Mesh(new THREE.CylinderGeometry(.014*s,.014*s,.16*s,4), leather); seg.position.set(Math.sin(i*.6)*.1*s,-i*.15*s,0); seg.rotation.z=Math.cos(i*.6)*.4; whip.add(seg); } _put(body,whip,s,.34,.1,.14); const hood=new THREE.Mesh(new THREE.SphereGeometry(.26*s,10,8,0,Math.PI*2,0,Math.PI*.62), _mat(0x5a1a14,0x1c0806,.3,.9)); _put(body,hood,s,0,.54,-.02); }
+  if(opts.scaleBody) body.scale.multiplyScalar(opts.scaleBody);
+  return g; }
+
+// ============================================================ TROLLS (huge, hunched)
+function makeTrollMesh(scale,opts){ opts=opts||{}; const s=scale||1; const v=opts.variant||'cave';
+  const P={cave:0x5f7048,rock:0x6a6a60,ice:0x6f9ec2,swamp:0x5a6a2a,war:0x6a7048,shaman:0x7a6a80,armor:0x6a6a60,fire:0x7a5040,stone:0x74746a,chief:0x5f7048};
+  const skin=_mat(opts.skin||P[v]||0x5f7048,0x141810,.28,.8), tusk=_boneMat(), armor=_ironD();
+  function head(h,s){ const sk=skin;
+    const skull=new THREE.Mesh(new THREE.SphereGeometry(.26*s,9,8), sk); skull.scale.set(1.1,.9,1.05); h.add(skull);
+    const jaw=new THREE.Mesh(new THREE.BoxGeometry(.3*s,.14*s,.24*s), sk); jaw.position.set(0,-.16*s,.06*s); h.add(jaw);
+    const brow=new THREE.Mesh(new THREE.BoxGeometry(.4*s,.08*s,.08*s), sk); brow.position.set(0,.06*s,.2*s); h.add(brow);
+    for(const sd of [-1,1]){ const ear=new THREE.Mesh(new THREE.ConeGeometry(.07*s,.24*s,4), sk); ear.position.set(sd*.28*s,.06*s,-.02*s); ear.rotation.z=sd*-1.2; h.add(ear);
+      const eye=new THREE.Mesh(new THREE.SphereGeometry(.035*s,5,4), _mat(0xffcf3a,0xffcf3a,1,.3)); eye.position.set(sd*.1*s,.03*s,.22*s); h.add(eye);
+      const tk=new THREE.Mesh(new THREE.ConeGeometry(.04*s,.18*s,4), tusk); tk.position.set(sd*.09*s,-.12*s,.18*s); tk.rotation.x=-.3; h.add(tk); } }
+  const cfg={skin,torsoR:.44,torsoH:.8,headY:.44,hunch:.5,armLen:.9,legLen:.86,armThick:.13,legThick:.11,buildHead:head};
+  const g=_rig(s,cfg), body=g.userData.body;
+  // rocky skin nodules
+  for(let i=0;i<6;i++){ const n=new THREE.Mesh(new THREE.DodecahedronGeometry(rand(.05,.09)*s,0), skin); _put(body,n,s,rand(-.35,.35),rand(-.1,.4),rand(-.35,.1)); }
+  if(v==='cave'||v==='war'||v==='chief'){ _put(body,_club(s,v!=='cave'),s,.5,-.2,.16,0,0,-.12); }
+  if(v==='rock'||v==='armor'){ const sh=new THREE.Mesh(new THREE.BoxGeometry(.5*s,.7*s,.08*s), armor); _put(body,sh,s,-.5,-.05,.1,0,-.3,0); for(let i=0;i<5;i++){ const st=new THREE.Mesh(new THREE.DodecahedronGeometry(.1*s,0), _mat(0x5a5a52,0x1a1a16,.3,.9)); _put(body,st,s,0,cfg.torsoH*.3-i*.12,-.4); } if(v==='armor'){ const plate=new THREE.Mesh(new THREE.CylinderGeometry(cfg.torsoR*.9,cfg.torsoR*.8,.5*s,8), armor); _put(body,plate,s,0,cfg.torsoH*.06,.04); } _put(body,_club(s),s,.5,-.2,.16,0,0,-.12); }
+  if(v==='ice'){ const w=_mat(0xbfe6f5,0x6a9ec2,.5,.3); for(let i=0;i<7;i++){ const sp=new THREE.Mesh(new THREE.ConeGeometry(.06*s,rand(.18,.34)*s,5), w); _put(body,sp,s,rand(-.4,.4),cfg.torsoH*.3+rand(-.1,.2),-.35,rand(-.4,.4),0,rand(-.4,.4)); } const club=_club(s); _put(body,club,s,.5,-.2,.16,0,0,-.12); const icehead=new THREE.Mesh(new THREE.IcosahedronGeometry(.16*s,0), w); _put(body,icehead,s,.5,.42,.16); }
+  if(v==='swamp'){ for(let i=0;i<5;i++){ const drip=new THREE.Mesh(new THREE.SphereGeometry(rand(.04,.08)*s,6,5), _mat(0x8aa02a,0x2a3008,.4,.6)); _put(body,drip,s,rand(-.3,.3),rand(-.3,.3),.3); } const club=_club(s); _put(body,club,s,.5,-.2,.16,0,0,-.12); const moss=new THREE.Mesh(new THREE.SphereGeometry(.16*s,7,5), _mat(0x4a5a1a,0x141c06,.4,.9)); moss.scale.set(1.4,.5,1.2); _put(body,moss,s,0,cfg.torsoH*.34,-.3); }
+  if(v==='shaman'){ _put(body,_staffSkull(s,0xb06bff),s,.5,-.02,.1,0,0,-.06); }
+  if(v==='fire'){ const lava=_mat(0xff7a2a,0xff7a2a,1,.4); for(let i=0;i<6;i++){ const c=new THREE.Mesh(new THREE.SphereGeometry(rand(.04,.08)*s,6,5), lava); _put(body,c,s,rand(-.35,.35),rand(-.1,.4),rand(-.3,.2)); } const club=_club(s); club.children[0].material=lava; _put(body,club,s,.5,-.2,.16,0,0,-.12); }
+  if(v==='stone'){ cfg; for(let i=0;i<8;i++){ const st=new THREE.Mesh(new THREE.DodecahedronGeometry(rand(.08,.14)*s,0), _mat(0x6a6a60,0x1a1a16,.28,.95)); _put(body,st,s,rand(-.4,.4),rand(-.2,.45),rand(-.4,.3)); } }
+  if(v==='chief'){ const helm=new THREE.Mesh(new THREE.SphereGeometry(.28*s,9,7,0,Math.PI*2,0,Math.PI*.55), armor); _put(body,helm,s,0,.48,0); for(const sd of [-1,1]){ const horn=new THREE.Mesh(new THREE.ConeGeometry(.06*s,.34*s,6), tusk); _put(body,horn,s,sd*.24,.6,0,0,0,sd*-1.1); } const b=_banner(s,0x6a1622); _put(body,b,s,-.52,-.02,-.06,0,0,.05); }
+  if(opts.scaleBody) body.scale.multiplyScalar(opts.scaleBody);
+  return g; }
+
+// ============================================================ RATMEN (lean, hunched, tailed)
+function makeRatmanMesh(scale,opts){ opts=opts||{}; const s=scale||1; const v=opts.variant||'scout';
+  const skin=_mat(opts.skin||0x4a423a,0x140f0c,.28,.8), pink=_mat(0xb08a7a,0x3a2820,.3,.7), armor=_ironD(), cloak=_mat(0x3a4028,0x121608,.3,.9);
+  function head(h,s){ const sk=skin;
+    const skull=new THREE.Mesh(new THREE.SphereGeometry(.17*s,8,7), sk); skull.scale.set(1,.95,1.1); h.add(skull);
+    const snout=new THREE.Mesh(new THREE.ConeGeometry(.09*s,.26*s,6), sk); snout.rotation.x=Math.PI/2; snout.position.set(0,-.04*s,.22*s); h.add(snout);
+    const nose=new THREE.Mesh(new THREE.SphereGeometry(.03*s,6,5), pink); nose.position.set(0,-.04*s,.35*s); h.add(nose);
+    for(const sd of [-1,1]){ const ear=new THREE.Mesh(new THREE.CircleGeometry(.11*s,10), pink); ear.position.set(sd*.15*s,.16*s,-.02*s); ear.rotation.y=sd*.6; h.add(ear);
+      const eye=new THREE.Mesh(new THREE.SphereGeometry(.028*s,5,4), _mat(0xff2a2a,0xff2a2a,1,.3)); eye.position.set(sd*.08*s,.02*s,.16*s); h.add(eye); }
+    for(const sd of [-1,1]){ const tooth=new THREE.Mesh(new THREE.BoxGeometry(.02*s,.06*s,.02*s), _boneMat()); tooth.position.set(sd*.02*s,-.1*s,.3*s); h.add(tooth); } }
+  const cfg={skin,torsoR:.24,torsoH:.6,headY:.46,hunch:.4,armLen:.6,legLen:.82,armThick:.05,legThick:.055,buildHead:head};
+  if(v==='brute'){ cfg.torsoR=.34; cfg.armLen=.68; cfg.armThick=.09; cfg.hunch=.3; }
+  const g=_rig(s,cfg), body=g.userData.body;
+  // long tail — curved segments trailing back
+  const tail=new THREE.Group(); for(let i=0;i<6;i++){ const seg=new THREE.Mesh(new THREE.CylinderGeometry((.05-i*.007)*s,(.045-i*.007)*s,.16*s,5), pink); seg.position.set(0,-i*.02*s,-i*.15*s); seg.rotation.x=1.3+i*.12; tail.add(seg); } _put(body,tail,s,0,-cfg.torsoH*.32,-.16);
+  // ragged hood on most
+  if(v!=='brute'&&v!=='burrower'){ const hood=new THREE.Mesh(new THREE.SphereGeometry(.2*s,9,7,0,Math.PI*2,0,Math.PI*.6), cloak); _put(body,hood,s,0,.5,-.04); }
+  if(v==='scout'){ _put(body,_dagger(s),s,.26,-.2,.14,0,0,-.15); }
+  else if(v==='skirmisher'){ _put(body,_dagger(s),s,.26,-.2,.14,0,0,-.15); _put(body,_roundShield(s,.85),s,-.28,-.02,.06,0,-.5,0); }
+  else if(v==='slinger'){ const sling=new THREE.Mesh(new THREE.TorusGeometry(.08*s,.012*s,4,10,Math.PI), _leather()); _put(body,sling,s,.28,.05,.16); const rock=new THREE.Mesh(new THREE.DodecahedronGeometry(.05*s,0), _mat(0x6a645a,0x1a1814,.3,.9)); _put(body,rock,s,.28,.14,.18); }
+  else if(v==='brute'){ _put(body,_mace(s),s,.4,-.24,.16,0,0,-.12); for(const sd of [-1,1]){ const pd=new THREE.Mesh(new THREE.SphereGeometry(.14*s,8,6,0,Math.PI*2,0,Math.PI*.55), armor); _put(body,pd,s,sd*.34,cfg.torsoH*.3,0); } }
+  else if(v==='poisoner'){ const vial=new THREE.Mesh(new THREE.SphereGeometry(.08*s,7,6), _mat(0x9adf3a,0x9adf3a,.9,.3)); vial.scale.set(1,1.2,1); _put(body,vial,s,.28,-.1,.18); const neck=new THREE.Mesh(new THREE.CylinderGeometry(.02*s,.03*s,.06*s,5), _mat(0x9adf3a,0x4a6a1a,.5,.4)); _put(body,neck,s,.28,0,.18); _put(body,_dagger(s),s,-.26,-.2,.12,0,0,.15); }
+  else if(v==='shaman'){ _put(body,_staffSkull(s,0x9adf3a),s,.28,-.02,.1,0,0,-.06); const spikes=new THREE.Group(); for(let i=0;i<4;i++){ const b=new THREE.Mesh(new THREE.CylinderGeometry(.01*s,.01*s,.16*s,4), _boneMat()); b.position.set(rand(-.12,.12)*s,cfg.torsoH*.3,rand(-.15,-.05)*s); b.rotation.x=rand(-.4,.4); spikes.add(b); } body.add(spikes); }
+  else if(v==='assassin'){ _put(body,_dagger(s),s,.26,-.2,.14,0,0,-.15); const d2=_dagger(s); _put(body,d2,s,-.26,-.2,.14,0,0,.15); const cowl=new THREE.Mesh(new THREE.ConeGeometry(.24*s,.7*s,8,1,true), _mat(0x1a1c14,0x080a06,.3,.95)); _put(body,cowl,s,0,-.05,-.06); }
+  else if(v==='packleader'){ _put(body,_curvedBlade(s,.4),s,.28,-.2,.14,0,0,-.15); const b=_banner(s,0x5a4028); _put(body,b,s,-.3,-.02,-.04,0,0,.05); const skullpad=new THREE.Mesh(new THREE.SphereGeometry(.1*s,7,6), _boneMat()); _put(body,skullpad,s,.32,cfg.torsoH*.3,.04); }
+  else if(v==='warblade'){ _put(body,_curvedBlade(s,.42),s,.3,-.2,.14,0,0,-.15); _put(body,_roundShield(s,1.0),s,-.32,-.02,.08,0,-.5,0); const plate=new THREE.Mesh(new THREE.CylinderGeometry(cfg.torsoR*.8,cfg.torsoR*.7,.34*s,8), armor); _put(body,plate,s,0,cfg.torsoH*.06,.04); }
+  else if(v==='burrower'){ for(const sd of [-1,1]){ const claw=new THREE.Mesh(new THREE.ConeGeometry(.05*s,.2*s,4), _boneMat()); _put(body,claw,s,sd*.28,-.5,.18,0.4,0,0); } const dirt=new THREE.Mesh(new THREE.SphereGeometry(.3*s,8,5,0,Math.PI*2,0,Math.PI*.4), _mat(0x3a2e1a,0x140f08,.3,.95)); _put(body,dirt,s,0,-cfg.torsoH*.34,.1); }
+  if(opts.scaleBody) body.scale.multiplyScalar(opts.scaleBody);
+  return g; }
+
+// ============================================================ GHOULS & GHOSTS (opts.ghost → floating robe)
+function makeGhostGhoulMesh(scale,opts){ opts=opts||{}; const s=scale||1; const v=opts.variant||'ghoulscout';
+  const GH={ghoulscout:0,ghoulbrute:0,hungryghoul:0, wailingspirit:1,banshee:1,souldrainer:1,shackledghost:1,gravephantom:1,cursedwraith:1,lostsoul:1};
+  const isGhost = opts.ghost!=null ? opts.ghost : !!GH[v];
+  if(!isGhost){
+    // ---- GHOUL: gaunt, hunched, rotting flesh, long claws ----
+    const skin=_mat(opts.skin||0x8a9a6a,0x1c2410,.28,.8), boneM=_boneMat();
+    function head(h,s){ const sk=skin;
+      const skull=new THREE.Mesh(new THREE.SphereGeometry(.18*s,9,8), sk); skull.scale.set(.95,1.05,1.05); h.add(skull);
+      const jaw=new THREE.Mesh(new THREE.BoxGeometry(.16*s,.16*s,.16*s), sk); jaw.position.set(0,-.16*s,.05*s); h.add(jaw);   // gaping maw
+      const maw=new THREE.Mesh(new THREE.BoxGeometry(.1*s,.12*s,.06*s), _mat(0x1a0a0a,0,0,.9)); maw.position.set(0,-.12*s,.15*s); h.add(maw);
+      for(const sd of [-1,1]){ const eye=new THREE.Mesh(new THREE.SphereGeometry(.035*s,6,5), _mat(0xbfff5a,0xbfff5a,1.1,.3)); eye.position.set(sd*.08*s,.02*s,.15*s); h.add(eye);
+        const ear=new THREE.Mesh(new THREE.ConeGeometry(.04*s,.16*s,4), sk); ear.position.set(sd*.18*s,.04*s,-.02*s); ear.rotation.z=sd*-1.3; h.add(ear); }
+      for(let i=0;i<4;i++){ const t=new THREE.Mesh(new THREE.ConeGeometry(.016*s,.05*s,4), boneM); t.position.set((i-1.5)*.04*s,-.1*s,.14*s); t.rotation.x=Math.PI; h.add(t); } }
+    const cfg={skin,torsoR:.24,torsoH:.6,headY:.44,hunch:.55,armLen:.78,legLen:.82,armThick:.05,legThick:.055,buildHead:head};
+    if(v==='ghoulbrute'){ cfg.torsoR=.38; cfg.armLen=.9; cfg.armThick=.1; cfg.hunch=.4; }
+    const g=_rig(s,cfg), body=g.userData.body;
+    // exposed ribs
+    for(let i=0;i<3;i++){ const rib=new THREE.Mesh(new THREE.TorusGeometry((.15-i*.02)*s,.012*s,4,8), boneM); rib.rotation.x=Math.PI/2; rib.scale.set(1,.7,1); _put(body,rib,s,0,cfg.torsoH*.2-i*.08,.14); }
+    // long claws on hands
+    for(let k=0;k<g.userData.arms.length;k++){ const arm=g.userData.arms[k]; for(let c=0;c<3;c++){ const claw=new THREE.Mesh(new THREE.ConeGeometry(.02*s,.14*s,4), boneM); claw.position.set((c-1)*.03*s,-cfg.armLen*1.1*s,.02*s); claw.rotation.x=.3; arm.add(claw); } }
+    if(v==='ghoulbrute'){ for(const sd of [-1,1]){ const pd=new THREE.Mesh(new THREE.SphereGeometry(.16*s,8,6,0,Math.PI*2,0,Math.PI*.55), _ironD()); _put(body,pd,s,sd*.36,cfg.torsoH*.3,0); } const club=new THREE.Mesh(new THREE.SphereGeometry(.16*s,8,6), _mat(0x6a5a3a,0x1a1408,.3,.85)); _put(body,club,s,.44,-.3,.16); }
+    if(opts.scaleBody) body.scale.multiplyScalar(opts.scaleBody);
+    return g;
+  }
+  // ---- GHOST: floating, no legs, trailing robe ----
+  const ghostCol=opts.skin|| (v==='banshee'?0x9a7ac8 : v==='cursedwraith'||v==='gravephantom'?0x3a6a5a : v==='lostsoul'?0x8ab0d8 : 0x8ad8c8);
+  const robe=_mat(ghostCol,ghostCol,.5,.5); robe.transparent=true; robe.opacity=.78;
+  const grp=new THREE.Group(); grp.userData.humanoid=true; grp.userData.arms=[]; grp.userData.legs=[];
+  const body=new THREE.Mesh(new THREE.SphereGeometry(.24*s,10,8), robe); body.castShadow=false; body.position.y=.95*s; grp.add(body); grp.userData.body=body;
+  // trailing robe — cone that frays to nothing near the ground
+  const drape=new THREE.Mesh(new THREE.ConeGeometry(.3*s,1.1*s,9,1,true), robe); drape.position.y=-.5*s; body.add(drape);
+  for(let i=0;i<5;i++){ const wisp=new THREE.Mesh(new THREE.ConeGeometry((.06-i*.008)*s,.4*s,5), robe); wisp.position.set(rand(-.2,.2)*s,-1.0*s-rand(0,.2)*s,rand(-.2,.2)*s); body.add(wisp); }
+  // head / cowl
+  const hood=new THREE.Mesh(new THREE.SphereGeometry(.22*s,10,8,0,Math.PI*2,0,Math.PI*.72), robe); hood.position.y=.28*s; body.add(hood);
+  const faceCol=(v==='lostsoul')?0xcfeaff:0x0a0f12;
+  const face=new THREE.Mesh(new THREE.SphereGeometry(.15*s,9,8), _mat(faceCol,faceCol,v==='lostsoul'?.4:0,.6)); face.position.set(0,.24*s,.06*s); body.add(face);
+  const eyeCol=(v==='banshee')?0xff3b6b:(v==='lostsoul')?0x3a6ab0:0x6affd8;
+  for(const sd of [-1,1]){ const eye=new THREE.Mesh(new THREE.SphereGeometry(.035*s,6,5), _mat(eyeCol,eyeCol,1.2,.3)); eye.position.set(sd*.06*s,.26*s,.15*s); body.add(eye); }
+  // wispy arms (most)
+  if(v!=='lostsoul'){ for(const sd of [-1,1]){ const arm=new THREE.Mesh(new THREE.ConeGeometry(.05*s,.5*s,6), robe); arm.position.set(sd*.26*s,.02*s,.08*s); arm.rotation.z=sd*.6; arm.rotation.x=-.4; body.add(arm);
+    const hand=new THREE.Mesh(new THREE.SphereGeometry(.05*s,6,5), robe); hand.position.set(sd*.4*s,-.16*s,.18*s); body.add(hand); } }
+  // variant flourishes
+  if(v==='wailingspirit'||v==='shackledghost'){ const chain=new THREE.Group(); for(let i=0;i<5;i++){ const link=new THREE.Mesh(new THREE.TorusGeometry(.05*s,.015*s,4,8), _ironD()); link.position.set(.2*s+i*.02*s,-.2*s-i*.16*s,.1*s); link.rotation.x=i*.6; chain.add(link); } if(v==='shackledghost'){ const ball=new THREE.Mesh(new THREE.SphereGeometry(.12*s,8,6), _ironD()); ball.position.set(.3*s,-1.0*s,.1*s); chain.add(ball); } body.add(chain); }
+  if(v==='banshee'){ const hair=new THREE.Mesh(new THREE.ConeGeometry(.24*s,.5*s,8,1,true), _mat(0xcfc8d8,0xcfc8d8,.4,.6)); hair.position.set(0,.3*s,-.06*s); body.add(hair); }
+  if(v==='gravephantom'||v==='cursedwraith'){ const scythe=new THREE.Group(); const shaft=new THREE.Mesh(new THREE.CylinderGeometry(.02*s,.024*s,1.5*s,6), _mat(0x2a231a,0x120c06,.3,.85)); scythe.add(shaft); const blade=new THREE.Mesh(new THREE.TorusGeometry(.3*s,.026*s,4,14,Math.PI*.7), _iron()); blade.position.set(.02*s,.78*s,0); blade.rotation.z=-.3; scythe.add(blade); _put(body,scythe,s,.4,-.1,.12,0,0,-.05);
+    for(let i=0;i<3;i++){ const orb=new THREE.Mesh(new THREE.SphereGeometry(.05*s,6,5), _mat(0xb06bff,0xb06bff,1,.3)); orb.position.set(rand(-.3,.3)*s,rand(-.3,.3)*s,.2*s); body.add(orb); } }
+  if(v==='souldrainer'){ for(const sd of [-1,1]){ const fire=new THREE.Mesh(new THREE.ConeGeometry(.08*s,.3*s,6), _mat(0x3aff9a,0x3aff9a,1.3,.3)); fire.position.set(sd*.42*s,-.14*s,.2*s); body.add(fire); } }
+  if(opts.scaleBody) body.scale.multiplyScalar(opts.scaleBody);
+  return grp; }
+
+// ============================================================ SLIMES (short blob — body geo offset down)
+function makeSlimeMesh(scale,opts){ opts=opts||{}; const s=scale||1; const v=opts.variant||'green';
+  const P={green:0x6faa3a,water:0x3a86c8,fire:0xe0431f,poison:0x8a3ec8,electric:0xd8b020,shadow:0x2a2436,ice:0x9fd8ec,mud:0x6b5836,acid:0x9ad020,prism:0x8a6bd8};
+  const col=opts.col||P[v]||0x6faa3a; const oy=-.55*s;   // push the blob down so it rests on the floor under the forced .95 baseline
+  const jelly=_mat(col,col,.5,.45); jelly.transparent=true; jelly.opacity=.9;
+  const grp=new THREE.Group(); grp.userData.humanoid=true; grp.userData.arms=[]; grp.userData.legs=[];
+  const dome=new THREE.SphereGeometry(.52*s,13,10,0,Math.PI*2,0,Math.PI*.6); dome.translate(0,oy,0); dome.scale(1,.82,1);
+  const body=new THREE.Mesh(dome, jelly); body.castShadow=true; body.position.y=.95*s; grp.add(body); grp.userData.body=body;
+  const base=new THREE.Mesh(new THREE.CylinderGeometry(.5*s,.58*s,.14*s,13), jelly); base.position.y=oy-.02*s; body.add(base);
+  // face
+  const eyeW=_mat(0xf4f4ee,0xbbbbbb,.3,.3), pupM=_mat(0x141414,0,0,.5);
+  for(const sd of [-1,1]){ const e=new THREE.Mesh(new THREE.SphereGeometry(.085*s,8,7), eyeW); e.position.set(sd*.16*s,oy+.14*s,.4*s); body.add(e);
+    const p=new THREE.Mesh(new THREE.SphereGeometry(.04*s,6,5), pupM); p.position.set(sd*.16*s,oy+.14*s,.47*s); body.add(p); }
+  const brow=(v==='fire'||v==='acid'||v==='electric');   // angry brow for the aggressive ones
+  if(brow){ for(const sd of [-1,1]){ const bw=new THREE.Mesh(new THREE.BoxGeometry(.1*s,.03*s,.02*s), pupM); bw.position.set(sd*.16*s,oy+.24*s,.42*s); bw.rotation.z=sd*.5; body.add(bw); } }
+  const mouth=new THREE.Mesh(new THREE.TorusGeometry(.06*s,.014*s,4,8,Math.PI), pupM); mouth.rotation.z=brow?0:Math.PI; mouth.position.set(0,oy+(brow?.0:.06)*s,.44*s); body.add(mouth);
+  // drips / bubbles
+  for(let i=0;i<4;i++){ const bub=new THREE.Mesh(new THREE.SphereGeometry(rand(.03,.06)*s,6,5), jelly); bub.position.set(rand(-.4,.4)*s,oy+rand(.1,.4)*s,rand(-.1,.3)*s); body.add(bub); }
+  // ---- element flourishes ----
+  if(v==='fire'){ for(let i=0;i<4;i++){ const fl=new THREE.Mesh(new THREE.ConeGeometry(.09*s-i*.015*s,.3*s,6), _mat(0xffb43a,0xffb43a,1.4,.3)); fl.position.set(rand(-.15,.15)*s,oy+.36*s+i*.05*s,rand(-.1,.1)*s); body.add(fl); } }
+  if(v==='ice'){ const w=_mat(0xdff2fb,0x9fd8ec,.5,.3); for(let i=0;i<7;i++){ const sp=new THREE.Mesh(new THREE.ConeGeometry(.05*s,rand(.14,.28)*s,5), w); sp.position.set(rand(-.4,.4)*s,oy+.28*s,rand(-.3,.2)*s); sp.rotation.z=rand(-.4,.4); body.add(sp); } }
+  if(v==='electric'){ const arc=_mat(0xfff06a,0xfff06a,1.4,.3); for(let i=0;i<8;i++){ const a=i/8*Math.PI*2; const sp=new THREE.Mesh(new THREE.ConeGeometry(.03*s,.18*s,4), arc); sp.position.set(Math.cos(a)*.48*s,oy+.3*s,Math.sin(a)*.48*s); sp.rotation.z=Math.PI/2-a*.5; body.add(sp); } }
+  if(v==='poison'){ const skull=new THREE.Mesh(new THREE.SphereGeometry(.18*s,8,7), _mat(0xd8d0b8,0x6a6350,.3,.5)); skull.scale.set(1,1.05,.7); skull.position.set(0,oy+.16*s,.34*s); body.add(skull); for(const sd of [-1,1]){ const eh=new THREE.Mesh(new THREE.SphereGeometry(.05*s,6,5), pupM); eh.position.set(sd*.07*s,oy+.18*s,.46*s); body.add(eh); } for(let i=0;i<4;i++){ const bub=new THREE.Mesh(new THREE.SphereGeometry(rand(.03,.06)*s,6,5), _mat(0xb06bff,0xb06bff,.9,.4)); bub.position.set(rand(-.2,.2)*s,oy+.5*s+i*.06*s,0); body.add(bub); } }
+  if(v==='shadow'){ jelly.opacity=.95; for(let i=0;i<6;i++){ const tend=new THREE.Mesh(new THREE.ConeGeometry(.05*s,rand(.2,.4)*s,5), jelly); tend.position.set(rand(-.35,.35)*s,oy+.34*s,rand(-.3,.2)*s); tend.rotation.z=rand(-.5,.5); body.add(tend); } for(const sd of [-1,1]){ const eye=new THREE.Mesh(new THREE.SphereGeometry(.05*s,6,5), _mat(0xb06bff,0xb06bff,1.2,.3)); eye.position.set(sd*.14*s,oy+.16*s,.4*s); body.add(eye); } }
+  if(v==='acid'){ for(let i=0;i<5;i++){ const drip=new THREE.Mesh(new THREE.SphereGeometry(rand(.04,.08)*s,6,5), _mat(0xbfff2a,0xbfff2a,.9,.4)); drip.position.set(rand(-.4,.4)*s,oy-.02*s,rand(-.2,.4)*s); body.add(drip); } const crown=new THREE.Mesh(new THREE.TorusGeometry(.14*s,.02*s,4,10), _mat(0xdfff5a,0xdfff5a,1,.3)); crown.rotation.x=Math.PI/2; crown.position.set(0,oy+.36*s,0); body.add(crown); }
+  if(v==='prism'){ jelly.opacity=.8; const cols=[0xff5b6b,0xffce4d,0x6bff8c,0x56e0ff,0xb06bff]; for(let i=0;i<10;i++){ const spark=new THREE.Mesh(new THREE.OctahedronGeometry(.04*s,0), _mat(cols[i%5],cols[i%5],1.1,.3)); spark.position.set(rand(-.5,.5)*s,oy+rand(.1,.6)*s,rand(-.3,.4)*s); body.add(spark); } }
+  if(opts.scaleBody) body.scale.multiplyScalar(opts.scaleBody);
+  return grp; }
+
+// ============================================================ FAMILY REGISTRY
+// Each family maps ETYPE.id -> {variant, opts}. Types not listed fall back to the family's `basic` variant,
+// so an act always looks like ONE species. mesh scale multiplier per family via `ms`.
+const ENEMY_FAMILIES = {
+  ratman: { fn:makeRatmanMesh, ms:1.05, basic:'scout', map:{
+    swarm:'scout', grunt:'skirmisher', charger:'burrower', archer:'slinger', brute:'brute',
+    caster:'poisoner', shaman:'shaman', phantom:'assassin', warden:'packleader', bulwark:'warblade', berserker:'brute' } },
+  orc: { fn:makeOrcMesh, ms:1.1, basic:'grunt', map:{
+    grunt:'grunt', swarm:'grunt', bulwark:'warrior', archer:'archer', brute:'brute', warden:'warboss',
+    shaman:'shaman', charger:'raider', berserker:'berserker', caster:'overseer', sniper:'archer', lancer:'archer' } },
+  skeleton: { fn:'makeSkeletonMesh', ms:1.1, basic:'skirmisher', map:{
+    grunt:'skirmisher', swarm:'skirmisher', archer:'archer', lancer:'spearman', caster:'mage',
+    bomber:'bomber', brute:'guardian', berserker:'dualwielder', revenant:'reaper', bulwark:'shieldbearer', shaman:'commander' } },
+  ghoul: { fn:makeGhostGhoulMesh, ms:1.05, basic:'ghoulscout', map:{
+    swarm:'ghoulscout', grunt:'ghoulscout', charger:'hungryghoul', brute:'ghoulbrute', archer:'wailingspirit',
+    phantom:'cursedwraith', shaman:'gravephantom', caster:'banshee', warden:'souldrainer', bulwark:'shackledghost',
+    revenant:'lostsoul', hexer:'banshee', weaver:'wailingspirit' } },
+  troll: { fn:makeTrollMesh, ms:1.2, basic:'cave', map:{
+    grunt:'cave', brute:'stone', bulwark:'armor', berserker:'war', shaman:'shaman', warden:'swamp',
+    caster:'fire', revenant:'rock', charger:'cave', sniper:'ice', lancer:'ice' } },
+  slime: { fn:makeSlimeMesh, ms:1.15, basic:'green', map:{
+    splitter:'green', swarm:'water', grunt:'green', bomber:'fire', caster:'poison', gunner:'electric',
+    phantom:'shadow', bulwark:'mud', charger:'acid', weaver:'prism', warden:'ice', archer:'electric' } },
+};
+// FAMILY_BY_ACT is a legacy default only — families are now ROLLED FRESH PER RUN from the seed (see runActFamilyKey)
+const FAMILY_BY_ACT = ['ratman','orc','skeleton','ghoul','troll'];
+
+// resolve forward-referenced builders + register the goblin/slime families now that everything is in scope
+ENEMY_FAMILIES.skeleton.fn = makeSkeletonMesh;
+ENEMY_FAMILIES.goblin = { fn:makeGoblinMesh, ms:1.15, basic:'', map:{} };
+
+// ===== STORY: the tower rebuilds itself every climb — each ACT's species is rolled from the run seed (coop-safe: seed is shared) =====
+function _actFamKey(ai){ const keys=Object.keys(ENEMY_FAMILIES);
+  let s=((((typeof G!=='undefined'&&G.seed)|0)*2654435761) ^ ((ai+1)*2246822519))>>>0; s^=s>>>15; s=Math.imul(s,2246822519)>>>0; s^=s>>>13; return keys[(s>>>0)%keys.length]; }
+function runActFamilyKey(floor){ return _actFamKey(ACTS.indexOf(actOf(floor))); }
+const SPECIES_LORE={
+  ratman:{sp:'ratmen',            cause:'their under-tunnels drowned and were swallowed whole'},
+  orc:{sp:'orcs',                 cause:'they lost a great war, then marched willingly through the door'},
+  skeleton:{sp:'the bone-dead',   cause:'a plague emptied every street they ever knew'},
+  ghoul:{sp:'the restless dead',  cause:'their city was erased between one breath and the next'},
+  troll:{sp:'the mountain-brood', cause:'they slept as the Tower grew around their peaks'},
+  slime:{sp:'the formless',       cause:'their world dissolved until only its hunger remained'},
+  goblin:{sp:'the warren-kin',    cause:'their warrens were absorbed one lantern at a time'},
+};
+function spLore(k){ return SPECIES_LORE[k]||SPECIES_LORE.skeleton; }
+const ACT_ROLE={0:'The Gatewarden',1:'The Marshal of the Lost Host',2:'The Curator',3:'The Oathbearer',4:'The King Beneath the Sky'};
+function narrFor(ai){ ai=((ai%5)+5)%5; const fk=_actFamKey(ai); const L=spLore(fk); return {familyKey:fk, sp:L.sp, cause:L.cause, role:ACT_ROLE[ai], act:ai}; }
+function narrLine(ai){ const n=narrFor(ai); const sp=n.sp, spC=sp.charAt(0).toUpperCase()+sp.slice(1);
+  switch(((ai%5)+5)%5){
+    case 0: return spC+' hold these roots — '+n.cause+'. To them the Tower is home, and you the intruder.';
+    case 1: return 'Two nations died fighting for this door. This cycle the war wears the faces of '+sp+'. The faces change; the war never does.';
+    case 2: return 'A garden of kept memories — homes, songs, the not-quite-dead. This climb remembers them as '+sp+'. Some will beg you to end them.';
+    case 3: return 'Ten rulers broke ten oaths to raise this place. Their names survive; their faces do not — this cycle they are remembered as '+sp+'.';
+    default: return 'The sky ahead is painted glass. The throne beneath it will greet you wearing the face of '+sp+' — the shape this climb feared most.';
+  } }
+function actBeatRun(act){ const ai=ACTS.indexOf(act); if(ai<0)return; const line=narrLine(ai);
+  setTimeout(()=>{ try{ showBossSpeech('THE TOWER', line); }catch(_){} log('『'+line+'』 — the Tower'); }, 2600); }
+function showRunIntro(){ const n=narrFor(0);
+  const body='You wake beneath the <b>Tower of Continuance</b> with no name and no memory of having existed. It was raised to preserve dying worlds — not their stone, but their <b>essence</b>. Every creature it took became an <b>Echo</b>, rebuilt from memory and myth. The monsters ahead are the last remains of worlds that are already gone.<br><br>'
+    +'The Tower keeps no record of <i>you</i>, and cannot erase what it cannot read. It calls you <b class="gm-hl">the Unwritten</b> — and each time you fall it rebuilds the climb and tries again.<br><br>'
+    +'A voice reaches you through still water and dead bells — <b>Ilyra, the Last Bellkeeper</b>: “Break the seals. Reach the summit. This cycle the first kingdom rises as <b>'+n.sp+'</b> — '+n.cause+'. Do not trust their faces. Climb.”';
+  try{ gameConfirm('📖 THE UNWRITTEN', body, null, {ic:'📖', ok:'Begin the climb', noCancel:true}); }catch(_){} }
+// ===== STORY PAGES: adaptive lore you FIND while climbing — each reveals part of what THIS run's Tower is (bible §8) =====
+const STORY_PAGES=[
+  {id:'p_intro', act:0, title:'A page in no hand you know',        t:n=>'You woke with no name because the Tower keeps no page for you. Everything that ever lived has an entry here — you do not. That is why it cannot erase you. That is why it calls you the Unwritten.'},
+  {id:'p_act1',  act:0, title:'A torn ledger, near the roots',     t:n=>'The first kingdom this cycle wears the shape of '+n.sp+'. They were taken when '+n.cause+'. They do not know they are memories. To them, YOU are the intruder.'},
+  {id:'p_act2',  act:1, title:"A soldier's last letter",           t:n=>'Two nations gave themselves to this door, each certain the other had built it. Neither had. This climb dresses the war as '+n.sp+'. Watch the events, never the faces — the war repeats no matter who wears it.'},
+  {id:'p_ashen', act:1, title:'Scratched into a dead shield',      t:n=>'Another climber walks these floors — the Ashen Knight. Like you, the rebuilds do not wash them away. They say they reached the top once. They will not say what waited there.'},
+  {id:'p_act3',  act:2, title:"A child's chalk drawing",           t:n=>'This garden keeps the gentle memories — homes, festivals, the not-quite-dead. This cycle they are remembered as '+n.sp+'. Some know they are copies and beg to be let go. Some beg you to stay.'},
+  {id:'p_seals', act:2, title:'A note left by the last bell',      t:n=>'Ten rulers set ten seals. Ilyra says break them all to reach the summit. She answers every question but three: the world outside, your true name, and what sits upon the final floor.'},
+  {id:'p_act4',  act:3, title:'The Ten Oaths',                     t:n=>'Memory. Form. Conflict. Growth. Death. Time. Identity. Obedience. Continuance. Dominion. Ten rulers each gave a piece of themselves to a law — this cycle their broken court is remembered as '+n.sp+'. Then they fought over the Crown.'},
+  {id:'p_first', act:3, title:'A name scraped from the wall',      t:n=>'One ruler — the First King — tried to destroy the Crown Engine. The others chained him at the summit and scraped his name from every wall. The scraping was done from INSIDE the stone.'},
+  {id:'p_act5',  act:4, title:'Fresh mortar, impossibly high',     t:n=>'The sky ahead is painted glass; the throne beneath it is a test, and it will greet you wearing the face of '+n.sp+'. Above the false summit: fresh stone, new stairs. The Tower is already taller than when you began.'},
+  {id:'p_truth', act:4, title:'A page you were not meant to read', t:n=>'Reality is dying — worlds erased by something beyond even the Tower. It preserves what it can the only way it knows: it absorbs, it repeats, it prevents death by preventing life. You were made to choose what it cannot predict.'},
+];
+function runStoryPages(){ return STORY_PAGES.map(p=>({id:p.id, act:p.act, title:p.title, txt:p.t(narrFor(p.act))})); }
+function maybeSpawnPage(rooms){ if(typeof floorType==='function' && floorType(G.floor)!=='NORMAL') return; if(!G.run||!rooms||!rooms.length) return;
+  const ai=ACTS.indexOf(actOf(G.floor)); G.run.journalIds=G.run.journalIds||{};
+  const pages=runStoryPages().filter(p=>p.act===ai && !G.run.journalIds[p.id]);
+  if(!pages.length || Math.random()>=0.55) return;
+  const p=pages[Math.floor(Math.random()*pages.length)], r=pick(rooms), pt=randPtInRoom(r,3);
+  const m=new THREE.Mesh(new THREE.BoxGeometry(.62,.86,.05), new THREE.MeshStandardMaterial({color:0xf0e6c8, emissive:0xf0e6c8, emissiveIntensity:.55}));
+  m.position.set(pt.x,1,pt.z); m.rotation.y=rand(-0.4,0.4); scene.add(m);
+  G.pickups.push({mesh:m, kind:'page', page:p, x:pt.x, z:pt.z}); }
+
 function pickEType(floor){
   const elig=ETYPES.filter(t=>floor>=(t.minF||0)); let tot=0; for(const t of elig)tot+=t.w;
   let r=Math.random()*tot; for(const t of elig){ r-=t.w; if(r<=0) return t; } return elig[0];
@@ -5079,9 +5483,9 @@ function spawnEnemy(floor,home,forceType,forceElite){
   if(e.elite) for(const k in e.res) e.res[k]=Math.min(0.6,e.res[k]+0.1);
   if(mod?.eres) for(const k in e.res) e.res[k]=Math.min(0.75, e.res[k]+mod.eres);
   e.maxhp=e.hp;
-  if(t.id==='swarm'){ e.color=0x8aa346; e.mesh=makeGoblinMesh(e.scale*1.15); }   // GOBLIN model (concept-art pass): the pack-runner wears the new skin
-  else if(SKELE_MAP[t.id]){ const _sk=SKELE_MAP[t.id]; e.mesh=makeSkeletonMesh(e.scale*(_sk.ms||1.1), _sk.opts||{}); }   // SKELETON models (concept-art pass)
-  else e.mesh=makeEnemyMesh(t.shape,e.color,e.scale);
+  { const _fam=ENEMY_FAMILIES[runActFamilyKey(floor)];   // each ACT skinned by a family ROLLED FRESH PER RUN (seeded) — the tower is a different species every climb
+    if(_fam){ const _v=_fam.map[t.id]||_fam.basic; e.mesh=_fam.fn(e.scale*(_fam.ms||1.1), {variant:_v}); }   // t.id 'swarm' etc. now themed per-act; gold/loot goblins stay their own models
+    else e.mesh=makeEnemyMesh(t.shape,e.color,e.scale); }
   if(e.elite||e.champion){ const c=e.affixCol||0xffce4d; const ring=new THREE.Mesh(new THREE.TorusGeometry((e.elite?1.4:1.05)*e.scale,.12,8,20), new THREE.MeshStandardMaterial({color:c,emissive:c,emissiveIntensity:1})); ring.rotation.x=Math.PI/2; ring.position.y=1.7*e.scale; e.mesh.add(ring);
     if(e.affixCol){ const bb=e.mesh.userData.body; if(bb) bb.material.emissive.setHex(e.affixCol); } }
   let px=e.home.x+rand(-2.5,2.5), pz=e.home.z+rand(-2.5,2.5); if(!inAny(px,pz,0.7)){ px=e.home.x; pz=e.home.z; }
@@ -5787,16 +6191,31 @@ function goldPlating(){
   sfx.gold&&sfx.gold(); banner('🪙 GOLD PLATING','+'+G.plate+' coin armour — hits chip it away');
 }
 // ---- WEAPON OVERHEAT: rapid kills heat your weapon — power climbs, then it SHATTERS if you push through the red ----
-function addHeat(n){ if(G.inTown||!G.equip.weapon) return; G.heat=Math.min(100,(G.heat||0)+n); G._heatKT=performance.now();
-  if(G.heat>=100 && !G.heatFuse){ G.heatFuse=5; banner('🔥 WEAPON OVERHEATING','5s — hold fire, swap weapons, or '+(G.equip.weapon.name||'it')+' SHATTERS'); shakeCam(0.6); sfx.hurt&&sfx.hurt(); } }
+function addHeat(n){ if(G.inTown||!G.equip.weapon||G.equip.weapon.overheated) return; G.heat=Math.min(100,(G.heat||0)+n); G._heatKT=performance.now();
+  if(G.heat>=100 && !G.heatFuse){ G.heatFuse=8; banner('🔥 WEAPON OVERHEATING','8s to cool — hold fire or SWAP weapons, or '+(G.equip.weapon.name||'it')+' breaks'); shakeCam(0.6); sfx.hurt&&sfx.hurt(); } }
 function heatMult(){ const h=G.heat||0; return h>30 ? 1+(h-30)*0.006 : 1; }        // up to +42% damage white-hot
 function heatAS(){ const h=G.heat||0; return h>30 ? 1+(h-30)*0.004 : 1; }          // up to +28% attack speed
+// ---- on-screen HEAT GAUGE: builds once, colours green→orange→red and FLASHES near the break line ----
+function updateHeatUI(){ let el=document.getElementById('heatGauge');
+  if(!el){ el=document.createElement('div'); el.id='heatGauge';
+    el.style.cssText='position:fixed;left:50%;bottom:104px;transform:translateX(-50%);width:190px;height:12px;z-index:59;border:1px solid #000a;border-radius:7px;background:#1a1512cc;box-shadow:0 1px 5px #000a;padding:2px;display:none;pointer-events:none';
+    el.innerHTML='<div id="heatFill" style="height:100%;width:0;border-radius:5px;transition:width .12s,background .18s"></div><div id="heatLbl" style="position:absolute;left:0;right:0;top:-15px;text-align:center;font:700 9px sans-serif;letter-spacing:1px;text-shadow:0 1px 2px #000"></div>';
+    document.body.appendChild(el); }
+  const w=G.equip&&G.equip.weapon, oh=w&&w.overheated, h=G.heat||0, f=document.getElementById('heatFill'), L=document.getElementById('heatLbl');
+  if(oh){ el.style.display='block'; f.style.width='100%'; f.style.background='#5a2018'; L.textContent='🔥 OVERHEATED — REPAIR AT BENCH'; L.style.color='#ff7a3d'; return; }
+  if(!w || h<=0.5){ el.style.display='none'; return; }
+  el.style.display='block'; f.style.width=Math.min(100,h)+'%';
+  let col='#7ad06a'; if(h>85) col='#ff2d1a'; else if(h>60) col='#ff6a2a'; else if(h>30) col='#ffb43a';
+  const flash=(h>85 && (performance.now()%320<160)); f.style.background=flash?'#fff3b0':col;
+  L.textContent = h>85?'⚠ WEAPON BREAKING':(h>30?'🔥 HEAT — power rising':'HEAT');
+  L.style.color = h>85?'#ff5c3d':(h>60?'#ff9a3d':'#e8c98a'); }
 function shatterWeapon(){ const w=G.equip.weapon; G.heat=0; G.heatFuse=0; if(!w) return;
-  G.equip.weapon=null; recompute(); refreshItemPanels&&refreshItemPanels(); renderActionbar&&renderActionbar();
-  const p=G.player.position; burst(p.x,p.z,0xff5c3d,16,1.4); ringFx(p.x,p.z,4,0xff5c3d); shakeCam(1.2); sfx.boom&&sfx.boom();
-  grantMaterials&&grantMaterials('shard',4);   // the dust is at least good for crafting
-  banner('💥 '+w.name+' SHATTERS','overheated to dust — it is gone. 4 shards salvaged.');
-  log('💥 Your weapon shattered from overheat. Ease off the trigger near the red line — or juggle weapons.'); }
+  // OVERHEAT BREAK: the weapon is NOT destroyed — it warps into an OVERHEATED, unusable state you can REPAIR (or salvage) at the crafting bench.
+  w.overheated=true; G.equip.weapon=null; if(G.inv){ G.inv.push(w); } recompute(); refreshItemPanels&&refreshItemPanels(); renderActionbar&&renderActionbar();
+  const p=G.player.position; burst(p.x,p.z,0xff5c3d,16,1.4); ringFx(p.x,p.z,4,0xff5c3d); shakeCam(1.2); sfx.crack&&sfx.crack();
+  banner('💥 '+w.name+' OVERHEATED','it warped — bagged & unusable until repaired');
+  showCoach&&showCoach('🔥','Weapon overheated','<b>'+w.name+'</b> pushed past the red line and <b>warped</b>. It is in your bag marked <b style=\'color:#ff7a3d\'>🔥 OVERHEATED</b> and cannot be used. <b>Repair it at the ⚒ Crafting Bench</b> in the sanctuary — or salvage it there for components. Ease off near the red line, or swap weapons to cool.');
+  log('💥 '+w.name+' overheated and warped — repair it at the ⚒ crafting bench (or salvage it there for materials).'); }
 // ---- DECOYS: afterimages that taunt (dash always leaves one for a heartbeat) ----
 function spawnDecoy(x,z,dur){
   const m=new THREE.Mesh(THREE.CapsuleGeometry?new THREE.CapsuleGeometry(0.5,1.0,4,8):new THREE.CylinderGeometry(0.5,0.5,1.8,8),
@@ -5969,10 +6388,11 @@ function updateOverhaul(dt){
   // typing cast timer
   if(G.typeCast){ G.typeCast.t-=dt; if(G.typeCast.t<=0) endTypeCast(false); }
   // weapon heat: decay + fuse
-  if(G.heat>0 && performance.now()-(G._heatKT||0)>1500) G.heat=Math.max(0,G.heat-14*dt);
+  if(G.heat>0 && performance.now()-(G._heatKT||0)>1100) G.heat=Math.max(0,G.heat-22*dt);   // cools sooner & faster — overheating now needs real SUSTAINED fire
   if(G.heatFuse){ if(G.heat<85){ G.heatFuse=0; log('🔥 The weapon cools — crisis averted.'); }
     else { G.heatFuse-=dt; if(G.heatFuse<=0) shatterWeapon();
       else if(G.player&&Math.random()<dt*4) floatText(G.player.position.x,G.player.position.z,'🔥'+Math.ceil(G.heatFuse),'fire',2.6); } }
+  updateHeatUI();
   // ward decay (Vampiric Plating)
   if(G.ward>0) G.ward=Math.max(0,G.ward-G.maxhp*0.02*dt);
   // coin lures
@@ -7115,7 +7535,7 @@ function killEnemy(e){
   if(e.boss && G.S && G.S.soulContract) uChanceBase=1;   // Soul Contract: the guardian is BOUND to pay in uniques
   for(const pid of killContributors(e)){ withPlayer(pid, ()=>{
     addFervor(e.boss?40:e.elite?16:8); addCharge(e.boss?40:e.elite?11:5); refillFlasks(e.boss?60:e.elite?15:9);
-    addHeat(e.boss?0:e.elite?11:7);                                          // OVERHEAT: rapid kills cook the weapon
+    addHeat(e.boss?0:e.elite?6:3.5);                                         // OVERHEAT: rapid kills cook the weapon (rebalanced — ~half the old rate)
     if(G.wager) G.wager.got++;                                               // Altar of Hubris keeps count
     if(G.S&&G.S.midas){ for(let _mi=0;_mi<3;_mi++){ const _mx=ex+rand(-1.5,1.5), _mz=ez+rand(-1.5,1.5);   // Midas Shrapnel: run for your pay
         const _cm=new THREE.Mesh(new THREE.CylinderGeometry(0.3,0.3,0.09,10), new THREE.MeshStandardMaterial({color:0xffce4d,emissive:0xffce4d,emissiveIntensity:1}));
@@ -8323,6 +8743,7 @@ function renderStash(){
 function equipItem(it){
   if(NET.role==='peer') return netPeerCmd('equip',[it&&it.uid]);
   if(it.isGem||it.isSkillGem) return;
+  if(it.overheated){ log('🔥 '+(it.name||'That weapon')+' is OVERHEATED — repair it at the ⚒ crafting bench first.'); sfx.deny&&sfx.deny(); return; }
   const sk=it.slotKey, cur=G.equip[sk];
   G.inv=G.inv.filter(x=>x!==it); if(cur) G.inv.push(cur);
   if(sk==='weapon'){ G.heat=(G.heat||0)*0.4; if(G.heat<85) G.heatFuse=0; }   // OVERHEAT: juggling weapons is the cooling loop
@@ -8419,6 +8840,7 @@ function itemTile(it, o){ o=o||{};
   if(o.bound) inner+=`<span class="tbound">${o.bound}</span>`;
   if(it.sockets){ let s=''; for(let i=0;i<it.sockets;i++){ const g=it.socketed&&it.socketed[i]; s+=`<i class="${g?'f':''}"></i>`; } inner+=`<span class="tsock">${s}</span>`; }
   if(o.badge) inner+=`<span class="tbadge">${o.badge}</span>`;
+  if(it.overheated) inner+=`<span class="tbadge" style="background:#e0431f;color:#fff" title="Overheated — repair at the crafting bench">🔥</span>`;
   if(it.locked) inner+=`<span class="tlock" title="Locked — can't be fed or sold">🔒</span>`;
   d.innerHTML=inner;
   if(o.tip){ d.classList.add('has-gtip'); d.addEventListener('mouseenter',()=>showTileTip(o.tip)); d.addEventListener('mousemove',moveTileTip); d.addEventListener('mouseleave',hideTileTip); }
@@ -8588,11 +9010,14 @@ function renderInv(){ if(_G.netApplying) return;
   $('bagCount').textContent=G.inv.length; $('bagCap').textContent=G.invCap; clearItemDetail();
   // ---- bag toolbar (sort modes + quick-stash) ----
   const tools=$('bagTools'); if(tools){
+    const _thr=junkThreshold(); const _jsel=`<span class="junkSel" title="Highest rarity that counts as junk for Sell junk (uniques & mythos never count)">Junk ≤ ${RARITY.slice(0,4).map((r,i)=>`<b class="jq${_thr===i?' on':''}" data-jq="${i}" style="--jc:var(--${r.css})">${r.nm}</b>`).join('')}</span>`;
     tools.innerHTML=['slot','rarity','new'].map(m=>`<span class="st${BAG_SORT===m?' on':''}" data-sort="${m}">${m}</span>`).join('')
       +`<span class="st" id="stashAllBtn" style="border-color:rgba(255,206,77,.4);color:var(--gold)">⇩ All gear</span>`
-      +`<span class="st" id="sellJunkBtn" style="border-color:rgba(255,120,140,.4);color:#ff8a9c" title="Sell all junk (grey/blue) gear in your bag for gold">💰 Sell junk</span>`
+      +`<span class="st" id="sellJunkBtn" style="border-color:rgba(255,120,140,.4);color:#ff8a9c" title="Sell all junk at or below your Junk rarity for gold">💰 Sell junk</span>`
+      +_jsel
       +rowBuyChip('buyInvRowBtn', (META.invRows||0)>=INV_ROWS_MAX, invRowCost());
     tools.querySelectorAll('[data-sort]').forEach(b=>b.onclick=()=>{ BAG_SORT=b.dataset.sort; renderInv(); });
+    tools.querySelectorAll('.jq').forEach(b=>b.onclick=()=>{ SETTINGS.junkMaxRarity=+b.dataset.jq; saveSettings(); renderInv(); });
     const sa=$('stashAllBtn'); if(sa) sa.onclick=stashAllGear;
     const sj=$('sellJunkBtn'); if(sj) sj.onclick=sellJunk;
     const bi=$('buyInvRowBtn'); if(bi) bi.onclick=buyInvRow;
@@ -8657,8 +9082,13 @@ function renderVendor(){
     <button class="vbtn" id="buyGemBtn">💠 Buy gem — ${gemCost()}g</button>
     <button class="vbtn" id="buyEggBtn">🥚 Buy egg — ${eggCost()}g</button>
     <button class="vbtn" id="respecBtn2">↺ Respec — ${respecCost()}g</button></div>`;
-  $('gambleBtn').onclick=()=>{ if(G.gold<gambleCost()){log('Not enough gold to gamble.');return;} if(G.inv.length>=G.invCap){log('Inventory full.');return;}
-    G.gold-=gambleCost(); const it=gambleItem(G.floor); G.inv.unshift(it); log('🎲 Gambled — '+it.rarity.nm+' '+it.name); renderVendor(); };
+  $('gambleBtn').onclick=()=>{ if(G.gold<gambleCost()){log('Not enough gold to gamble.');return;} if(G.inv.length>=G.invCap){log('Inventory full — sell or stash something first.');return;}
+    G.gold-=gambleCost(); const it=gambleItem(G.floor); G.inv.unshift(it); $('vendGoldNum').textContent=G.gold; sfx.drop&&sfx.drop(RARITY.indexOf(it.rarity)); log('🎲 Gambled — '+it.rarity.nm+' '+it.name);
+    // spam-friendly: keep the button under the cursor — prepend the roll to the grid instead of re-rendering the whole panel
+    const _grid=$('vendList')&&$('vendList').querySelector('.vendGrid');
+    if(_grid){ const t=itemTile(it,{ctx:null}); t.title=it.name+(it.rarity?' · '+it.rarity.nm:''); t.addEventListener('click',()=>{ _vendSel=it; renderVendor(); });
+      t.addEventListener('contextmenu',e=>{ e.preventDefault(); if(it.locked){ log('🔒 Locked — unlock to sell.'); return; } const _sv=sellVal(it); G.gold+=_sv; G.inv=G.inv.filter(x=>x!==it); if(G.selGem===it)G.selGem=null; if(_vendSel===it)_vendSel=null; flashGold(); log('Sold '+it.name+' (+'+_sv+'g)'); renderVendor(); });
+      _grid.insertBefore(t,_grid.firstChild); } else renderVendor(); };
   $('buySkillBtn').onclick=()=>{ if(G.gold<skillGemCost()){log('Not enough gold for a skill gem.');return;} if(G.inv.length>=G.invCap){log('Inventory full.');return;}
     G.gold-=skillGemCost(); const g=makeSkillGem(G.floor); G.inv.push(g); if(G.slots.includes(null))autoBind(g); log('✦ Bought '+g.name); renderVendor(); refreshItemPanels(); };
   $('buyFlaskBtn').onclick=()=>{ if(G.gold<flaskCost()){log('Not enough gold for a flask.');return;} if(G.inv.length>=G.invCap){log('Inventory full.');return;}
@@ -8747,6 +9177,7 @@ function die(){ if(G.dead)return;
   if(G.practice){ G.hp=G.maxhp; G.invuln=1; return; }   // no death in the practice arena
   if(_G.victoryPending||G.victoryOpen){ G.hp=Math.max(1,G.hp); G.invuln=2; return; }   // the tower fell first — victory outranks a stray bullet
   G.dead=true; G.running=false; G.recallT=0; _G.returnFloor=0;   // death ends the descent — no recalled depth to return to
+  if(G.dailyRun) dailyScoreTick();   // FAST-DEATH FIX: score today's daily even on an instant death
   PANELS.forEach(p=>$(p).classList.add('hidden'));
   setMusic(null);   // the tower goes quiet for you
   const _soft=diffCfg().keepItems;   // CASUAL: death costs nothing — keep gear, items, stash & greed
@@ -8995,7 +9426,7 @@ function renderSettings(){
     <div style="display:flex;gap:8px;margin:0 16px 14px;">
       <div class="segBtn${SETTINGS.touchAim==='auto'?' sel':''}" data-ta="auto">🎯 Auto-aim<small>left stick moves · auto-fire at nearest foe</small></div>
       <div class="segBtn${SETTINGS.touchAim==='twin'?' sel':''}" data-ta="twin">🕹 Twin-stick<small>left moves · right aims &amp; fires</small></div>
-    </div>`
+    </div>${keybindHTML()}`
     +(G.running && !_G.splitscreen && !NET.role && !G.dailyRun && !G.practice
       ? `<div style="margin:6px 16px 14px;border-top:1px solid rgba(255,255,255,.08);padding-top:14px">
            <button class="btn" id="extractBtn" style="width:100%;background:linear-gradient(180deg,#1a3a2e,#0f241c);border-color:#3ad18a;color:#bfffdd">🚪 Save &amp; Leave to Menu</button>
@@ -9020,6 +9451,7 @@ function renderSettings(){
     log(TOUCH.on?'📱 Touch controls on — left stick moves; use Settings to pick auto-aim or twin-stick.':'Touch controls off.'); });
   b.querySelectorAll('[data-ta]').forEach(el=>el.onclick=()=>{ SETTINGS.touchAim=el.dataset.ta; saveSettings(); applyTouchMode(); renderSettings();
     log(SETTINGS.touchAim==='twin'?'🕹 Twin-stick: right stick aims & fires.':'🎯 Auto-aim: auto-fire at the nearest foe.'); });
+  wireKeybinds(b);
 }
 // ============================================================ TUTORIAL (menu only — never interrupts a run)
 const TUT_PAGES=[
@@ -9182,6 +9614,9 @@ function renderCodex(){
 // ---- THE TOWER'S STORY: re-readable record of everything learned (STORY_BIBLE §8-9) ----
 function renderStoryCodex(){
   const cx=META.codex||{};
+  const jr=(G.run&&G.run.journal)||[];
+  let jh=`<div class="cdxSec">📖 THE UNWRITTEN — this climb's journal (${jr.length}/${(typeof STORY_PAGES!=='undefined'?STORY_PAGES.length:jr.length)})</div>`;
+  jh+= jr.length ? jr.map(e=>`<div style="margin:5px 12px;padding:6px 10px;border-left:3px solid #b98bff;font-size:12px;line-height:1.5"><b style="color:#cdb0ff">${e.title}</b><br><i style="opacity:.9">${e.txt}</i></div>`).join('') : `<div style="margin:4px 12px;font-size:12px;opacity:.5">Find pages as you climb — each reveals part of what THIS Tower is. The story changes with every run.</div>`;
   const status=META.trueSummit?' · THE DOOR STANDS OPEN':META.chairChoice==='sat'?' · YOU SIT IN THE CHAIR':META.chairChoice==='refused'?' · THE OFFER, REFUSED':'';
   let h=`<div class="cdxSec">⛰ WHAT THE SUMMIT REVEALED — victory ${META.victories||0}${status}</div>`;
   const revealed=Math.min(META.victories||0,5);
@@ -9201,7 +9636,7 @@ function renderStoryCodex(){
     for(const f of fs) h+= cx['frag:'+f.id]
       ? `<div style="margin:4px 12px;padding:5px 10px;border-left:2px solid rgba(232,237,247,.4);font-style:italic;font-size:12px;opacity:.85;line-height:1.45">“${f.txt}”</div>`
       : `<div style="margin:4px 12px;padding:5px 10px;border-left:2px solid rgba(255,255,255,.1);font-size:12px;opacity:.3">not yet found — keep climbing</div>`; }
-  return h;
+  return jh+h;
 }
 function renderScore(){
   const r=G.run, best=loadBest();
@@ -9335,6 +9770,7 @@ function startGameConfirmed(after){
   if(chosenDestiny) G.run.destiny=(typeof structuredClone==='function') ? structuredClone(chosenDestiny) : { ...chosenDestiny, eff:{...(chosenDestiny.eff||{})}, procs:(chosenDestiny.procs||[]).map(p=>({ ...p })) };
   recompute(); G.hp=G.maxhp; G.mana=G.maxmana;
   initAudio(); startAmbient();
+  if(!G.dailyRun && !G.tutorial) showRunIntro();   // STORY: opening premise on every new climb (skippable)
   // FIRST-EVER RUN: skip the hub entirely — straight into Act I combat within seconds.
   // The sanctuary (stash/vendor/tree shopping) unlocks naturally on your first return.
   const firstRun = !G.dailyRun && !(META.fame>0 || (META.feats||[]).length>0 || loadBest());
@@ -9379,7 +9815,8 @@ function updateWorldLabels(){
   // story objects: a cocoon is a beacon (visible from afar); fragments & the Rescued tag when close (STORY_BIBLE §7-8)
   if(G.pickups) for(let i=0;i<G.pickups.length;i++){ const pk=G.pickups[i]; if(pk.dead)continue;
     if(pk.kind==='keptone') items.push(['lblKept','💠 A KEPT ONE — crack the cocoon',pk.x,pk.z]);
-    else if(pk.kind==='fragment') items.push(['lblFrag'+i,'📜 FRAGMENT',pk.x,pk.z]); }
+    else if(pk.kind==='fragment') items.push(['lblFrag'+i,'📜 FRAGMENT',pk.x,pk.z]);
+    else if(pk.kind==='page') items.push(['lblPage'+i,'📖 A PAGE',pk.x,pk.z]); }
   if(G.inTown && G.townNpcs) for(let i=0;i<G.townNpcs.length;i++){ const tn=G.townNpcs[i]; items.push(['lblNpc'+i,'💬 '+tn.npc.nm,tn.x,tn.z]); }
   const seen=new Set(), _pp=(G.player?G.player.position:{x:0,z:0}), LBL_R=8;
   for(const [id,txt,x,z] of items){ seen.add(id);
@@ -10038,6 +10475,15 @@ function updatePlayerPickups(dt){
       log('📜 '+fragSetName(f.set)+' · “'+f.txt+'”  (+150 fame)');
       floatText(pk.mesh.position.x,pk.mesh.position.z,'📜','big',2.2);
     } }
+    else if(pk.kind==='page'){ if(d<2.2){ pk.dead=true; sfx.pickup&&sfx.pickup();   // an adaptive STORY PAGE — kept in this climb's journal
+      const pg=pk.page; G.run.journalIds=G.run.journalIds||{}; G.run.journal=G.run.journal||[];
+      if(!G.run.journalIds[pg.id]){ G.run.journalIds[pg.id]=1; G.run.journal.push({title:pg.title,txt:pg.txt}); }
+      discover('page:'+pg.id); G.run.loreFound=(G.run.loreFound||0)+1;
+      banner('📖 A PAGE — '+pg.title, G.run.journal.length+' recovered this climb · read it in the Codex (B)');
+      showCoach&&showCoach('📖', pg.title, '<i>'+pg.txt+'</i><br><br><span style="opacity:.6">Kept in your Journal — open the Codex (B) to re-read the story you have pieced together this climb.</span>');
+      log('📖 '+pg.title+' · '+pg.txt);
+      floatText(pk.mesh.position.x,pk.mesh.position.z,'📖','big',2.2);
+    } }
     else if(pk.kind==='loot'){
       if(!isP0){ if(d<2.0){ if(G.inv.length<G.invCap){ pk.dead=true; sfx.gold&&sfx.gold(); G.inv.push(pk.item); refreshItemPanels(); } else if(!pk.warned){ pk.warned=true; log('🎒 Bag full — make room.'); } } }   // co-op guests auto-collect (no split-screen bag UI)
       else if(d<4.2) nearLoot=true;   // P1: loot stays on the floor — press F to open the bag
@@ -10328,6 +10774,14 @@ function reforgeCostFor(it){ return {essence:2, shard:4, gold:60+(it.floor||1)*8
 function enhanceCostFor(it){ const tier=RARITY.indexOf(it.rarity); return {core:2+Math.max(0,tier), shard:3, gold:100+(it.floor||1)*12}; }
 function canAfford(c){ for(const k in c){ if(k==='gold'){ if((G.gold||0)<c.gold) return false; } else if(matCount(k)<c[k]) return false; } return true; }
 function costStr(c){ const parts=[]; for(const k in c){ parts.push(k==='gold'?('💰'+c.gold):(matIc(k)+c[k])); } return parts.join('  '); }
+function repairCostFor(it){ const tier=Math.max(0,RARITY.indexOf(it.rarity)); return {shard:2+tier, gold:40+(it.floor||1)*6}; }
+function salvageYield(it){ const tier=Math.max(0,RARITY.indexOf(it.rarity)); const out=[{k:'shard',n:2+tier*2}]; if(tier>=1)out.push({k:'essence',n:tier}); if(tier>=2)out.push({k:'core',n:tier-1}); return out; }
+function doRepair(it){ if(!it||!it.overheated) return; const cost=repairCostFor(it); if(!payCost(cost)){ log('Not enough to repair — need '+costStr(cost)+'.'); sfx.deny&&sfx.deny(); return; }
+  it.overheated=false; sfx.evolve&&sfx.evolve(); log('🛠 '+it.name+' repaired — re-equip it to fight.'); refreshItemPanels&&refreshItemPanels(); renderCraft(); }
+function doSalvage(it){ if(!it) return; if(it.locked){ log('🔒 Unlock it before salvaging.'); sfx.deny&&sfx.deny(); return; }
+  const y=salvageYield(it); for(const g of y) grantMaterials(g.k,g.n);
+  if(G.equip){ for(const k in G.equip){ if(G.equip[k]===it) G.equip[k]=null; } } if(G.inv) G.inv=G.inv.filter(x=>x!==it); if(_craftSel===it)_craftSel=null;
+  sfx.gold&&sfx.gold(); log('♻ Salvaged '+it.name+' → '+y.map(g=>matIc(g.k)+g.n).join(' ')+'.'); recompute&&recompute(); refreshItemPanels&&refreshItemPanels(); renderCraft(); }
 function payCost(c){ if(!canAfford(c)) return false; for(const k in c){ if(k==='gold') G.gold-=c.gold; else META.materials[k]=(META.materials[k]||0)-c[k]; } saveMeta(); return true; }
 function doReforge(it){ const cost=reforgeCostFor(it); if(!payCost(cost)){ log('Not enough materials to reforge.'); sfx.deny&&sfx.deny(); return; }
   const fresh=makeItem(it.floor||G.floor||1, it.slotKey); it.affixes=(fresh.affixes||[]).map(a=>Object.assign({},a));
@@ -10350,11 +10804,15 @@ function renderCraft(){
     html+='<div style="margin:12px 16px 4px;font-size:13px;color:#fff">Selected: <b style="color:'+rc+'">'+(it.slotIc||'')+' '+it.name+'</b> · '+(it.rarity?it.rarity.nm:'')+'</div>';
     html+='<div class="craftOpt'+(canAfford(rf)?'':' dis')+'" id="craftReforge"><div class="co-ic">🔀</div><div><div class="co-nm">Reforge Affixes</div><div class="co-ds">Reroll this item affixes into a fresh set.</div></div><div class="co-cost">'+costStr(rf)+'</div></div>';
     html+='<div class="craftOpt'+((canEnh&&canAfford(en))?'':' dis')+'" id="craftEnhance"><div class="co-ic">⬆</div><div><div class="co-nm">Enhance Rarity</div><div class="co-ds">'+(canEnh?'Raise rarity one tier and add an affix.':'Already at max rarity.')+'</div></div><div class="co-cost">'+(canEnh?costStr(en):'—')+'</div></div>';
+    if(it.overheated){ const rp=repairCostFor(it); html+='<div class="craftOpt'+(canAfford(rp)?'':' dis')+'" id="craftRepair"><div class="co-ic">🛠</div><div><div class="co-nm" style="color:#ff9a3d">Repair Overheat</div><div class="co-ds">Reforge the warped metal — makes this weapon usable again.</div></div><div class="co-cost">'+costStr(rp)+'</div></div>'; }
+    { const sv=salvageYield(it); html+='<div class="craftOpt" id="craftSalvage"><div class="co-ic">♻</div><div><div class="co-nm">Salvage for Components</div><div class="co-ds">Break it down into crafting materials. Destroys the item.</div></div><div class="co-cost">'+sv.map(g=>matIc(g.k)+g.n).join('  ')+'</div></div>'; }
   } else { html+='<div style="margin:14px 16px;font-size:12px;opacity:.6">Pick an item above to reforge or enhance it.</div>'; }
   body.innerHTML=html;
   const ig=$('craftItems'); if(ig){ if(!items.length){ ig.innerHTML='<div style="grid-column:1/-1;opacity:.5;font-size:11px;text-align:center;padding:8px">No craftable gear in your bag.</div>'; }
     else items.forEach(it=>{ const t=itemTile(it,{ctx:null,sel:_craftSel===it}); t.title=it.name; t.addEventListener('click',()=>{ _craftSel=it; renderCraft(); }); ig.appendChild(t); }); }
-  if(_craftSel){ const rb=$('craftReforge'), eb=$('craftEnhance'); if(rb) rb.onclick=()=>doReforge(_craftSel); if(eb) eb.onclick=()=>doEnhance(_craftSel); }
+  if(_craftSel){ const rb=$('craftReforge'), eb=$('craftEnhance'); if(rb) rb.onclick=()=>doReforge(_craftSel); if(eb) eb.onclick=()=>doEnhance(_craftSel);
+    const rpb=$('craftRepair'); if(rpb) rpb.onclick=()=>doRepair(_craftSel);
+    const svb=$('craftSalvage'); if(svb) svb.onclick=()=>doSalvage(_craftSel); }
 }
 
 // ---- tutorial: read vs hands-on choice, and a short guided tutorial floor ----
