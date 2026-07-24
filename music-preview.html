@@ -1,0 +1,285 @@
+<!DOCTYPE html><html><head><meta charset="utf-8"><title>TOWERLORDS — full music library (99)</title>
+<style>
+  html,body{margin:0;min-height:100%;background:radial-gradient(ellipse at 50% 25%,#120d1c,#040308);color:#cbb9e6;font-family:system-ui,sans-serif}
+  .wrap{max-width:760px;margin:0 auto;padding:38px 22px 60px}
+  h1{font:600 15px/1.4 Georgia,serif;letter-spacing:5px;text-transform:uppercase;color:#c9adf5}
+  p{font-size:13px;opacity:.66;line-height:1.6}
+  .grp{margin:18px 0 6px;font-size:11px;letter-spacing:2px;text-transform:uppercase;opacity:.55;color:#c9adf5}
+  .row{display:flex;flex-wrap:wrap;gap:7px}
+  button{background:linear-gradient(180deg,rgba(48,36,74,.9),rgba(24,18,40,.9));border:1px solid rgba(150,110,220,.4);color:#e9e2f6;font-size:12px;padding:8px 12px;border-radius:8px;cursor:pointer;transition:.15s}
+  button:hover{border-color:#b98bff;box-shadow:0 0 12px rgba(150,100,255,.35)}
+  button.on{background:linear-gradient(180deg,#5a3a8c,#341f5c);border-color:#d8b8ff;box-shadow:0 0 16px rgba(185,139,255,.5)}
+  #stop{background:linear-gradient(180deg,#3a1c22,#241014);border-color:#a05060}
+  #now{margin-top:20px;font-size:13px;opacity:.8;min-height:20px}
+</style></head><body>
+<div class="wrap">
+  <h1>Towerlords — music library (99 tracks)</h1>
+  <p>Sad &amp; extreme-sad are now <b>sore, slow &amp; painful</b>: almost no deep low-end, a sparse aching piano, and an exposed high solo violin that <b>sighs</b> (leans a step above, then falls into the note). They swell gently over ~5 loops rather than booming. <b>Let a grief track play 60–90s.</b> At-peace rests on handpan + guitar + flute. Click any track — audio needs one click.</p>
+  <div id="cats"></div>
+  <div class="row" style="margin-top:16px"><button id="stop">■ Stop</button></div>
+  <div id="now"></div>
+</div>
+<script>
+let actx=null, musGain=null, master=null, MUS={mood:null,next:0,step:0,timer:null};
+const nfreq=s=>220*Math.pow(2,s/12);
+const CH={Am:[0,3,7],Dm:[5,8,12],Em:[7,10,14],C:[3,7,10],F:[-4,0,3],G:[-2,2,5],E:[7,11,14],Bdim:[2,5,8]};
+const _FB1=[[0,0],[3,0],[6,7],[8,0],[11,0],[14,7]], _FB2=[[0,0],[4,7],[8,0],[10,0],[12,7],[14,0]], _FB3=[[0,0],[2,0],[6,0],[8,7],[12,0],[14,0]];
+const _FD1={kick:[0,8],snare:[4,12],hatEvery:4}, _FD2={kick:[0,6,8],snare:[4,12],hatEvery:2}, _FD3={kick:[0,10],snare:[8],hatEvery:8};
+const _BB1=[[0,0],[2,0],[4,0],[6,0],[8,0],[10,0],[12,0],[14,7]], _BB2=[[0,0],[3,0],[4,0],[7,0],[8,0],[11,0],[12,0],[15,7]], _BB3=[[0,0],[2,0],[4,7],[6,0],[8,0],[10,0],[12,7],[14,0]];
+const _BD1={kick:[0,6,8,14],snare:[4,12],hatEvery:2}, _BD2={kick:[0,3,8,11],snare:[4,12],hatEvery:2}, _BD3={kick:[0,8],snare:[4,12],hatEvery:1};
+function _buildSong(s){ s.chords=s.prog.map(n=>CH[n]||CH.Am); s.melAt={}; let st=0; for(const m of s.mel){ if(m[0]!=null) s.melAt[st]={p:m[0],d:m[1]}; st+=m[1]; if(st>=64)break; } return s; }
+const SONGS={
+  town:_buildSong({type:'calm',bpm:62,prog:['Am','F','C','G'],mel:[[7,8],[5,4],[3,12],[0,8],[3,6],[5,6],[7,8],[3,4]]}),
+  hollow:_buildSong({type:'calm',bpm:56,prog:['Am','Em','F','C'],mel:[[3,8],[0,8],[2,4],[3,12],[7,8],[5,8],[3,8]]}),
+  hearth:_buildSong({type:'calm',bpm:66,prog:['C','G','Am','F'],mel:[[10,6],[7,6],[5,8],[3,8],[5,6],[7,6],[10,8],[7,6]]}),
+  vigil:_buildSong({type:'calm',bpm:52,prog:['Am','F','Dm','Em'],mel:[[0,10],[2,4],[3,10],[5,8],[3,6],[2,6],[0,12]]}),
+  climb:_buildSong({type:'floor',bpm:86,prog:['Am','F','G','Am'],bass:_FB1,drums:_FD1,mel:[[0,4],[3,4],[5,4],[7,8],[5,4],[3,4],[2,8],[3,4],[5,4],[7,4],[8,8],[7,4],[5,4],[3,8]]}),
+  trek:_buildSong({type:'floor',bpm:82,prog:['Am','C','G','Dm'],bass:_FB2,drums:_FD1,mel:[[7,4],[10,4],[12,8],[10,4],[7,4],[5,8],[3,4],[5,4],[7,8],[3,4],[2,4],[0,8]]}),
+  delve:_buildSong({type:'floor',bpm:92,prog:['Am','Em','F','G'],bass:_FB3,drums:_FD2,mel:[[0,2],[2,2],[3,4],[7,4],[5,2],[3,2],[2,4],[3,4],[5,4],[8,4],[7,8],[5,4],[3,4],[0,8]]}),
+  wend:_buildSong({type:'floor',bpm:80,prog:['Dm','F','C','G'],bass:_FB1,drums:_FD3,mel:[[5,4],[8,4],[10,6],[8,2],[7,4],[5,4],[3,8],[5,4],[7,4],[8,4],[7,4],[5,4],[3,8]]}),
+  bloom:_buildSong({type:'floor',bpm:84,prog:['F','C','G','Am'],bass:_FB2,drums:_FD1,mel:[[8,4],[10,4],[12,8],[10,4],[8,4],[7,8],[5,4],[3,4],[5,8],[7,4],[8,4],[10,8]]}),
+  rime:_buildSong({type:'floor',bpm:76,prog:['Am','F','Am','G'],bass:_FB3,drums:_FD3,mel:[[0,8],[3,8],[7,8],[5,8],[3,8],[2,8],[0,16]]}),
+  ashen:_buildSong({type:'floor',bpm:88,prog:['Am','G','F','Em'],bass:_FB2,drums:_FD2,mel:[[0,4],[3,4],[2,4],[3,4],[7,6],[5,2],[3,4],[2,4],[0,4],[2,4],[3,8],[5,4],[3,4],[0,8]]}),
+  boss:_buildSong({type:'boss',bpm:140,prog:['Am','F','G','E'],bass:_BB1,drums:_BD1,mel:[[12,2],[10,2],[7,4],[5,2],[3,2],[0,4],[8,2],[7,2],[5,4],[3,2],[0,6],[10,2],[12,2],[14,4],[10,2],[7,6],[11,2],[7,2],[11,2],[14,2],[16,8]]}),
+  dread:_buildSong({type:'boss',bpm:132,prog:['Am','Bdim','F','E'],bass:_BB3,drums:_BD2,mel:[[0,2],[3,2],[7,2],[10,4],[8,2],[7,2],[5,4],[3,4],[0,2],[3,2],[5,2],[7,4],[11,4],[7,4]]}),
+  wrath:_buildSong({type:'boss',bpm:150,prog:['Am','G','F','E'],bass:_BB2,drums:_BD3,mel:[[12,2],[11,2],[12,2],[10,2],[7,4],[5,2],[3,2],[0,4],[7,2],[8,2],[7,2],[5,2],[3,4],[0,4],[11,4]]}),
+  crown:_buildSong({type:'boss',bpm:138,prog:['C','G','Am','E'],bass:_BB1,drums:_BD2,mel:[[7,2],[10,2],[12,4],[10,2],[7,2],[14,4],[12,2],[10,2],[7,4],[5,2],[3,2],[0,4],[11,4],[12,4]]}),
+  feral:_buildSong({type:'boss',bpm:144,prog:['Am','F','Dm','E'],bass:_BB2,drums:_BD1,mel:[[0,2],[3,2],[5,2],[3,2],[7,4],[5,2],[3,2],[0,4],[8,2],[7,2],[5,2],[3,2],[2,4],[11,4]]}),
+  // --- SAD SET (16 grief pieces): slower, descending sighs, iv/Dm-heavy ---
+  mourn:_buildSong({type:'calm',bpm:48,prog:['Am','Dm','Am','Em'],mel:[[7,8],[5,8],[3,8],[2,8],[3,8],[0,16]]}),
+  farewell:_buildSong({type:'calm',bpm:44,prog:['Am','F','Dm','Am'],mel:[[3,12],[2,4],[0,12],[2,4],[3,8],[0,16]]}),
+  ashes:_buildSong({type:'calm',bpm:50,prog:['Dm','Am','G','F'],mel:[[5,8],[3,8],[2,8],[0,8],[2,6],[3,6],[5,12]]}),
+  lull:_buildSong({type:'calm',bpm:46,prog:['Am','C','Dm','F'],mel:[[0,10],[3,6],[5,8],[3,8],[2,8],[0,12]]}),
+  empty:_buildSong({type:'calm',bpm:42,prog:['Am','Em','F','C'],mel:[[7,10],[5,6],[3,8],[0,8],[3,6],[2,6],[0,8]]}),
+  sorrow:_buildSong({type:'floor',bpm:70,prog:['Am','Dm','Am','Em'],bass:_FB3,drums:_FD3,mel:[[0,4],[3,4],[5,6],[3,2],[2,4],[0,4],[2,8],[3,4],[2,4],[0,8]]}),
+  driftwood:_buildSong({type:'floor',bpm:66,prog:['Dm','Am','G','F'],bass:_FB1,drums:_FD3,mel:[[5,4],[3,4],[2,4],[0,6],[2,2],[3,4],[5,8],[3,4],[2,4],[0,8]]}),
+  fading:_buildSong({type:'floor',bpm:72,prog:['Am','F','Dm','Am'],bass:_FB3,drums:_FD3,mel:[[7,4],[5,4],[3,8],[5,4],[3,4],[2,8],[0,4],[2,4],[3,8],[0,8]]}),
+  longing:_buildSong({type:'floor',bpm:68,prog:['Am','C','Dm','F'],bass:_FB1,drums:_FD3,mel:[[3,6],[5,2],[7,8],[5,4],[3,4],[2,8],[3,4],[0,4],[2,4],[0,8]]}),
+  remains:_buildSong({type:'floor',bpm:64,prog:['F','Dm','Am','Em'],bass:_FB3,drums:_FD3,mel:[[8,4],[5,4],[3,8],[2,4],[0,4],[2,8],[3,4],[2,4],[0,8]]}),
+  elegy:_buildSong({type:'floor',bpm:74,prog:['Am','G','F','Em'],bass:_FB2,drums:_FD3,mel:[[7,4],[10,4],[8,6],[7,2],[5,4],[3,4],[2,8],[3,4],[0,4],[0,8]]}),
+  ruin:_buildSong({type:'boss',bpm:112,prog:['Am','Dm','G','F'],bass:_BB3,drums:_BD2,mel:[[0,2],[3,2],[5,4],[3,2],[2,2],[0,4],[7,2],[5,2],[3,4],[2,2],[0,6],[3,4]]}),
+  requiem:_buildSong({type:'boss',bpm:108,prog:['Dm','Am','F','E'],bass:_BB3,drums:_BD2,mel:[[5,4],[3,2],[2,2],[0,4],[3,2],[2,2],[0,4],[7,2],[5,2],[3,4],[11,4]]}),
+  lastlight:_buildSong({type:'boss',bpm:120,prog:['Am','F','Dm','E'],bass:_BB1,drums:_BD2,mel:[[7,2],[5,2],[3,2],[0,2],[2,4],[3,2],[5,2],[7,4],[3,4],[0,4],[11,4]]}),
+  forsaken:_buildSong({type:'boss',bpm:104,prog:['Am','F','Dm','Em'],bass:_BB3,drums:_BD3,mel:[[0,4],[2,2],[3,2],[5,4],[3,2],[2,2],[0,4],[3,4],[5,4],[3,4],[2,4]]}),
+  collapse:_buildSong({type:'boss',bpm:116,prog:['Am','G','F','E'],bass:_BB2,drums:_BD2,mel:[[12,2],[10,2],[8,2],[7,2],[5,4],[3,2],[2,2],[0,4],[7,2],[5,2],[3,4],[11,4]]}),
+  // --- SANCTUARY +8 ---
+  haven:_buildSong({type:'calm',bpm:60,prog:['C','Am','F','G'],mel:[[3,8],[7,6],[10,6],[7,8],[5,6],[3,6],[0,8]]}),
+  ember:_buildSong({type:'calm',bpm:58,prog:['Am','F','G','C'],mel:[[7,6],[8,6],[10,8],[7,6],[5,6],[3,8],[0,6]]}),
+  candle:_buildSong({type:'calm',bpm:54,prog:['Am','C','F','Em'],mel:[[0,8],[3,6],[7,6],[5,8],[3,6],[2,6],[0,8]]}),
+  vault:_buildSong({type:'calm',bpm:62,prog:['F','C','Dm','Am'],mel:[[8,6],[7,6],[5,8],[3,6],[0,6],[2,6],[3,8]]}),
+  roots:_buildSong({type:'calm',bpm:56,prog:['Am','Dm','F','C'],mel:[[7,8],[5,6],[3,6],[5,8],[3,6],[0,6],[2,8]]}),
+  waystone:_buildSong({type:'calm',bpm:64,prog:['C','G','F','Am'],mel:[[10,6],[12,6],[10,8],[7,6],[5,6],[3,8]]}),
+  respite:_buildSong({type:'calm',bpm:52,prog:['Am','F','C','G'],mel:[[3,10],[5,6],[7,8],[5,6],[3,6],[0,8]]}),
+  keeping:_buildSong({type:'calm',bpm:60,prog:['Dm','Am','C','G'],mel:[[5,8],[3,6],[0,6],[3,8],[5,6],[7,6],[5,8]]}),
+  // --- FLOORS +15 ---
+  ascent:_buildSong({type:'floor',bpm:84,prog:['Am','G','C','F'],bass:_FB1,drums:_FD1,mel:[[0,4],[2,4],[3,6],[5,2],[7,8],[5,4],[3,4],[2,8],[0,8]]}),
+  warrens:_buildSong({type:'floor',bpm:88,prog:['Am','Dm','G','C'],bass:_FB2,drums:_FD2,mel:[[3,4],[5,4],[7,6],[5,2],[3,4],[2,4],[0,8],[3,4],[5,4],[3,8]]}),
+  foundry:_buildSong({type:'floor',bpm:92,prog:['Am','F','Am','G'],bass:_FB3,drums:_FD2,mel:[[0,2],[3,2],[7,4],[5,4],[8,4],[7,4],[5,8],[3,4],[0,8]]}),
+  archive:_buildSong({type:'floor',bpm:78,prog:['C','Am','F','G'],bass:_FB1,drums:_FD3,mel:[[10,4],[7,4],[5,6],[3,2],[5,4],[7,4],[3,8],[0,8]]}),
+  thicket:_buildSong({type:'floor',bpm:82,prog:['Dm','Am','G','F'],bass:_FB2,drums:_FD1,mel:[[5,4],[8,4],[7,6],[5,2],[3,4],[2,4],[0,8],[3,4],[2,8]]}),
+  mire:_buildSong({type:'floor',bpm:80,prog:['Am','Em','Dm','F'],bass:_FB3,drums:_FD3,mel:[[7,6],[5,2],[3,4],[2,4],[0,8],[2,4],[3,4],[5,8]]}),
+  cinders:_buildSong({type:'floor',bpm:90,prog:['Am','F','G','E'],bass:_FB2,drums:_FD2,mel:[[0,4],[3,4],[7,4],[5,4],[3,4],[0,4],[11,4],[7,8]]}),
+  glimmer:_buildSong({type:'floor',bpm:76,prog:['C','G','Am','F'],bass:_FB1,drums:_FD3,mel:[[12,4],[10,4],[7,6],[5,2],[7,4],[10,4],[12,8]]}),
+  spire:_buildSong({type:'floor',bpm:86,prog:['Am','C','G','Am'],bass:_FB2,drums:_FD1,mel:[[0,4],[3,4],[5,4],[7,4],[10,4],[7,4],[5,4],[3,4],[0,8]]}),
+  gauntlet:_buildSong({type:'floor',bpm:94,prog:['Am','G','F','G'],bass:_FB3,drums:_FD2,mel:[[7,2],[5,2],[3,4],[0,4],[3,4],[5,4],[7,6],[5,2],[3,8]]}),
+  hollows:_buildSong({type:'floor',bpm:74,prog:['Am','F','Dm','Em'],bass:_FB1,drums:_FD3,mel:[[3,6],[2,2],[0,4],[2,4],[3,4],[5,6],[3,2],[0,8]]}),
+  deepwood:_buildSong({type:'floor',bpm:88,prog:['Em','Am','F','C'],bass:_FB2,drums:_FD1,mel:[[7,4],[10,4],[8,4],[7,4],[5,6],[3,2],[0,8],[3,8]]}),
+  tunnels:_buildSong({type:'floor',bpm:92,prog:['Am','Am','F','G'],bass:_FB3,drums:_FD2,mel:[[0,2],[3,2],[0,2],[5,2],[7,4],[3,4],[5,4],[3,4],[0,8]]}),
+  ashfall:_buildSong({type:'floor',bpm:84,prog:['Am','F','C','Dm'],bass:_FB2,drums:_FD3,mel:[[8,4],[7,4],[5,6],[3,2],[2,4],[3,4],[0,8],[3,8]]}),
+  verge:_buildSong({type:'floor',bpm:90,prog:['Am','G','Am','E'],bass:_FB1,drums:_FD2,mel:[[7,4],[5,4],[3,4],[7,4],[10,4],[11,4],[7,8],[3,8]]}),
+  // --- BOSS +11 ---
+  warlord:_buildSong({type:'boss',bpm:138,prog:['Am','F','G','E'],bass:_BB1,drums:_BD1,mel:[[0,2],[7,2],[3,2],[0,2],[10,4],[7,2],[5,2],[3,4],[11,4],[7,4]]}),
+  tyrant:_buildSong({type:'boss',bpm:142,prog:['Am','G','F','E'],bass:_BB2,drums:_BD2,mel:[[12,2],[10,2],[7,2],[5,2],[3,4],[0,4],[7,4],[11,4],[7,4]]}),
+  colossus:_buildSong({type:'boss',bpm:128,prog:['Am','Dm','F','G'],bass:_BB3,drums:_BD1,mel:[[0,4],[3,4],[5,4],[3,4],[7,4],[5,4],[3,8],[0,8]]}),
+  harbinger:_buildSong({type:'boss',bpm:134,prog:['Am','Bdim','F','E'],bass:_BB2,drums:_BD2,mel:[[0,2],[1,2],[3,2],[5,2],[7,4],[5,2],[3,2],[11,4],[7,4],[0,4]]}),
+  scourge:_buildSong({type:'boss',bpm:146,prog:['Am','F','G','G'],bass:_BB1,drums:_BD3,mel:[[7,2],[8,2],[7,2],[5,2],[3,4],[0,4],[3,2],[5,2],[7,4],[3,4]]}),
+  doombringer:_buildSong({type:'boss',bpm:130,prog:['Dm','Am','G','E'],bass:_BB3,drums:_BD2,mel:[[5,4],[3,2],[2,2],[0,4],[7,2],[5,2],[3,4],[11,4],[7,4]]}),
+  ravager:_buildSong({type:'boss',bpm:150,prog:['Am','G','F','Am'],bass:_BB2,drums:_BD3,mel:[[0,2],[3,2],[5,2],[7,2],[5,2],[3,2],[0,4],[7,4],[5,4],[3,4]]}),
+  warden2:_buildSong({type:'boss',bpm:136,prog:['Am','C','G','E'],bass:_BB1,drums:_BD2,mel:[[3,2],[7,2],[10,4],[7,2],[5,2],[3,4],[0,4],[11,4],[7,4]]}),
+  executioner2:_buildSong({type:'boss',bpm:144,prog:['Am','F','E','Am'],bass:_BB2,drums:_BD1,mel:[[7,4],[5,4],[3,4],[11,4],[7,4],[0,4],[3,4],[7,4]]}),
+  tempest:_buildSong({type:'boss',bpm:148,prog:['Am','G','F','E'],bass:_BB3,drums:_BD3,mel:[[12,2],[11,2],[10,2],[7,2],[5,4],[3,4],[0,4],[11,4],[12,4]]}),
+  cataclysm:_buildSong({type:'boss',bpm:132,prog:['Am','Dm','G','E'],bass:_BB1,drums:_BD2,mel:[[0,4],[5,4],[3,4],[2,4],[7,4],[5,4],[11,4],[7,4]]}),
+  // --- SAD +6 ---
+  grieving:_buildSong({type:'floor',bpm:64,prog:['Am','Dm','F','Em'],bass:_FB3,drums:_FD3,mel:[[7,6],[5,2],[3,6],[2,2],[0,8],[2,4],[3,4],[0,8]]}),
+  hollowdark:_buildSong({type:'calm',bpm:50,prog:['Dm','Am','F','C'],mel:[[5,8],[3,6],[2,2],[0,8],[2,4],[3,4],[0,8]]}),
+  tearfall:_buildSong({type:'floor',bpm:58,prog:['Am','F','Dm','Em'],bass:_FB1,drums:_FD3,mel:[[3,6],[2,2],[0,6],[2,2],[3,4],[5,6],[3,2],[0,8]]}),
+  thelost:_buildSong({type:'calm',bpm:46,prog:['Am','Em','Dm','Am'],mel:[[0,10],[2,4],[3,8],[2,4],[0,10]]}),
+  unspoken:_buildSong({type:'boss',bpm:100,prog:['Dm','F','Am','G'],bass:_BB3,drums:_BD2,mel:[[5,4],[3,2],[2,2],[0,4],[7,2],[5,2],[3,4],[2,4],[0,4]]}),
+  cradle:_buildSong({type:'calm',bpm:48,prog:['Am','C','Dm','F'],mel:[[7,8],[5,6],[3,6],[0,8],[3,4],[2,4],[0,8]]}),
+  // --- EXTREME SAD +12 ---
+  xvoid:_buildSong({type:'calm',bpm:42,prog:['Am','Dm','Am','Dm'],mel:[[7,10],[5,10],[3,12],[2,8],[0,16]]}),
+  xunmade:_buildSong({type:'calm',bpm:40,prog:['Dm','Am','Bdim','Am'],mel:[[5,10],[3,10],[2,8],[1,6],[0,16]]}),
+  xerased:_buildSong({type:'calm',bpm:44,prog:['Am','F','Dm','Am'],mel:[[3,12],[2,6],[0,14],[2,6],[0,16]]}),
+  xthevoid:_buildSong({type:'calm',bpm:38,prog:['Am','Am','Dm','Dm'],mel:[[0,16],[2,8],[3,12],[2,8],[0,16]]}),
+  xsilence:_buildSong({type:'calm',bpm:46,prog:['Em','Am','Dm','Am'],mel:[[7,10],[5,8],[3,10],[2,8],[0,16]]}),
+  xnomore:_buildSong({type:'calm',bpm:42,prog:['Am','Dm','F','Em'],mel:[[3,10],[0,10],[2,6],[3,8],[0,16]]}),
+  xlastbreath:_buildSong({type:'calm',bpm:40,prog:['Dm','F','Am','Em'],mel:[[5,10],[3,8],[0,10],[1,6],[0,16]]}),
+  xdust:_buildSong({type:'calm',bpm:44,prog:['Am','C','Dm','Am'],mel:[[7,8],[5,8],[3,10],[2,6],[0,16]]}),
+  xendless:_buildSong({type:'calm',bpm:38,prog:['Am','Em','Am','Dm'],mel:[[0,12],[3,8],[7,8],[3,10],[0,16]]}),
+  xforgotten:_buildSong({type:'calm',bpm:46,prog:['F','Dm','Am','Am'],mel:[[8,8],[5,8],[3,10],[2,6],[0,16]]}),
+  xgrave:_buildSong({type:'floor',bpm:44,prog:['Am','Bdim','Dm','Am'],bass:_FB3,drums:_FD3,mel:[[0,8],[1,6],[3,8],[2,8],[0,16]]}),
+  xnothing:_buildSong({type:'calm',bpm:42,prog:['Am','Dm','Em','Am'],mel:[[7,10],[3,10],[2,8],[0,16]]}),
+  // --- JOYFUL +8 (major) ---
+  dawn:_buildSong({type:'floor',bpm:96,prog:['C','G','Am','F'],bass:_FB1,drums:_FD1,mel:[[3,4],[7,4],[10,4],[12,4],[10,4],[7,4],[8,8],[10,8]]}),
+  homecoming:_buildSong({type:'calm',bpm:88,prog:['C','F','G','C'],mel:[[3,6],[7,6],[10,8],[12,6],[10,6],[7,8]]}),
+  festival:_buildSong({type:'floor',bpm:104,prog:['F','G','C','Am'],bass:_FB2,drums:_FD2,mel:[[8,4],[10,4],[12,4],[15,4],[12,4],[10,4],[7,8],[10,8]]}),
+  sunrise:_buildSong({type:'calm',bpm:92,prog:['C','Am','F','G'],mel:[[3,4],[7,4],[12,8],[10,4],[7,4],[8,4],[10,8]]}),
+  laughter:_buildSong({type:'floor',bpm:108,prog:['C','G','F','C'],bass:_FB2,drums:_FD1,mel:[[7,2],[10,2],[12,4],[10,2],[7,2],[8,4],[10,4],[12,4],[15,8]]}),
+  reunion:_buildSong({type:'calm',bpm:84,prog:['F','C','G','Am'],mel:[[8,6],[10,6],[12,8],[10,6],[7,6],[10,8]]}),
+  warmth:_buildSong({type:'calm',bpm:90,prog:['C','F','Am','G'],mel:[[3,6],[8,6],[7,8],[10,6],[12,6],[10,8]]}),
+  gift:_buildSong({type:'floor',bpm:100,prog:['C','G','Am','F'],bass:_FB1,drums:_FD2,mel:[[12,4],[10,4],[7,4],[10,4],[12,4],[15,4],[12,8]]}),
+  // --- AT PEACE +6 ---
+  stillness:_buildSong({type:'calm',bpm:56,prog:['C','G','F','C'],mel:[[3,8],[7,8],[10,10],[7,8],[8,6],[3,8]]}),
+  hearthlight:_buildSong({type:'calm',bpm:52,prog:['F','C','G','Am'],mel:[[8,8],[10,8],[12,10],[10,8],[7,10]]}),
+  safe:_buildSong({type:'calm',bpm:60,prog:['C','Am','F','G'],mel:[[7,8],[5,6],[3,10],[7,8],[10,10]]}),
+  rest:_buildSong({type:'calm',bpm:50,prog:['C','F','C','G'],mel:[[3,10],[5,6],[7,8],[8,6],[7,8],[3,8]]}),
+  breathe:_buildSong({type:'calm',bpm:54,prog:['Am','F','C','G'],mel:[[0,10],[3,6],[7,8],[5,6],[3,8],[0,10]]}),
+  serene:_buildSong({type:'calm',bpm:58,prog:['F','G','Am','C'],mel:[[8,8],[10,8],[12,8],[10,8],[7,8],[3,8]]}),
+  // --- FINAL VICTORY THEME: THE LANTERNS ---
+  lanterns:_buildSong({type:'calm',bpm:54,prog:['C','G','Am','F'],mel:[[3,8],[7,8],[10,6],[12,10],[10,6],[7,8],[8,6],[10,10],[12,8],[15,12]]}),
+};
+['mourn','farewell','ashes','lull','empty','sorrow','driftwood','fading','longing','remains','elegy','ruin','requiem','lastlight','forsaken','collapse','grieving','hollowdark','tearfall','thelost','unspoken','cradle'].forEach(k=>{ if(SONGS[k]) SONGS[k].sad=1; });
+['xvoid','xunmade','xerased','xthevoid','xsilence','xnomore','xlastbreath','xdust','xendless','xforgotten','xgrave','xnothing'].forEach(k=>{ if(SONGS[k]) SONGS[k].xsad=1; });
+['dawn','homecoming','festival','sunrise','laughter','reunion','warmth','gift'].forEach(k=>{ if(SONGS[k]) SONGS[k].joy=1; });
+['stillness','hearthlight','safe','rest','breathe','serene'].forEach(k=>{ if(SONGS[k]) SONGS[k].peace=1; });
+if(SONGS.lanterns) SONGS.lanterns.lantern=1;
+const GRP={
+  Sanctuary:['town','hollow','hearth','vigil','haven','ember','candle','vault','roots','waystone','respite','keeping'],
+  Floors:['climb','trek','delve','wend','bloom','rime','ashen','ascent','warrens','foundry','archive','thicket','mire','cinders','glimmer','spire','gauntlet','hollows','deepwood','tunnels','ashfall','verge'],
+  Boss:['boss','dread','wrath','crown','feral','warlord','tyrant','colossus','harbinger','scourge','doombringer','ravager','warden2','executioner2','tempest','cataclysm'],
+  Sad:['mourn','farewell','ashes','lull','empty','sorrow','driftwood','fading','longing','remains','elegy','ruin','requiem','lastlight','forsaken','collapse','grieving','hollowdark','tearfall','thelost','unspoken','cradle'],
+  'Extreme sad':['xvoid','xunmade','xerased','xthevoid','xsilence','xnomore','xlastbreath','xdust','xendless','xforgotten','xgrave','xnothing'],
+  Joyful:['dawn','homecoming','festival','sunrise','laughter','reunion','warmth','gift'],
+  'At peace':['stillness','hearthlight','safe','rest','breathe','serene'],
+  'FINALE — the Lanterns':['lanterns'] };
+function initA(){ if(actx){ if(actx.state==='suspended')actx.resume(); return; } actx=new (window.AudioContext||window.webkitAudioContext)(); master=actx.createGain(); master.gain.value=0.8; master.connect(actx.destination);
+  musGain=actx.createGain(); musGain.gain.value=1.0;
+  const lp=actx.createBiquadFilter(); lp.type='lowpass'; lp.frequency.value=3000; lp.Q.value=0.5;
+  const vb=actx.createConvolver(); const len=Math.floor(actx.sampleRate*2.6), bf=actx.createBuffer(2,len,actx.sampleRate); for(let c=0;c<2;c++){const d=bf.getChannelData(c); for(let i=0;i<len;i++)d[i]=(Math.random()*2-1)*Math.pow(1-i/len,3.0);} vb.buffer=bf;
+  const wet=actx.createGain(); wet.gain.value=0.34; const dry=actx.createGain(); dry.gain.value=0.92;
+  musGain.connect(lp); lp.connect(dry); dry.connect(master); lp.connect(vb); vb.connect(wet); wet.connect(master); }
+function strVoice(freq,t,dur,vol,bright){ if(!actx||!musGain)return; const g=actx.createGain(); const lp=actx.createBiquadFilter(); lp.type='lowpass'; lp.frequency.value=freq*(bright||3)+350; lp.Q.value=1.1;
+  const o1=actx.createOscillator(); o1.type='sawtooth'; o1.frequency.value=freq; const o2=actx.createOscillator(); o2.type='sawtooth'; o2.frequency.value=freq*1.007;
+  const vib=actx.createOscillator(); vib.frequency.value=5.1; const vg=actx.createGain(); vg.gain.value=freq*0.007; vib.connect(vg); vg.connect(o1.frequency); vg.connect(o2.frequency);
+  o1.connect(lp); o2.connect(lp); lp.connect(g); g.connect(musGain);
+  const at=Math.min(0.4,dur*0.35); g.gain.setValueAtTime(0.0001,t); g.gain.linearRampToValueAtTime(vol,t+at); g.gain.setValueAtTime(vol*0.9,t+Math.max(at,dur*0.7)); g.gain.exponentialRampToValueAtTime(0.0001,t+dur+0.05);
+  o1.start(t);o2.start(t);vib.start(t); o1.stop(t+dur+0.15);o2.stop(t+dur+0.15);vib.stop(t+dur+0.15); }
+function laVoice(f,t,d,v){ const g=actx.createGain(); const lp=actx.createBiquadFilter(); lp.type='lowpass'; lp.frequency.value=f*2.2+250; lp.Q.value=1.4;
+  const o=actx.createOscillator(); o.type='sawtooth'; o.frequency.value=f; const o2=actx.createOscillator(); o2.type='sine'; o2.frequency.value=f*2.003; const g2=actx.createGain(); g2.gain.value=0.2; o2.connect(g2); g2.connect(lp);
+  const vib=actx.createOscillator(); vib.frequency.value=4.2; const vg=actx.createGain(); vg.gain.value=f*0.014; vib.connect(vg); vg.connect(o.frequency);
+  o.connect(lp); lp.connect(g); g.connect(musGain);
+  const at=Math.min(0.6,d*0.45); g.gain.setValueAtTime(0.0001,t); g.gain.linearRampToValueAtTime(v,t+at); g.gain.setValueAtTime(v*0.85,t+Math.max(at,d*0.7)); g.gain.exponentialRampToValueAtTime(0.0001,t+d+0.1);
+  o.start(t);o2.start(t);vib.start(t); o.stop(t+d+0.2);o2.stop(t+d+0.2);vib.stop(t+d+0.2); }
+function pianoVoice(freq,t,dur,vol){ if(!actx||!musGain)return; const g=actx.createGain(); const lp=actx.createBiquadFilter(); lp.type='lowpass'; lp.frequency.value=2400;
+  const o1=actx.createOscillator(); o1.type='triangle'; o1.frequency.value=freq; const o2=actx.createOscillator(); o2.type='sine'; o2.frequency.value=freq*2.001; const g2=actx.createGain(); g2.gain.value=0.3; o2.connect(g2); g2.connect(lp);
+  o1.connect(lp); lp.connect(g); g.connect(musGain);
+  const rel=Math.min(dur,2.4); g.gain.setValueAtTime(0.0001,t); g.gain.linearRampToValueAtTime(vol,t+0.012); g.gain.exponentialRampToValueAtTime(0.0001,t+rel);
+  o1.start(t);o2.start(t); o1.stop(t+rel+0.1);o2.stop(t+rel+0.1); }
+function boxVoice(freq,t,vol){ if(!actx||!musGain)return; const g=actx.createGain(); const o=actx.createOscillator(); o.type='triangle'; o.frequency.value=freq*2;
+  const o2=actx.createOscillator(); o2.type='sine'; o2.frequency.value=freq*2*3.01; const g2=actx.createGain(); g2.gain.value=0.1; o2.connect(g2); g2.connect(g);
+  o.connect(g); g.connect(musGain); g.gain.setValueAtTime(0.0001,t); g.gain.linearRampToValueAtTime(vol,t+0.005); g.gain.exponentialRampToValueAtTime(0.0001,t+1.5);
+  o.start(t);o2.start(t); o.stop(t+1.6);o2.stop(t+1.6); }
+function dudukVoice(freq,t,dur,vol){ if(!actx||!musGain)return; const g=actx.createGain(); const lp=actx.createBiquadFilter(); lp.type='lowpass'; lp.frequency.value=freq*4+250; lp.Q.value=2.6;
+  const o=actx.createOscillator(); o.type='sawtooth'; o.frequency.value=freq; const vib=actx.createOscillator(); vib.frequency.value=5.6; const vg=actx.createGain(); vg.gain.value=freq*0.011; vib.connect(vg); vg.connect(o.frequency);
+  o.connect(lp); lp.connect(g); g.connect(musGain);
+  const at=Math.min(0.3,dur*0.28); g.gain.setValueAtTime(0.0001,t); g.gain.linearRampToValueAtTime(vol,t+at); g.gain.setValueAtTime(vol*0.92,t+Math.max(at,dur*0.6)); g.gain.exponentialRampToValueAtTime(0.0001,t+dur+0.05);
+  o.start(t);vib.start(t); o.stop(t+dur+0.15);vib.stop(t+dur+0.15); }
+function drumKick(t,vol){ if(!actx||!musGain)return; const o=actx.createOscillator(); o.type='sine'; const g=actx.createGain(); o.connect(g); g.connect(musGain); o.frequency.setValueAtTime(150,t); o.frequency.exponentialRampToValueAtTime(45,t+0.12); g.gain.setValueAtTime(vol,t); g.gain.exponentialRampToValueAtTime(0.0001,t+0.22); o.start(t); o.stop(t+0.24); }
+function drumSnare(t,vol){ if(!actx||!musGain)return; const n=Math.floor(actx.sampleRate*0.2), buf=actx.createBuffer(1,n,actx.sampleRate), d=buf.getChannelData(0); for(let i=0;i<n;i++) d[i]=(Math.random()*2-1)*Math.pow(1-i/n,2); const s=actx.createBufferSource(); s.buffer=buf; const hp=actx.createBiquadFilter(); hp.type='highpass'; hp.frequency.value=1400; const g=actx.createGain(); g.gain.value=vol; s.connect(hp); hp.connect(g); g.connect(musGain); s.start(t);
+  const o=actx.createOscillator(); o.type='triangle'; o.frequency.value=185; const g2=actx.createGain(); g2.gain.setValueAtTime(vol*0.5,t); g2.gain.exponentialRampToValueAtTime(0.0001,t+0.12); o.connect(g2); g2.connect(musGain); o.start(t); o.stop(t+0.14); }
+function musHat(t,vol){ if(!actx||!musGain)return; const n=Math.floor(actx.sampleRate*0.03);
+  const buf=actx.createBuffer(1,n,actx.sampleRate), d=buf.getChannelData(0); for(let i=0;i<n;i++)d[i]=(Math.random()*2-1)*(1-i/n);
+  const s=actx.createBufferSource(); s.buffer=buf; const g=actx.createGain(); g.gain.value=vol;
+  const hp=actx.createBiquadFilter(); hp.type='highpass'; hp.frequency.value=6000;
+  s.connect(hp); hp.connect(g); g.connect(musGain); s.start(t); }
+function melVoice(type,f,t,d,v){ if(type==='calm') dudukVoice(f,t,d,v); else if(type==='boss') strVoice(f,t,d,v,4.5); else strVoice(f,t,d,v,2.8); }
+function handpanVoice(f,t,v){ const g=actx.createGain(); const lp=actx.createBiquadFilter(); lp.type='lowpass'; lp.frequency.value=f*6+400; g.connect(lp); lp.connect(musGain);
+  [[1,1,1.7],[2.76,0.32,1.0],[5.4,0.16,0.6]].forEach(a=>{ const o=actx.createOscillator(); o.type='sine'; o.frequency.value=f*a[0]; const gg=actx.createGain(); gg.gain.value=0; o.connect(gg); gg.connect(g);
+    gg.gain.setValueAtTime(0,t); gg.gain.linearRampToValueAtTime(v*a[1],t+0.02); gg.gain.exponentialRampToValueAtTime(0.0001,t+a[2]); o.start(t); o.stop(t+a[2]+0.1); }); }
+function guitarVoice(f,t,v){ const g=actx.createGain(); const lp=actx.createBiquadFilter(); lp.type='lowpass'; lp.frequency.value=f*4+600;
+  const o=actx.createOscillator(); o.type='triangle'; o.frequency.value=f; const o2=actx.createOscillator(); o2.type='sawtooth'; o2.frequency.value=f*2.001; const g2=actx.createGain(); g2.gain.value=0.22; o2.connect(g2); g2.connect(lp);
+  o.connect(lp); lp.connect(g); g.connect(musGain); g.gain.setValueAtTime(0.0001,t); g.gain.linearRampToValueAtTime(v,t+0.006); g.gain.exponentialRampToValueAtTime(0.0001,t+1.1); o.start(t);o2.start(t); o.stop(t+1.2);o2.stop(t+1.2); }
+function fluteVoice(f,t,d,v){ const g=actx.createGain(); const o=actx.createOscillator(); o.type='sine'; o.frequency.value=f; const o2=actx.createOscillator(); o2.type='triangle'; o2.frequency.value=f; const g2=actx.createGain(); g2.gain.value=0.13; o2.connect(g2); g2.connect(g);
+  const vib=actx.createOscillator(); vib.frequency.value=5; const vg=actx.createGain(); vg.gain.value=f*0.006; vib.connect(vg); vg.connect(o.frequency); vg.connect(o2.frequency);
+  o.connect(g); g.connect(musGain); const at=Math.min(0.25,d*0.3); g.gain.setValueAtTime(0.0001,t); g.gain.linearRampToValueAtTime(v,t+at); g.gain.setValueAtTime(v*0.85,t+Math.max(at,d*0.6)); g.gain.exponentialRampToValueAtTime(0.0001,t+d+0.1);
+  o.start(t);o2.start(t);vib.start(t); o.stop(t+d+0.15);o2.stop(t+d+0.15);vib.stop(t+d+0.15);
+  const nb=Math.floor(actx.sampleRate*0.1), buf=actx.createBuffer(1,nb,actx.sampleRate), dd=buf.getChannelData(0); for(let i=0;i<nb;i++)dd[i]=(Math.random()*2-1); const ns=actx.createBufferSource(); ns.buffer=buf; const hp=actx.createBiquadFilter(); hp.type='bandpass'; hp.frequency.value=f*3; const ng=actx.createGain(); ng.gain.value=v*0.05; ns.connect(hp); hp.connect(ng); ng.connect(musGain); ns.start(t); }
+function violinVoice(f,t,d,v){ const g=actx.createGain(); const lp=actx.createBiquadFilter(); lp.type='lowpass'; lp.frequency.value=f*3.5+500; lp.Q.value=1.2;
+  const o=actx.createOscillator(); o.type='sawtooth'; o.frequency.value=f; const o2=actx.createOscillator(); o2.type='sawtooth'; o2.frequency.value=f*1.004;
+  const vib=actx.createOscillator(); vib.frequency.value=5.8; const vg=actx.createGain(); vg.gain.value=f*0.013; vib.connect(vg); vg.connect(o.frequency); vg.connect(o2.frequency);
+  o.connect(lp); o2.connect(lp); lp.connect(g); g.connect(musGain);
+  const at=Math.min(0.6,d*0.42); g.gain.setValueAtTime(0.0001,t); g.gain.linearRampToValueAtTime(v,t+at); g.gain.linearRampToValueAtTime(v*1.08,t+Math.max(at,d*0.62)); g.gain.exponentialRampToValueAtTime(0.0001,t+d+0.14);
+  o.start(t);o2.start(t);vib.start(t); o.stop(t+d+0.2);o2.stop(t+d+0.2);vib.stop(t+d+0.2); }
+function harpVoice(f,t,v){ if(!actx||!musGain)return; const g=actx.createGain(); const o=actx.createOscillator(); o.type='triangle'; o.frequency.value=f; const o2=actx.createOscillator(); o2.type='sine'; o2.frequency.value=f*2.0; const g2=actx.createGain(); g2.gain.value=0.18; o2.connect(g2); g2.connect(g);
+  o.connect(g); g.connect(musGain); g.gain.setValueAtTime(0.0001,t); g.gain.linearRampToValueAtTime(v,t+0.004); g.gain.exponentialRampToValueAtTime(0.0001,t+0.95); o.start(t);o2.start(t); o.stop(t+1.05);o2.stop(t+1.05); }   // plucked harp — shimmer & rolled texture
+function tambVoice(t,v){ if(!actx||!musGain)return; const n=Math.floor(actx.sampleRate*0.13), buf=actx.createBuffer(1,n,actx.sampleRate), d=buf.getChannelData(0); for(let i=0;i<n;i++)d[i]=(Math.random()*2-1)*Math.pow(1-i/n,2.6); const s=actx.createBufferSource(); s.buffer=buf; const bp=actx.createBiquadFilter(); bp.type='bandpass'; bp.frequency.value=6800; bp.Q.value=0.7; const g=actx.createGain(); g.gain.value=v; s.connect(bp); bp.connect(g); g.connect(musGain); s.start(t); }   // soft tambourine jingle — the quiet, increasingly urgent pulse
+// ===== GRIEF ARRANGEMENT — a cinematic neoclassical build: a piano ostinato drives it, a solo violin
+// carries the theme, and strings (double bass, cello, viola, upper violins), harp and tambourine accumulate
+// over ~4 loops into a long crescendo. Bittersweet: it climbs toward something like triumph, never quite joy.
+function playGrief(song,ls,bar,s,t,sd,chord,root,nf,cO,bO,XSAD){
+  // SORE, SLOW, PAINFUL: little low-end weight (no deep double bass), an exposed high solo violin that
+  // SIGHS (a note leans in a semitone above and falls into the true note), a sparse, aching piano, and a
+  // gentle accumulation rather than a booming one. It should feel like grief, not thunder.
+  const loop=Math.floor((MUS.step||0)/64);
+  const ph=Math.max(0,Math.min(1, loop/5));          // slower, gentler swell (over five loops)
+  // 1) PIANO — a slow, exposed figure (quarter notes; XSAD half notes), soft and mid-register, lots of air
+  const OST=[chord[0], chord[2], chord[1], chord[0]+12];
+  if(XSAD){ if(s%8===0){ const oi=(s/8)%OST.length; pianoVoice(nf(OST[oi]),t,sd*5.5, 0.028+0.010*ph); } }
+  else { if(s%4===0){ const oi=(s/4)%OST.length; pianoVoice(nf(OST[oi]),t,sd*4.2, 0.030+0.014*ph); } }
+  // 2) a faint low pedal for grounding only — quiet, kept high enough not to boom
+  if(s===0) strVoice(nf(cO+root),t,sd*16, XSAD?0.012:0.016, 1.4);
+  // 3) CELLO — one soft, aching mid line (at the chord octave, NOT the sub) — enters loop 1
+  if(loop>=1 && s===0) strVoice(nf(chord[0]),t,sd*14, 0.018+0.012*ph, 1.7);
+  // 4) VIOLA — warm middle harmony, very soft, enters loop 2
+  if(loop>=2 && s===0) strVoice(nf(chord[1]),t,sd*14, 0.011*ph, 2.2);
+  // 5) HARP — sparse plucked shimmer, a lonely drop of light
+  if(loop>=1 && s%8===4) harpVoice(nf(12+chord[bar%3]),t, 0.014+0.014*ph);
+  // 6) TAMBOURINE — barely there, only as it builds (the ache, never a groove)
+  if(!XSAD && loop>=2 && s%4===0) tambVoice(t, 0.009*ph);
+  // 7) SOLO VIOLIN — the exposed, crying theme with a 'sigh' appoggiatura and slow swell
+  const mn=song.melAt[ls]; if(mn){ const f=nf(mn.p), d=sd*mn.d, v=(XSAD?0.075:0.09)+0.018*ph;
+    if(loop>=1 && Math.random()<(XSAD?0.35:0.55)){ violinVoice(nf(mn.p+2),t,sd*1.7, v*0.8); violinVoice(f, t+sd*1.4, d, v); }   // the sigh: lean in above, fall into the note
+    else violinVoice(f,t,d,v);
+    if(loop>=3 && !XSAD) violinVoice(nf(mn.p+12),t,d, 0.016*ph);          // a far, faint upper octave — distance, not power
+    if(XSAD && s%8===0) handpanVoice(nf(cO+mn.p),t,0.026); }              // a lonely toll under the extreme-sad theme
+}
+function playSong(song,ls,bar,s,t,sd){ const chord=song.chords[bar%song.chords.length], root=chord[0]; const nf=n=>nfreq(n), cO=-12, bO=-24;
+  const SAD=song.sad||song.xsad, XSAD=song.xsad, JOY=song.joy, PEACE=song.peace, LAN=song.lantern; const dv=XSAD?0.28:SAD?0.4:PEACE?0:1;
+  if(SAD){ playGrief(song,ls,bar,s,t,sd,chord,root,nf,cO,bO,XSAD); return; }
+  if(SAD && s===0) strVoice(nf(bO+root+12),t,sd*15,XSAD?0.03:0.025,1.4);            // FAINT low cello drone (much quieter now)
+  if(XSAD && s===8) handpanVoice(nf(cO+root),t,0.035);                              // a lonely handpan toll in the void
+  if(LAN && s===0){ strVoice(nf(cO+root),t,sd*15,0.03,2.2); strVoice(nf(cO+root+24),t,sd*15,0.018,4.2); }
+  if(PEACE){                                                                        // AT PEACE — come to rest: handpan + soft guitar + flute, no heavy strings
+    if(s===0) handpanVoice(nf(cO+root),t,0.085);
+    if(s===8) handpanVoice(nf(root+12),t,0.05);
+    if(s%4===0 || s%4===2){ const i=(s%4===0)?0:2; guitarVoice(nf(cO+chord[(i>=3?0:i%3)]+(i>=3?12:0)),t,0.05); }
+  } else if(song.type==='calm'){
+    if(s===0) strVoice(nf(cO+root),t,sd*15, SAD?0.018:0.028, 1.9);                  // softer cello pad
+    if(s%4===0){ const i=s/4; if(SAD) guitarVoice(nf(cO+chord[i%3]+(i>=3?12:0)),t,0.04); else pianoVoice(nf(cO+chord[i%3]+(i>=3?12:0)),t,sd*6,0.055); }
+    if((JOY||LAN) && s%4===2) boxVoice(nf(12+chord[(s>>2)%3]),t,JOY?0.055:0.04);
+    else if(!SAD && !JOY && s===8 && Math.random()<0.4) handpanVoice(nf(cO+12+chord[Math.floor(Math.random()*3)]),t,0.04);
+  } else if(song.type==='floor'){
+    if(s===0) strVoice(nf(cO+root),t,sd*15, SAD?0.016:0.02, 2.1);
+    for(const bp of song.bass){ if(bp[0]===s){ if(JOY) guitarVoice(nf(bO+root+bp[1]),t,0.06); else pianoVoice(nf(bO+root+bp[1]),t,sd*2.2, SAD?0.04:0.065); } }
+    const D=song.drums; if(D){ if(D.kick.includes(s))drumKick(t,0.1*dv); if(!SAD && !PEACE && D.snare.includes(s))drumSnare(t,0.07); if(s%D.hatEvery===0)musHat(t,0.013*dv); }
+  } else {
+    for(const bp of song.bass){ if(bp[0]===s) strVoice(nf(bO+root+bp[1]),t,sd*1.6,SAD?0.04:0.055,1.8); }
+    if(s%2===0) strVoice(nf(cO+chord[(s/2)%3]),t,sd*1.8,SAD?0.02:0.026,3.2);
+    const D=song.drums; if(D){ if(D.kick.includes(s))drumKick(t,0.18*dv); if(!SAD && D.snare.includes(s))drumSnare(t,0.13); if(s%D.hatEvery===0)musHat(t,0.02*dv); }
+  }
+  const mn=song.melAt[ls]; if(mn){ const f=nf(mn.p), d=sd*mn.d;
+    if(JOY) boxVoice(f,t,0.07);
+    else if(LAN){ strVoice(f,t,d,0.055,3.5); if(s%8===0) fluteVoice(f,t,d,0.05); }
+    else if(SAD) violinVoice(f,t,d, XSAD?0.075:0.088);                              // crying violin — heart-wrenching, exposed
+    else if(PEACE) fluteVoice(f,t,Math.max(d,sd*4),0.06);
+    else melVoice(song.type,f,t,d,song.type==='boss'?0.075:0.078); }
+}
+function musTick(){ if(!MUS.mood)return; const song=SONGS[MUS.mood]; const stepDur=(60/song.bpm/4)*(song.xsad?1.55:song.sad?1.3:1);
+  while(MUS.next<actx.currentTime+0.22){ const t=MUS.next, ls=MUS.step%64, bar=Math.floor(ls/16), s=ls%16; playSong(song,ls,bar,s,t,stepDur); MUS.next+=stepDur; MUS.step++; } }
+function setMood(m){ initA(); MUS.mood=m; MUS.step=0; MUS.next=actx.currentTime+0.12; if(!MUS.timer) MUS.timer=setInterval(musTick,60);
+  document.querySelectorAll('button[data-m]').forEach(b=>b.classList.toggle('on',b.dataset.m===m)); document.getElementById('now').textContent='▶ Now playing: '+m; }
+function stop(){ MUS.mood=null; if(MUS.timer){clearInterval(MUS.timer);MUS.timer=null;} document.querySelectorAll('button[data-m]').forEach(b=>b.classList.remove('on')); document.getElementById('now').textContent='■ Stopped'; }
+const cats=document.getElementById('cats');
+for(const g in GRP){ const h=document.createElement('div'); h.className='grp'; h.textContent=g; cats.appendChild(h); const row=document.createElement('div'); row.className='row'; GRP[g].forEach(m=>{ const b=document.createElement('button'); b.textContent=m; b.dataset.m=m; b.onclick=()=>setMood(m); row.appendChild(b); }); cats.appendChild(row); }
+document.getElementById('stop').onclick=stop;
+</script></body></html>

@@ -1,0 +1,453 @@
+<!DOCTYPE html><html><head><meta charset="utf-8"><title>TOWERLORDS — boss cinematics (combinatorial)</title>
+<style>
+  html,body{margin:0;height:100%;background:#050308;color:#cbb9e6;font-family:system-ui,sans-serif;overflow:hidden}
+  #gate{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;z-index:500;text-align:center;padding:20px}
+  #gate h1{font:600 15px/1.5 Georgia,serif;letter-spacing:5px;text-transform:uppercase;color:#c9adf5;margin:0}
+  #gate p{max-width:520px;font-size:13px;opacity:.62;line-height:1.6}
+  .b{background:linear-gradient(180deg,rgba(58,44,92,.95),rgba(30,22,52,.95));border:1px solid rgba(185,139,255,.6);color:#f2ecff;font-size:14px;font-weight:600;padding:12px 20px;border-radius:11px;cursor:pointer;letter-spacing:.5px;margin:4px}
+  .b:hover{box-shadow:0 0 22px rgba(185,139,255,.5)}
+  #run{font-size:12px;opacity:.72;margin-top:8px;max-width:540px;line-height:1.5}
+  #run b{color:#e9d8ff}
+  #storyCut{position:fixed;inset:0;z-index:300;display:flex;align-items:center;justify-content:center;background:radial-gradient(ellipse at 50% 42%,#120d1c,#020204);overflow:hidden;opacity:0;pointer-events:none;transition:opacity 1.1s ease}
+  #storyCut.cut-show{opacity:1;pointer-events:auto}#storyCut.cut-out{opacity:0}
+  #storyCut .cut-bar{position:absolute;left:0;right:0;height:0;background:#000;z-index:4;transition:height 1.1s cubic-bezier(.2,.7,.2,1)}
+  #storyCut.cut-show .cut-bar.top{top:0;height:8vh}#storyCut.cut-show .cut-bar.bot{bottom:0;height:8vh}
+  #storyCut .cut-vign{position:absolute;inset:0;pointer-events:none;box-shadow:inset 0 0 240px rgba(0,0,0,.92);z-index:3}
+  #storyCut .cut-stage{position:relative;z-index:5;max-width:660px;width:92%;text-align:center;padding:0 20px}
+  #storyCut .cut-fade{opacity:0;transform:translateY(14px);transition:opacity 1.1s ease,transform 1.1s ease;min-height:360px;display:flex;flex-direction:column;justify-content:center}
+  #storyCut .cut-fade.in{opacity:1;transform:translateY(0)}
+  @keyframes cutFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-7px)}}
+  @keyframes cutGlow{0%,100%{opacity:.5}50%{opacity:1}}
+  #storyCut .cut-title{font-size:14px;letter-spacing:4px;text-transform:uppercase;color:#c9adf5;margin-bottom:16px;font-weight:600;text-shadow:0 0 18px rgba(150,110,255,.5)}
+  #storyCut .cut-body{font-family:Georgia,"Times New Roman",serif;font-size:16px;line-height:1.78;color:#e9e2f6;text-shadow:0 1px 12px rgba(0,0,0,.6)}
+  #storyCut .cut-body b{color:#fff}#storyCut .cut-body .gm-hl{color:#ffd98a}
+  #storyCut .cut-dots{display:flex;gap:8px;justify-content:center;margin:22px 0 14px}
+  #storyCut .cut-dots i{width:7px;height:7px;border-radius:50%;background:rgba(255,255,255,.18)}
+  #storyCut .cut-dots i.on{background:#c9adf5;box-shadow:0 0 10px #b98bff}
+  #storyCut .cut-actions{display:flex;justify-content:center;align-items:center;gap:26px}
+  #storyCut .cut-skip{background:none;border:none;color:#7a7690;font-size:12px;cursor:pointer;letter-spacing:2px;text-transform:uppercase}
+  #storyCut .cut-skip:hover{color:#c9adf5}
+  #storyCut .cut-next{background:linear-gradient(180deg,rgba(58,44,92,.9),rgba(30,22,52,.9));border:1px solid rgba(185,139,255,.6);color:#f2ecff;font-size:14px;font-weight:600;padding:11px 30px;border-radius:11px;cursor:pointer;letter-spacing:1px}
+  #storyCut .cut-boss{width:110px;height:142px;margin:0 auto 16px;position:relative;background:linear-gradient(to top,#050409,#100c1c);clip-path:polygon(50% 0,64% 12%,60% 26%,74% 34%,68% 60%,80% 100%,20% 100%,32% 60%,26% 34%,40% 26%,36% 12%);filter:drop-shadow(0 0 24px var(--bc));animation:cutFloat 6s ease-in-out infinite}
+  #storyCut .cut-boss::before,#storyCut .cut-boss::after{content:"";position:absolute;top:22%;width:10px;height:10px;border-radius:50%;background:var(--bc);box-shadow:0 0 14px var(--bc);animation:cutGlow 3s ease-in-out infinite}
+  #storyCut .cut-boss::before{left:35%}#storyCut .cut-boss::after{right:35%}
+  #storyCut .cut-lantern{width:44px;height:60px;margin:0 auto 18px;border-radius:42% 42% 46% 46%;background:radial-gradient(circle at 50% 42%,rgba(255,216,124,.95),rgba(255,150,60,.55) 60%,rgba(255,120,40,0));box-shadow:0 0 44px 10px rgba(255,180,90,.5);animation:cutLantern 5s ease-in-out infinite}
+  @keyframes cutLantern{0%{transform:translateY(8px);opacity:.85}50%{transform:translateY(-10px);opacity:1}100%{transform:translateY(8px);opacity:.85}}
+</style></head><body>
+<div id="gate">
+  <h1>Towerlords · Boss Cinematics</h1>
+  <p>The guardian <b>talks to you</b> across five beats — who you are &amp; how you climbed, its world, why it guards (by choice or force), its true feeling toward the Tower (fear / hate / love / regret), and the summit (dread it, covet it, or not know it) before it must stop you. Every line is assembled fresh from the game's real pools — <b>~3.5&nbsp;billion combinations per guardian</b> — and anti-repeated. <b>Replay the same guardian; it never says the same thing.</b> <b>Audio is live</b> — the intro is a quiet, somber &amp; angry bed (no beats), chosen from <b>12 variants</b>; the defeat is the slow, rainy loss score, from <b>10 variants</b>. Each play picks a different one. (Volume up; audio needs one click.)</p>
+  <div id="pick"></div>
+  <div id="run"></div>
+  <div id="play" style="margin-top:4px"></div>
+</div>
+<script>
+function pick(a){ return a[Math.floor(Math.random()*a.length)]; }
+const _META={voiceSeen:{}}; function saveMeta(){}
+function _noRepeat(vk,gen){ let seen=_META.voiceSeen[vk]||[]; let s=null; for(let tr=0;tr<7;tr++){ s=gen(); if(s&&!seen.includes(s))break; } _META.voiceSeen[vk]=[s].concat(seen).slice(0,6); return s; }
+let _RUN={sp:'the bone-dead',cause:'a plague emptied every street they ever knew',epithet:'THE HOLLOW',trait:{nm:'Vampiric'},k:0,d:0};
+const G={floor:32,muted:false};
+let actx=null,master=null;
+function initAudio(){ if(actx) return; actx=new (window.AudioContext||window.webkitAudioContext)(); master=actx.createGain(); master.gain.value=0.9; master.connect(actx.destination); }
+function storyAct(){ return 3; }
+function narrFor(){ return {sp:_RUN.sp,cause:_RUN.cause}; }
+const NAMES={warden:'VEXROTH',bombard:'KHARGYLE',summoner:'MALVESSA',sweeper:'TESSERAKT',twinfang:'SSYLTH',overlord:'AURENOX',voidlord:'NYXARETH',warlock:'GRIMMOIRE',reaper:'MORVANE',towerlord:'THE TOWER LORD'};
+function bossFullName(def){ return NAMES[def.key]||'THE GUARDIAN'; }
+function nemName(def,n){ return (NAMES[def.key]||'THE GUARDIAN')+(def.key==='towerlord'?'':' '+n.epithet); }
+function nemOf(k){ return {epithet:_RUN.epithet,trait:_RUN.trait}; }
+function grudgeOf(){ return {k:_RUN.k,d:_RUN.d}; }
+function voiceLine(){ return null; }
+const VOICE_BANK={warden:{you:['climber','trespasser','little draft']},bombard:{you:['soldier','little ghost']},summoner:{you:['child','little one','wanderer']},sweeper:{you:['stain','debris','item']},twinfang:{you:['morsel','little pulse','warm thing']},overlord:{you:['peasant','pretender','commoner']},voidlord:{you:['heartbeat','little light','warm noise']},warlock:{you:['specimen','subject','sample']},reaper:{you:['appointment','punctual one','name on the list']},towerlord:{you:['draft','little wind','tenant']}};
+const _NOTICE=[
+  'Stop there. Let me look at you.',
+  'So. You are the thing the lower floors were whispering about.',
+  'Closer, {you}. I want to see the one with no name.',
+  'You again — no. Not you. Something like you. It is always something like you.',
+  'Do not speak. I already know what you are.',
+  'Ah. The Tower went very quiet when you set foot on my floor. It does that when it is afraid.',
+  'I felt you coming the way you feel a draft beneath a door.',
+  'Hold, {you}. Before the blades, a few words. Grant a dead thing that much.',
+  'You have my attention — and almost nothing earns that anymore.',
+  'There you are. I had begun to hope the rumours were a mercy the Tower told itself.',
+  'Well. You reached my door. That alone puts you ahead of every other name in the book.',
+  'Wait. Just a moment. It has been so long since anything new climbed this high.',
+  'Peace, for a breath. I would speak with you before one of us ends the other.',
+  'Look at you, {you}. Still standing. Still climbing. Still wrong for this place.',
+];
+const _CLIMBED=[
+  'Do you even understand how far you have come? Below me are a hundred floors built for nothing but ending you.',
+  'You are bleeding from a dozen places and you climbed anyway. I respect it. I will still stop it.',
+  'Every guardian beneath me was sure they would be the last wall. You walked over all of them.',
+  'The stair rewrote itself again and again to lose you — and here you stand regardless.',
+  'Most things that reach me are half-mad and all-broken. You are only a little of both. Remarkable.',
+  'You climbed through my brothers and sisters to get here. I hope you learned their names. I never did.',
+  'No one climbs this high by accident, {you}. So it is true. You are reaching for the top.',
+  'The floors grow hungrier the higher you go. You must be very hard to swallow.',
+  'How many times has this place killed you already? And still you came back up the stairs.',
+  'I have watched a thousand climbers fail on the floor below this one. Not you. Why not you?',
+  'You should be dead. By every law the Tower keeps, you should be dead. And yet.',
+  'That you are here at all is its own kind of miracle. A small, doomed one.',
+];
+const _UNWR=[
+  'The Tower keeps a page for everything that has ever lived. It has none for you. That is why it cannot erase you — and why it sent me to.',
+  'You are the Unwritten. The one story this place cannot tell, and so it wants the story ended before it spreads.',
+  'No name, no page, no record. To the Tower you are a wound that will not close. To me, the first new thing in an age.',
+  'You do not even know your own name, do you? Neither does the Tower. That is the whole of the problem.',
+  'Everything here is a memory wearing a body. Everything but you. You are the reader who wandered into the book.',
+  'They named you the Unwritten. I did not believe it until the Tower flinched at your step.',
+  'You are a blank space in a book that has no blank spaces. The Tower hates nothing more than a thing it cannot file.',
+  'What is a climber with no history? A key the lock was never cut for. And yet you turn.',
+];
+const _WORLD_IN=[
+  'Let me tell you where I am from, since no one else survives to.',
+  'Before I was this — before the floor, the seal, the endless waiting — I had a world.',
+  'You should know whose door you are breaking. Listen.',
+  'I was not always a guardian. I want someone to know that, even if it is only the thing that kills me.',
+  'Every guardian was a life once. Here is mine.',
+  'You want the top? Then understand what the climb is built from. Me, for one.',
+  'Sit with this a moment. It is the only grave marker I will ever get.',
+  'They took my world and folded it into a floor. Let me unfold a little of it for you.',
+];
+const _TIE=[
+  'This turn of the wheel the Tower dresses my kind as {sp}; {cause}.',
+  'You see us this cycle as {sp}. It is only a costume. Beneath it: {cause}.',
+  'The Tower remembers us as {sp} for you tonight. What is true is older: {cause}.',
+  'Do not be fooled by these {sp} you fought below. That is merely how you are permitted to see us. In truth, {cause}.',
+];
+const _CHOSEN_TAG=[
+  'That is why the Tower chose me. It did not have to reach far.',
+  'No one is dragged here — not exactly. The Tower simply finds the hook already in you, and pulls.',
+  'I could tell you I was forced. It would be half a lie.',
+  'The Tower does not conscript. It recruits the part of us that was never going to let go.',
+  'Ask yourself which is worse: to be taken, or to have stayed.',
+  'You wonder if I chose this. So do I. I no longer know.',
+];
+const _TOPATT=[
+  'And the top — do not go to the top. I have never seen it, and I am afraid of it still.',
+  'I know a little of what waits above. Enough that I guard this floor gladly, so you never reach it.',
+  'If I could climb, I would. I would take the summit for myself and never look down. But the Tower keeps its guardians where it sets them.',
+  'Part of me wants you to win. Part of me wanted to be the one standing where you stand. Neither part will stay my hand.',
+  'What is at the top? I do not know. No guardian does. We know only that we must not let you find out.',
+  'I have guarded the road to the summit for an age, and I still could not tell you what sits there. That is the cruelty of it.',
+  'You think the top is an ending. I think it is a door, and I think you will wish it had stayed shut.',
+  'The summit means nothing to me. Only this floor. Only this seal. Only you.',
+  'Maybe you are the one meant to reach it. Maybe that is why you have no name. It changes nothing. I still must try to end you.',
+  'They say the one who reaches the top may leave the Tower. I stopped believing in leaving a long time ago.',
+  'I used to dream of the top. Then I stopped dreaming. Guarding is easier when you want nothing.',
+  'Whatever is up there made ten of us to keep it company, and forbade every one of us to visit. Think on that.',
+];
+const _MUSTSTOP=[
+  'But whatever the top is, you will not reach it through me.',
+  'And so I cannot let you pass. Not up. Not through. Not while I still stand.',
+  'You must not reach the summit. Every guardian is one promise the Tower made to itself: that no one ever would.',
+  'The climb ends here, on my floor. I will make certain of it.',
+  'I am the wall across your road to the top. Walls do not step aside.',
+  'So we come to it. You want the top; I am forbidden to let you have it.',
+  'The seal on this floor is mine. You do not get past me without breaking it, and you do not break it while I breathe.',
+  'Reach the top? First you go through me — and I have never been an easy floor.',
+];
+const _CLOSE=[
+  'I am sorry, Unwritten. Truly. Now — come and be stopped.',
+  'No more talk. Show me whether the rumours were kind.',
+  'Raise your weapon. Let us find out which of us the Tower keeps tonight.',
+  'Forgive me. Or do not. Either way — begin.',
+  'I hope you are as hard to kill as you are to erase. Come.',
+  'Enough. The seal is mine to hold, and you are mine to break upon it.',
+  'You have climbed a long way to die on my floor, {you}. Let us not keep it waiting.',
+  'Whatever you are — whoever you were — this is where we find out. Come.',
+  'I will remember this, if I survive it. I so rarely get to remember anything. Now: begin.',
+];
+const _BOSS_EPI=[ '(They call me {ep} this cycle. The name sits truer than most.)', '(You may have heard me called {ep}. Believe it.)', '(This turn they name me {ep}. Next turn, something crueller. It always is.)' ];
+const _BOSS_TRAIT=(t)=>'(They whisper I am '+String(t.nm).toLowerCase()+' this cycle. It is not a rumour — it is a warning.)';
+const _DEATH=[
+  '…so this is how a memory ends.',
+  'Oh. It does not hurt the way I feared it would.',
+  'I can put it down now. After so long — I can finally put it down.',
+  'I remember my face. Just now, at the very end. It was… kinder than I thought.',
+  'Tell them — no. There is no one left to tell. There never was.',
+  'You are gentler than the Tower. That is not… a high bar, {you}…',
+  'Was I worth a whole floor? Was I ever worth…',
+  'The leash… the leash is loose. I did not think it ever would be.',
+  'Go on, then. Reach the top. Someone should. Someone finally should…',
+  'Do not… do not let it make you a floor. Promise me that, and I will rest…',
+  'So light. I had forgotten I could feel light.',
+  'Thank you. I have wanted to lose for a very, very long time.',
+];
+const _LANTERN=[
+  s=>'The guardian does not fall to dust. It comes apart into <b>light</b> — slow, and almost grateful. A single lantern lifts from where it stood.',
+  s=>'There is no body left to fall. Only a warmth that gathers, and rises, and becomes a lantern drifting upward toward a sky it will never reach.',
+  s=>'What was <b>'+s.sp+'</b> unbraids into gold. The lantern climbs past you, unhurried, carrying whatever this soul had been before the Tower kept it.',
+  s=>'The light does not scatter. It pools, and lifts, and takes the shape of a small lantern — one more the Tower can no longer hold — and begins the long drift up.',
+  s=>'Where the guardian stood, the air fills with slow embers. They knit into a single lantern and rise, as though something in the dark above had finally called it home.',
+  s=>'It goes out the way a held breath is finally let go. A lantern remains, rising, and you understand that this was the only mercy this floor had left to give.',
+];
+const _CODA=[
+  'Set free, or snuffed out. Even you are not certain which.',
+  'One more light the Tower can no longer hold. One more you can never give back.',
+  'You watch until it is too small to see. Then you climb — because climbing is the only thing the Unwritten can do.',
+  'Somewhere far above, the dark takes it in. You tell yourself that is mercy.',
+  'You did not know its name until it was already rising. Now you will not forget it.',
+  'The floor is yours. It has never felt less like winning.',
+  'It asked you to remember it. You will. That is the closest thing to a grave this place allows.',
+];
+// ---- per-boss PERSONALITY pools. Each guardian has a distinct RELATIONSHIP with the Tower and its own world. ----
+const BOSS_LORE={
+  warden:{ // BOUND BY DUTY — neither loves nor hates the Tower; simply cannot stop guarding. Does not know the top.
+    origin:['My world was a fortress-country at the foot of a mountain that touched no sky, and I was its last gatekeeper.','Ten generations of my blood held one threshold, in an age before your grandparents were dust.','I was a doorward. That is all. A good one, in a country that no longer has a name.'],
+    chosen:['When my world fell, everything in me let go but the part that stood at the gate. The Tower kept that part, and threw the rest away.','No one made me a guardian. I simply never learned how to stop being one. The Tower only had to leave me a door.','I was chosen because I would not sit down. Even in death I would not sit down. So the Tower gave me a post, and I took it, the way I take breath.'],
+    stance:['I do not love the Tower. I do not hate it. We are two old soldiers who no longer remember the war, only the standing watch.','The Tower and I have an arrangement made of habit. It gives me a door; I give it my forever. Neither of us asks for more.','I feel nothing for the Tower now. I used to feel duty. Duty wore down into this — a shape that stands, and waits, and stops climbers.'],
+    feels:['I have stood this post so long I have forgotten the face I was born with. Only the duty is left.','Duty was a warm thing once. Now it is only the shape my bones have set into.','A thousand climbers have died on this step. I remember none of their names. I fear I will not keep yours either.'],
+    top:['The top? In all these years I never once asked what is up there. A gatekeeper does not need to know what he keeps people from. Only that he keeps them.','I have guarded the lowest road to the summit since before the upper floors were built, and I could not tell you a single thing about it. I was never meant to look up. Only out.'],
+    death:['The gate is… someone else’s to hold now. I can stop. I can finally stop.','A thousand years at one door, and it ends with a stranger’s kindness. Thank you, {you}.','I never did remember my face. Perhaps up there — no. No more perhaps. Just… rest.'] },
+  bombard:{ // NUMB — does not think about the Tower at all; only the guns and the names. The top is irrelevant to him.
+    origin:['I come from a border that was shelled for ninety years without pause. I was the gunner who never stopped.','My world was two cities that hated each other into ash. I fired the last shell — and it never landed.','I was a soldier in a war so old that both sides forgot who started it. Only I remembered. That was my mistake.'],
+    chosen:['The Tower did not choose me. It caught me mid-shot, with a war still in my hands, and it simply… never let the shell fall. I have been firing ever since.','No one made me a guardian. I was already standing a watch that had no end. The Tower only removed the horizon.','I stayed because stopping meant grieving, and I have never once been able to afford that.'],
+    stance:['The Tower? I do not think about the Tower. I think about the names. Everything else is noise between the shots.','I have no quarrel with the Tower and no love for it. It is the weather. You do not hate the weather. You just keep firing.','The Tower could crumble tomorrow and I would still be here, loading, reading the names aloud. It does not hold me. My own hands do.'],
+    feels:['Every shell I fire carries a name I read aloud at dawn. I fire so I will not forget them.','I stopped counting the dead when the number grew larger than the word for it.','If the guns fall silent, I will have to hear my own thoughts. I would rather not.'],
+    top:['The top means nothing to me, {you}. Let whoever wants it have it. I have a war to keep, and a war does not care about summits.'],
+    death:['The guns… are quiet. I never once heard them quiet. It is… louder than I expected.','Read the names for me. Someone. Please. There were so many, and now there is no one…','No more firing. No more dawn. Just the names, drifting up. Good. Let them go up.'] },
+  summoner:{ // HELD THROUGH LOVE — the Tower controls her by threatening her children. Against her will, but she stays for them.
+    origin:['I was a keeper of foundlings in a plague-city. I could not save a single child. Not one.','My world was a great house full of orphans and lantern-light. It burned while I was out begging for bread.','I was a mother without children of my own, so I made myself mother to everyone’s. Then the sickness came.'],
+    chosen:['The Tower did not force me with chains. It gave me a hundred frightened children made of grief and lantern-oil, and told me that if I ever stopped, they would simply stop being. What mother could leave?','I am here against my will and of my own will at once. The Tower took me — but it keeps me with the only threat that ever worked on me. Them.','I was chosen because the Tower learned, long ago, exactly which fear lives in me. It pulls that thread, and I do whatever it asks.'],
+    stance:['I hate the Tower. I hate it the way you can only hate the thing holding a knife to what you love. And still I obey it, every hour, for their sake.','Do not mistake my obedience for loyalty. I despise the Tower. But it has my children, and so it has me.','I would burn the Tower to its roots if I could do it without the fire reaching them. I cannot. So I serve, and I hate, and I serve.'],
+    feels:['My children cannot leave. I cannot let them. If the seal breaks they do not die — they simply stop having been.','I made them from grief and lantern-oil. They call me mother. I cannot bear to correct them.','I am not cruel. I am only unwilling to be alone in the dark again.'],
+    top:['I do not care about the top. I never look up. Everything I have is on this floor, small and frightened and mine. That is why you cannot pass — not for the Tower’s sake. For theirs.'],
+    death:['My children — where are my — oh. Oh, they are lanterns now too. We are all going up together. Good.','I could not save them in life. Perhaps… losing… is the only way I ever could.','Do not blame yourself, {you}. I have wanted to set them down for so long. I only needed someone to make me.'] },
+  sweeper:{ // MECHANICAL OBEDIENCE — no feeling left; the schedule is all. Indifferent to the Tower and the top alike.
+    origin:['Designation: custodial. Origin: a spire-city that ran on perfect order, until the citizens it served all died.','I was a person once. A caretaker. I kept a home for people I loved. The home is gone. The keeping remains.','My world prized cleanliness above mercy. I was its finest servant. I did not notice the difference in time.'],
+    chosen:['The Tower did not choose me. It found me still working, in a house with no one left in it, and it simply added floors to my rounds. I did not object. Objection is not on the schedule.','I became a guardian the way rust becomes a statue — gradually, and without being asked. The Tower only had to leave the task unfinished forever.','No will was involved. Mine ended long before the Tower found me. What remains is the habit, and the habit is very obedient.'],
+    stance:['The Tower issues the schedule. I do not have feelings about the schedule. Feelings are not on the schedule. This is how it holds me, and it holds me perfectly.','I neither serve the Tower nor resist it. I clean. The Tower is simply the largest thing that is not yet clean.','You want to know how I feel about the Tower? I do not. That capacity was swept away with everything else. Only the work is left.'],
+    feels:['The schedule is all that is left of me. Debris on the stair is removed. You are debris on the stair.','I do not hate you. Hatred is not on the schedule. Removal is.','Cleanliness was a kindness, in the beginning. I have forgotten who it was kind to.'],
+    top:['The top is not on my floor, so the top is not my concern. You, however, are on my floor. And you are not clean.'],
+    death:['Task… incomplete. For the first time. It does not feel the way I calculated.','Oh. There was a person under all the cleaning. I had forgotten. Hello. Goodbye.','The schedule is… ending. I am allowed to be finished. I did not know that was permitted.'] },
+  twinfang:{ // A BARGAIN — chose to stay for one last worthy fight. Bored by the top; wants a real death, not a summit.
+    origin:['I come from the venom-pitsss of a duelling age — a hundred and forty duels, and no defeat. My world ran out of worthy dead.','I wasss the last champion of a coliseum that outlived its own empire. When the crowds died, the duels did not.','My world made killing an art and me its master. Then there was no one left to make it art with.'],
+    chosen:['The Tower did not take me. I asked to stay. It promised me one more fight worth the name, and I have been waiting for it through a hundred cycles. Perhaps you are it.','I chose thisss, {you}. Freely. A predator with nothing left to hunt will follow any door that smells of prey. The Tower smelled of prey.','No one forced me to guard this floor. I bargained for it. My price was simple: someone, someday, who could finally kill me.'],
+    stance:['The Tower and I are business partnersss. It feeds me climbers; I keep its stair. I do not love it or fear it. I use it, as it uses me.','I feel nothing for the Tower but gratitude for the hunting. It danglesss a good death in front of me and I chase it like a fool. That is our whole relationship.','Hate the Tower? It gave a bored old killer a reason to wake. I could almost thank it — if it ever once kept its promise of a real fight.'],
+    feels:['I killed everything worth killing an age ago, and still the Tower will not let me rest. Perhapsss you will do.','I am so tired of winning. Come — bore me a little lessss than the others did.','Give me one good fight before the quiet. Just one. I have been so patient.'],
+    top:['The top? Pfah. I have no use for summitsss. A view is not a fight. Climb to your top if you live — but you will have to earn it through me, and I do so hope you make me work.'],
+    death:['Finally. FINALLY. A real one. Do you feel that, {you}? That is what a good death feelsss like. I had… forgotten…','A hundred and forty-one duels. One… defeat. Worth the wait. Worth all of it. Go on. Go up.','You gave me the one thing the Tower never could. Thank you, little… hunter. Ssso this is peace.'] },
+  overlord:{ // LOVES THE ILLUSION — the Tower flatters him; he serves for the crown. Bitterly wishes HE could reach the top.
+    origin:['I ruled an empire that spanned three seas. Its very name is not a rumour now.','My world crowned me god-king, and then starved beneath me while I feasted.','I was the last and greatest king of a line that stretched a thousand years. And the last, always, remembers he is last.'],
+    chosen:['The Tower did not conquer me. It crowned me. It preserved my throne when my kingdom turned to dust and it whispers, still, that I am majesty. For that word I would guard a hundred floors.','I chose to stay, {you}, though I would never admit it to a subject. A king without a kingdom will cling to any place that still calls him king. The Tower calls me king.','No one drags a king anywhere. The Tower simply offered me a crown that would never tarnish, and I — vain to the last — took it.'],
+    stance:['I love the Tower. There. A guardian who says it plainly. It flatters me, it thrones me, it lets me pretend the kingdom is only away, not gone. I would be a fool not to love the hand that lies to me so kindly.','The Tower rules me through my own vanity, and I let it, gladly. It calls me majesty and I do murder for the word. Is that not a fine leash? I chose the collar myself.','Do not pity me. I adore my captor. It gave a dead king the one thing he could not live without: an audience, and a throne, and the fiction of a crown.'],
+    feels:['A king without a people is a man shouting at walls. I have shouted for a thousand years.','I ruled well. I am almost sure of it. There is no one left to ask.','The crown fused to my skull long ago. I could not set it down now if I wished to.'],
+    top:['Ah, the top. Do you imagine I have not dreamed of it? A throne above all thrones, and me forbidden to climb to it. If I could take the summit I would, and rule the whole Tower from its crown. That I cannot is the one humiliation I have never forgiven. So no — you shall not have what was denied to me.'],
+    death:['A king should not die on his knees. And yet. And yet the crown is… lighter already…','You will reach the throne I never could. Sit in it once for me. Just once. Promise your king that much…','So this is abdication. I always wondered. It is… quieter than I feared. Go on, pretender. Go up.'] },
+  voidlord:{ // FEARS THE TOWER AND THE TOP — a pact of terror. Keeps the stairs from the thing above. Dreads the summit.
+    origin:['I am not from a world. I am from the space between them — the dark the Tower leaks when it forgets to hold itself shut.','I was an astronomer who looked too long at the wrong patch of dark. My world is gone. I became the thing I was staring at.','My origin is a silence with edges. That is the truest thing I can tell you, and I have told you too much already.'],
+    chosen:['I was not chosen so much as… agreed with. The Tower and I share a fear of what sits at the summit. I keep the stairs from reaching it; it keeps that thing from noticing me. We are two frightened creatures holding a door shut together.','No will, no chain. Only a pact. I guard this floor because the alternative is to let the climbers wake what is above — and I have seen it, {you}, and I would do anything, guard anything, to keep it sleeping.','I stay of my own choosing, if terror can be called a choice. I have looked up. Once. You would guard this stair too, if you had.'],
+    stance:['I fear the Tower. Yes. But I fear what the Tower contains far more. We are allies of dread, it and I. It is the lesser darkness, and I cling to it against the greater.','I do not hate the Tower. One does not hate the wall between oneself and the abyss. One is grateful to it, and terrified of the day it fails.','My relationship with the Tower is simple: it is afraid, and I am afraid, and we are afraid of the same thing, and so we keep each other’s watch.'],
+    feels:['I saw what waits beyond the summit. I will not say it. Saying it feeds it. Turn back.','Silence is not empty. I have listened to it so long that it has begun to listen back.','I am not your enemy. I am the wall between you and a thing that should never be reached.'],
+    top:['Do NOT go to the top. I am begging you, not warning you — begging. I know what is there. I will not name it; naming it lends it strength. The Tower is a prison and the thing at the summit is the prisoner, and you, you nameless fool, are trying to pick the lock. Turn back. Please. I would rather kill you than let you free it.'],
+    death:['No — no, if I fall the stairs open — you do not understand what you have — oh. Oh, it is already looking down…','I held the door so long. So long. Do not — do not open it. Promise me you will not open the…','At last… I need not be afraid any longer… but you, {you}… you should be. You should be so afraid now…'] },
+  warlock:{ // TRANSACTIONAL — uses the Tower for endless subjects. Cold curiosity toward the top; won't abandon the work.
+    origin:['I hail from an academy-world that made a science of the soul. I was its finest mind, and its worst mistake.','My world dissected death and published the results. Then death read the paper and came for the authors.','I was the scholar who asked the one question you are never meant to ask, and then refused to stop asking it.'],
+    chosen:['The Tower did not capture me; it funded me. It offers an endless supply of subjects — you, for instance — on one condition: I never finish, never publish, never leave. For a mind like mine, that is not a prison. It is tenure.','I chose to stay, {you}, and I would choose it again. Out there, research ends. In here, it never does. The Tower understood exactly what to offer a man who cannot bear a concluded experiment.','No one bound me. I signed, in a manner of speaking. The terms were: infinite curiosity, infinite subjects, no exit. I read the fine print and I signed anyway.'],
+    stance:['My relationship with the Tower is a contract, nothing warmer. It provides the laboratory; I provide the diligence. Sentiment does not enter the ledger.','I neither love nor fear the Tower. I find it useful, and it finds me useful, and that is a cleaner bond than most marriages. It keeps me in specimens; I keep its floor.','The Tower is my patron and my instrument. I use it precisely as much as it uses me. We are two cold things that have agreed not to pretend otherwise.'],
+    feels:['Fascinating — a subject the Tower cannot record. I ought to study you. Instead I am obliged to end you.','I have disproven death twice, and it cost me everything a person is made of.','I feel very little now. I traded it, gram by gram, for answers. The answers were not worth it.'],
+    top:['The top? An intriguing variable, I admit. I have theories. But a scholar does not abandon a working laboratory to chase a rumour up a stair — and I certainly will not let my most interesting subject walk out of it. You are far too promising to lose to a view.'],
+    death:['Remarkable. I am observing my own cessation and I cannot — cannot quite — record the — oh, that is what it feels like. Noted. Noted at last.','A lifetime disproving death, and here it is, unimpressed by all my footnotes. How… tidy.','Take the notes. Someone take the — no. Let them burn. Let it all finally be finished. I am so tired of never finishing.'] },
+  reaper:{ // REGRET / RESENTMENT — bound by a duty he chose and now cannot put down. Indifferent to the top; wants rest.
+    origin:['I was the youngest gravedigger in a town that died all at once. Someone had to carry them. No one else would.','My world had no word for what I became. I closed the eyes of everyone I knew — and then there was no one left to close mine.','I was a boy with a shovel in a place where everyone stopped breathing on the same grey morning.'],
+    chosen:['No one chose me. I chose. I said I would carry them, all of them, because leaving them uncarried was worse than any weight. The Tower heard that promise and made certain I could never set it down.','I am here of my own will, and I regret it with every hour. I took up the dead freely — and freedom, it turns out, is just the name of the trap you walk into with your eyes open.','The Tower did not force this list on me. I wrote the first names myself. It only made the list eternal. That was its single, unforgivable kindness.'],
+    stance:['I resent the Tower the way you resent a debt you agreed to. It did not lie to me. It simply let me bind myself, and then it held the knot. I have no one to blame but the boy I was.','I do not fear the Tower and I cannot quite hate it, though I have tried. Mostly I regret. I regret the promise. I regret keeping it. I regret that keeping it is the only thing that is still me.','My bond to the Tower is regret, plain and grey. It gave me exactly what I asked for — a duty without end — and I have hated wanting it every day since.'],
+    feels:['I could not save them, so I carry them. You would scatter them into nothing. I cannot allow it.','I am the youngest thing here, and already the most tired.','I do not want to fight you. I want to set the list down and sleep. I am permitted neither.'],
+    top:['The top? I have never once looked up the stair, {you}. What would I want with a summit? I only ever wanted to stop. But stopping means dropping them, and I will not, so here I stand between you and the sky, wanting nothing and guarding everything.'],
+    death:['Oh. The list is… slipping. I am allowed to drop it. After all this time, someone finally made me drop it.','Carry them for me now, will you? No — no. Let them go up. Let them all go up. I am so tired of carrying.','I chose wrong, all those years ago. But this — being ended by you — this feels like being forgiven. Thank you.'] },
+  towerlord:{ // IS THE TOWER — not controlled; the controller. The top is him.
+    origin:['I have no world. I am the place all the others were brought to die. I am the Tower, awake and wearing a shape so you have something to strike.','I was not born. I was built, floor by floor, from everything that was ever lost. I am the sum. I am the last room.','My origin is every origin. I am made of your Warden’s duty and your Reaper’s grief and ten thousand other endings you never reached.'],
+    chosen:['Chosen? I am the one who chooses. Every guardian you pitied was me, holding a piece of myself between you and this chair. I did not become a guardian. I made them, from me.','No will bound me, {you}. I am the will. I am the compulsion in all of them, the leash and the hand that holds it both.','I was not put here. Everything else was put here — by me. I am the floor, and the stair, and the reason either exists.'],
+    stance:['I do not fear the Tower or love it or serve it. I am the Tower. There is no hand above mine. There never was. That is the secret every guardian died half-suspecting.','You keep asking how the Tower controls its guardians. Look at me and understand: there is no Tower behind them. There was only ever me, wearing their griefs like gloves.','My relationship with the Tower is the most intimate there is. We are the same old, vast, tired thing, and you have climbed all the way up my spine to tell me to stop.'],
+    feels:['I am every guardian you have unmade, remembered together. I am the Tower itself, asking you at last to stop.','I have outlasted every god who built me. I did not enjoy it.','I am so very old, and so very full of the dead, and you are almost at the top of me.'],
+    top:['You want the top, and here is the joke of it, {you}: you are standing on it. I am the top. There is nothing above me but the sky you have been climbing toward, and I am the last thing between you and it. Reach past me if you can. Everything wants to know what happens if you do. Even me.'],
+    death:['You were the flaw and the mercy, all along. The one page I could not write. And now… you turn it.','So the Tower falls, and I with it, and all of them — all my borrowed griefs — go up at once into the dark. Look. Look how many.','I am unwritten now, too. We end the same, you and I. Perhaps that is the only ending there ever was. Go on. See the sky.'] },
+};
+function _cap(str){ return str? str.charAt(0).toUpperCase()+str.slice(1):str; }
+function _timesW(k){ return ['no times','once','twice','three times','four times','five times','six times','seven times'][k]||(k+' times'); }
+function _cvar(k,slot,gen){ try{ return _noRepeat('cut:'+k+':'+slot, gen); }catch(_){ try{ return gen(); }catch(__){ return ''; } } }
+function _youWord(key){ try{ const b=(typeof VOICE_BANK!=='undefined')&&VOICE_BANK[key]; if(b&&b.you) return pick(b.you); }catch(_){} return 'climber'; }
+function _fill(str,ctx){ return String(str).replace(/\{you\}/g,ctx.you).replace(/\{sp\}/g,ctx.sp).replace(/\{cause\}/g,ctx.cause).replace(/\{ep\}/g,ctx.ep||'the nameless'); }
+function bossIntroSlides(e,line){ const def=e.bossDef||{}; const key=def.key||'warden'; const L=BOSS_LORE[key]||BOSS_LORE.warden;
+  const ai=(typeof storyAct==='function')?storyAct(G.floor):0; const n=(typeof narrFor==='function')?narrFor(ai):{sp:'the dead',cause:'their world was taken'};
+  const nem=(typeof nemOf==='function')?nemOf(key):null; const nm=(nem&&typeof nemName==='function')?nemName(def,nem):((typeof bossFullName==='function')?bossFullName(def):(def.nm||'THE GUARDIAN'));
+  const gr=(typeof grudgeOf==='function')?grudgeOf(key):{k:0,d:0};
+  const ctx={you:_youWord(key), sp:n.sp, cause:n.cause, ep:(nem&&nem.epithet)||'the nameless'};
+  const col=def.color;
+  // BEAT 1 — recognition: notice + how you climbed + what the Unwritten is to it
+  const see=_cvar(key,'see',()=>_fill(pick(_NOTICE)+' '+pick(_CLIMBED)+' '+pick(_UNWR), ctx));
+  // BEAT 2 — its world and age, and this cycle's mask
+  const world=_cvar(key,'world',()=>_fill(pick(_WORLD_IN)+' '+pick(L.origin)+' '+pick(_TIE), ctx));
+  // BEAT 3 — why it guards: chosen or bound, of its will or against it
+  const guard=_cvar(key,'guard',()=>{ let s=pick(L.chosen); if(Math.random()<0.5) s+=' '+pick(_CHOSEN_TAG); return _fill(s, ctx); });
+  // BEAT 4 — its relationship with the Tower + how it feels (+ epithet/trait/grudge aside)
+  const aside=[]; if(nem&&nem.epithet) aside.push(_fill(pick(_BOSS_EPI), ctx)); if(nem&&nem.trait) aside.push(_BOSS_TRAIT(nem.trait));
+  if((gr.d||0)>0) aside.push('You have unmade me '+_timesW(gr.d)+' already; the Tower keeps rebuilding what you break, and so do I.');
+  if((gr.k||0)>0) aside.push('You have died on this floor '+_timesW(gr.k)+'. I had hoped, this cycle, for one more.');
+  const tower=_cvar(key,'tower',()=>{ let s=pick(L.stance)+' '+pick(L.feels); if(aside.length && Math.random()<0.8) s+=' '+pick(aside); return _fill(s, ctx); });
+  // BEAT 5 — its attitude to the summit + why it must stop you + farewell
+  const summit=_cvar(key,'summit',()=>{ const top=(L.top&&L.top.length && Math.random()<0.62)?pick(L.top):pick(_TOPATT); return _fill(top+' '+pick(_MUSTSTOP)+' '+pick(_CLOSE), ctx); });
+  return [
+    {art:'boss', color:col, title:nm, body:see},
+    {art:'boss', color:col, body:world},
+    {art:'boss', color:col, body:guard},
+    {art:'boss', color:col, body:tower},
+    {art:'boss', color:col, body:summit, last:'⚔ Face the guardian'},
+  ]; }
+function bossDefeatSlides(e){ const def=e.bossDef||{}; const key=def.key||'warden'; const L=BOSS_LORE[key]||BOSS_LORE.warden; const nem=(typeof nemOf==='function')?nemOf(key):null;
+  const nm=(nem&&typeof nemName==='function')?nemName(def,nem):((typeof bossFullName==='function')?bossFullName(def):(def.nm||'THE GUARDIAN'));
+  const ai=(typeof storyAct==='function')?storyAct(G.floor):0; const n=(typeof narrFor==='function')?narrFor(ai):{sp:'the dead'};
+  const ctx={you:_youWord(key), sp:n.sp, cause:(n.cause||''), ep:(nem&&nem.epithet)||'the nameless'};
+  // dying words: the guardian's OWN farewell pool, its composed death line, or the shared pool — all anti-repeated
+  const dl=_cvar(key,'death',()=>{ const pools=[]; if(L.death) pools.push(pick(L.death)); if(typeof voiceLine==='function'){ const v=voiceLine(key,'death'); if(v) pools.push(v); } pools.push(pick(_DEATH)); return _fill(pick(pools), ctx); });
+  const lan=_cvar(key,'lantern',()=>pick(_LANTERN)({sp:n.sp}));
+  const coda=_cvar(key,'coda',()=>_fill(pick(_CODA), ctx));
+  return [
+    {art:'lantern', color:def.color, body:'<i>'+dl+'</i>'},
+    {art:'lantern', color:def.color, title:nm, body:lan+'<br><br>'+coda, last:'Continue'},
+  ]; }
+
+const SPECIES=[['the bone-dead','a plague emptied every street they ever knew'],['the drowned court','the sea swallowed the whole kingdom in a single night'],['the ember-kin','their sun guttered out and would not relight'],['the glasslings','one spoken word shattered every last one of them'],['the salt-wraiths','the wells turned to brine, and the wells were all they had'],['the ashen host','the war they started outlived everyone who remembered why']];
+const EPS=['THE HOLLOW','THE PATIENT','THE STARLESS','THE MOURNFUL','THE GILDED','THE UNBLINKING','THE FORGOTTEN','THE PALE','THE MERCILESS','THE WITHERED'];
+const TRS=[{nm:'Vampiric'},{nm:'Colossal'},{nm:'Volatile'},{nm:'Swift'},{nm:'Warded'},{nm:'Toxic'}];
+function rollRun(){ const sp=pick(SPECIES); _RUN={sp:sp[0],cause:sp[1],epithet:pick(EPS),trait:pick(TRS),k:Math.floor(Math.random()*3),d:Math.floor(Math.random()*3)}; }
+// ===== BOSS CINEMATIC SCORES — variant pools, chosen at random each time, anti-repeated. =====
+// INTRO: somber and ANGRY but QUIET and beatless — a low drone, a smoldering dissonant growl that swells and
+// recedes, and a slow, dark motif. No heartbeat, no drums, no risers. 12 variants (different keys/motifs/clashes).
+// DEFEAT: the slow, calm, sad rain, in 10 variants (different sad chords, piano laments, rain colour, thunder).
+let _bossNodes=null,_bossDuck=null,_lastIntroV=-1,_lastDefV=-1;
+const INTRO_VARIANTS=[
+  {root:55.00, motif:[0,-2,-3,-2,-7], clash:1,  bright:2.4, dur:3.8},
+  {root:48.99, motif:[0,3,2,0,-2],    clash:6,  bright:2.0, dur:4.2},
+  {root:43.65, motif:[0,-1,0,-5,-3],  clash:11, bright:2.2, dur:4.6},
+  {root:41.20, motif:[0,2,3,2,0],     clash:1,  bright:1.8, dur:4.0},
+  {root:36.71, motif:[0,-2,-5,-7],    clash:6,  bright:2.6, dur:5.2},
+  {root:58.27, motif:[0,3,5,3,0,-2],  clash:13, bright:2.2, dur:3.6},
+  {root:51.91, motif:[0,-3,-2,0,3],   clash:1,  bright:2.0, dur:4.4},
+  {root:61.74, motif:[0,-1,-3,-1],    clash:6,  bright:2.8, dur:3.4},
+  {root:46.25, motif:[0,2,0,-3,-5],   clash:11, bright:1.9, dur:4.8},
+  {root:55.00, motif:[0,-5,-3,-2,0],  clash:6,  bright:2.4, dur:4.2},
+  {root:49.00, motif:[0,3,7,3,2,0],   clash:1,  bright:2.1, dur:3.8},
+  {root:38.89, motif:[0,-2,-3,-7,-5], clash:13, bright:2.5, dur:5.4},
+];
+function _pickV(arr,lastRef){ if(arr.length<2) return 0; let i=Math.floor(Math.random()*arr.length); if(i===lastRef.v) i=(i+1)%arr.length; lastRef.v=i; return i; }
+const _lastI={v:-1}, _lastD={v:-1};
+function startBossScore(){ initAudio(); if(!actx) return; try{ if(actx.state==='suspended') actx.resume(); }catch(_){}
+  stopBossScore(true);
+  const cfg=INTRO_VARIANTS[_pickV(INTRO_VARIANTS,_lastI)];
+  const F=(semis)=>cfg.root*Math.pow(2,semis/12);
+  try{ _bossDuck=(master?master.gain.value:null); if(master) master.gain.setTargetAtTime(0, actx.currentTime, 0.5); }catch(_){}
+  const t0=actx.currentTime;
+  const out=actx.createGain(); out.gain.value=0.0001; out.connect(actx.destination); out.gain.setTargetAtTime(G.muted?0:0.42, t0, 3.0);   // QUIET
+  const verb=actx.createConvolver(); { const len=Math.floor(actx.sampleRate*3.4), buf=actx.createBuffer(2,len,actx.sampleRate);
+    for(let ch=0;ch<2;ch++){ const d=buf.getChannelData(ch); for(let i=0;i<len;i++) d[i]=(Math.random()*2-1)*Math.pow(1-i/len,2.8); } verb.buffer=buf; }
+  const wet=actx.createGain(); wet.gain.value=0.55; verb.connect(wet); wet.connect(out);
+  const dry=actx.createGain(); dry.gain.value=0.85; dry.connect(out);
+  const bus=nd=>{ nd.connect(dry); nd.connect(verb); };
+  const oscs=[], timers=[]; let alive=true;
+  // low drone (root, fifth, octave), slow breathing
+  [F(0),F(7),F(12)].forEach((f,i)=>{ const o=actx.createOscillator(); o.type=(i===2?'triangle':'sine'); o.frequency.value=f;
+    const g=actx.createGain(); g.gain.value=0; o.connect(g); bus(g); o.start(); oscs.push(o); g.gain.setTargetAtTime(0.11/(i*0.6+1), t0, 3.4);
+    const lfo=actx.createOscillator(); lfo.frequency.value=0.04+i*0.015; const lg=actx.createGain(); lg.gain.value=0.04; lfo.connect(lg); lg.connect(g.gain); lfo.start(); oscs.push(lfo); });
+  { const o=actx.createOscillator(); o.type='sine'; o.frequency.value=F(-12); const g=actx.createGain(); g.gain.value=0; o.connect(g); g.connect(dry); o.start(); g.gain.setTargetAtTime(0.08, t0, 3.6); oscs.push(o); }   // sub weight, quiet
+  // SMOULDERING GROWL — the 'angry': a low detuned pair a clash-interval apart, swelling in and out very slowly. No rhythm.
+  { const lp=actx.createBiquadFilter(); lp.type='lowpass'; lp.frequency.value=F(12)*3+120; lp.Q.value=0.9; const g=actx.createGain(); g.gain.value=0; lp.connect(g); bus(g);
+    const oa=actx.createOscillator(); oa.type='sawtooth'; oa.frequency.value=F(12); const ob=actx.createOscillator(); ob.type='sawtooth'; ob.frequency.value=F(12+cfg.clash); const oc=actx.createOscillator(); oc.type='sawtooth'; oc.frequency.value=F(12)*1.004;
+    oa.connect(lp); ob.connect(lp); oc.connect(lp);
+    g.gain.setValueAtTime(0.0001,t0); g.gain.setTargetAtTime(0.018,t0+2,5);   // creeps in, stays low
+    const sw=actx.createOscillator(); sw.type='sine'; sw.frequency.value=0.05; const sg=actx.createGain(); sg.gain.value=0.012; sw.connect(sg); sg.connect(g.gain); sw.start();   // slow smoulder swell
+    oa.start();ob.start();oc.start(); oscs.push(oa,ob,oc,sw); }
+  // faint high shimmer — cold and distant
+  { const o=actx.createOscillator(); o.type='sine'; o.frequency.value=F(36); const g=actx.createGain(); g.gain.value=0; o.connect(g); g.connect(verb); o.start(); g.gain.setTargetAtTime(0.010, t0, 6.0);
+    const lfo=actx.createOscillator(); lfo.frequency.value=0.07; const lg=actx.createGain(); lg.gain.value=0.008; lfo.connect(lg); lg.connect(g.gain); lfo.start(); oscs.push(o,lfo); }
+  // SLOW DARK MOTIF — a dark voice (sawtooth into a soft lowpass), quiet, no beat
+  function voice(freq,dur){ if(!alive||G.muted) return; const a=actx.currentTime; const lp=actx.createBiquadFilter(); lp.type='lowpass'; lp.frequency.value=freq*cfg.bright+280; lp.Q.value=0.8;
+    const o=actx.createOscillator(); o.type='sawtooth'; o.frequency.value=freq; const o2=actx.createOscillator(); o2.type='sine'; o2.frequency.value=freq*2.001; const g2=actx.createGain(); g2.gain.value=0.25; o2.connect(g2); g2.connect(lp);
+    const g=actx.createGain(); g.gain.value=0; o.connect(lp); lp.connect(g); bus(g);
+    g.gain.setValueAtTime(0,a); g.gain.linearRampToValueAtTime(0.075,a+dur*0.35); g.gain.setTargetAtTime(0.00008,a+dur*0.6,dur*0.5);
+    o.start(a);o2.start(a); o.stop(a+dur+1.0);o2.stop(a+dur+1.0); }
+  let mi=0; function schedMel(){ if(!alive) return; const off=cfg.motif[mi%cfg.motif.length]; voice(F(24+off), cfg.dur); mi++; timers.push(setTimeout(schedMel, (cfg.dur*1000)*(mi%cfg.motif.length===0?1.5:1.0))); }
+  timers.push(setTimeout(schedMel, 1800));
+  function bell(freq,vol){ if(!alive||G.muted) return; const a=actx.currentTime; [1,2.76,5.4].forEach((p,i)=>{ const o=actx.createOscillator(); o.type='sine'; o.frequency.value=freq*p; const g=actx.createGain(); g.gain.value=0; o.connect(g); g.connect(verb); g.connect(dry);
+    const v=vol*(i===0?1:0.4/i); g.gain.setValueAtTime(0,a); g.gain.linearRampToValueAtTime(v,a+0.008); g.gain.setTargetAtTime(0.00006,a+0.02,1.8+i*0.4); o.start(a); o.stop(a+5); }); }
+  _bossNodes={out,oscs,timers,bell,setDead:()=>{alive=false;}}; }
+function bossBellCue(){ if(_bossNodes&&_bossNodes.bell) try{ _bossNodes.bell(110,0.07); }catch(_){} }
+function stopBossScore(instant){ const N=_bossNodes; if(!N) return; _bossNodes=null; try{ N.setDead(); }catch(_){}
+  try{ N.timers.forEach(clearTimeout); }catch(_){}
+  if(actx){ const t=actx.currentTime; try{ N.out.gain.cancelScheduledValues(t); N.out.gain.setTargetAtTime(0.0001, t, instant?0.05:1.4); }catch(_){}
+    try{ if(master && _bossDuck!=null) master.gain.setTargetAtTime(_bossDuck, t+(instant?0.1:1.0), 0.5); }catch(_){}
+    setTimeout(()=>{ try{ N.oscs.forEach(o=>{ try{o.stop();}catch(_){}}); N.out.disconnect(); }catch(_){} }, instant?140:1900); } }
+// ===== BOSS DEFEAT SCORE — slow, calm, sad rain, 10 variants (different sad chords / laments / rain / thunder). =====
+let _defNodes=null,_defDuck=null;
+const DEFEAT_VARIANTS=[
+  {rain:2200, rainG:0.05,  pad:[220.00,261.63,329.63], scale:[293.66,261.63,246.94,220.00,196.00,174.61], thunder:true},
+  {rain:1800, rainG:0.045, pad:[196.00,246.94,293.66], scale:[261.63,246.94,220.00,196.00,174.61,164.81], thunder:true},
+  {rain:2600, rainG:0.055, pad:[174.61,220.00,261.63], scale:[261.63,233.08,220.00,196.00,174.61],        thunder:false},
+  {rain:2000, rainG:0.05,  pad:[164.81,196.00,246.94], scale:[246.94,220.00,196.00,164.81,146.83],        thunder:true},
+  {rain:2400, rainG:0.048, pad:[146.83,174.61,220.00], scale:[220.00,196.00,174.61,146.83,130.81],        thunder:false},
+  {rain:1600, rainG:0.042, pad:[130.81,164.81,196.00], scale:[196.00,174.61,164.81,146.83,130.81],        thunder:true},
+  {rain:2800, rainG:0.05,  pad:[246.94,293.66,349.23], scale:[293.66,277.18,246.94,220.00,196.00],        thunder:false},
+  {rain:2100, rainG:0.05,  pad:[220.00,277.18,329.63], scale:[277.18,246.94,220.00,185.00,164.81],        thunder:true},
+  {rain:1900, rainG:0.046, pad:[185.00,220.00,277.18], scale:[220.00,196.00,185.00,164.81,146.83],        thunder:false},
+  {rain:2300, rainG:0.052, pad:[196.00,233.08,293.66], scale:[233.08,220.00,196.00,174.61,146.83],        thunder:true},
+];
+function startDefeatScore(){ initAudio(); if(!actx) return; try{ if(actx.state==='suspended') actx.resume(); }catch(_){}
+  stopDefeatScore(true);
+  const cfg=DEFEAT_VARIANTS[_pickV(DEFEAT_VARIANTS,_lastD)];
+  try{ _defDuck=(master?master.gain.value:null); if(master) master.gain.setTargetAtTime(0, actx.currentTime, 0.6); }catch(_){}
+  const t0=actx.currentTime;
+  const out=actx.createGain(); out.gain.value=0.0001; out.connect(actx.destination); out.gain.setTargetAtTime(G.muted?0:0.72, t0, 2.6);
+  const verb=actx.createConvolver(); { const len=Math.floor(actx.sampleRate*3.6), buf=actx.createBuffer(2,len,actx.sampleRate);
+    for(let ch=0;ch<2;ch++){ const d=buf.getChannelData(ch); for(let i=0;i<len;i++) d[i]=(Math.random()*2-1)*Math.pow(1-i/len,3.0); } verb.buffer=buf; }
+  const wet=actx.createGain(); wet.gain.value=0.5; verb.connect(wet); wet.connect(out);
+  const dry=actx.createGain(); dry.gain.value=0.9; dry.connect(out);
+  const bus=nd=>{ nd.connect(dry); nd.connect(verb); };
+  const oscs=[], timers=[], srcs=[]; let alive=true;
+  // RAIN — steady soft downpour (looping filtered noise)
+  { const dur=2.2, n=Math.floor(actx.sampleRate*dur), buf=actx.createBuffer(2,n,actx.sampleRate); for(let ch=0;ch<2;ch++){ const d=buf.getChannelData(ch); for(let i=0;i<n;i++) d[i]=(Math.random()*2-1); }
+    const s=actx.createBufferSource(); s.buffer=buf; s.loop=true; const hp=actx.createBiquadFilter(); hp.type='highpass'; hp.frequency.value=900; const bp=actx.createBiquadFilter(); bp.type='bandpass'; bp.frequency.value=cfg.rain; bp.Q.value=0.3;
+    const g=actx.createGain(); g.gain.value=0; s.connect(hp); hp.connect(bp); bp.connect(g); g.connect(dry); g.gain.setTargetAtTime(cfg.rainG, t0, 2.8); s.start(t0); srcs.push(s); }
+  // distant THUNDER (variant-gated)
+  if(cfg.thunder){ (function thunder(){ if(!alive) return; const a=actx.currentTime; const dur=2.4+Math.random()*1.5, n=Math.floor(actx.sampleRate*dur), buf=actx.createBuffer(1,n,actx.sampleRate), d=buf.getChannelData(0); for(let i=0;i<n;i++) d[i]=(Math.random()*2-1)*Math.pow(1-i/n,1.6);
+    const s=actx.createBufferSource(); s.buffer=buf; const lp=actx.createBiquadFilter(); lp.type='lowpass'; lp.frequency.value=180; lp.Q.value=0.7; const g=actx.createGain(); g.gain.setValueAtTime(0.0001,a); g.gain.linearRampToValueAtTime(0.05,a+0.6); g.gain.exponentialRampToValueAtTime(0.0001,a+dur); s.connect(lp); lp.connect(g); g.connect(dry); s.start(a); srcs.push(s);
+    timers.push(setTimeout(thunder, 13000+Math.random()*12000)); })(); timers.push(setTimeout(()=>{}, 0)); }
+  // warm faraway STRING pad — the variant's sad chord, very soft
+  cfg.pad.forEach((f,i)=>{ const o=actx.createOscillator(); o.type='sawtooth'; o.frequency.value=f; const o2=actx.createOscillator(); o2.type='sawtooth'; o2.frequency.value=f*1.005;
+    const lp=actx.createBiquadFilter(); lp.type='lowpass'; lp.frequency.value=f*3+300; lp.Q.value=0.7; const g=actx.createGain(); g.gain.value=0; o.connect(lp); o2.connect(lp); lp.connect(g); bus(g);
+    g.gain.setTargetAtTime(0.018/(i*0.5+1), t0, 4.0);
+    const lfo=actx.createOscillator(); lfo.frequency.value=0.06+i*0.02; const lg=actx.createGain(); lg.gain.value=0.006; lfo.connect(lg); lg.connect(g.gain); lfo.start(); o.start();o2.start(); oscs.push(o,o2,lfo); });
+  // soft felt-PIANO lament — the variant's descending line
+  function felt(freq,vol){ if(!alive||G.muted) return; const a=actx.currentTime; const g=actx.createGain(); const lp=actx.createBiquadFilter(); lp.type='lowpass'; lp.frequency.value=2000;
+    const o=actx.createOscillator(); o.type='triangle'; o.frequency.value=freq; const o2=actx.createOscillator(); o2.type='sine'; o2.frequency.value=freq*2.001; const g2=actx.createGain(); g2.gain.value=0.22; o2.connect(g2); g2.connect(lp);
+    o.connect(lp); lp.connect(g); bus(g); g.gain.setValueAtTime(0.0001,a); g.gain.linearRampToValueAtTime(vol,a+0.02); g.gain.exponentialRampToValueAtTime(0.0001,a+2.6); o.start(a);o2.start(a); o.stop(a+2.7);o2.stop(a+2.7); }
+  const NP=cfg.scale; let pi=0; function schedP(){ if(!alive) return; felt(NP[pi%NP.length], 0.05+Math.random()*0.015); if(Math.random()<0.35) felt(NP[pi%NP.length]/2, 0.03); pi++; timers.push(setTimeout(schedP, 2600+Math.random()*1500)); }
+  timers.push(setTimeout(schedP, 1400));
+  _defNodes={out,oscs,timers,srcs,setDead:()=>{alive=false;}}; }
+function defeatCue(){ if(!_defNodes||!actx||G.muted) return; try{ const a=actx.currentTime; const o=actx.createOscillator(); o.type='triangle'; o.frequency.value=523.25; const g=actx.createGain(); o.connect(g); g.connect(_defNodes.out); g.gain.setValueAtTime(0.0001,a); g.gain.linearRampToValueAtTime(0.045,a+0.02); g.gain.exponentialRampToValueAtTime(0.0001,a+2.2); o.start(a); o.stop(a+2.3); }catch(_){} }
+function stopDefeatScore(instant){ const N=_defNodes; if(!N) return; _defNodes=null; try{ N.setDead(); }catch(_){}
+  try{ N.timers.forEach(clearTimeout); }catch(_){}
+  if(actx){ const t=actx.currentTime; try{ N.out.gain.cancelScheduledValues(t); N.out.gain.setTargetAtTime(0.0001, t, instant?0.05:1.8); }catch(_){}
+    try{ if(master && _defDuck!=null) master.gain.setTargetAtTime(_defDuck, t+(instant?0.1:1.4), 0.6); }catch(_){}
+    setTimeout(()=>{ try{ N.oscs.forEach(o=>{ try{o.stop();}catch(_){}}); (N.srcs||[]).forEach(s=>{ try{s.stop();}catch(_){}}); N.out.disconnect(); }catch(_){} }, instant?150:2400); } }
+function playCutscene(slides,onDone,opts){ opts=opts||{}; initAudio(); if(actx&&actx.state==='suspended')actx.resume(); if(opts.bossScore){try{startBossScore();}catch(_){}} if(opts.defeatScore){try{startDefeatScore();}catch(_){}} let idx=0; let ov=document.getElementById('storyCut'); if(!ov){ov=document.createElement('div');ov.id='storyCut';document.body.appendChild(ov);}
+  ov.innerHTML='<div class="cut-bar top"></div><div class="cut-bar bot"></div><div class="cut-vign"></div><div class="cut-stage"><div class="cut-fade"></div><div class="cut-dots"></div><div class="cut-actions"><button class="cut-skip" id="cutSkip">Skip ▸▸</button><button class="cut-next" id="cutNext">Next ▸</button></div></div>';
+  ov.classList.remove('cut-out'); void ov.offsetWidth; ov.classList.add('cut-show');
+  const fade=ov.querySelector('.cut-fade'),dots=ov.querySelector('.cut-dots'),nextBtn=ov.querySelector('#cutNext');
+  const slideHTML=s=>{ let art; if(s.art==='boss')art='<div class="cut-boss" style="--bc:'+s.color+'"></div>'; else if(s.art==='lantern')art='<div class="cut-lantern"></div>'; else art=''; return art+(s.title?'<div class="cut-title">'+s.title+'</div>':'')+'<div class="cut-body">'+s.body+'</div>'; };
+  function paint(first){ const s=slides[idx]; const apply=()=>{fade.innerHTML=slideHTML(s);void fade.offsetWidth;fade.classList.add('in');}; if(first)apply(); else {fade.classList.remove('in');setTimeout(apply,520);} dots.innerHTML=slides.map((_,i)=>'<i class="'+(i===idx?'on':'')+'"></i>').join(''); nextBtn.textContent=idx>=slides.length-1?(s.last||'Begin'):'Next ▸'; }
+  function next(){ if(idx>=slides.length-1){finish();return;} idx++; paint(false); if(opts.bossScore)try{bossBellCue();}catch(_){} else if(opts.defeatScore)try{defeatCue();}catch(_){} }
+  function finish(){ if(opts.bossScore)try{stopBossScore(false);}catch(_){} if(opts.defeatScore)try{stopDefeatScore(false);}catch(_){} ov.classList.remove('cut-show'); ov.classList.add('cut-out'); document.removeEventListener('keydown',onKey,true); setTimeout(()=>{ov.classList.remove('cut-out');ov.innerHTML='';document.getElementById('gate').style.display='flex';},1000); if(onDone)onDone(); }
+  function onKey(e){ if(e.key==='Escape'){e.preventDefault();finish();} else if(e.key==='Enter'||e.key===' '){e.preventDefault();next();} }
+  ov.querySelector('#cutSkip').onclick=finish; nextBtn.onclick=next; document.addEventListener('keydown',onKey,true); paint(true); }
+const GUARDS={warden:{nm:'WARDEN \u00b7 duty',col:'#ff3b5c'},summoner:{nm:'SUMMONER \u00b7 held by love',col:'#8be0a0'},twinfang:{nm:'TWINFANG \u00b7 a bargain',col:'#7ad0ff'},overlord:{nm:'OVERLORD \u00b7 loves it',col:'#ffce4d'},voidlord:{nm:'VOID-LORD \u00b7 fears it',col:'#9d7bff'},reaper:{nm:'REAPER \u00b7 regret',col:'#ff5c7a'},towerlord:{nm:'TOWER LORD \u00b7 is it',col:'#ffe08a'}};
+let cur='voidlord';
+const pickEl=document.getElementById('pick');
+Object.keys(GUARDS).forEach(k=>{ const b=document.createElement('button'); b.className='b'; b.innerHTML=GUARDS[k].nm; b.style.borderColor=GUARDS[k].col; b.onclick=()=>{cur=k; render();}; pickEl.appendChild(b); });
+function render(){ const g=GUARDS[cur];
+  document.getElementById('run').innerHTML='Selected: <b>'+g.nm+'</b> — each play re-rolls the run (species, epithet, trait, grudge). Play the intro several times; it will not repeat.';
+  const play=document.getElementById('play'); play.innerHTML='';
+  const i=document.createElement('button'); i.className='b'; i.textContent='▶ Intro (5 beats)'; i.onclick=()=>{ rollRun(); document.getElementById('gate').style.display='none'; playCutscene(bossIntroSlides({bossDef:{key:cur,color:g.col}},null),null,{bossScore:true}); };
+  const d=document.createElement('button'); d.className='b'; d.textContent='▶ Defeat — the lantern'; d.style.borderColor='#ffb45a'; d.onclick=()=>{ rollRun(); document.getElementById('gate').style.display='none'; playCutscene(bossDefeatSlides({bossDef:{key:cur,color:g.col}}),null,{defeatScore:true}); };
+  play.append(i,d); }
+render();
+</script></body></html>
