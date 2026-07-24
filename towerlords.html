@@ -5563,6 +5563,239 @@ function makeSlimeMesh(scale,opts){ opts=opts||{}; const s=scale||1; const v=opt
   if(opts.scaleBody) body.scale.multiplyScalar(opts.scaleBody);
   return grp; }
 
+// ============================================================ NEW RACES (concept-art pass)
+// Seven more families, built from the enemy design sheets in the shared _rig/_put/_mat house
+// style. Each hangs off ONE root (userData.body) so bob/flash/telegraph drive it unchanged;
+// userData.humanoid faces heading; userData.arms/legs get the walk-swing. One builder, ten
+// variants — the ten units on each sheet — selected via opts.variant.
+function _trident(s,col){ const g=new THREE.Group(); const m=col?_mat(col,col,.4,.4):_iron();
+  const shaft=new THREE.Mesh(new THREE.CylinderGeometry(.022*s,.028*s,1.5*s,6), _mat(0x5c4a2e,0x1c1408,.3,.85)); g.add(shaft);
+  const cross=new THREE.Mesh(new THREE.BoxGeometry(.26*s,.03*s,.03*s), m); cross.position.y=.66*s; g.add(cross);
+  for(const px of [-.11,0,.11]){ const prong=new THREE.Mesh(new THREE.ConeGeometry(.03*s,.3*s,4), m); prong.position.set(px*s,.86*s,0); g.add(prong); } return g; }
+function _harpoon(s){ const g=new THREE.Group();
+  const shaft=new THREE.Mesh(new THREE.CylinderGeometry(.02*s,.024*s,1.2*s,5), _mat(0x5c4a2e,0x1c1408,.3,.85)); g.add(shaft);
+  const tip=new THREE.Mesh(new THREE.ConeGeometry(.055*s,.24*s,4), _boneMat()); tip.position.y=.7*s; g.add(tip);
+  for(const sd of [-1,1]){ const barb=new THREE.Mesh(new THREE.ConeGeometry(.03*s,.12*s,3), _boneMat()); barb.position.set(sd*.05*s,.58*s,0); barb.rotation.z=sd*1.1; g.add(barb); } return g; }
+function _wing(s,mat,membrane){ const g=new THREE.Group();
+  if(membrane){ const mem=new THREE.Mesh(new THREE.ConeGeometry(.46*s,.92*s,3,1,true), mat); mem.scale.set(1,.55,1); mem.rotation.z=Math.PI*.5; g.add(mem);
+    for(let i=0;i<3;i++){ const rib=new THREE.Mesh(new THREE.CylinderGeometry(.012*s,.008*s,.7*s,4), mat); rib.position.set(.18*s,0,(i-1)*.13*s); rib.rotation.z=Math.PI*.5; g.add(rib); }
+  } else { for(let i=0;i<5;i++){ const f=new THREE.Mesh(new THREE.BoxGeometry(.5*s-i*.055*s,.02*s,.1*s), mat); f.position.set(.22*s-i*.035*s,i*.05*s,(i-2)*.085*s); f.rotation.z=.22; g.add(f); } }
+  return g; }
+
+// ---- SAHUAGIN — sea-devils: slate-teal skin, head crest, gills, bulging eyes, tridents/harpoons ----
+function makeSahuaginMesh(scale,opts){ opts=opts||{}; const s=scale||1; const v=opts.variant||'scout';
+  const P={brute:0x6a4a7a,champion:0x2f5a68,priest:0x3f6a5a,berserker:0x7a3a3a};
+  const skin=_mat(opts.skin||P[v]||0x3f6a72,0x0e1c20,.3,.6), fin=_mat(0x27444f,0x0a1418,.3,.7), tooth=_boneMat(), armor=_ironD(), coral=_mat(0xc85a52,0x3a1210,.3,.7);
+  function head(h){ const sk=skin;
+    const skull=new THREE.Mesh(new THREE.SphereGeometry(.19*s,9,8), sk); skull.scale.set(.9,1,1.15); h.add(skull);
+    const jaw=new THREE.Mesh(new THREE.ConeGeometry(.12*s,.22*s,6), sk); jaw.rotation.x=Math.PI/2; jaw.position.set(0,-.05*s,.15*s); h.add(jaw);
+    for(let i=0;i<4;i++){ const t=new THREE.Mesh(new THREE.ConeGeometry(.014*s,.05*s,3), tooth); t.position.set((i-1.5)*.045*s,-.05*s,.2*s); t.rotation.x=Math.PI; h.add(t); }
+    for(const sd of [-1,1]){ const eye=new THREE.Mesh(new THREE.SphereGeometry(.052*s,7,6), _mat(0xffd23a,0xffd23a,.9,.3)); eye.position.set(sd*.15*s,.06*s,.07*s); h.add(eye);
+      const pup=new THREE.Mesh(new THREE.SphereGeometry(.02*s,5,4), _mat(0x140a0a,0,0,.6)); pup.position.set(sd*.17*s,.06*s,.12*s); h.add(pup);
+      const gill=new THREE.Mesh(new THREE.BoxGeometry(.012*s,.11*s,.02*s), fin); gill.position.set(sd*.16*s,-.05*s,-.05*s); h.add(gill); }
+    const crest=new THREE.Mesh(new THREE.ConeGeometry(.17*s,.36*s,5,1,true), fin); crest.scale.set(.22,1,1); crest.position.set(0,.24*s,-.02*s); h.add(crest); }
+  const cfg={skin,torsoR:.26,torsoH:.64,headY:.48,hunch:.2,armLen:.66,legLen:.86,armThick:.06,legThick:.06,buildHead:head};
+  if(v==='brute'||v==='guardian'){ cfg.torsoR=.36; cfg.armLen=.74; cfg.armThick=.1; cfg.hunch=.28; }
+  const g=_rig(s,cfg), body=g.userData.body;
+  // dorsal fin down the spine
+  const dorsal=new THREE.Mesh(new THREE.ConeGeometry(.2*s,.5*s,5,1,true), fin); dorsal.scale.set(.2,1,1); _put(body,dorsal,s,0,cfg.torsoH*.2,-.22);
+  // forearm/calf fins
+  for(const sd of [-1,1]){ const ff=new THREE.Mesh(new THREE.ConeGeometry(.1*s,.24*s,4,1,true), fin); ff.scale.set(.3,1,1); _put(body,ff,s,sd*(cfg.torsoR+.06),cfg.torsoH*.02,-.06,0,0,sd*.4); }
+  if(v==='scout'){ _put(body,_spear(s),s,.28,-.02,.1,0,0,-.1); }
+  else if(v==='warrior'){ _put(body,_curvedBlade(s,.4),s,.28,-.2,.14,0,0,-.15); _put(body,_roundShield(s,.95),s,-.3,-.02,.08,0,-.5,0); }
+  else if(v==='spearer'){ _put(body,_harpoon(s),s,.28,-.02,.12,0,0,-.08); }
+  else if(v==='brute'){ _put(body,_mace(s),s,.44,-.24,.16,0,0,-.12); for(const sd of [-1,1]){ const pd=new THREE.Mesh(new THREE.SphereGeometry(.15*s,8,6,0,Math.PI*2,0,Math.PI*.55), armor); _put(body,pd,s,sd*.36,cfg.torsoH*.3,0); } }
+  else if(v==='priest'){ _put(body,_staffSkull(s,0x8affb0),s,.3,-.02,.1,0,0,-.06); const cloak=new THREE.Mesh(new THREE.ConeGeometry(cfg.torsoR*1.15,.9*s,9,1,true), _mat(0x24463c,0x0a1810,.3,.9)); _put(body,cloak,s,0,-.1,-.05); }
+  else if(v==='hunter'){ _put(body,_dagger(s),s,.26,-.2,.14,0,0,-.15); const d2=_dagger(s); _put(body,d2,s,-.26,-.2,.14,0,0,.15); }
+  else if(v==='shaman'){ const staff=new THREE.Group(); const sh=new THREE.Mesh(new THREE.CylinderGeometry(.022*s,.026*s,1.5*s,6), _mat(0x5c4a2e,0x1c1408,.3,.85)); staff.add(sh); const orb=new THREE.Mesh(new THREE.IcosahedronGeometry(.11*s,0), _mat(0x4ad0ff,0x4ad0ff,1.2,.3)); orb.position.y=.82*s; staff.add(orb); _put(body,staff,s,.3,-.02,.1,0,0,-.06); for(let i=0;i<3;i++){ const orbit=new THREE.Mesh(new THREE.SphereGeometry(.03*s,5,4), _mat(0x4ad0ff,0x4ad0ff,1,.3)); _put(body,orbit,s,rand(-.3,.3),cfg.torsoH*.3+rand(0,.3),.2); } }
+  else if(v==='guardian'){ const sh=new THREE.Mesh(new THREE.BoxGeometry(.5*s,.72*s,.07*s), armor); const spiral=new THREE.Mesh(new THREE.TorusGeometry(.14*s,.02*s,5,14), _iron()); spiral.position.z=.05*s; sh.add(spiral); _put(body,sh,s,-.44,-.04,.1,0,-.25,0); _put(body,_trident(s),s,.3,-.05,.12,0,0,-.08); }
+  else if(v==='berserker'){ _put(body,_trident(s),s,.3,-.05,.14,0,0,-.1); const t2=_curvedBlade(s,.4); _put(body,t2,s,-.3,-.2,.14,0,0,.15); }
+  else if(v==='champion'){ const helm=new THREE.Mesh(new THREE.SphereGeometry(.16*s,9,7,0,Math.PI*2,0,Math.PI*.6), _gold()); _put(body,helm,s,0,.5,.02); for(const sd of [-1,1]){ const horn=new THREE.Mesh(new THREE.ConeGeometry(.04*s,.24*s,5), coral); _put(body,horn,s,sd*.14,.58,.02,0,0,sd*-1.0); } _put(body,_trident(s,0xd8b84a),s,.32,-.05,.14,0,0,-.1); const cape=new THREE.Mesh(new THREE.ConeGeometry(cfg.torsoR*1.2,.95*s,9,1,true), _mat(0x5a1a2a,0x1a0608,.3,.9)); _put(body,cape,s,0,-.1,-.08); }
+  if(opts.scaleBody) body.scale.multiplyScalar(opts.scaleBody);
+  return g; }
+
+// ---- KUO-TOA — frenzied amphibian cultists: mottled skin, one huge staring eye-set, ragged fins ----
+function makeKuotoaMesh(scale,opts){ opts=opts||{}; const s=scale||1; const v=opts.variant||'scout';
+  const P={brute:0x7a6a8a,berserker:0xa85a3a,myrmidon:0x6a7a4a,tideguard:0x4a6a7a};
+  const skin=_mat(opts.skin||P[v]||0x5f7a6a,0x141c14,.3,.62), fin=_mat(0xc85a3a,0x3a1408,.3,.6), belly=_mat(0x9aa88a,0x2a3020,.3,.6), tooth=_boneMat(), armor=_mat(0x8a7a52,0x2a2414,.3,.7);
+  function head(h){ const sk=skin;
+    const skull=new THREE.Mesh(new THREE.SphereGeometry(.2*s,9,8), sk); skull.scale.set(1.1,1,1); h.add(skull);
+    const jaw=new THREE.Mesh(new THREE.BoxGeometry(.24*s,.12*s,.18*s), sk); jaw.position.set(0,-.13*s,.06*s); h.add(jaw);
+    for(let i=0;i<5;i++){ const t=new THREE.Mesh(new THREE.ConeGeometry(.016*s,.06*s,3), tooth); t.position.set((i-2)*.04*s,-.09*s,.16*s); t.rotation.x=Math.PI; h.add(t); }
+    // enormous bulging eyes on stalky sides
+    for(const sd of [-1,1]){ const eye=new THREE.Mesh(new THREE.SphereGeometry(.09*s,8,7), _mat(0xf4ede0,0xbdb6a6,.4,.35)); eye.position.set(sd*.2*s,.08*s,.06*s); h.add(eye);
+      const pup=new THREE.Mesh(new THREE.SphereGeometry(.04*s,6,5), _mat(0xd83a1a,0xd83a1a,.7,.4)); pup.position.set(sd*.24*s,.08*s,.08*s); h.add(pup); }
+    // spiky head fins
+    for(let i=0;i<4;i++){ const sp=new THREE.Mesh(new THREE.ConeGeometry(.04*s,.2*s,4), fin); sp.position.set((i-1.5)*.09*s,.18*s,-.04*s); sp.rotation.x=-.3; sp.rotation.z=(i-1.5)*.2; h.add(sp); } }
+  const cfg={skin,torsoR:.27,torsoH:.62,headY:.5,hunch:.28,armLen:.64,legLen:.8,armThick:.06,legThick:.06,buildHead:head};
+  if(v==='brute'||v==='tideguard'){ cfg.torsoR=.37; cfg.armLen=.74; cfg.armThick=.1; cfg.hunch=.34; }
+  const g=_rig(s,cfg), body=g.userData.body;
+  const belt=new THREE.Mesh(new THREE.ConeGeometry(cfg.torsoR*1.05,.28*s,7,1,true), _mat(0x4a3a24,0x140f08,.3,.85)); _put(body,belt,s,0,-cfg.torsoH*.24,0);
+  if(v==='scout'){ _put(body,_spear(s),s,.28,-.02,.1,0,0,-.1); }
+  else if(v==='spearman'){ _put(body,_trident(s,0xc9a23a),s,.28,-.05,.12,0,0,-.08); _put(body,_roundShield(s,.95),s,-.3,-.02,.08,0,-.5,0); }
+  else if(v==='hunter'){ _put(body,_harpoon(s),s,.28,-.02,.12,0,0,-.08); }
+  else if(v==='brute'){ _put(body,_club(s,true),s,.46,-.24,.16,0,0,-.12); for(const sd of [-1,1]){ const pd=new THREE.Mesh(new THREE.SphereGeometry(.15*s,8,6,0,Math.PI*2,0,Math.PI*.55), armor); _put(body,pd,s,sd*.37,cfg.torsoH*.3,0); } }
+  else if(v==='shaman'){ _put(body,_staffSkull(s,0xb06bff),s,.3,-.02,.1,0,0,-.06); }
+  else if(v==='slave'){ /* bare — expendable */ for(const sd of [-1,1]){ const claw=new THREE.Mesh(new THREE.ConeGeometry(.03*s,.12*s,4), tooth); _put(body,claw,s,sd*.3,-.36,.14,.3,0,0); } }
+  else if(v==='berserker'){ _put(body,_curvedBlade(s,.44),s,.3,-.05,.14,0,0,-.1); const b2=_curvedBlade(s,.38); _put(body,b2,s,-.3,-.2,.14,0,0,.15); }
+  else if(v==='priest'){ const staff=new THREE.Group(); const sh=new THREE.Mesh(new THREE.CylinderGeometry(.022*s,.026*s,1.5*s,6), _mat(0x6a5a2e,0x1c1408,.3,.85)); staff.add(sh); const eye=new THREE.Mesh(new THREE.SphereGeometry(.1*s,9,8), _mat(0x4ad0ff,0x4ad0ff,1.1,.3)); eye.position.y=.8*s; staff.add(eye); const ring=new THREE.Mesh(new THREE.TorusGeometry(.15*s,.014*s,4,14), _gold()); ring.position.y=.8*s; staff.add(ring); _put(body,staff,s,.3,-.02,.1,0,0,-.06); const robe=new THREE.Mesh(new THREE.ConeGeometry(cfg.torsoR*1.15,.9*s,9,1,true), _mat(0x2a3a2a,0x0a1408,.3,.9)); _put(body,robe,s,0,-.1,-.05); }
+  else if(v==='tideguard'){ const sh=new THREE.Mesh(new THREE.CylinderGeometry(.34*s,.34*s,.07*s,12), armor); sh.rotation.x=Math.PI/2; const boss=new THREE.Mesh(new THREE.SphereGeometry(.12*s,8,7), _mat(0xd83a1a,0xd83a1a,.7,.4)); boss.position.z=.05*s; sh.add(boss); _put(body,sh,s,-.42,-.04,.1,0,-.3,0); _put(body,_trident(s),s,.3,-.05,.12,0,0,-.08); }
+  else if(v==='myrmidon'){ const helm=new THREE.Mesh(new THREE.ConeGeometry(.2*s,.34*s,7), _gold()); helm.position.y=.58*s; body.add(helm); _put(body,_trident(s,0xd8b84a),s,.32,-.05,.14,0,0,-.1); _put(body,_roundShield(s,1.05),s,-.34,-.02,.08,0,-.5,0); const plate=new THREE.Mesh(new THREE.CylinderGeometry(cfg.torsoR*.8,cfg.torsoR*.7,.34*s,8), armor); _put(body,plate,s,0,cfg.torsoH*.06,.04); }
+  if(opts.scaleBody) body.scale.multiplyScalar(opts.scaleBody);
+  return g; }
+
+// ---- TENGU — crow sky-warriors: black plumage, red beaked face, feathered wings, katana/naginata ----
+function makeTenguMesh(scale,opts){ opts=opts||{}; const s=scale||1; const v=opts.variant||'scout';
+  const P={oni:0x9a2a1a,chief:0x1c1c22,windmaster:0x3a3a46,ninja:0x201c2a};
+  const feather=_mat(opts.skin||P[v]||0x24242c,0x090909,.3,.72), face=_mat(v==='oni'?0x9a2a1a:0xb0402a,0x2a0c06,.3,.6), beak=_mat(0xd8a030,0x5a3a08,.35,.5), cloth=_mat(0x7a1a1a,0x220606,.3,.85), armor=_ironD();
+  function head(h){ const sk=feather;
+    const skull=new THREE.Mesh(new THREE.SphereGeometry(.17*s,9,8), face); h.add(skull);
+    const beakM=new THREE.Mesh(new THREE.ConeGeometry(.06*s,.34*s,5), beak); beakM.rotation.x=Math.PI/2; beakM.position.set(0,-.02*s,.24*s); h.add(beakM);
+    for(const sd of [-1,1]){ const eye=new THREE.Mesh(new THREE.SphereGeometry(.032*s,6,5), _mat(0xffe14d,0xffe14d,1,.3)); eye.position.set(sd*.08*s,.05*s,.13*s); h.add(eye); }
+    // feathered mane / crest
+    for(let i=0;i<7;i++){ const a=(i/6-.5)*1.6; const f=new THREE.Mesh(new THREE.ConeGeometry(.03*s,.26*s,4), sk); f.position.set(Math.sin(a)*.14*s,.12*s,-.08*s-Math.cos(a)*.04*s); f.rotation.z=-a; f.rotation.x=-.5; h.add(f); } }
+  const cfg={skin:feather,torsoR:.24,torsoH:.62,headY:.5,hunch:.16,armLen:.66,legLen:.9,armThick:.055,legThick:.055,buildHead:head};
+  if(v==='oni'){ cfg.torsoR=.34; cfg.armLen=.74; cfg.armThick=.1; cfg.hunch=.26; }
+  const g=_rig(s,cfg), body=g.userData.body;
+  // wings off the back (bigger for fliers)
+  const wingScale=(v==='windmaster'||v==='chief'||v==='archer')?1.15:0.9;
+  for(const sd of [-1,1]){ const w=_wing(s*wingScale,feather,false); _put(body,w,s,sd*.2,cfg.torsoH*.36,-.14,0,sd*.6,0); w.scale.x=sd; }
+  // feathered skirt
+  const skirt=new THREE.Mesh(new THREE.ConeGeometry(cfg.torsoR*1.1,.5*s,9,1,true), feather); _put(body,skirt,s,0,-cfg.torsoH*.24,0);
+  if(v==='scout'){ const hat=new THREE.Mesh(new THREE.ConeGeometry(.26*s,.18*s,10), _mat(0x8a7a52,0x2a2414,.3,.8)); _put(body,hat,s,0,.62,.02); _put(body,_sword(s,.5),s,.28,-.1,.12,0,0,-.2); }
+  else if(v==='bandit'){ _put(body,_dagger(s),s,.26,-.2,.14,0,0,-.15); const d2=_dagger(s); _put(body,d2,s,-.26,-.2,.14,0,0,.15); }
+  else if(v==='archer'){ _put(body,_bow(s),s,.26,-.05,.28); const q=new THREE.Mesh(new THREE.CylinderGeometry(.06*s,.05*s,.36*s,7), cloth); _put(body,q,s,-.14,.12,-.16,.3,0,.3); }
+  else if(v==='warrior'){ _put(body,_spear(s),s,.28,-.05,.12,0,0,-.08); const bp=new THREE.Mesh(new THREE.CylinderGeometry(cfg.torsoR*.75,cfg.torsoR*.65,.34*s,8), armor); _put(body,bp,s,0,cfg.torsoH*.06,.04); }
+  else if(v==='shaman'){ _put(body,_staffSkull(s,0x4ad0c0),s,.3,-.02,.1,0,0,-.06); for(let i=0;i<3;i++){ const rune=new THREE.Mesh(new THREE.BoxGeometry(.08*s,.12*s,.01*s), _mat(0xe8e0cc,0x6a6350,.35,.5)); _put(body,rune,s,rand(-.3,.3),cfg.torsoH*.3+rand(0,.3),.22); } }
+  else if(v==='ninja'){ const cowl=new THREE.Mesh(new THREE.SphereGeometry(.2*s,9,7,0,Math.PI*2,0,Math.PI*.62), _mat(0x1a1622,0x080610,.3,.92)); _put(body,cowl,s,0,.52,-.02); _put(body,_dagger(s),s,.26,-.2,.14,0,0,-.15); }
+  else if(v==='oni'){ const club=_club(s,true); _put(body,club,s,.48,-.24,.16,0,0,-.12); for(const sd of [-1,1]){ const horn=new THREE.Mesh(new THREE.ConeGeometry(.04*s,.22*s,5), _boneMat()); _put(body,horn,s,sd*.12,.62,.02,0,0,sd*-.9); } }
+  else if(v==='windmaster'){ const staff=new THREE.Group(); const sh=new THREE.Mesh(new THREE.CylinderGeometry(.02*s,.024*s,1.4*s,6), _mat(0x3a3040,0x150f1c,.3,.85)); staff.add(sh); staff.add((()=>{ const r=new THREE.Mesh(new THREE.TorusGeometry(.13*s,.016*s,5,16), _mat(0x8ad8ff,0x8ad8ff,1,.3)); r.position.y=.78*s; return r; })()); _put(body,staff,s,.3,-.02,.1,0,0,-.06); for(let i=0;i<5;i++){ const gust=new THREE.Mesh(new THREE.TorusGeometry((.1+i*.04)*s,.01*s,4,12,Math.PI*1.2), _mat(0xbfe6ff,0xbfe6ff,.8,.3)); _put(body,gust,s,0,cfg.torsoH*.2+i*.05,.2,Math.PI/2,0,i*.4); } }
+  else if(v==='blademaster'){ _put(body,_sword(s,.62),s,.3,-.05,.14,0,0,-.1); const cloak=new THREE.Mesh(new THREE.ConeGeometry(cfg.torsoR*1.1,.85*s,9,1,true), cloth); _put(body,cloak,s,0,-.1,-.06); }
+  else if(v==='chief'){ const crown=new THREE.Mesh(new THREE.ConeGeometry(.18*s,.3*s,8), _gold()); _put(body,crown,s,0,.62,-.02); _put(body,_sword(s,.66),s,.32,-.05,.14,0,0,-.1); const b=_banner(s,0x7a1a1a); _put(body,b,s,-.36,-.02,-.06,0,0,.05); const cape=new THREE.Mesh(new THREE.ConeGeometry(cfg.torsoR*1.2,.95*s,9,1,true), _mat(0x2a2a34,0x0a0a10,.3,.9)); _put(body,cape,s,0,-.1,-.08); }
+  if(opts.scaleBody) body.scale.multiplyScalar(opts.scaleBody);
+  return g; }
+
+// ---- VESPERTINE — twilight vampires: pale flesh, dark violet finery, blood-red accents, bat wings ----
+function makeVespertineMesh(scale,opts){ opts=opts||{}; const s=scale||1; const v=opts.variant||'lurker';
+  const skinC={gargoyle:0x3a3844,nightguard:0x2a2833}[v]||0xc9bcc4;
+  const skin=_mat(opts.skin||skinC,0x2a2430,.3,.55), cloth=_mat(0x241a30,0x0a0612,.3,.88), blood=_mat(0x7a1424,0x2a0608,.35,.6), pale=_mat(0xe8dde4,0xa89aa4,.3,.5), armor=_mat(0x35303f,0x14101c,.3,.6), glowM=_mat(0xb06bff,0xb06bff,1,.3);
+  function head(h){ const sk=skin;
+    const skull=new THREE.Mesh(new THREE.SphereGeometry(.16*s,9,8), sk); skull.scale.set(.95,1.05,1); h.add(skull);
+    for(const sd of [-1,1]){ const eye=new THREE.Mesh(new THREE.SphereGeometry(.028*s,6,5), _mat(0xff2d4a,0xff2d4a,1.1,.3)); eye.position.set(sd*.07*s,.03*s,.13*s); h.add(eye); }
+    const fang=new THREE.Mesh(new THREE.ConeGeometry(.015*s,.05*s,3), pale); fang.position.set(0,-.1*s,.13*s); fang.rotation.x=Math.PI; h.add(fang);
+    // dark flowing hair
+    const hair=new THREE.Mesh(new THREE.ConeGeometry(.2*s,.42*s,8,1,true), _mat(0x14101a,0x060409,.3,.9)); hair.position.set(0,.02*s,-.06*s); h.add(hair); }
+  const cfg={skin,torsoR:.22,torsoH:.66,headY:.52,hunch:.06,armLen:.68,legLen:.98,armThick:.05,legThick:.05,buildHead:head};
+  if(v==='gargoyle'||v==='nightguard'){ cfg.torsoR=.34; cfg.armLen=.76; cfg.armThick=.1; cfg.hunch=.24; }
+  const g=_rig(s,cfg), body=g.userData.body;
+  // trailing tattered gown
+  const gown=new THREE.Mesh(new THREE.ConeGeometry(cfg.torsoR*1.25,1.0*s,10,1,true), cloth); _put(body,gown,s,0,-cfg.torsoH*.18,-.02);
+  for(let i=0;i<4;i++){ const rag=new THREE.Mesh(new THREE.ConeGeometry(.05*s,.4*s,4), cloth); _put(body,rag,s,rand(-.25,.25),-cfg.torsoH*.6,rand(-.2,.2)); }
+  const winged=(v==='gargoyle'||v==='matron'||v==='nightqueen'||v==='wraith');
+  if(winged){ for(const sd of [-1,1]){ const w=_wing(s*1.1,v==='gargoyle'?armor:blood,true); _put(body,w,s,sd*.2,cfg.torsoH*.34,-.14,0,sd*.5,0); w.scale.x=sd; } }
+  if(v==='lurker'){ for(const sd of [-1,1]){ const claw=new THREE.Mesh(new THREE.ConeGeometry(.025*s,.16*s,4), pale); _put(body,claw,s,sd*.28,-.5,.12,.4,0,0); } }
+  else if(v==='stalker'){ _put(body,_dagger(s),s,.26,-.2,.14,0,0,-.15); const d2=_dagger(s); _put(body,d2,s,-.26,-.2,.14,0,0,.15); }
+  else if(v==='assassin'){ _put(body,_curvedBlade(s,.38),s,.26,-.2,.14,0,0,-.15); const b2=_curvedBlade(s,.36); _put(body,b2,s,-.26,-.2,.14,0,0,.15); const hood=new THREE.Mesh(new THREE.SphereGeometry(.2*s,9,7,0,Math.PI*2,0,Math.PI*.62), cloth); _put(body,hood,s,0,.52,-.02); }
+  else if(v==='matron'){ const staff=new THREE.Group(); const sh=new THREE.Mesh(new THREE.CylinderGeometry(.022*s,.026*s,1.55*s,6), _mat(0x2a2038,0x100a1c,.3,.85)); staff.add(sh); const crys=new THREE.Mesh(new THREE.OctahedronGeometry(.11*s,0), glowM); crys.position.y=.84*s; staff.add(crys); _put(body,staff,s,.3,-.02,.1,0,0,-.06); const crown=new THREE.Mesh(new THREE.ConeGeometry(.14*s,.24*s,6), _mat(0x14101a,0x060409,.3,.7)); for(const sd of [-1,1]){ const horn=new THREE.Mesh(new THREE.ConeGeometry(.03*s,.2*s,5), armor); _put(body,horn,s,sd*.12,.6,0,0,0,sd*-.7); } _put(body,crown,s,0,.6,0); }
+  else if(v==='gargoyle'){ for(const sd of [-1,1]){ const claw=new THREE.Mesh(new THREE.ConeGeometry(.04*s,.2*s,4), _boneMat()); _put(body,claw,s,sd*.34,-.5,.14,.4,0,0); const horn=new THREE.Mesh(new THREE.ConeGeometry(.035*s,.2*s,5), armor); _put(body,horn,s,sd*.12,.58,0,0,0,sd*-.8); } }
+  else if(v==='harvester'){ const lantern=new THREE.Mesh(new THREE.BoxGeometry(.14*s,.2*s,.14*s), _mat(0x2a2038,0x100a1c,.3,.7)); const glow=new THREE.Mesh(new THREE.SphereGeometry(.06*s,7,6), glowM); lantern.add(glow); _put(body,lantern,s,.3,-.14,.16); const hood=new THREE.Mesh(new THREE.SphereGeometry(.2*s,9,7,0,Math.PI*2,0,Math.PI*.62), cloth); _put(body,hood,s,0,.52,-.02); const scythe=new THREE.Group(); const st=new THREE.Mesh(new THREE.CylinderGeometry(.018*s,.022*s,1.4*s,6), _mat(0x2a231a,0x120c06,.3,.85)); scythe.add(st); const bl=new THREE.Mesh(new THREE.TorusGeometry(.26*s,.022*s,4,14,Math.PI*.7), _iron()); bl.position.set(.02*s,.72*s,0); bl.rotation.z=-.3; scythe.add(bl); _put(body,scythe,s,-.28,-.05,.1,0,0,.08); }
+  else if(v==='bloodsworn'){ _put(body,_curvedBlade(s,.44),s,.3,-.05,.14,0,0,-.1); for(let i=0;i<4;i++){ const drip=new THREE.Mesh(new THREE.SphereGeometry(rand(.03,.06)*s,6,5), blood); _put(body,drip,s,rand(-.25,.25),rand(-.2,.3),.24); } }
+  else if(v==='wraith'){ skin.transparent=true; skin.opacity=.7; for(let i=0;i<3;i++){ const orb=new THREE.Mesh(new THREE.SphereGeometry(.05*s,6,5), glowM); _put(body,orb,s,rand(-.3,.3),rand(-.2,.4),.2); } }
+  else if(v==='nightguard'){ const helm=new THREE.Mesh(new THREE.SphereGeometry(.17*s,9,7,0,Math.PI*2,0,Math.PI*.62), armor); _put(body,helm,s,0,.52,0); _put(body,_sword(s,.6),s,.3,-.05,.14,0,0,-.1); _put(body,_kiteShield(s),s,-.34,-.04,.1,0,-.2,0); const plate=new THREE.Mesh(new THREE.CylinderGeometry(cfg.torsoR*.8,cfg.torsoR*.7,.4*s,8), armor); _put(body,plate,s,0,cfg.torsoH*.06,.04); }
+  else if(v==='nightqueen'){ const crown=new THREE.Mesh(new THREE.TorusGeometry(.13*s,.02*s,5,12), _gold()); crown.rotation.x=Math.PI/2; _put(body,crown,s,0,.62,0); for(let k=0;k<5;k++){ const a=k/5*Math.PI*2; const sp=new THREE.Mesh(new THREE.ConeGeometry(.02*s,.14*s,4), _gold()); _put(body,sp,s,Math.cos(a)*.13,.66,Math.sin(a)*.13); } for(const sd of [-1,1]){ const lant=new THREE.Mesh(new THREE.SphereGeometry(.06*s,7,6), glowM); _put(body,lant,s,sd*.4,.1,.1); } const cape=new THREE.Mesh(new THREE.ConeGeometry(cfg.torsoR*1.3,1.05*s,10,1,true), _mat(0x1a1226,0x080410,.3,.9)); _put(body,cape,s,0,-.1,-.1); }
+  if(opts.scaleBody) body.scale.multiplyScalar(opts.scaleBody);
+  return g; }
+
+// ---- URSINE — bear-folk: heavy fur, snouted bear head, savage armor, claws/totems ----
+function makeUrsineMesh(scale,opts){ opts=opts||{}; const s=scale||1; const v=opts.variant||'scout';
+  const P={frostpaw:0x8a9aa8,alpha:0x4a3a2a,brute:0x4a3524,guardian:0x5a4a38};
+  const fur=_mat(opts.skin||P[v]||0x5a4530,0x140f0a,.3,.85), dark=_mat(0x2a2018,0x0a0805,.3,.9), tooth=_boneMat(), armor=_ironD(), snoutM=_mat(0x2a2018,0x0a0805,.3,.7);
+  function head(h){ const sk=fur;
+    const skull=new THREE.Mesh(new THREE.SphereGeometry(.22*s,9,8), sk); skull.scale.set(1,.95,1.05); h.add(skull);
+    const snout=new THREE.Mesh(new THREE.CylinderGeometry(.09*s,.13*s,.2*s,7), sk); snout.rotation.x=Math.PI/2; snout.position.set(0,-.06*s,.2*s); h.add(snout);
+    const nose=new THREE.Mesh(new THREE.SphereGeometry(.05*s,7,6), snoutM); nose.position.set(0,-.04*s,.31*s); h.add(nose);
+    for(const sd of [-1,1]){ const ear=new THREE.Mesh(new THREE.SphereGeometry(.07*s,7,6), sk); ear.position.set(sd*.16*s,.2*s,-.02*s); h.add(ear);
+      const eye=new THREE.Mesh(new THREE.SphereGeometry(.028*s,5,4), _mat(v==='frostpaw'?0x8ad8ff:0xffb03a,v==='frostpaw'?0x8ad8ff:0xffb03a,1,.3)); eye.position.set(sd*.09*s,.05*s,.16*s); h.add(eye); }
+    // lower fangs
+    for(const sd of [-1,1]){ const t=new THREE.Mesh(new THREE.ConeGeometry(.02*s,.07*s,4), tooth); t.position.set(sd*.05*s,-.12*s,.24*s); t.rotation.x=Math.PI; h.add(t); } }
+  const cfg={skin:fur,torsoR:.36,torsoH:.72,headY:.5,hunch:.3,armLen:.74,legLen:.82,armThick:.1,legThick:.11,buildHead:head};
+  if(v==='brute'){ cfg.torsoR=.46; cfg.armLen=.84; cfg.armThick=.14; cfg.hunch=.42; }
+  const g=_rig(s,cfg), body=g.userData.body;
+  // shaggy fur ruff
+  for(let i=0;i<8;i++){ const a=i/8*Math.PI*2; const tuft=new THREE.Mesh(new THREE.ConeGeometry(.06*s,.2*s,4), fur); _put(body,tuft,s,Math.cos(a)*cfg.torsoR*.9,cfg.torsoH*.3,Math.sin(a)*cfg.torsoR*.6,rand(-.3,.3),0,rand(-.3,.3)); }
+  // claws on hands
+  for(const arm of g.userData.arms){ for(let c=0;c<3;c++){ const claw=new THREE.Mesh(new THREE.ConeGeometry(.022*s,.14*s,4), tooth); claw.position.set((c-1)*.035*s,-cfg.armLen*1.05*s,.03*s); claw.rotation.x=.3; arm.add(claw); } }
+  if(v==='warrior'||v==='raider'||v==='berserker'){ _put(body,_axe(s,v==='berserker'),s,.42,-.2,.14,0,0,-.14); if(v==='raider'){ const a2=_axe(s); _put(body,a2,s,-.42,-.2,.14,0,0,.14); } }
+  else if(v==='hunter'){ _put(body,_bow(s),s,.3,-.05,.28); const q=new THREE.Mesh(new THREE.CylinderGeometry(.06*s,.05*s,.36*s,7), dark); _put(body,q,s,-.16,.12,-.16,.3,0,.3); }
+  else if(v==='brute'){ _put(body,_greatAxe(s),s,.5,-.05,.16,0,0,-.1); for(const sd of [-1,1]){ const pd=new THREE.Mesh(new THREE.SphereGeometry(.18*s,8,6,0,Math.PI*2,0,Math.PI*.55), armor); _put(body,pd,s,sd*.44,cfg.torsoH*.3,0); const sk=new THREE.Mesh(new THREE.SphereGeometry(.08*s,7,6), _boneMat()); _put(body,sk,s,sd*.44,cfg.torsoH*.42,.04); } }
+  else if(v==='shaman'){ const staff=new THREE.Group(); const sh=new THREE.Mesh(new THREE.CylinderGeometry(.024*s,.028*s,1.55*s,6), _mat(0x5c4a2e,0x1c1408,.3,.85)); staff.add(sh); const antler=new THREE.Mesh(new THREE.SphereGeometry(.1*s,8,7), _boneMat()); antler.position.y=.8*s; staff.add(antler); for(const sd of [-1,1]){ const br=new THREE.Mesh(new THREE.ConeGeometry(.02*s,.2*s,4), _boneMat()); br.position.set(sd*.08*s,.9*s,0); br.rotation.z=sd*-.7; staff.add(br); } _put(body,staff,s,.32,-.02,.1,0,0,-.06); const skullhood=new THREE.Mesh(new THREE.SphereGeometry(.16*s,9,7,0,Math.PI*2,0,Math.PI*.6), _boneMat()); _put(body,skullhood,s,0,.56,-.02); }
+  else if(v==='guardian'){ const sh=new THREE.Mesh(new THREE.CylinderGeometry(.4*s,.4*s,.08*s,12), armor); sh.rotation.x=Math.PI/2; const rune=new THREE.Mesh(new THREE.TorusGeometry(.16*s,.02*s,5,14), _iron()); rune.position.z=.05*s; sh.add(rune); _put(body,sh,s,-.5,-.04,.1,0,-.3,0); _put(body,_mace(s),s,.5,-.24,.16,0,0,-.12); }
+  else if(v==='frostpaw'){ const ice=_mat(0xbfe6f5,0x6a9ec2,.6,.3); for(let i=0;i<7;i++){ const sp=new THREE.Mesh(new THREE.ConeGeometry(.05*s,rand(.16,.3)*s,5), ice); _put(body,sp,s,rand(-.4,.4),cfg.torsoH*.3+rand(-.1,.2),-.32,rand(-.4,.4),0,rand(-.4,.4)); } for(const sd of [-1,1]){ const paw=new THREE.Mesh(new THREE.SphereGeometry(.12*s,8,6), ice); _put(body,paw,s,sd*.42,-.5,.14); } }
+  else if(v==='alpha'){ for(const sd of [-1,1]){ const horn=new THREE.Mesh(new THREE.ConeGeometry(.05*s,.3*s,6), _boneMat()); _put(body,horn,s,sd*.16,.6,0,0,0,sd*-1.0); } _put(body,_greatAxe(s),s,.46,-.05,.16,0,0,-.1); const b=_banner(s,0x5a3a1a); _put(body,b,s,-.48,-.02,-.06,0,0,.05); const mantle=new THREE.Mesh(new THREE.SphereGeometry(cfg.torsoR*1.1,9,6,0,Math.PI*2,0,Math.PI*.5), dark); mantle.scale.set(1.3,.6,1); _put(body,mantle,s,0,cfg.torsoH*.36,-.06); }
+  if(opts.scaleBody) body.scale.multiplyScalar(opts.scaleBody);
+  return g; }
+
+// ---- ARACHNE — spider-women: pale torso, dark chitin spider-abdomen and eight legs, web gear ----
+function makeArachneMesh(scale,opts){ opts=opts||{}; const s=scale||1; const v=opts.variant||'scout';
+  const P={matron:0x6a5a72,tyrant:0x2a1418,broodmother:0x3a2a2e,venommist:0x2a3a1a};
+  const skin=_mat(opts.skin||0x9a90a0,0x3a343e,.3,.55), chitin=_mat(P[v]||0x1a1620,0x080610,.3,.5), hair=_mat(0x14101a,0x060409,.3,.9), silk=_mat(0xd8d0dc,0xa89aa4,.3,.5), armor=_mat(0x35303f,0x14101c,.3,.6), poison=_mat(0x9adf3a,0x9adf3a,.9,.3);
+  function head(h){ const sk=skin;
+    const skull=new THREE.Mesh(new THREE.SphereGeometry(.15*s,9,8), sk); h.add(skull);
+    const hairM=new THREE.Mesh(new THREE.ConeGeometry(.2*s,.44*s,8,1,true), hair); hairM.position.set(0,.02*s,-.06*s); h.add(hairM);
+    // multiple small eyes
+    for(const sd of [-1,1]){ for(let r=0;r<2;r++){ const eye=new THREE.Mesh(new THREE.SphereGeometry(.02*s,5,4), _mat(0xff2d4a,0xff2d4a,1,.3)); eye.position.set(sd*(.05+r*.05)*s,.04*s-r*.03*s,.12*s); h.add(eye); } } }
+  const cfg={skin,torsoR:.2,torsoH:.5,headY:.44,hunch:.1,armLen:.6,legLen:.34,armThick:.045,legThick:.05,buildHead:head};
+  if(v==='matron'||v==='broodmother'||v==='tyrant'){ cfg.torsoR=.24; }
+  const g=_rig(s,cfg), body=g.userData.body;
+  // big spider abdomen behind/below
+  const abdSize=(v==='broodmother')?.5:(v==='matron'||v==='tyrant')?.42:.32;
+  const abdomen=new THREE.Mesh(new THREE.SphereGeometry(abdSize*s,10,9), chitin); abdomen.scale.set(1,.9,1.3); _put(body,abdomen,s,0,-cfg.torsoH*.18,-.4);
+  const stripe=new THREE.Mesh(new THREE.SphereGeometry(abdSize*.6*s,9,7), _mat(v==='tyrant'?0x8a1a1a:0x4a3a52,0x140f18,.3,.5)); stripe.scale.set(.7,.6,1.2); _put(body,abdomen,s,0,.05,.18); abdomen.add(stripe);
+  // eight chitin legs (4 per side) arching out
+  for(const sd of [-1,1]){ for(let i=0;i<4;i++){ const leg=new THREE.Group();
+    const upper=new THREE.Mesh(new THREE.CylinderGeometry(.022*s,.016*s,.5*s,5), chitin); upper.position.y=-.2*s; upper.rotation.z=sd*-.7; leg.add(upper);
+    const lower=new THREE.Mesh(new THREE.CylinderGeometry(.016*s,.008*s,.5*s,5), chitin); lower.position.set(sd*.34*s,-.5*s,0); lower.rotation.z=sd*.7; leg.add(lower);
+    leg.position.set(sd*cfg.torsoR*s,cfg.torsoH*(.08-i*.12)*s,(-.1-i*.12)*s); body.add(leg); } }
+  if(v==='scout'||v==='stalker'){ _put(body,_dagger(s),s,.24,-.2,.14,0,0,-.15); if(v==='stalker'){ const d2=_dagger(s); _put(body,d2,s,-.24,-.2,.14,0,0,.15); } }
+  else if(v==='hunter'){ _put(body,_bow(s),s,.26,-.05,.28); }
+  else if(v==='matron'){ const staff=new THREE.Group(); const sh=new THREE.Mesh(new THREE.CylinderGeometry(.02*s,.024*s,1.55*s,6), _mat(0x2a2038,0x100a1c,.3,.85)); staff.add(sh); const crys=new THREE.Mesh(new THREE.OctahedronGeometry(.1*s,0), _mat(0xb06bff,0xb06bff,1,.3)); crys.position.y=.84*s; staff.add(crys); _put(body,staff,s,.28,-.02,.1,0,0,-.06); for(const sd of [-1,1]){ const horn=new THREE.Mesh(new THREE.ConeGeometry(.03*s,.22*s,5), armor); _put(body,horn,s,sd*.12,.56,0,0,0,sd*-.7); } }
+  else if(v==='weaver'){ const loom=new THREE.Mesh(new THREE.TorusGeometry(.14*s,.012*s,5,16), silk); _put(body,loom,s,.28,0,.16,0,Math.PI/2,0); for(let i=0;i<4;i++){ const str=new THREE.Mesh(new THREE.CylinderGeometry(.004*s,.004*s,.3*s,4), silk); _put(body,str,s,.28,-.05,.16,0,0,i*.4); } }
+  else if(v==='assassin'){ _put(body,_curvedBlade(s,.4),s,.26,-.2,.14,0,0,-.15); const b2=_curvedBlade(s,.36); _put(body,b2,s,-.26,-.2,.14,0,0,.15); const hood=new THREE.Mesh(new THREE.SphereGeometry(.18*s,9,7,0,Math.PI*2,0,Math.PI*.62), _mat(0x1a1622,0x080610,.3,.9)); _put(body,hood,s,0,.5,-.02); }
+  else if(v==='venommist'){ for(let i=0;i<5;i++){ const cloud=new THREE.Mesh(new THREE.SphereGeometry(rand(.06,.11)*s,7,6), poison); cloud.material.transparent=true; cloud.material.opacity=.7; _put(body,cloud,s,rand(-.3,.3),rand(-.1,.4),rand(-.1,.3)); } _put(body,_dagger(s),s,.24,-.2,.14,0,0,-.15); }
+  else if(v==='guardian'){ const sh=new THREE.Mesh(new THREE.BoxGeometry(.44*s,.6*s,.07*s), armor); _put(body,sh,s,-.36,-.04,.1,0,-.25,0); _put(body,_spear(s),s,.28,-.05,.12,0,0,-.08); const plate=new THREE.Mesh(new THREE.CylinderGeometry(cfg.torsoR*1.1,cfg.torsoR,.34*s,8), armor); _put(body,plate,s,0,cfg.torsoH*.06,.04); }
+  else if(v==='broodmother'){ for(let i=0;i<6;i++){ const egg=new THREE.Mesh(new THREE.SphereGeometry(rand(.05,.09)*s,7,6), silk); egg.scale.set(1,1.3,1); _put(body,egg,s,rand(-.3,.3),-cfg.torsoH*.2+rand(-.1,.1),-.5+rand(-.1,.1)); } }
+  else if(v==='tyrant'){ const crown=new THREE.Mesh(new THREE.ConeGeometry(.14*s,.26*s,7), _mat(0x8a1a1a,0x2a0606,.35,.5)); _put(body,crown,s,0,.58,-.02); for(const sd of [-1,1]){ const scythe=new THREE.Mesh(new THREE.ConeGeometry(.03*s,.4*s,4), chitin); _put(body,scythe,s,sd*.3,.2,.1,0,0,sd*-1.2); } for(let i=0;i<4;i++){ const orb=new THREE.Mesh(new THREE.SphereGeometry(.04*s,6,5), _mat(0xff2d4a,0xff2d4a,1,.3)); _put(body,orb,s,rand(-.3,.3),rand(0,.4),.2); } }
+  if(opts.scaleBody) body.scale.multiplyScalar(opts.scaleBody);
+  return g; }
+
+// ---- CEPHALOPOID — cthulhu-kin: mantled head with tentacle beard, glowing eyes, deep-sea gear ----
+function makeCephalopoidMesh(scale,opts){ opts=opts||{}; const s=scale||1; const v=opts.variant||'scout';
+  const P={brute:0x5a3a6a,elder:0x3a2a52,elemental:0x2a6a9a,spellcaster:0x4a3a72};
+  const skin=_mat(opts.skin||P[v]||0x4a4058,0x14101c,.3,.6), mantleM=_mat(0x3a3048,0x100a1c,.3,.65), suck=_mat(0x8a5a7a,0x2a1420,.3,.6), eyeM=_mat(0x3ad0e0,0x3ad0e0,1.1,.3), armor=_mat(0x3a4a3a,0x101810,.3,.7), gold=_gold();
+  function head(h){ const sk=skin;
+    const mantle=new THREE.Mesh(new THREE.SphereGeometry(.2*s,9,8), mantleM); mantle.scale.set(1,1.35,1); mantle.position.y=.06*s; h.add(mantle);
+    const face=new THREE.Mesh(new THREE.SphereGeometry(.15*s,9,8), sk); face.position.set(0,-.06*s,.05*s); h.add(face);
+    for(const sd of [-1,1]){ const eye=new THREE.Mesh(new THREE.SphereGeometry(.045*s,7,6), eyeM); eye.position.set(sd*.09*s,-.02*s,.12*s); h.add(eye); }
+    // tentacle beard hanging from lower face
+    for(let i=0;i<6;i++){ const a=(i/5-.5)*1.3; const tent=new THREE.Group(); for(let j=0;j<3;j++){ const seg=new THREE.Mesh(new THREE.CylinderGeometry((.025-j*.006)*s,(.02-j*.006)*s,.12*s,5), sk); seg.position.y=-j*.11*s; seg.rotation.z=Math.sin(a+j)*.3; tent.add(seg); } tent.position.set(Math.sin(a)*.1*s,-.16*s,.1*s); tent.rotation.x=.3; h.add(tent); } }
+  const cfg={skin,torsoR:.28,torsoH:.66,headY:.52,hunch:.18,armLen:.68,legLen:.82,armThick:.07,legThick:.07,buildHead:head};
+  if(v==='brute'||v==='elder'||v==='guardian'){ cfg.torsoR=.38; cfg.armLen=.76; cfg.armThick=.11; cfg.hunch=.26; }
+  const g=_rig(s,cfg), body=g.userData.body;
+  // suckered tendrils trailing from the torso/hem
+  for(let i=0;i<4;i++){ const a=(i/3-.5)*1.4; const tend=new THREE.Group(); for(let j=0;j<4;j++){ const seg=new THREE.Mesh(new THREE.SphereGeometry((.05-j*.008)*s,6,5), suck); seg.position.set(Math.sin(a+j*.6)*.06*s,-j*.12*s,0); tend.add(seg); } _put(body,tend,s,Math.sin(a)*cfg.torsoR,-cfg.torsoH*.34,.06); }
+  if(v==='scout'){ _put(body,_dagger(s),s,.26,-.2,.14,0,0,-.15); }
+  else if(v==='warrior'){ _put(body,_trident(s),s,.28,-.05,.12,0,0,-.08); _put(body,_roundShield(s,.95),s,-.3,-.02,.08,0,-.5,0); }
+  else if(v==='hunter'){ _put(body,_bow(s),s,.28,-.05,.28); }
+  else if(v==='brute'){ _put(body,_mace(s),s,.46,-.24,.16,0,0,-.12); for(const sd of [-1,1]){ const pd=new THREE.Mesh(new THREE.SphereGeometry(.15*s,8,6,0,Math.PI*2,0,Math.PI*.55), armor); _put(body,pd,s,sd*.38,cfg.torsoH*.3,0); } }
+  else if(v==='spellcaster'){ const staff=new THREE.Group(); const sh=new THREE.Mesh(new THREE.CylinderGeometry(.022*s,.026*s,1.55*s,6), _mat(0x2a3040,0x0a1018,.3,.85)); staff.add(sh); const orb=new THREE.Mesh(new THREE.IcosahedronGeometry(.1*s,0), _mat(0x3ad0e0,0x3ad0e0,1.2,.3)); orb.position.y=.84*s; staff.add(orb); _put(body,staff,s,.3,-.02,.1,0,0,-.06); const robe=new THREE.Mesh(new THREE.ConeGeometry(cfg.torsoR*1.15,.9*s,9,1,true), mantleM); _put(body,robe,s,0,-.1,-.05); }
+  else if(v==='assassin'){ _put(body,_curvedBlade(s,.4),s,.26,-.2,.14,0,0,-.15); const b2=_curvedBlade(s,.36); _put(body,b2,s,-.26,-.2,.14,0,0,.15); }
+  else if(v==='venomist'){ for(let i=0;i<5;i++){ const cloud=new THREE.Mesh(new THREE.SphereGeometry(rand(.06,.1)*s,7,6), _mat(0x9adf3a,0x9adf3a,.8,.3)); cloud.material.transparent=true; cloud.material.opacity=.7; _put(body,cloud,s,rand(-.3,.3),rand(-.1,.4),rand(-.1,.3)); } _put(body,_trident(s,0x9adf3a),s,.28,-.05,.12,0,0,-.08); }
+  else if(v==='guardian'){ const sh=new THREE.Mesh(new THREE.CylinderGeometry(.36*s,.36*s,.08*s,12), armor); sh.rotation.x=Math.PI/2; const spiral=new THREE.Mesh(new THREE.TorusGeometry(.14*s,.02*s,5,14), gold); spiral.position.z=.05*s; sh.add(spiral); _put(body,sh,s,-.44,-.04,.1,0,-.3,0); _put(body,_trident(s),s,.3,-.05,.12,0,0,-.08); }
+  else if(v==='elemental'){ skin.transparent=true; skin.opacity=.72; for(let i=0;i<6;i++){ const swirl=new THREE.Mesh(new THREE.TorusGeometry((.14+i*.04)*s,.014*s,4,14,Math.PI*1.4), _mat(0x4ad0ff,0x4ad0ff,1,.3)); _put(body,swirl,s,0,cfg.torsoH*.1+i*.05,.0,Math.PI/2,0,i*.5); } }
+  else if(v==='elder'){ const crown=new THREE.Mesh(new THREE.TorusGeometry(.14*s,.02*s,5,12), gold); crown.rotation.x=Math.PI/2; _put(body,crown,s,0,.66,0); for(let k=0;k<6;k++){ const a=k/6*Math.PI*2; const sp=new THREE.Mesh(new THREE.ConeGeometry(.022*s,.18*s,4), gold); _put(body,sp,s,Math.cos(a)*.14,.7,Math.sin(a)*.14); } const staff=new THREE.Group(); const sh=new THREE.Mesh(new THREE.CylinderGeometry(.024*s,.028*s,1.7*s,6), gold); staff.add(sh); const orb=new THREE.Mesh(new THREE.IcosahedronGeometry(.12*s,0), _mat(0xb06bff,0xb06bff,1.2,.3)); orb.position.y=.94*s; staff.add(orb); _put(body,staff,s,.34,-.05,.12,0,0,-.06); const cape=new THREE.Mesh(new THREE.ConeGeometry(cfg.torsoR*1.25,1.0*s,10,1,true), _mat(0x2a2038,0x0a0612,.3,.9)); _put(body,cape,s,0,-.1,-.08); }
+  if(opts.scaleBody) body.scale.multiplyScalar(opts.scaleBody);
+  return g; }
+
 // ============================================================ FAMILY REGISTRY
 // Each family maps ETYPE.id -> {variant, opts}. Types not listed fall back to the family's `basic` variant,
 // so an act always looks like ONE species. mesh scale multiplier per family via `ms`.
@@ -5593,6 +5826,35 @@ const FAMILY_BY_ACT = ['ratman','orc','skeleton','ghoul','troll'];
 // resolve forward-referenced builders + register the goblin/slime families now that everything is in scope
 ENEMY_FAMILIES.skeleton.fn = makeSkeletonMesh;
 ENEMY_FAMILIES.goblin = { fn:makeGoblinMesh, ms:1.15, basic:'', map:{} };
+// ---- seven new sheet-races (each ETYPE role → one of the ten sheet units; unmapped → basic) ----
+ENEMY_FAMILIES.sahuagin = { fn:makeSahuaginMesh, ms:1.1, basic:'scout', map:{
+  grunt:'warrior', swarm:'scout', charger:'hunter', archer:'spearer', gunner:'spearer', brute:'brute',
+  caster:'priest', bomber:'hunter', splitter:'scout', warden:'champion', sniper:'spearer', lancer:'spearer',
+  weaver:'shaman', bulwark:'guardian', revenant:'berserker', phantom:'hunter', shaman:'shaman', hexer:'priest', berserker:'berserker' } };
+ENEMY_FAMILIES.kuotoa = { fn:makeKuotoaMesh, ms:1.1, basic:'scout', map:{
+  grunt:'spearman', swarm:'slave', charger:'hunter', archer:'hunter', gunner:'hunter', brute:'brute',
+  caster:'shaman', bomber:'slave', splitter:'slave', warden:'priest', sniper:'hunter', lancer:'spearman',
+  weaver:'shaman', bulwark:'tideguard', revenant:'myrmidon', phantom:'hunter', shaman:'shaman', hexer:'priest', berserker:'berserker' } };
+ENEMY_FAMILIES.tengu = { fn:makeTenguMesh, ms:1.1, basic:'scout', map:{
+  grunt:'warrior', swarm:'scout', charger:'bandit', archer:'archer', gunner:'archer', brute:'oni',
+  caster:'shaman', bomber:'bandit', splitter:'scout', warden:'chief', sniper:'archer', lancer:'warrior',
+  weaver:'windmaster', bulwark:'oni', revenant:'blademaster', phantom:'ninja', shaman:'shaman', hexer:'windmaster', berserker:'blademaster' } };
+ENEMY_FAMILIES.vespertine = { fn:makeVespertineMesh, ms:1.1, basic:'lurker', map:{
+  grunt:'stalker', swarm:'lurker', charger:'stalker', archer:'assassin', gunner:'assassin', brute:'gargoyle',
+  caster:'matron', bomber:'harvester', splitter:'lurker', warden:'nightqueen', sniper:'assassin', lancer:'assassin',
+  weaver:'wraith', bulwark:'nightguard', revenant:'bloodsworn', phantom:'wraith', shaman:'matron', hexer:'matron', berserker:'bloodsworn' } };
+ENEMY_FAMILIES.ursine = { fn:makeUrsineMesh, ms:1.15, basic:'scout', map:{
+  grunt:'warrior', swarm:'scout', charger:'raider', archer:'hunter', gunner:'hunter', brute:'brute',
+  caster:'shaman', bomber:'raider', splitter:'scout', warden:'alpha', sniper:'hunter', lancer:'hunter',
+  weaver:'frostpaw', bulwark:'guardian', revenant:'berserker', phantom:'raider', shaman:'shaman', hexer:'frostpaw', berserker:'berserker' } };
+ENEMY_FAMILIES.arachne = { fn:makeArachneMesh, ms:1.1, basic:'scout', map:{
+  grunt:'stalker', swarm:'scout', charger:'stalker', archer:'hunter', gunner:'hunter', brute:'guardian',
+  caster:'matron', bomber:'venommist', splitter:'scout', warden:'weaver', sniper:'hunter', lancer:'hunter',
+  weaver:'weaver', bulwark:'guardian', revenant:'broodmother', phantom:'assassin', shaman:'matron', hexer:'venommist', berserker:'tyrant' } };
+ENEMY_FAMILIES.cephalopoid = { fn:makeCephalopoidMesh, ms:1.1, basic:'scout', map:{
+  grunt:'warrior', swarm:'scout', charger:'assassin', archer:'hunter', gunner:'hunter', brute:'brute',
+  caster:'spellcaster', bomber:'venomist', splitter:'scout', warden:'elder', sniper:'hunter', lancer:'hunter',
+  weaver:'elemental', bulwark:'guardian', revenant:'elemental', phantom:'assassin', shaman:'spellcaster', hexer:'venomist', berserker:'brute' } };
 
 // ===== STORY: the tower rebuilds itself every climb — each ACT's species is rolled from the run seed (coop-safe: seed is shared) =====
 function _actFamKey(ai){ const keys=Object.keys(ENEMY_FAMILIES);
@@ -5606,6 +5868,13 @@ const SPECIES_LORE={
   troll:{sp:'the mountain-brood', cause:'they slept as the Tower grew around their peaks'},
   slime:{sp:'the formless',       cause:'their world dissolved until only its hunger remained'},
   goblin:{sp:'the warren-kin',    cause:'their warrens were absorbed one lantern at a time'},
+  sahuagin:{sp:'sea-devils',      cause:'their reefs went dark and the tides carried them to the door'},
+  kuotoa:{sp:'the deep-cultists', cause:'the god they drowned for finally answered, and it was the Tower'},
+  tengu:{sp:'the sky-clans',      cause:'their mountain was folded into the Tower while they slept on the wind'},
+  vespertine:{sp:'the twilight-born', cause:'their long night never broke, and the Tower offered them a darker one'},
+  ursine:{sp:'the wild-brood',    cause:'their forests were felled to raise these floors, and they followed the last tree in'},
+  arachne:{sp:'the weaver-kin',   cause:'they spun a web wide enough to catch a god, and caught the Tower instead'},
+  cephalopoid:{sp:'the deep-minds', cause:'their abyss was swallowed whole, ancient and thinking, into the stone'},
 };
 function spLore(k){ return SPECIES_LORE[k]||SPECIES_LORE.skeleton; }
 const ACT_ROLE={0:'The Gatewarden',1:'The Marshal of the Lost Host',2:'The Curator',3:'The Oathbearer',4:'The King Beneath the Sky',5:'The Home That Hunts',6:'The Council Without Faces',7:'The Counterfeit Hero',8:'Ilyra, Voice of Continuance',9:'The Hollow Throne'};
