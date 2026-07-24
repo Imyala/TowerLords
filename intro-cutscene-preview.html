@@ -1,0 +1,105 @@
+<!DOCTYPE html><html><head><meta charset="utf-8"><title>TOWERLORDS — Intro cinematic preview</title>
+<style>
+  html,body{margin:0;height:100%;background:#050308;color:#cbb9e6;font-family:system-ui,sans-serif;overflow:hidden}
+  #gate{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;z-index:500;text-align:center}
+  #gate h1{font:600 15px/1.5 Georgia,serif;letter-spacing:6px;text-transform:uppercase;color:#c9adf5;margin:0}
+  #gate p{max-width:420px;font-size:13px;opacity:.6;line-height:1.6}
+  #playBtn{background:linear-gradient(180deg,rgba(58,44,92,.95),rgba(30,22,52,.95));border:1px solid rgba(185,139,255,.6);color:#f2ecff;font-size:15px;font-weight:600;padding:13px 34px;border-radius:12px;cursor:pointer;letter-spacing:1px}
+  #playBtn:hover{box-shadow:0 0 26px rgba(185,139,255,.5)}
+  /* ---- cutscene styles (mirrors the in-game intro) ---- */
+  #storyCut{position:fixed;inset:0;z-index:300;display:flex;align-items:center;justify-content:center;background:radial-gradient(ellipse at 50% 42%,rgba(16,12,24,.92),rgba(2,2,5,.99));overflow:hidden;opacity:0;pointer-events:none;transition:opacity 1.1s ease}
+  #storyCut.cut-show{opacity:1;pointer-events:auto}#storyCut.cut-out{opacity:0}
+  #storyCut .cut-bar{position:absolute;left:0;right:0;height:0;background:#000;z-index:4;transition:height 1.1s cubic-bezier(.2,.7,.2,1)}
+  #storyCut.cut-show .cut-bar.top{top:0;height:8vh}#storyCut.cut-show .cut-bar.bot{bottom:0;height:8vh}
+  #storyCut .cut-vign{position:absolute;inset:0;pointer-events:none;box-shadow:inset 0 0 240px rgba(0,0,0,.92);z-index:3}
+  #storyCut .cut-tower{position:absolute;left:50%;bottom:0;width:150px;height:60vh;transform:translateX(-50%) translateY(40px);opacity:0;background:linear-gradient(to top,rgba(6,5,12,.95),rgba(40,30,64,.06));clip-path:polygon(40% 100%,60% 100%,56% 0,44% 0);filter:drop-shadow(0 -18px 46px rgba(150,110,255,.22));animation:cutTower 5s ease forwards .8s;z-index:1}
+  #storyCut .cut-tower::before{content:"";position:absolute;left:50%;top:-6px;width:26px;height:26px;transform:translateX(-50%);border-radius:50%;background:radial-gradient(circle,rgba(210,180,255,.85),rgba(150,110,255,0));animation:cutGlow 4.5s ease-in-out infinite}
+  @keyframes cutTower{to{opacity:.75;transform:translateX(-50%) translateY(0)}}@keyframes cutGlow{0%,100%{opacity:.5}50%{opacity:1}}
+  #storyCut .cut-motes{position:absolute;inset:0;pointer-events:none;z-index:2}
+  #storyCut .cut-motes i{position:absolute;bottom:-5vh;border-radius:50%;background:radial-gradient(circle,rgba(222,205,255,.95),rgba(170,140,255,.1));animation-name:cutRise;animation-timing-function:linear;animation-iteration-count:infinite}
+  @keyframes cutRise{0%{transform:translateY(18vh);opacity:0}12%{opacity:.7}88%{opacity:.55}100%{transform:translateY(-58vh);opacity:0}}
+  #storyCut .cut-stage{position:relative;z-index:5;max-width:640px;width:92%;text-align:center;padding:0 20px}
+  #storyCut .cut-fade{opacity:0;transform:translateY(14px);transition:opacity 1.1s ease,transform 1.1s ease;min-height:236px;display:flex;flex-direction:column;justify-content:center}
+  #storyCut .cut-fade.in{opacity:1;transform:translateY(0)}
+  #storyCut .cut-ic{font-size:50px;margin-bottom:16px;filter:drop-shadow(0 0 18px rgba(185,139,255,.65));animation:cutFloat 6s ease-in-out infinite}
+  @keyframes cutFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-7px)}}
+  #storyCut .cut-title{font-size:13px;letter-spacing:5px;text-transform:uppercase;color:#c9adf5;margin-bottom:18px;font-weight:600;text-shadow:0 0 18px rgba(150,110,255,.5)}
+  #storyCut .cut-body{font-family:Georgia,"Times New Roman",serif;font-size:17px;line-height:1.85;color:#e9e2f6;letter-spacing:.2px;text-shadow:0 1px 12px rgba(0,0,0,.6)}
+  #storyCut .cut-body b{color:#fff;font-weight:600}#storyCut .cut-body .gm-hl{color:#ffd98a;text-shadow:0 0 16px rgba(255,190,90,.4)}
+  #storyCut .cut-dots{display:flex;gap:8px;justify-content:center;margin:30px 0 18px}
+  #storyCut .cut-dots i{width:7px;height:7px;border-radius:50%;background:rgba(255,255,255,.18);transition:.4s}
+  #storyCut .cut-dots i.on{background:#c9adf5;box-shadow:0 0 10px #b98bff;transform:scale(1.15)}
+  #storyCut .cut-actions{display:flex;justify-content:center;align-items:center;gap:26px}
+  #storyCut .cut-skip{background:none;border:none;color:#7a7690;font-size:12px;cursor:pointer;letter-spacing:2px;text-transform:uppercase;transition:.2s}
+  #storyCut .cut-skip:hover{color:#c9adf5}
+  #storyCut .cut-next{background:linear-gradient(180deg,rgba(58,44,92,.9),rgba(30,22,52,.9));border:1px solid rgba(185,139,255,.6);color:#f2ecff;font-size:14px;font-weight:600;padding:11px 30px;border-radius:11px;cursor:pointer;letter-spacing:1px;transition:.2s}
+  #storyCut .cut-next:hover{background:linear-gradient(180deg,rgba(78,58,114,.95),rgba(46,35,80,.95));box-shadow:0 0 22px rgba(185,139,255,.45)}
+</style></head><body>
+<div id="gate">
+  <h1>Towerlords · The Unwritten Crown</h1>
+  <p>Intro cinematic preview — with the composed score (deep drone, sub-bass, a mournful minor melody, and distant bell tolls through reverb). Turn your volume up.</p>
+  <button id="playBtn">▶ Play the intro (with sound)</button>
+</div>
+<script>
+// ---- self-contained cinematic score (mirrors the in-game startIntroScore) ----
+let actx=null, master=null, _introNodes=null, muted=false;
+function initA(){ if(actx) { if(actx.state==='suspended')actx.resume(); return; } actx=new (window.AudioContext||window.webkitAudioContext)(); master=actx.createGain(); master.gain.value=0.5; master.connect(actx.destination); }
+function startIntroScore(){ initA(); if(!actx) return; if(actx.state==='suspended')actx.resume(); stopIntroScore(true);
+  const t0=actx.currentTime;
+  const out=actx.createGain(); out.gain.value=0.0001; out.connect(master); out.gain.setTargetAtTime(1.0,t0,2.6);
+  const verb=actx.createConvolver(); { const len=Math.floor(actx.sampleRate*3.4), buf=actx.createBuffer(2,len,actx.sampleRate);
+    for(let ch=0;ch<2;ch++){ const d=buf.getChannelData(ch); for(let i=0;i<len;i++) d[i]=(Math.random()*2-1)*Math.pow(1-i/len,2.8);} verb.buffer=buf; }
+  const wet=actx.createGain(); wet.gain.value=0.6; verb.connect(wet); wet.connect(out);
+  const dry=actx.createGain(); dry.gain.value=0.85; dry.connect(out);
+  const bus=n=>{n.connect(dry);n.connect(verb);};
+  const oscs=[], timers=[]; let alive=true;
+  [36.71,55.00,73.42].forEach((f,i)=>{ const o=actx.createOscillator(); o.type=(i===2?'triangle':'sine'); o.frequency.value=f; const g=actx.createGain(); g.gain.value=0; o.connect(g); bus(g); o.start(); oscs.push(o);
+    g.gain.setTargetAtTime(0.15/(i*0.6+1),t0,3.2); const lfo=actx.createOscillator(); lfo.frequency.value=0.045+i*0.018; const lg=actx.createGain(); lg.gain.value=0.045; lfo.connect(lg); lg.connect(g.gain); lfo.start(); oscs.push(lfo); });
+  { const o=actx.createOscillator(); o.type='sine'; o.frequency.value=27.5; const g=actx.createGain(); g.gain.value=0; o.connect(g); g.connect(dry); o.start(); g.gain.setTargetAtTime(0.13,t0,3.6); oscs.push(o); }
+  { const o=actx.createOscillator(); o.type='sine'; o.frequency.value=587.33; const g=actx.createGain(); g.gain.value=0; o.connect(g); g.connect(verb); o.start(); g.gain.setTargetAtTime(0.02,t0,6.0);
+    const lfo=actx.createOscillator(); lfo.frequency.value=0.08; const lg=actx.createGain(); lg.gain.value=0.013; lfo.connect(lg); lg.connect(g.gain); lfo.start(); oscs.push(o,lfo); }
+  const SC={D3:146.83,E3:164.81,F3:174.61,G3:196.00,A3:220.00,C4:261.63,D4:293.66};
+  const phrase=[['A3',3.4],['F3',3.6],['E3',2.8],['D3',4.6],['F3',3.2],['A3',3.0],['G3',3.0],['F3',3.2],['E3',5.2]];
+  function voice(freq,dur){ if(muted)return; const a=actx.currentTime; const o=actx.createOscillator(); o.type='triangle'; o.frequency.value=freq; const g=actx.createGain(); g.gain.value=0; o.connect(g); bus(g);
+    g.gain.setValueAtTime(0,a); g.gain.linearRampToValueAtTime(0.12,a+1.0); g.gain.setTargetAtTime(0.00008,a+dur*0.55,dur*0.5);
+    const o2=actx.createOscillator(); o2.type='sine'; o2.frequency.value=freq*2.002; const g2=actx.createGain(); g2.gain.value=0; o2.connect(g2); bus(g2); g2.gain.setValueAtTime(0,a); g2.gain.linearRampToValueAtTime(0.035,a+1.3); g2.gain.setTargetAtTime(0.00008,a+dur*0.55,dur*0.55);
+    o.start(a); o2.start(a); o.stop(a+dur+1.2); o2.stop(a+dur+1.2); }
+  let mi=0; (function schedMel(){ if(!alive)return; const s=phrase[mi%phrase.length]; voice(SC[s[0]]||220,s[1]); mi++; timers.push(setTimeout(schedMel,(mi%phrase.length===0?4600:2500))); })();
+  function bell(freq,vol){ if(muted)return; const a=actx.currentTime; [1,2.76,5.40,8.93].forEach((p,i)=>{ const o=actx.createOscillator(); o.type='sine'; o.frequency.value=freq*p; const g=actx.createGain(); g.gain.value=0; o.connect(g); g.connect(verb); g.connect(dry);
+    const v=vol*(i===0?1:0.42/i); g.gain.setValueAtTime(0,a); g.gain.linearRampToValueAtTime(v,a+0.008); g.gain.setTargetAtTime(0.00006,a+0.02,1.8+i*0.4); o.start(a); o.stop(a+6); }); }
+  (function schedBell(){ if(!alive)return; bell(110,0.12); timers.push(setTimeout(schedBell,12000+Math.random()*5000)); })();
+  _introNodes={out,oscs,timers,bell,setDead:()=>{alive=false;}}; }
+function introBellCue(){ if(_introNodes&&_introNodes.bell)try{_introNodes.bell(146.83,0.10);}catch(_){} }
+function stopIntroScore(instant){ const N=_introNodes; if(!N)return; _introNodes=null; try{N.setDead();}catch(_){}
+  try{N.timers.forEach(clearTimeout);}catch(_){}
+  if(actx){ const t=actx.currentTime; try{N.out.gain.cancelScheduledValues(t); N.out.gain.setTargetAtTime(0.0001,t,instant?0.05:1.6);}catch(_){}
+    setTimeout(()=>{ try{N.oscs.forEach(o=>{try{o.stop();}catch(_){}});N.out.disconnect();}catch(_){} }, instant?140:2200); } }
+
+const n={sp:'the bone-dead', cause:'a plague emptied every street they ever knew'};
+const slides=[
+  {ic:'🕯', body:'Cold. Dark. Stone at your back that seems to remember more of you than you do.<br><br>You open eyes you cannot recall owning. There is no door behind you. There was never a door.<br><br>Far above, something vast and patient <b>breathes</b>.'},
+  {ic:'🏛', title:'The Tower of Continuance', body:'It was raised to save the dying — a thousand worlds guttering out like candles. Not their stone. Not their bodies. Their <b>essence</b>.<br><br>Everything it ever took became an <b>Echo</b>: a soul copied from memory and rumour and grief. The things that wait above are the last of worlds that no longer exist. You will have to kill them anyway.'},
+  {ic:'📖', title:'The Unwritten', body:'The Tower keeps a page for every life that has ever been. It searches, and searches, and finds <b>nothing of you</b>.<br><br>It cannot read you. So it cannot keep you. So it cannot let you go.<br><br>It gives you the only name it has: <b class="gm-hl">the Unwritten</b>. Each time you fall it unmakes the climb and begins again — and some small, aching part of you <b>remembers</b>. So does it.'},
+  {ic:'🔔', title:'The Last Bellkeeper', body:'From somewhere beneath the world — still water, a bell too old to ring — a voice finds you. <b>Ilyra</b>.<br><br>“I have waited a long age for one the Tower could not name. Ten seals stand between you and the summit. Break them all.<br><br>This cycle the first kingdom rises as <b>'+n.sp+'</b> — '+n.cause+'. Do not weep for their faces; the faces are borrowed. <b class="gm-hl">Climb, Unwritten. Become something even this place cannot forget.</b>”', last:'Replay ↺'},
+];
+function playCutscene(){ let idx=0;
+  let ov=document.getElementById('storyCut'); if(!ov){ ov=document.createElement('div'); ov.id='storyCut'; document.body.appendChild(ov); }
+  startIntroScore();
+  let motes=''; for(let i=0;i<28;i++){ const x=(Math.random()*100).toFixed(1), sz=(1+Math.random()*2.4).toFixed(1), du=(9+Math.random()*15).toFixed(1), de=(-Math.random()*22).toFixed(1), op=(0.12+Math.random()*0.5).toFixed(2); motes+='<i style="left:'+x+'%;width:'+sz+'px;height:'+sz+'px;opacity:'+op+';animation-duration:'+du+'s;animation-delay:'+de+'s"></i>'; }
+  ov.innerHTML='<div class="cut-bar top"></div><div class="cut-bar bot"></div><div class="cut-vign"></div><div class="cut-tower"></div><div class="cut-motes">'+motes+'</div><div class="cut-stage"><div class="cut-fade"></div><div class="cut-dots"></div><div class="cut-actions"><button class="cut-skip" id="cutSkip">Skip ▸▸</button><button class="cut-next" id="cutNext">Next ▸</button></div></div>';
+  ov.classList.remove('cut-out'); void ov.offsetWidth; ov.classList.add('cut-show');
+  const fade=ov.querySelector('.cut-fade'), dots=ov.querySelector('.cut-dots'), nextBtn=ov.querySelector('#cutNext');
+  const slideHTML=s=>'<div class="cut-ic">'+(s.ic||'')+'</div>'+(s.title?'<div class="cut-title">'+s.title+'</div>':'')+'<div class="cut-body">'+s.body+'</div>';
+  function paint(first){ const s=slides[idx]; const apply=()=>{ fade.innerHTML=slideHTML(s); void fade.offsetWidth; fade.classList.add('in'); };
+    if(first)apply(); else { fade.classList.remove('in'); setTimeout(apply,520); }
+    dots.innerHTML=slides.map((_,i)=>'<i class="'+(i===idx?'on':'')+'"></i>').join('');
+    nextBtn.textContent = idx>=slides.length-1 ? (s.last||'Begin') : 'Next ▸'; }
+  function next(){ if(idx>=slides.length-1){ finish(); return; } idx++; paint(false); introBellCue(); }
+  function finish(){ ov.classList.remove('cut-show'); ov.classList.add('cut-out'); stopIntroScore(false); document.removeEventListener('keydown',onKey,true);
+    setTimeout(()=>{ ov.classList.remove('cut-out'); ov.innerHTML=''; document.getElementById('gate').style.display='flex'; },1100); }
+  function onKey(e){ if(e.key==='Escape'){e.preventDefault();finish();} else if(e.key==='Enter'||e.key===' '){e.preventDefault();next();} }
+  ov.querySelector('#cutSkip').onclick=finish; nextBtn.onclick=next; document.addEventListener('keydown',onKey,true);
+  paint(true);
+}
+document.getElementById('playBtn').onclick=()=>{ document.getElementById('gate').style.display='none'; playCutscene(); };
+</script></body></html>

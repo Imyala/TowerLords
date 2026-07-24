@@ -3285,6 +3285,7 @@ function doAction(a){ if(_G&&_G.modalOpen) return true;
 function kbKeyLabel(v){ if(v==null||v==='') return '—'; const mm=/^mouse(\d)$/.exec(v); if(mm){ return ['L-Click','M-Click','R-Click','Mouse 4','Mouse 5'][+mm[1]]||('Mouse '+mm[1]); }
   if(v===' ') return 'Space'; if(v==='arrowup')return '↑'; if(v==='arrowdown')return '↓'; if(v==='arrowleft')return '←'; if(v==='arrowright')return '→';
   return v.length===1?v.toUpperCase():(v.charAt(0).toUpperCase()+v.slice(1)); }
+function kbShort(v){ if(v==null||v==='')return '—'; const mm=/^mouse(\d)$/.exec(v); if(mm)return ['LMB','MMB','RMB','M4','M5'][+mm[1]]||('M'+mm[1]); if(v===' ')return 'Spc'; if(v==='shift')return '⇧'; if(v==='control'||v==='ctrl')return 'Ctl'; if(v==='arrowup')return '↑'; if(v==='arrowdown')return '↓'; if(v==='arrowleft')return '←'; if(v==='arrowright')return '→'; return v.length===1?v.toUpperCase():v.slice(0,3).toUpperCase(); }
 const KEYBIND_ROWS=[['Move up','up'],['Move down','down'],['Move left','left'],['Move right','right'],['Dash','dash'],['Signature ultimate','sig'],['Interact','interact'],['Recall to sanctuary','recall'],['Skill 1','slot1'],['Skill 2','slot2'],['Skill 3','slot3'],['Skill 4','slot4'],['Skill 5','slot5'],['Skill 6','slot6'],['Skill 7','slot7'],['Skill 8','slot8'],['Skill 9','slot9'],['Flask 1','flask1'],['Flask 2','flask2'],['Flask 3','flask3'],['Flask 4','flask4'],['Flask 5','flask5']];
 function keybindHTML(){ const kb=SETTINGS.keybinds||DEFAULT_KEYBINDS;
   let h='<div style="margin:16px 16px 6px;font-size:11px;opacity:.6;letter-spacing:1px;text-transform:uppercase">Keybinds — click a button, then press any key or mouse button (Esc cancels)</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:6px 12px;margin:0 16px 10px">';
@@ -3293,12 +3294,12 @@ function keybindHTML(){ const kb=SETTINGS.keybinds||DEFAULT_KEYBINDS;
   return h; }
 let _rebinding=null;
 function wireKeybinds(b){ b.querySelectorAll('.kbBtn').forEach(btn=>btn.onclick=()=>startRebind(btn.dataset.kb, btn));
-  const rb=$('kbReset'); if(rb) rb.onclick=()=>{ SETTINGS.keybinds={...DEFAULT_KEYBINDS}; saveSettings(); renderSettings(); log('↺ Keybinds reset to defaults.'); }; }
+  const rb=$('kbReset'); if(rb) rb.onclick=()=>{ SETTINGS.keybinds={...DEFAULT_KEYBINDS}; saveSettings(); renderSettings(); try{ if(G.running) renderActionbar(); }catch(_){} log('↺ Keybinds reset to defaults.'); }; }
 function startRebind(action, btn){ if(_rebinding) return; _rebinding=action; if(btn){ btn.textContent='… press'; btn.classList.add('sel'); }
   const done=(val)=>{ cleanup(); if(val!=null){ const moveOnly=!!MOVE_ACTIONS[action];
       if(moveOnly && /^mouse/.test(val)){ log('Movement must be a keyboard key.'); }
       else { for(const a in SETTINGS.keybinds){ if(a!==action && SETTINGS.keybinds[a]===val) SETTINGS.keybinds[a]=''; } SETTINGS.keybinds[action]=val; saveSettings(); log('Bound '+action+' → '+kbKeyLabel(val)); } }
-    renderSettings(); };
+    renderSettings(); try{ if(G.running) renderActionbar(); }catch(_){} };
   const onKey=(e)=>{ e.preventDefault(); e.stopPropagation(); const k=e.key.toLowerCase(); done(k==='escape'?null:k); };
   const onMouse=(e)=>{ e.preventDefault(); e.stopPropagation(); done('mouse'+e.button); };
   function cleanup(){ _rebinding=null; window.removeEventListener('keydown',onKey,true); window.removeEventListener('mousedown',onMouse,true); }
@@ -3894,7 +3895,7 @@ function togglePanel(id){
   el.classList.toggle('hidden');
   clearPin();   // a fresh panel open/close starts with nothing selected (avoids a stale pin from a prior screen)
   if(willOpen){ if(id==='treePanel'){ const _tp=$(id); ['left','top','right','bottom','width','height','transform','margin'].forEach(k=>_tp.style[k]=''); }   // purge any stale inline sizing — the tree always opens fullscreen
-    if(id==='charPanel')renderChar(); else if(id==='treePanel')renderTree(); else if(id==='stashPanel')renderStash(); else if(id==='invPanel')renderInv(); else if(id==='vendorPanel')renderVendor(); else if(id==='petPanel')renderPet(); else if(id==='petYardPanel')renderPetYard(); else if(id==='scorePanel')renderScore(); else if(id==='codexPanel')renderCodex(); else if(id==='settingsPanel')renderSettings(); else if(id==='lootPanel')renderLoot(); else if(id==='craftPanel')renderCraft(); }
+    if(id==='charPanel')renderChar(); else if(id==='treePanel')renderTree(); else if(id==='stashPanel')renderStash(); else if(id==='invPanel')renderInv(); else if(id==='vendorPanel'){ rollVendStock(); renderVendor(); } else if(id==='petPanel')renderPet(); else if(id==='petYardPanel')renderPetYard(); else if(id==='scorePanel')renderScore(); else if(id==='codexPanel')renderCodex(); else if(id==='settingsPanel')renderSettings(); else if(id==='lootPanel')renderLoot(); else if(id==='craftPanel')renderCraft(); }
   if(willOpen) applyPanelPos(id);   // reopen at last-dragged spot · off-centre by default (settings stays centred)
   if((id==='vendorPanel'||id==='stashPanel') && willOpen){   // shopping? bring your bag alongside
     if($('invPanel').classList.contains('hidden')){ $('invPanel').classList.remove('hidden'); renderInv(); }
@@ -5364,23 +5365,99 @@ const SPECIES_LORE={
   goblin:{sp:'the warren-kin',    cause:'their warrens were absorbed one lantern at a time'},
 };
 function spLore(k){ return SPECIES_LORE[k]||SPECIES_LORE.skeleton; }
-const ACT_ROLE={0:'The Gatewarden',1:'The Marshal of the Lost Host',2:'The Curator',3:'The Oathbearer',4:'The King Beneath the Sky'};
-function narrFor(ai){ ai=((ai%5)+5)%5; const fk=_actFamKey(ai); const L=spLore(fk); return {familyKey:fk, sp:L.sp, cause:L.cause, role:ACT_ROLE[ai], act:ai}; }
-function narrLine(ai){ const n=narrFor(ai); const sp=n.sp, spC=sp.charAt(0).toUpperCase()+sp.slice(1);
-  switch(((ai%5)+5)%5){
+const ACT_ROLE={0:'The Gatewarden',1:'The Marshal of the Lost Host',2:'The Curator',3:'The Oathbearer',4:'The King Beneath the Sky',5:'The Home That Hunts',6:'The Council Without Faces',7:'The Counterfeit Hero',8:'Ilyra, Voice of Continuance',9:'The Hollow Throne'};
+const ACT_NUM=['I','II','III','IV','V','VI','VII','VIII','IX','X'];
+function storyAct(floor){ return Math.max(0,Math.min(9,Math.floor((((floor||1)-1))/10))); }   // 10 story acts across floors 1-100 (the upper tower continues past the false summit at 50)
+function chapNum(ai){ return ACT_NUM[ai]||('#'+(ai+1)); }
+function narrFor(ai){ ai=((ai%10)+10)%10; const fk=_actFamKey(ai%5); const L=spLore(fk); return {familyKey:fk, sp:L.sp, cause:L.cause, role:ACT_ROLE[ai], act:ai}; }
+function narrLine(ai){ ai=((ai%10)+10)%10; const n=narrFor(ai); const sp=n.sp, spC=sp.charAt(0).toUpperCase()+sp.slice(1);
+  switch(ai){
     case 0: return spC+' hold these roots — '+n.cause+'. To them the Tower is home, and you the intruder.';
     case 1: return 'Two nations died fighting for this door. This cycle the war wears the faces of '+sp+'. The faces change; the war never does.';
     case 2: return 'A garden of kept memories — homes, songs, the not-quite-dead. This climb remembers them as '+sp+'. Some will beg you to end them.';
     case 3: return 'Ten rulers broke ten oaths to raise this place. Their names survive; their faces do not — this cycle they are remembered as '+sp+'.';
-    default: return 'The sky ahead is painted glass. The throne beneath it will greet you wearing the face of '+sp+' — the shape this climb feared most.';
+    case 4: return 'The sky ahead is painted glass. The throne beneath it will greet you wearing the face of '+sp+' — the shape this climb feared most.';
+    case 5: return 'Past the false summit the Tower builds you a life you never lived — a home, a history, faces you never met, this cycle shaped like '+sp+'. It is inventing a name to make you its own.';
+    case 6: return 'Ten ruined kingdoms, ten dead rulers. It cannot hold their true faces, so this cycle it remembers them as '+sp+'. Some wanted the Crown. One wanted to end it.';
+    case 7: return 'The Tower is failing. Memories bleed between the '+sp+' — a drowning remembered by the landlocked, a desert by the drowned. And earlier versions of you still walk these floors.';
+    case 8: return 'Ilyra is coming apart. She was never a Bellkeeper — she is the Tower\u2019s own voice, and this cycle she wears the shape of '+sp+'. She does not know what you will do. Neither, now, does it.';
+    default: return 'The floors are fragments — every act at once, '+sp+' among them. The First King waits in chains beneath the Crown. Take it, break it, or rewrite it: choose what the Tower cannot predict.';
   } }
-function actBeatRun(act){ const ai=ACTS.indexOf(act); if(ai<0)return; const line=narrLine(ai);
-  setTimeout(()=>{ try{ showBossSpeech('THE TOWER', line); }catch(_){} log('『'+line+'』 — the Tower'); }, 2600); }
-function showRunIntro(){ const n=narrFor(0);
-  const body='You wake beneath the <b>Tower of Continuance</b> with no name and no memory of having existed. It was raised to preserve dying worlds — not their stone, but their <b>essence</b>. Every creature it took became an <b>Echo</b>, rebuilt from memory and myth. The monsters ahead are the last remains of worlds that are already gone.<br><br>'
-    +'The Tower keeps no record of <i>you</i>, and cannot erase what it cannot read. It calls you <b class="gm-hl">the Unwritten</b> — and each time you fall it rebuilds the climb and tries again.<br><br>'
-    +'A voice reaches you through still water and dead bells — <b>Ilyra, the Last Bellkeeper</b>: “Break the seals. Reach the summit. This cycle the first kingdom rises as <b>'+n.sp+'</b> — '+n.cause+'. Do not trust their faces. Climb.”';
-  try{ gameConfirm('📖 THE UNWRITTEN', body, null, {ic:'📖', ok:'Begin the climb', noCancel:true}); }catch(_){} }
+function actBeatRun(act){ const ai=storyAct(G.floor);
+  setTimeout(()=>{ try{ showChapterBanner(ai); }catch(_){} log('『'+narrLine(ai)+'』 — the Tower'); }, 2200); }
+function runIntroSlides(){ const n=narrFor(0); return [
+  {ic:'🕯', body:'Cold. Dark. Stone at your back that seems to remember more of you than you do.<br><br>You open eyes you cannot recall owning. There is no door behind you. There was never a door.<br><br>Far above, something vast and patient <b>breathes</b>.'},
+  {ic:'🏛', title:'The Tower of Continuance', body:'It was raised to save the dying — a thousand worlds guttering out like candles. Not their stone. Not their bodies. Their <b>essence</b>.<br><br>Everything it ever took became an <b>Echo</b>: a soul copied from memory and rumour and grief. The things that wait above are the last of worlds that no longer exist. You will have to kill them anyway.'},
+  {ic:'📖', title:'The Unwritten', body:'The Tower keeps a page for every life that has ever been. It searches, and searches, and finds <b>nothing of you</b>.<br><br>It cannot read you. So it cannot keep you. So it cannot let you go.<br><br>It gives you the only name it has: <b class="gm-hl">the Unwritten</b>. Each time you fall it unmakes the climb and begins again — and some small, aching part of you <b>remembers</b>. So does it.'},
+  {ic:'🔔', title:'The Last Bellkeeper', body:'From somewhere beneath the world — still water, a bell too old to ring — a voice finds you. <b>Ilyra</b>.<br><br>“I have waited a long age for one the Tower could not name. Ten seals stand between you and the summit. Break them all.<br><br>This cycle the first kingdom rises as <b>'+n.sp+'</b> — '+n.cause+'. Do not weep for their faces; the faces are borrowed. <b class="gm-hl">Climb, Unwritten. Become something even this place cannot forget.</b>”', last:'Begin the climb'},
+]; }
+function showRunIntro(){ try{ playCutscene(runIntroSlides(), null, {score:true}); }catch(_){ } }
+let _cutPrevInv=0, _introNodes=null, _introDuck=null;
+function startIntroScore(){ initAudio(); if(!actx) return; try{ if(actx.state==='suspended') actx.resume(); }catch(_){}
+  stopIntroScore(true);
+  try{ _introDuck=(ambGain?ambGain.gain.value:null); if(ambGain) ambGain.gain.setTargetAtTime(0, actx.currentTime, 0.6); }catch(_){}   // duck the game drone so the cinematic bed stands alone
+  const t0=actx.currentTime;
+  const out=actx.createGain(); out.gain.value=0.0001; out.connect(master||actx.destination); out.gain.setTargetAtTime(1.0, t0, 2.6);   // long swell up from silence
+  const verb=actx.createConvolver(); { const len=Math.floor(actx.sampleRate*3.4), buf=actx.createBuffer(2,len,actx.sampleRate);
+    for(let ch=0;ch<2;ch++){ const d=buf.getChannelData(ch); for(let i=0;i<len;i++) d[i]=(Math.random()*2-1)*Math.pow(1-i/len,2.8); } verb.buffer=buf; }
+  const wet=actx.createGain(); wet.gain.value=0.6; verb.connect(wet); wet.connect(out);
+  const dry=actx.createGain(); dry.gain.value=0.85; dry.connect(out);
+  const bus=nd=>{ nd.connect(dry); nd.connect(verb); };
+  const oscs=[], timers=[]; let alive=true;
+  [36.71,55.00,73.42].forEach((f,i)=>{ const o=actx.createOscillator(); o.type=(i===2?'triangle':'sine'); o.frequency.value=f;   // deep D-minor drone, detuned, breathing
+    const g=actx.createGain(); g.gain.value=0; o.connect(g); bus(g); o.start(); oscs.push(o);
+    g.gain.setTargetAtTime(0.15/(i*0.6+1), t0, 3.2);
+    const lfo=actx.createOscillator(); lfo.frequency.value=0.045+i*0.018; const lg=actx.createGain(); lg.gain.value=0.045; lfo.connect(lg); lg.connect(g.gain); lfo.start(); oscs.push(lfo); });
+  { const o=actx.createOscillator(); o.type='sine'; o.frequency.value=27.5; const g=actx.createGain(); g.gain.value=0; o.connect(g); g.connect(dry); o.start(); g.gain.setTargetAtTime(0.13, t0, 3.6); oscs.push(o); }   // sub weight
+  { const o=actx.createOscillator(); o.type='sine'; o.frequency.value=587.33; const g=actx.createGain(); g.gain.value=0; o.connect(g); g.connect(verb); o.start(); g.gain.setTargetAtTime(0.02, t0, 6.0);   // far-off shimmer — longing
+    const lfo=actx.createOscillator(); lfo.frequency.value=0.08; const lg=actx.createGain(); lg.gain.value=0.013; lfo.connect(lg); lg.connect(g.gain); lfo.start(); oscs.push(o); oscs.push(lfo); }
+  const SC={D3:146.83,E3:164.81,F3:174.61,G3:196.00,A3:220.00,Bb3:233.08,C4:261.63,D4:293.66};
+  const phrase=[['A3',3.4],['F3',3.6],['E3',2.8],['D3',4.6],['F3',3.2],['A3',3.0],['G3',3.0],['F3',3.2],['E3',5.2]];   // slow, descending, mournful
+  function voice(freq,dur){ if(G.muted) return; const a=actx.currentTime;
+    const o=actx.createOscillator(); o.type='triangle'; o.frequency.value=freq; const g=actx.createGain(); g.gain.value=0; o.connect(g); bus(g);
+    g.gain.setValueAtTime(0,a); g.gain.linearRampToValueAtTime(0.12,a+1.0); g.gain.setTargetAtTime(0.00008,a+dur*0.55,dur*0.5);
+    const o2=actx.createOscillator(); o2.type='sine'; o2.frequency.value=freq*2.002; const g2=actx.createGain(); g2.gain.value=0; o2.connect(g2); bus(g2); g2.gain.setValueAtTime(0,a); g2.gain.linearRampToValueAtTime(0.035,a+1.3); g2.gain.setTargetAtTime(0.00008,a+dur*0.55,dur*0.55);
+    o.start(a); o2.start(a); o.stop(a+dur+1.2); o2.stop(a+dur+1.2); }
+  let mi=0; function schedMel(){ if(!alive) return; const step=phrase[mi%phrase.length]; voice(SC[step[0]]||220, step[1]); mi++; timers.push(setTimeout(schedMel, (mi%phrase.length===0?4600:2500))); }
+  timers.push(setTimeout(schedMel, 1600));
+  function bell(freq,vol){ if(G.muted) return; const a=actx.currentTime; [1,2.76,5.40,8.93].forEach((p,i)=>{ const o=actx.createOscillator(); o.type='sine'; o.frequency.value=freq*p; const g=actx.createGain(); g.gain.value=0; o.connect(g); g.connect(verb); g.connect(dry);
+      const v=vol*(i===0?1:0.42/i); g.gain.setValueAtTime(0,a); g.gain.linearRampToValueAtTime(v,a+0.008); g.gain.setTargetAtTime(0.00006,a+0.02,1.8+i*0.4); o.start(a); o.stop(a+6); }); }   // the Bellkeeper — inharmonic, long tail
+  function schedBell(){ if(!alive) return; bell(110,0.12); timers.push(setTimeout(schedBell, 12000+Math.random()*5000)); }
+  timers.push(setTimeout(schedBell, 5000));
+  _introNodes={out,oscs,timers,bell,setDead:()=>{alive=false;}}; }
+function introBellCue(){ if(_introNodes&&_introNodes.bell) try{ _introNodes.bell(146.83,0.10); }catch(_){} }
+function stopIntroScore(instant){ const N=_introNodes; if(!N) return; _introNodes=null; try{ N.setDead(); }catch(_){}
+  try{ N.timers.forEach(clearTimeout); }catch(_){}
+  if(actx){ const t=actx.currentTime; try{ N.out.gain.cancelScheduledValues(t); N.out.gain.setTargetAtTime(0.0001, t, instant?0.05:1.6); }catch(_){}
+    try{ if(ambGain && _introDuck!=null) ambGain.gain.setTargetAtTime(_introDuck, t+(instant?0.1:1.8), 0.8); }catch(_){}
+    setTimeout(()=>{ try{ N.oscs.forEach(o=>{ try{o.stop();}catch(_){}}); N.out.disconnect(); }catch(_){} }, instant?140:2200); } }
+function playCutscene(slides, onDone, opts){ opts=opts||{}; if(!slides||!slides.length){ if(onDone)onDone(); return; }
+  let idx=0; _G.modalOpen=true; if(G.running){ _cutPrevInv=G.invuln||0; G.invuln=1e9; }
+  if(opts.score){ try{ startIntroScore(); }catch(_){} }
+  let ov=document.getElementById('storyCut'); if(!ov){ ov=document.createElement('div'); ov.id='storyCut'; document.body.appendChild(ov); }
+  let motes=''; for(let i=0;i<28;i++){ const x=(Math.random()*100).toFixed(1), sz=(1+Math.random()*2.4).toFixed(1), du=(9+Math.random()*15).toFixed(1), de=(-Math.random()*22).toFixed(1), op=(0.12+Math.random()*0.5).toFixed(2); motes+='<i style="left:'+x+'%;width:'+sz+'px;height:'+sz+'px;opacity:'+op+';animation-duration:'+du+'s;animation-delay:'+de+'s"></i>'; }
+  ov.innerHTML='<div class="cut-bar top"></div><div class="cut-bar bot"></div><div class="cut-vign"></div><div class="cut-tower"></div><div class="cut-motes">'+motes+'</div><div class="cut-stage"><div class="cut-fade"></div><div class="cut-dots"></div><div class="cut-actions"><button class="cut-skip" id="cutSkip">Skip ▸▸</button><button class="cut-next" id="cutNext">Next ▸</button></div></div>';
+  ov.classList.remove('cut-out'); void ov.offsetWidth; ov.classList.add('cut-show');
+  const fade=ov.querySelector('.cut-fade'), dots=ov.querySelector('.cut-dots'), nextBtn=ov.querySelector('#cutNext');
+  function slideHTML(s){ return '<div class="cut-ic">'+(s.ic||'')+'</div>'+(s.title?'<div class="cut-title">'+s.title+'</div>':'')+'<div class="cut-body">'+s.body+'</div>'; }
+  function paint(first){ const s=slides[idx];
+    const apply=()=>{ fade.innerHTML=slideHTML(s); void fade.offsetWidth; fade.classList.add('in'); };
+    if(first){ apply(); } else { fade.classList.remove('in'); setTimeout(apply, 520); }
+    dots.innerHTML=slides.map((_,i)=>'<i class="'+(i===idx?'on':'')+'"></i>').join('');
+    nextBtn.textContent = idx>=slides.length-1 ? (s.last||'Begin') : 'Next ▸'; }
+  function next(){ if(idx>=slides.length-1){ finish(); return; } idx++; paint(false); if(opts.score) introBellCue(); else if(sfx.tick) sfx.tick(); }
+  function finish(){ ov.classList.remove('cut-show'); ov.classList.add('cut-out'); if(opts.score) stopIntroScore(false); document.removeEventListener('keydown',onKey,true);
+    setTimeout(()=>{ ov.classList.remove('cut-out'); ov.innerHTML=''; }, 1100);
+    _G.modalOpen=false; if(G.running){ G.invuln=_cutPrevInv||0; } if(onDone)onDone(); }
+  function onKey(e){ if(e.key==='Escape'){ e.preventDefault(); e.stopPropagation(); finish(); } else if(e.key==='Enter'||e.key===' '){ e.preventDefault(); e.stopPropagation(); next(); } }
+  ov.querySelector('#cutSkip').onclick=finish; nextBtn.onclick=next; document.addEventListener('keydown',onKey,true);
+  paint(true); }
+function showChapterBanner(ai){ const n=narrFor(ai);
+  let el=document.getElementById('chapterCard'); if(!el){ el=document.createElement('div'); el.id='chapterCard'; document.body.appendChild(el); }
+  el.innerHTML='<div class="chp-eyebrow">ACT '+chapNum(ai)+' \u00b7 '+n.role+'</div><div class="chp-line">'+narrLine(ai)+'</div>';
+  el.classList.remove('show'); void el.offsetWidth; el.classList.add('show');
+  clearTimeout(el._t); el._t=setTimeout(()=>el.classList.remove('show'), 7500); if(sfx.memoir)sfx.memoir(); }
+(function(){ try{ const st=document.createElement('style'); st.id='storyCutCSS'; st.textContent='#storyCut{position:fixed;inset:0;z-index:300;display:flex;align-items:center;justify-content:center;background:radial-gradient(ellipse at 50% 42%,rgba(16,12,24,.92),rgba(2,2,5,.99));overflow:hidden;opacity:0;pointer-events:none;transition:opacity 1.1s ease}#storyCut.cut-show{opacity:1;pointer-events:auto}#storyCut.cut-out{opacity:0}#storyCut .cut-bar{position:absolute;left:0;right:0;height:0;background:#000;z-index:4;transition:height 1.1s cubic-bezier(.2,.7,.2,1)}#storyCut.cut-show .cut-bar.top{top:0;height:8vh}#storyCut.cut-show .cut-bar.bot{bottom:0;height:8vh}#storyCut .cut-vign{position:absolute;inset:0;pointer-events:none;box-shadow:inset 0 0 240px rgba(0,0,0,.92);z-index:3}#storyCut .cut-tower{position:absolute;left:50%;bottom:0;width:150px;height:60vh;transform:translateX(-50%) translateY(40px);opacity:0;background:linear-gradient(to top,rgba(6,5,12,.95),rgba(40,30,64,.06));clip-path:polygon(40% 100%,60% 100%,56% 0,44% 0);filter:drop-shadow(0 -18px 46px rgba(150,110,255,.22));animation:cutTower 5s ease forwards .8s;z-index:1}#storyCut .cut-tower::before{content:"";position:absolute;left:50%;top:-6px;width:26px;height:26px;transform:translateX(-50%);border-radius:50%;background:radial-gradient(circle,rgba(210,180,255,.85),rgba(150,110,255,0));animation:cutGlow 4.5s ease-in-out infinite}@keyframes cutTower{to{opacity:.75;transform:translateX(-50%) translateY(0)}}@keyframes cutGlow{0%,100%{opacity:.5}50%{opacity:1}}#storyCut .cut-motes{position:absolute;inset:0;pointer-events:none;z-index:2}#storyCut .cut-motes i{position:absolute;bottom:-5vh;border-radius:50%;background:radial-gradient(circle,rgba(222,205,255,.95),rgba(170,140,255,.1));animation-name:cutRise;animation-timing-function:linear;animation-iteration-count:infinite}@keyframes cutRise{0%{transform:translateY(18vh);opacity:0}12%{opacity:.7}88%{opacity:.55}100%{transform:translateY(-58vh);opacity:0}}#storyCut .cut-stage{position:relative;z-index:5;max-width:640px;width:92%;text-align:center;padding:0 20px}#storyCut .cut-fade{opacity:0;transform:translateY(14px);transition:opacity 1.1s ease,transform 1.1s ease;min-height:236px;display:flex;flex-direction:column;justify-content:center}#storyCut .cut-fade.in{opacity:1;transform:translateY(0)}#storyCut .cut-ic{font-size:50px;margin-bottom:16px;filter:drop-shadow(0 0 18px rgba(185,139,255,.65));animation:cutFloat 6s ease-in-out infinite}@keyframes cutFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-7px)}}#storyCut .cut-title{font-size:13px;letter-spacing:5px;text-transform:uppercase;color:#c9adf5;margin-bottom:18px;font-weight:600;text-shadow:0 0 18px rgba(150,110,255,.5)}#storyCut .cut-body{font-family:Georgia,"Times New Roman",serif;font-size:17px;line-height:1.85;color:#e9e2f6;letter-spacing:.2px;text-shadow:0 1px 12px rgba(0,0,0,.6)}#storyCut .cut-body b{color:#fff;font-weight:600}#storyCut .cut-body .gm-hl{color:#ffd98a;text-shadow:0 0 16px rgba(255,190,90,.4)}#storyCut .cut-dots{display:flex;gap:8px;justify-content:center;margin:30px 0 18px}#storyCut .cut-dots i{width:7px;height:7px;border-radius:50%;background:rgba(255,255,255,.18);transition:.4s}#storyCut .cut-dots i.on{background:#c9adf5;box-shadow:0 0 10px #b98bff;transform:scale(1.15)}#storyCut .cut-actions{display:flex;justify-content:center;align-items:center;gap:26px}#storyCut .cut-skip{background:none;border:none;color:#7a7690;font-size:12px;cursor:pointer;letter-spacing:2px;text-transform:uppercase;transition:.2s}#storyCut .cut-skip:hover{color:#c9adf5}#storyCut .cut-next{background:linear-gradient(180deg,rgba(58,44,92,.9),rgba(30,22,52,.9));border:1px solid rgba(185,139,255,.6);color:#f2ecff;font-size:14px;font-weight:600;padding:11px 30px;border-radius:11px;cursor:pointer;letter-spacing:1px;transition:.2s}#storyCut .cut-next:hover{background:linear-gradient(180deg,rgba(78,58,114,.95),rgba(46,35,80,.95));box-shadow:0 0 22px rgba(185,139,255,.45)}#chapterCard{position:fixed;top:13%;left:50%;transform:translateX(-50%) translateY(-16px);z-index:120;max-width:min(680px,92vw);text-align:center;pointer-events:none;opacity:0;transition:opacity .6s,transform .6s;padding:13px 26px;border-radius:14px;background:linear-gradient(180deg,rgba(18,14,26,.85),rgba(8,7,14,.72));border:1px solid rgba(185,139,255,.3);box-shadow:0 0 40px -12px rgba(150,100,255,.4);backdrop-filter:blur(2px)}#chapterCard.show{opacity:1;transform:translateX(-50%) translateY(0)}#chapterCard .chp-eyebrow{font-size:12px;letter-spacing:3px;text-transform:uppercase;color:#cdb0ff;margin-bottom:6px;font-weight:bold}#chapterCard .chp-line{font-size:14px;line-height:1.6;color:#e6ddf5;font-style:italic}'; document.head.appendChild(st); }catch(_){} })();
 // ===== STORY PAGES: adaptive lore you FIND while climbing — each reveals part of what THIS run's Tower is (bible §8) =====
 const STORY_PAGES=[
   {id:'p_intro', act:0, title:'A page in no hand you know',        t:n=>'You woke with no name because the Tower keeps no page for you. Everything that ever lived has an entry here — you do not. That is why it cannot erase you. That is why it calls you the Unwritten.'},
@@ -5393,12 +5470,22 @@ const STORY_PAGES=[
   {id:'p_first', act:3, title:'A name scraped from the wall',      t:n=>'One ruler — the First King — tried to destroy the Crown Engine. The others chained him at the summit and scraped his name from every wall. The scraping was done from INSIDE the stone.'},
   {id:'p_act5',  act:4, title:'Fresh mortar, impossibly high',     t:n=>'The sky ahead is painted glass; the throne beneath it is a test, and it will greet you wearing the face of '+n.sp+'. Above the false summit: fresh stone, new stairs. The Tower is already taller than when you began.'},
   {id:'p_truth', act:4, title:'A page you were not meant to read', t:n=>'Reality is dying — worlds erased by something beyond even the Tower. It preserves what it can the only way it knows: it absorbs, it repeats, it prevents death by preventing life. You were made to choose what it cannot predict.'},
+  {id:'p_home',   act:5, title:'A house you do not remember',       t:n=>'Past the false summit, the Tower shows you a home you never had — a hearth, a name, people who greet you like a son. This cycle they wear the shape of '+n.sp+'. None of it is real. All of it is bait.'},
+  {id:'p_world',  act:5, title:'A window onto the world',           t:n=>'Through a cracked window: your homeland, the Tower devouring it. But the glass is painted, and the paint is fresh. The world you climb to save may already be another of its reconstructions.'},
+  {id:'p_council',act:6, title:'Ten crowns, no faces',              t:n=>'The dead rulers hold court here, remembered this cycle as '+n.sp+'. Some sought power. Some sought to free the Echoes. Some believed endless copied life kinder than true death. They agreed on nothing but the Crown.'},
+  {id:'p_king',   act:6, title:'The First King, in chains',         t:n=>'\u201cI am not the master of this place. I am the only thing keeping it from spreading. They chained me so the Tower could keep eating. Reach me. Choose better than they did.\u201d'},
+  {id:'p_hybrid', act:7, title:'A drowning, misremembered',         t:n=>'A '+n.sp+' here speaks of drowning in a sea it never saw. The Tower can no longer keep its histories apart. It is folding every kingdom into one — and folding you in with them.'},
+  {id:'p_mirror', act:7, title:'The Ashen Knight, unmasked',        t:n=>'The Ashen Knight lifts the helm at last. The face beneath is <b>yours</b> — an earlier Unwritten who reached the top and refused the Crown, unmade but never fully erased. What they refused, you will be offered.'},
+  {id:'p_ilyra',  act:8, title:'Ilyra confesses',                   t:n=>'\u201cI have led a thousand climbers to the Crown. Every one became something I could understand, then something I could rule. You are the first I cannot predict. Please — take it. Without a ruler, every Echo here dies.\u201d'},
+  {id:'p_seals2', act:8, title:'The last seal is a question',       t:n=>'The final seal is not a lock. It is a question the Tower has asked every version of you since the first cycle: will you become what saves this place, or what ends it?'},
+  {id:'p_engine', act:9, title:'The Crown Engine',                  t:n=>'At the summit, the machine that dreams whole worlds. To keep them it imprisons them; to prevent their death it prevents their life. Inherit it, destroy it — or rewrite the one law that makes preservation a prison.'},
+  {id:'p_doors',  act:9, title:'Three doors at the top',            t:n=>'Rule the Tower and every Echo survives under your hand. End it and they go free — into another life, or into nothing. Or open it: let the floors become worlds that build, change, forget and die on their own. The choice was always the point.'},
 ];
 function runStoryPages(){ return STORY_PAGES.map(p=>({id:p.id, act:p.act, title:p.title, txt:p.t(narrFor(p.act))})); }
 function maybeSpawnPage(rooms){ if(typeof floorType==='function' && floorType(G.floor)!=='NORMAL') return; if(!G.run||!rooms||!rooms.length) return;
-  const ai=ACTS.indexOf(actOf(G.floor)); G.run.journalIds=G.run.journalIds||{};
+  const ai=storyAct(G.floor); G.run.journalIds=G.run.journalIds||{};
   const pages=runStoryPages().filter(p=>p.act===ai && !G.run.journalIds[p.id]);
-  if(!pages.length || Math.random()>=0.55) return;
+  if(!pages.length || Math.random()>=0.7) return;
   const p=pages[Math.floor(Math.random()*pages.length)], r=pick(rooms), pt=randPtInRoom(r,3);
   const m=new THREE.Mesh(new THREE.BoxGeometry(.62,.86,.05), new THREE.MeshStandardMaterial({color:0xf0e6c8, emissive:0xf0e6c8, emissiveIntensity:.55}));
   m.position.set(pt.x,1,pt.z); m.rotation.y=rand(-0.4,0.4); scene.add(m);
@@ -8603,14 +8690,14 @@ function renderActionbar(){
     const d=document.createElement('div'); d.className='slot'+(sk?'':' empty')+(tog?' toggle':'')+(on?' auraOn':'');
     if(on){ d.style.outline='2px solid #8effd9'; d.style.boxShadow='0 0 12px #8effd9aa'; }
     const cost = sk ? (tog?`${sk.mps}/s`:`${Math.round(sk.mana*(G.S.manaCostMult||1))}`) : '';
-    d.innerHTML=`<span class="key">${SLOT_LABEL[i]}</span><span class="ic">${sk?sk.ic:'·'}</span><span class="nm">${sk?sk.nm:'—'}</span>${sk?`<span class="mc">${cost}</span>`:''}<div class="cd" id="cd${i}"></div>`;
+    d.innerHTML=`<span class="key">${kbShort((SETTINGS.keybinds||DEFAULT_KEYBINDS)['slot'+(i+1)])}</span><span class="ic">${sk?sk.ic:'·'}</span><span class="nm">${sk?sk.nm:'—'}</span>${sk?`<span class="mc">${cost}</span>`:''}<div class="cd" id="cd${i}"></div>`;
     bar.appendChild(d); }
   renderBelt(); renderSig();
 }
 function renderBelt(){ const b=$('belt'); if(!b)return; b.innerHTML='';
   for(let i=0;i<5;i++){ const fl=G.belt[i]; const d=document.createElement('div'); d.className='flask'+(fl?'':' empty'); d.id='flask'+i;
     const col=fl?FLASKS[fl.flaskId].col:'#888';
-    d.innerHTML=`<span class="key">${FLASK_LABEL[i]}</span><span class="ic">${fl?fl.ic:'·'}</span><div class="chg" id="flchg${i}" style="background:${col}"></div>`;
+    d.innerHTML=`<span class="key">${kbShort((SETTINGS.keybinds||DEFAULT_KEYBINDS)['flask'+(i+1)])}</span><span class="ic">${fl?fl.ic:'·'}</span><div class="chg" id="flchg${i}" style="background:${col}"></div>`;
     b.appendChild(d); }
 }
 function renderSig(){ const s=$('sigSlot'); if(!s)return; const gem=G.sigSlot, sk=gem?SKILLS[gem.skillId]:null;
@@ -8917,7 +9004,7 @@ function showItemDetail(it, ctx){ ctx=ctx||{}; const dp=$('itemDetail'); if(!dp)
     if(sd&&sd.ds) h+=`<div class="dp-uniq" style="border-color:rgba(103,196,255,.3)">${sd.ds}</div>`;
     if(it.fused && it.components) h+=`<div class="dp-uniq">⚛ Fused from ${it.components.length} skills — ${it.components.join(' + ')} (fused ${it.fuseCount}×)</div>`; }
   if(ctx.kind==='bag' && it.isSkillGem){
-    let b='<div class="dp-bind"><span class="bl">Bind:</span>'; for(let i=0;i<9;i++) b+=`<div class="bindBtn${G.slots[i]===it?' act':''}" data-bskill="${i}">${SLOT_LABEL[i]}</div>`; b+=`<div class="bindBtn${G.sigSlot===it?' act':''}" data-bsig="1" title="Signature ultimate">⇧</div></div>`; h+=b;
+    let b='<div class="dp-bind"><span class="bl">Bind:</span>'; for(let i=0;i<9;i++) b+=`<div class="bindBtn${G.slots[i]===it?' act':''}" data-bskill="${i}">${kbShort((SETTINGS.keybinds||DEFAULT_KEYBINDS)['slot'+(i+1)])}</div>`; b+=`<div class="bindBtn${G.sigSlot===it?' act':''}" data-bsig="1" title="Signature ultimate">⇧</div></div>`; h+=b;
   }
   // ---- fusion controls (work whether the skill is loose in the bag OR bound to a slot/signature) ----
   if(it.isSkillGem){
@@ -8937,7 +9024,7 @@ function showItemDetail(it, ctx){ ctx=ctx||{}; const dp=$('itemDetail'); if(!dp)
       h+=`<div class="dp-acts"><button class="vbtn" data-act="fusestart" title="Combine two skills into one stronger skill (costs fame; the originals are consumed)">⚛ Fuse this skill…</button></div>`;
     }
   }
-  if(ctx.kind==='bag' && it.isFlask){ let b='<div class="dp-bind"><span class="bl">Belt:</span>'; for(let i=0;i<5;i++) b+=`<div class="bindBtn${G.belt[i]===it?' act':''}" data-bflask="${i}">${FLASK_LABEL[i]}</div>`; b+='</div>'; h+=b; }
+  if(ctx.kind==='bag' && it.isFlask){ let b='<div class="dp-bind"><span class="bl">Belt:</span>'; for(let i=0;i<5;i++) b+=`<div class="bindBtn${G.belt[i]===it?' act':''}" data-bflask="${i}">${kbShort((SETTINGS.keybinds||DEFAULT_KEYBINDS)['flask'+(i+1)])}</div>`; b+='</div>'; h+=b; }
   let acts='';
   if(ctx.kind==='bag'){
     if(it.isGem) acts+=`<button class="vbtn${G.selGem===it?' gold':''}" data-act="selgem">${G.selGem===it?'✓ click a socket ◯':'Select to socket'}</button>`;
@@ -9073,6 +9160,22 @@ function renderInv(){ if(_G.netApplying) return;
 }
 // ---------------- vendor (gold sink) ----------------
 let _vendSel=null;
+let _vendStock=[];
+function rollVendStock(){ _vendStock=[]; for(let i=0;i<4;i++){ const it=makeItem(Math.max(1,G.floor||1)); _vendStock.push({it:it, buy:Math.max(20,Math.round((it.value||20)*1.7)), sold:false}); } }
+function renderVendStock(list){ if(!_vendStock||!_vendStock.length) return; const avail=_vendStock.filter(s=>!s.sold); if(!avail.length) return;
+  const wrap=document.createElement('div');
+  wrap.innerHTML='<div style="font-size:11px;opacity:.6;letter-spacing:1px;text-transform:uppercase;margin:2px 4px 6px">🛒 Wares — restocks each time you reopen the shop</div>';
+  const sg=document.createElement('div'); sg.className='vendGrid';
+  avail.forEach(s=>{ const it=s.it; const cell=document.createElement('div'); cell.style.cssText='display:flex;flex-direction:column;align-items:center;gap:3px';
+    const t=itemTile(it,{ctx:null}); t.title=it.name+(it.rarity?' · '+it.rarity.nm:''); cell.appendChild(t);
+    const buy=document.createElement('button'); buy.className='vbtn gold'; buy.style.cssText='font-size:10px;padding:2px 7px;min-width:44px'; buy.textContent='💰'+s.buy; buy.disabled=G.gold<s.buy;
+    buy.onclick=()=>{ if(G.gold<s.buy){ log('Not enough gold.'); sfx.deny&&sfx.deny(); return; } if(G.inv.length>=G.invCap){ log('Inventory full — make room first.'); return; }
+      G.gold-=s.buy; s.sold=true; G.inv.push(it); sfx.gold&&sfx.gold(); flashGold&&flashGold(); log('🛒 Bought '+it.name+'.'); renderVendor(); refreshItemPanels&&refreshItemPanels(); };
+    cell.appendChild(buy); sg.appendChild(cell); });
+  wrap.appendChild(sg);
+  const hr=document.createElement('div'); hr.style.cssText='border-top:1px solid rgba(255,255,255,.08);margin:10px 4px 8px'; wrap.appendChild(hr);
+  const hd=document.createElement('div'); hd.style.cssText='font-size:11px;opacity:.6;letter-spacing:1px;text-transform:uppercase;margin:0 4px 4px'; hd.textContent='💰 Sell your carried gear'; wrap.appendChild(hd);
+  list.appendChild(wrap); }
 function renderVendor(){
   $('vendGoldNum').textContent=G.gold;
   const gr=$('gambleRow');
@@ -9099,7 +9202,8 @@ function renderVendor(){
     G.gold-=eggCost(); const e=makeEgg(G.floor,1); G.inv.push(e); log('🥚 Bought a pet egg — Hatch it from your Inventory (I) or Pet Yard (P).'); renderVendor(); refreshItemPanels(); };
   $('respecBtn2').onclick=()=>respec();
   const list=$('vendList'); list.innerHTML='';
-  if(!G.inv.length){ list.innerHTML='<div class="bagEmpty">Nothing carried to sell.</div>'; _vendSel=null; return; }
+  renderVendStock(list);   // rotating wares (restocks on reopen) shown above the sell list
+  if(!G.inv.length){ const _eb=document.createElement('div'); _eb.className='bagEmpty'; _eb.textContent='Nothing carried to sell.'; list.appendChild(_eb); _vendSel=null; return; }
   if(_vendSel && !G.inv.includes(_vendSel)) _vendSel=null;
   const grid=document.createElement('div'); grid.className='vendGrid';
   G.inv.forEach(it=>{ const t=itemTile(it,{ctx:null,sel:_vendSel===it}); t.title=it.name+(it.rarity?' · '+it.rarity.nm:'');
