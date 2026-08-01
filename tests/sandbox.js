@@ -23,14 +23,21 @@ function deep(name){
 }
 
 function mkList(){ const a=[]; return a; }
+// reparenting: appendChild/insertBefore must pull a node out of its previous parent, exactly as the
+// real DOM does — otherwise a node that gets moved appears in both places and tests read nonsense
+function detach(n){ const p=n&&n.parentNode; if(p&&p.children){ const i=p.children.indexOf(n); if(i>=0) p.children.splice(i,1); } }
 function mkEl(id){
   const el={
     id:id||'', tagName:'DIV', textContent:'', value:'', title:'', disabled:false, draggable:false,
-    dataset:{}, children:[], _cls:new Set(['hidden']), _item:null,
+    dataset:{}, children:[], parentNode:null, _cls:new Set(['hidden']), _item:null,
     offsetWidth:100, offsetHeight:100, offsetParent:{}, scrollTop:0, scrollHeight:0, clientWidth:100, clientHeight:100,
   };
   let _html='';
   Object.defineProperty(el,'innerHTML',{ get:()=>_html, set:v=>{ _html=String(v); el.children.length=0; }, enumerable:true, configurable:true });
+  // className has to write through to the class set, or `el.className='panelBody'` is invisible to
+  // classList.contains() and every class-based assertion quietly reads the wrong thing
+  Object.defineProperty(el,'className',{ get:()=>[...el._cls].join(' '),
+    set:v=>{ el._cls=new Set(String(v).split(/\s+/).filter(Boolean)); }, enumerable:true, configurable:true });
   el.style=new Proxy({},{ get:(t,k)=>(k==='setProperty'||k==='removeProperty')?(()=>{}):(t[k]===undefined?'':t[k]), set:(t,k,v)=>{t[k]=v;return true;} });
   el.classList={
     add:(...c)=>c.forEach(x=>el._cls.add(x)),
@@ -38,9 +45,14 @@ function mkEl(id){
     toggle:(c,f)=>{ const on = f===undefined ? !el._cls.has(c) : !!f; on?el._cls.add(c):el._cls.delete(c); return on; },
     contains:c=>el._cls.has(c),
   };
-  el.appendChild=n=>{ el.children.push(n); return n; };
-  el.prepend=n=>{ el.children.unshift(n); return n; };
-  el.removeChild=()=>{}; el.remove=()=>{}; el.insertBefore=n=>n; el.cloneNode=()=>mkEl();
+  el.appendChild=n=>{ detach(n); el.children.push(n); if(n) n.parentNode=el; return n; };
+  el.prepend=n=>{ detach(n); el.children.unshift(n); if(n) n.parentNode=el; return n; };
+  el.removeChild=n=>{ detach(n); if(n) n.parentNode=null; return n; };
+  el.remove=()=>detach(el);
+  el.insertBefore=(n,ref)=>{ detach(n);
+    const i=el.children.indexOf(ref); if(i<0) el.children.push(n); else el.children.splice(i,0,n);
+    if(n) n.parentNode=el; return n; };
+  el.cloneNode=()=>mkEl();
   el.querySelector=()=>mkEl(); el.querySelectorAll=()=>mkList();
   el.addEventListener=()=>{}; el.removeEventListener=()=>{}; el.closest=()=>null;
   el.getBoundingClientRect=()=>({left:0,top:0,right:100,bottom:100,width:100,height:100});

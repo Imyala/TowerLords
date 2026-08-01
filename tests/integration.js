@@ -282,7 +282,8 @@ check('confirmation dialogs open without throwing', ()=>{
 
 check('shift+click fills a talent node to max', ()=>{
   const G=g('G');
-  const tid=g('Object.keys(TALENTMAP).find(k=>{const t=TALENTMAP[k]; return t && !t.beastKey && t.max>=3 && talentReason(t)===null;})');
+  run('G.alloc={}; G.skillPts=500; recompute();');
+  const tid=g('Object.keys(TALENTMAP).find(k=>{const t=TALENTMAP[k]; return t && !t.beastKey && t.max>=3 && t.tier===0;})');
   if(!tid) throw new Error('no unlocked talent node to test with');
   run(`G.alloc={}; G.skillPts=500; recompute(); investTalentMax(${JSON.stringify(tid)});`);
   const t=g(`TALENTMAP[${JSON.stringify(tid)}]`), got=g('G.alloc')[tid];
@@ -291,7 +292,8 @@ check('shift+click fills a talent node to max', ()=>{
 });
 check('shift+click stops cleanly when points run out', ()=>{
   const G=g('G');
-  const tid=g('Object.keys(TALENTMAP).find(k=>{const t=TALENTMAP[k]; return t && !t.beastKey && t.max>=3 && talentReason(t)===null;})');
+  run('G.alloc={}; G.skillPts=500; recompute();');
+  const tid=g('Object.keys(TALENTMAP).find(k=>{const t=TALENTMAP[k]; return t && !t.beastKey && t.max>=3 && t.tier===0;})');
   run(`G.alloc={}; G.skillPts=1; recompute(); investTalentMax(${JSON.stringify(tid)});`);
   const got=g('G.alloc')[tid];
   if(got!==1) throw new Error('spent more than it had: '+got);

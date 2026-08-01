@@ -34,7 +34,7 @@
   .mHdr{display:flex;align-items:center;gap:8px;padding:3px 7px 9px;margin-bottom:4px;border-bottom:1px solid rgba(255,255,255,.1);}
   .mLv{font-size:12px;color:#cdd6ea;letter-spacing:.4px;} .mLv b{font-size:19px;color:var(--xp);} .mLv .xpmini{font-size:10px;opacity:.55;margin-left:3px;}
   .mGold{margin-left:auto;font-size:13px;display:flex;align-items:center;gap:4px;} .mGold b{color:var(--gold);font-size:16px;}
-  .mItem{display:flex;align-items:center;gap:10px;padding:7px 9px;border-radius:8px;font-size:13px;cursor:pointer;pointer-events:auto;
+  .mItem{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:8px;font-size:14.5px;cursor:pointer;pointer-events:auto;
     color:#cdd6ea;border:1px solid transparent;transition:background .12s,border-color .12s,color .12s;}
   .mItem:hover{background:rgba(86,224,255,.1);border-color:rgba(86,224,255,.32);color:#fff;}
   .mKey{flex:none;width:21px;height:21px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:bold;
@@ -48,9 +48,19 @@
 
   /* top-right */
   #towerInfo{top:12px;right:14px;text-align:right;z-index:20;
-    resize:both;overflow:auto;pointer-events:auto;min-width:150px;min-height:70px;max-width:420px;max-height:60vh;padding:4px 2px;}
-  #towerInfo .big{font-size:22px;font-weight:bold;color:var(--neon);}
-  #towerInfo .sm{font-size:11px;opacity:.65;letter-spacing:1px;}
+    resize:both;overflow:hidden;pointer-events:auto;min-width:170px;min-height:74px;max-width:460px;max-height:60vh;padding:4px 2px;}
+  #towerInfo .big{font-size:26px;font-weight:bold;color:var(--neon);}
+  #towerInfo .sm{font-size:13px;opacity:.8;letter-spacing:1px;}
+  /* the QUEST/bounty line is the one piece of top-right text you are meant to act on — it gets its
+     own card so it reads as an objective rather than as more ambient flavour */
+  #bountyTxt:not(:empty){display:inline-block;margin-top:7px;padding:7px 12px;border-radius:10px;
+    font-size:14px;font-weight:700;letter-spacing:.8px;opacity:1;color:var(--gold);
+    background:linear-gradient(180deg,rgba(255,206,77,.16),rgba(255,206,77,.05));
+    border:1.5px solid rgba(255,206,77,.55);box-shadow:0 0 20px rgba(255,206,77,.22),0 3px 12px rgba(0,0,0,.5);
+    text-shadow:0 0 12px rgba(255,206,77,.5);animation:questPulse 2.4s ease-in-out infinite;}
+  #bountyTxt .qLbl{display:block;font-size:10px;letter-spacing:2.5px;opacity:.7;font-weight:800;margin-bottom:2px;}
+  @keyframes questPulse{0%,100%{box-shadow:0 0 20px rgba(255,206,77,.22),0 3px 12px rgba(0,0,0,.5);}
+    50%{box-shadow:0 0 30px rgba(255,206,77,.4),0 3px 12px rgba(0,0,0,.5);}}
 
   /* rampage meter */
   #rampage{top:64px;left:50%;transform:translateX(-50%);width:280px;text-align:center;opacity:0;transition:opacity .2s;z-index:20;}
@@ -261,15 +271,19 @@
   #coach .coach-x:hover{opacity:1;color:#fff;}
 
   /* panels */
+  /* Panels are a FLEX COLUMN: the title bar is a fixed header and only .panelBody scrolls, so the
+     menu name and its ✕ stay put no matter how far down you scroll. (panelBody is wrapped around
+     each panel's contents automatically at boot — see pinPanelHeaders().) */
   .panel{position:absolute;pointer-events:auto;background:rgba(7,10,20,.96);
     border:1px solid rgba(86,224,255,.25);border-radius:14px;box-shadow:0 0 40px rgba(0,0,0,.7);z-index:40;
-    max-width:96vw;max-height:94vh;overflow-y:auto;overflow-x:hidden;}   /* never exceed the screen — scroll inside on small monitors instead of spilling off-screen */
-  .panel::-webkit-scrollbar{width:9px;} .panel::-webkit-scrollbar-track{background:transparent;}
-  .panel::-webkit-scrollbar-thumb{background:rgba(86,224,255,.22);border-radius:5px;} .panel::-webkit-scrollbar-thumb:hover{background:rgba(86,224,255,.4);}
-  .panel h3{font-size:14px;letter-spacing:2px;color:var(--neon);padding:14px 16px 10px;margin-bottom:6px;
-    border-bottom:1px solid rgba(86,224,255,.16);background:linear-gradient(180deg,rgba(86,224,255,.08),transparent);
+    max-width:96vw;max-height:94vh;overflow:hidden;display:flex;flex-direction:column;}
+  .panel > h3, .panel > #treeHead{flex:0 0 auto;}
+  .panelBody{flex:1 1 auto;min-height:0;overflow-y:auto;overflow-x:hidden;}
+  .panel h3{font-size:16px;letter-spacing:2px;color:var(--neon);padding:15px 16px 11px;margin-bottom:0;
+    border-bottom:1px solid rgba(86,224,255,.16);background:linear-gradient(180deg,rgba(20,30,50,.98),rgba(10,14,26,.98));
     border-radius:14px 14px 0 0;text-shadow:0 0 12px rgba(86,224,255,.4);}
-  .closeX{position:absolute;top:10px;right:12px;cursor:pointer;font-size:16px;opacity:.6;width:26px;height:26px;border-radius:7px;
+  .panelBody > *:first-child{margin-top:10px;}
+  .closeX{position:absolute;top:12px;right:12px;z-index:8;cursor:pointer;font-size:18px;opacity:.7;width:30px;height:30px;border-radius:7px;
     display:flex;align-items:center;justify-content:center;transition:opacity .15s ease,background .15s ease,transform .12s ease;}
   .closeX:hover{opacity:1;background:rgba(255,255,255,.08);}
   .closeX:active{transform:scale(.92);}
@@ -545,7 +559,7 @@
   .stashWarn{font-size:10.5px;color:var(--hp);margin:0 16px 8px;line-height:1.45;}
   .stashTop{padding:0 16px;margin-bottom:10px;}
   .stCapRow{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:8px;}
-  #stCapTxt{font-size:12px;letter-spacing:.6px;color:#cdd6e6;}
+  #stCapTxt{font-size:13.5px;letter-spacing:.6px;color:#cdd6e6;}
   #stCapTxt b{color:var(--gold);font-size:14px;}
   .stSearch{width:100%;box-sizing:border-box;font:12px system-ui,sans-serif;color:#eaf2ff;padding:7px 11px;border-radius:8px;
     background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.13);outline:none;}
@@ -554,14 +568,14 @@
   .stashCols{display:flex;gap:12px;padding:0 16px;align-items:stretch;}
   .stashSide{flex:1;min-width:0;display:flex;flex-direction:column;}
   .stashSide .secHd{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:6px;}
-  .stashSide h4{font-size:11px;opacity:.75;letter-spacing:1.4px;margin:0;text-transform:uppercase;color:var(--neon);}
+  .stashSide h4{font-size:12.5px;opacity:.9;letter-spacing:1.4px;margin:0;text-transform:uppercase;color:var(--neon);}
   .stashSide.vault h4{color:var(--gold);}
   .stashSide .bagGrid{flex:1;max-height:min(320px,40vh);align-content:start;}
   .stashMid{display:flex;flex-direction:column;justify-content:center;gap:8px;width:128px;flex:none;}
   .stashMid .sbtn{flex:none;font-size:10px;padding:9px 6px;line-height:1.25;}
   .stashMid .sbtn.gold{border-color:var(--gold);color:var(--gold);background:linear-gradient(160deg,rgba(255,206,77,.14),rgba(255,206,77,.04));}
   .stashMid .sbtn.gold:hover{background:var(--gold);color:#1a1204;box-shadow:0 2px 8px rgba(0,0,0,.35),0 0 14px rgba(255,206,77,.45);}
-  .stEmpty{grid-column:1/-1;text-align:center;font-size:11.5px;opacity:.45;padding:22px 8px;line-height:1.6;}
+  .stEmpty{grid-column:1/-1;text-align:center;font-size:13px;opacity:.55;padding:22px 8px;line-height:1.6;}
   body.touch-on .stashCols{flex-direction:column;}
   body.touch-on .stashMid{width:auto;flex-direction:row;}
   .sbtn{flex:1;cursor:pointer;text-align:center;font-size:11px;letter-spacing:1px;text-transform:uppercase;padding:8px;border-radius:7px;
@@ -570,7 +584,7 @@
   .sbtn:hover{background:var(--neon);color:#04111a;box-shadow:0 2px 8px rgba(0,0,0,.35),0 0 14px rgba(86,224,255,.45);transform:translateY(-1px);}
   .sbtn:active{transform:translateY(0) scale(.97);}
 
-  .hint{font-size:11.5px;opacity:.5;text-align:center;letter-spacing:.6px;margin-top:11px;line-height:1.5;}
+  .hint{font-size:12.5px;opacity:.62;text-align:center;letter-spacing:.6px;margin-top:11px;line-height:1.5;}
 
   /* inventory + equipment + vendor */
   #invPanel{top:50%;left:50%;transform:translate(-50%,-50%);width:min(860px,95vw);padding-bottom:14px;}
@@ -614,7 +628,7 @@
   #invPanel{width:min(860px,95vw);resize:both;overflow:auto;min-width:560px;min-height:400px;max-width:96vw;max-height:92vh;}
   .invWrap{display:flex;gap:16px;padding:0 16px;align-items:flex-start;}
   .invLeft{width:312px;flex:none;} .invRight{flex:1;min-width:0;}
-  .invWrap h4,.invSec h4{font-size:11px;opacity:.7;letter-spacing:1.5px;margin:12px 0 7px;text-transform:uppercase;color:var(--neon);}
+  .invWrap h4,.invSec h4{font-size:12.5px;opacity:.85;letter-spacing:1.5px;margin:12px 0 7px;text-transform:uppercase;color:var(--neon);}
   .invWrap h4:first-child{margin-top:0;}
   /* recessed slot-grid frames (Torchlight-style container panels) */
   .gridFrame,.eqGrid,.slotRow,.bagGrid{padding:9px;border-radius:10px;border:1px solid rgba(255,255,255,.07);
@@ -643,14 +657,21 @@
   .tile.pinsel{box-shadow:0 0 0 2px var(--gold),0 0 18px rgba(255,206,77,.6);border-color:var(--gold);}   /* the currently-selected item locked into the inspect pane */
   .tile .tbound{position:absolute;bottom:2px;right:5px;font-size:9.5px;font-weight:bold;color:var(--gold);text-shadow:0 0 4px #000;}
   .bagGrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(54px,1fr));gap:7px;max-height:min(264px,32vh);overflow-y:auto;}
-  .bagGrid::-webkit-scrollbar{width:9px;} .bagGrid::-webkit-scrollbar-track{background:rgba(0,0,0,.25);border-radius:5px;}
-  .bagGrid::-webkit-scrollbar-thumb{background:rgba(86,224,255,.28);border-radius:5px;} .bagGrid::-webkit-scrollbar-thumb:hover{background:rgba(86,224,255,.45);}
+  /* ---- NO VISIBLE SCROLLBARS ANYWHERE ---- the wheel still scrolls everything, the bars just
+     never paint. They were eating layout width and looked like chrome bolted onto the game. */
+  .panel,.panelBody,.bagGrid,.detailPane,#treeBody,#treeCols,#petScroll,#csBody,#chatBody,#towerInfo,
+  .stashSide,.specGrid,.overlay,.menuPanel{scrollbar-width:none;-ms-overflow-style:none;}
+  .panel::-webkit-scrollbar,.panelBody::-webkit-scrollbar,.bagGrid::-webkit-scrollbar,
+  .detailPane::-webkit-scrollbar,#treeBody::-webkit-scrollbar,#treeCols::-webkit-scrollbar,
+  #petScroll::-webkit-scrollbar,#csBody::-webkit-scrollbar,#chatBody::-webkit-scrollbar,
+  #towerInfo::-webkit-scrollbar,.stashSide::-webkit-scrollbar,.specGrid::-webkit-scrollbar,
+  .overlay::-webkit-scrollbar,.menuPanel::-webkit-scrollbar{width:0;height:0;display:none;}
   .bagEmptyNote{grid-column:1/-1;text-align:center;font-size:11px;opacity:.42;padding:5px 0 3px;letter-spacing:.5px;}
   .invSec{padding:0 16px;margin-top:14px;}
   .invSec .secHd{display:flex;align-items:center;gap:10px;}
   /* bag management toolbar (sort + quick-stash) */
   .invTools{display:flex;align-items:center;gap:6px;margin-left:auto;}
-  .invTools .st{cursor:pointer;font-size:9.5px;font-weight:bold;letter-spacing:.5px;padding:4px 9px;border-radius:6px;line-height:14px;box-sizing:border-box;display:inline-flex;align-items:center;white-space:nowrap;flex-shrink:0;
+  .invTools .st{cursor:pointer;font-size:11px;font-weight:bold;letter-spacing:.5px;padding:4px 9px;border-radius:6px;line-height:14px;box-sizing:border-box;display:inline-flex;align-items:center;white-space:nowrap;flex-shrink:0;
     border:1px solid rgba(255,255,255,.16);background:rgba(255,255,255,.04);color:#cfd6e6;text-transform:uppercase;pointer-events:auto;transition:.1s;}
   .invTools .st:hover{border-color:var(--neon);color:var(--neon);}
   .invTools .st.on{border-color:var(--neon);background:rgba(86,224,255,.14);color:var(--neon);}
@@ -1211,8 +1232,8 @@
   #dirHud{position:absolute;top:10px;left:50%;transform:translateX(-50%);z-index:22;pointer-events:none;
     display:flex;gap:10px;align-items:center;justify-content:center;flex-wrap:wrap;max-width:92vw;}
   #dirHud.hidden{display:none;}
-  .dhChip{display:flex;align-items:center;gap:7px;padding:5px 12px 5px 9px;border-radius:20px;
-    font:bold 11px/1 system-ui,sans-serif;letter-spacing:1.2px;white-space:nowrap;
+  .dhChip{display:flex;align-items:center;gap:7px;padding:6px 13px 6px 10px;border-radius:20px;
+    font:bold 12.5px/1 system-ui,sans-serif;letter-spacing:1.2px;white-space:nowrap;
     background:rgba(4,8,16,.86);backdrop-filter:blur(3px);}
   .dhChip.hidden{display:none;}
   .dhArrow{display:inline-block;font-size:17px;line-height:1;transform:rotate(0deg);
@@ -1367,7 +1388,7 @@
       <h3>✦ SPECIALISATIONS</h3>
       <div class="sp">Skill points: <b id="spNum">0</b> <span id="spBudget" style="opacity:.5;font-weight:400"></span></div>
       <button id="respec">↺ Respec</button>
-      <div class="treeHint"><b style="color:var(--gold)">SHIFT+click = fill a node to max in one click</b> · left-click +1 · right-click −1 · deeper tiers need points in that spec · ⇄ invest ~15 to diverge into neighbours · <b style="color:#ff6ad5">magenta = RULE-BREAKERS</b> (hover them!) · <b style="color:var(--gold)">dashed gold = learnable SKILLS</b></div>
+      <div class="treeHint"><b style="color:var(--gold)">SHIFT+click = fill a node to max in one click</b> · left-click +1 · right-click −1 · each column is a ROLE and each column has <b>4 sub-role lanes</b> running down it — follow one lane for a clean archetype · ⇄ invest ~10 to diverge into a neighbouring role · <b style="color:#ff6ad5">◆ = RULE-BREAKERS</b> (hover them!) · <b style="color:var(--gold)">dashed gold = learnable SKILLS</b></div>
       <div class="closeX" data-close="treePanel">✕ <span style="font-size:11px;opacity:.6">(T)</span></div>
     </div>
     <div id="quickBuild"></div>
@@ -2369,16 +2390,28 @@ function saveSettings(){ try{ localStorage.setItem(SETTINGS_KEY, JSON.stringify(
 const PANELSIZE_KEY='towerlords_panelsize_v1';
 function persistPanelSize(el, key, defaultW, defaultH){
   if(!el) return;
+  // A SAVED size always wins — that is the player's choice and it survives forever.
+  // Otherwise open at the default, which is a generous share of the viewport rather than a fixed
+  // box. Height is deliberately left unset so the panel hugs its content (capped by max-height)
+  // instead of opening tall with dead space under the last row.
+  let saved=false;
   try{ const all=JSON.parse(localStorage.getItem(PANELSIZE_KEY)||'{}'); const s=all[key];
-    if(s&&s.w) el.style.width=s.w; if(s&&s.h) el.style.height=s.h; }catch(_){}
-  if(!el.style.width && defaultW) el.style.width=defaultW;
-  if(!el.style.height && defaultH) el.style.height=defaultH;
-  if(el._sizeObs) return;   // avoid double-binding if called again on a later open
-  if(typeof ResizeObserver==='undefined') return;
-  const ro=new ResizeObserver(()=>{ try{ const all=JSON.parse(localStorage.getItem(PANELSIZE_KEY)||'{}');
-    all[key]={ w:el.style.width||el.offsetWidth+'px', h:el.style.height||el.offsetHeight+'px' };
-    localStorage.setItem(PANELSIZE_KEY, JSON.stringify(all)); }catch(_){} });
-  ro.observe(el); el._sizeObs=ro;
+    if(s&&s.w){ el.style.width=s.w; saved=true; } if(s&&s.h){ el.style.height=s.h; saved=true; } }catch(_){}
+  if(!saved){ if(defaultW) el.style.width=defaultW; if(defaultH) el.style.height=defaultH; else el.style.height=''; }
+  if(el._sizeBound) return;   // avoid double-binding if called again on a later open
+  el._sizeBound=true;
+  // Record a size ONLY when the player drags the resize gripper (the bottom-right corner). Watching
+  // for any size change instead would fire on the first layout and on every content re-render, which
+  // would freeze today's default into storage and stop the panel hugging its content ever again.
+  el.addEventListener('pointerdown', e=>{
+    const r=el.getBoundingClientRect();
+    if(e.clientX < r.right-24 || e.clientY < r.bottom-24) return;   // not the gripper
+    const done=()=>{ window.removeEventListener('pointerup',done);
+      try{ const all=JSON.parse(localStorage.getItem(PANELSIZE_KEY)||'{}');
+        all[key]={ w:el.offsetWidth+'px', h:el.offsetHeight+'px' };
+        localStorage.setItem(PANELSIZE_KEY, JSON.stringify(all)); }catch(_){} };
+    window.addEventListener('pointerup',done);
+  });
 }
 // ---- death log (persist last 40 runs) ----
 const DEATHLOG_KEY='towerlords_deathlog_v1';
@@ -2513,7 +2546,7 @@ function serializeSession(){
     floor:G.floor|0, inTown:!!G.inTown, returnFloor:_G.returnFloor|0, asc:_G.asc||0, hardcore:!!G.hardcore, petHardDeath:!!_G.petHardDeath, diff:G.diff||'normal', seed:_G.seed|0, maxFloor:_G.maxFloor||50,
     name:p.name, gold:p.gold|0, level:p.level|0, xp:p.xp, xpNeed:p.xpNeed, xpMode:p.xpMode||'use',
     attrPts:p.attrPts|0, skillPts:p.skillPts|0, skillGranted:p.skillGranted|0, evolves:p.evolves|0,
-    sealK:p.sealK|0, sealD:p.sealD|0, sealF:p.sealF|0,
+    sealK:p.sealK|0, sealD:p.sealD|0, sealF:p.sealF|0, treeVer:p.treeVer|0,
     attr:p.attr, alloc:p.alloc,
     equip:p.equip, inv:p.inv, belt:p.belt, slots:p.slots, sigSlot:p.sigSlot,
     pets:p.pets, petIdx:(p.pet&&p.pets)?p.pets.indexOf(p.pet):-1,
@@ -2540,8 +2573,9 @@ function resumeSession(){
   // ---- restore the character ----
   p.name=s.name||'Player 1'; p.gold=s.gold||0; p.level=s.level||1; p.xp=s.xp||0; p.xpNeed=s.xpNeed||xpForLevel(p.level); p.xpMode=s.xpMode||'use';
   p.attrPts=s.attrPts||0; p.skillPts=s.skillPts||0; p.skillGranted=s.skillGranted||0; p.evolves=s.evolves||0;
-  p.sealK=s.sealK||0; p.sealD=s.sealD||0; p.sealF=s.sealF||0;
+  p.sealK=s.sealK||0; p.sealD=s.sealD||0; p.sealF=s.sealF||0; p.treeVer=s.treeVer|0;
   p.attr=s.attr||{str:5,dex:5,int:5,vit:5,will:5}; p.alloc=s.alloc||{};
+  migrateTalents(p);   // the tree was rebuilt — refund anything that no longer exists
   p.equip=s.equip||{weapon:null,helm:null,chest:null,gloves:null,boots:null,ring:null};
   p.inv=s.inv||[]; p.belt=s.belt||[null,null,null,null,null]; p.slots=s.slots||[null,null,null,null,null,null,null,null,null]; p.sigSlot=s.sigSlot||null;
   p.pets=s.pets||[]; p.pet=(s.petIdx!=null && s.petIdx>=0 && p.pets[s.petIdx])?p.pets[s.petIdx]:null;
@@ -3206,384 +3240,257 @@ const BEAST_FORMS=[
   {key:'beast5', nm:'Form of the Lion', ic:'🦁', rar:4, eff:{dmgPct:10},                        note:'LION — killing an ELITE triggers APEX FORM: +30% damage & swift for 8 seconds.'},
   {key:'beast6', nm:'No Longer Human',  ic:'🌑', rar:5, eff:{dmgPct:18,movePct:12,asPct:8},     note:'??? — immense permanent power… but healing works 40% worse on what you have become.'},
 ];
+// ================================================================================================
+//  SPECIALISATION TREES — rebuilt around the MMO holy trinity and its sub-roles.
+// ================================================================================================
+//  Six columns, one per role. Each column carries FOUR sub-role LANES that run all the way down it,
+//  so picking a lane and following it gives you a recognisable archetype rather than a pile of
+//  percentages. Nine rows, nineteen nodes per tree — deliberately short. Every node is either a
+//  chunky multi-rank stat, a skill you learn, or a one-point keystone that changes how you play.
+//
+//    ROW 0   foundation        1 node   · the role's core stat
+//    ROW 1   lane openers      4 nodes  · one per sub-role — this is where you choose
+//    ROW 2   lane core         4 nodes
+//    ROW 3   SKILL             1 node   · learn the role's signature active
+//    ROW 4   lane power        4 nodes
+//    ROW 5   lane notable      4 nodes  · rule-benders live here
+//    ROW 6   SKILL             1 node   · a second active
+//    ROW 7   lane KEYSTONE     4 nodes  · one point, build-defining, pick ONE lane's identity
+//    ROW 8   capstone          1 node   · the pinnacle of the whole role
+//
+//  93 total ranks per tree = the lifetime skill budget, so one climb to 255 maxes exactly one role.
 const SPECS=[
-  {kw:'tk', nm:'Vanguard', sub:'Tank', ic:'🛡️', col:'#56e0ff', role:'THE WALL — soak hits, reflect them back, never fall. Keystones turn armour into damage and pain into novas.', tiers:[
-    [{nm:'Plating',ic:'🛡️',max:5,eff:{armor:16}}],
-    [{nm:'Toughened',ic:'💪',max:5,eff:{lifePct:4}},{nm:'Deflect',ic:'🔰',max:3,eff:{armor:22}},{nm:'Bracing',ic:'🛟',max:3,eff:{lifeRegen:1.5}}],
-    [{nm:'Iron Hide',ic:'🧱',max:3,eff:{lifeFlat:22}},{nm:'Guard Stance',ic:'⛨',max:3,eff:{armor:24}},{nm:'Retribution',ic:'🌵',max:3,eff:{reflectPct:6}}],
-    [{nm:'Vital Surge',ic:'❤️',max:3,eff:{lifePct:5}},{nm:'Stoneskin',ic:'🪨',max:3,eff:{armor:26}},{nm:'Second Wind',ic:'💚',max:2,eff:{lifeRegen:1},procs:[{on:'hurt',chance:0.06,type:'heal',amt:0.08}]}],
-    [{nm:'Bulwark',ic:'🏰',max:3,eff:{armor:28,lifeFlat:14}},{nm:'Thorns',ic:'🌹',max:3,eff:{reflectPct:8}},{nm:'Mend',ic:'➕',max:3,eff:{lifeRegen:2}}],
-    [{nm:'Resolute',ic:'🛡️',max:3,eff:{lifePct:6}},{nm:'Last Stand',ic:'⛰️',max:2,eff:{lowHpDmgPct:12}},{nm:'Riposte',ic:'⚔️',max:2,eff:{armor:16},procs:[{on:'hurt',chance:0.09,type:'nova',amt:1.1,r:6}]}],
-    [{nm:'Bloodforge',ic:'🩸',max:3,eff:{lifeOnKill:8}},{nm:'Aegis',ic:'⛨',max:2,eff:{reflectPct:10,armor:20}},{nm:'Fortify',ic:'🧱',max:3,eff:{armor:24}}],
-    [{nm:'Unbreakable',ic:'💎',max:2,eff:{lifePct:8}},{nm:'Recovery',ic:'♻️',max:3,eff:{lifeRegen:3}},{nm:'Vengeance',ic:'🔥',max:2,eff:{lifePct:4},procs:[{on:'hurt',chance:0.12,type:'fervor',amt:22}]}],
-    [{nm:'Titan',ic:'🗿',max:2,eff:{lifeFlat:36,lifePct:4}},{nm:'Iron Will',ic:'🧠',max:2,eff:{lifePct:6,armor:18}},{nm:'Bastion',ic:'🏯',max:2,eff:{armor:38}}],
-    [{nm:'Juggernaut',ic:'🐗',max:2,eff:{dmgPct:8,lifePct:6}},{nm:'Stalwart',ic:'🛡️',max:2,eff:{reflectPct:9}},{nm:'Renewal',ic:'🌿',max:2,eff:{lifeRegen:4}}],
-    [{nm:'Immortal Coil',ic:'♾️',max:1,eff:{lifePct:16,lifeRegen:5}}],
-    [{nm:'Immovable Object',ic:'🛡️',max:1,eff:{lifePct:28,armor:80,reflectPct:12,asPct:-8},req:'tk100',note:'The ultimate wall — nothing moves you.'}],
-  ]},
-  {kw:'st', nm:'Striker', sub:'Damage', ic:'⚔️', col:'#ff6b6b', role:'RAW SLAUGHTER — crits, executes, rampage. Keystones trade safety for absurd offense (Glass Cannon, Blood Magic, Brutalist).', tiers:[
-    [{nm:'Aggression',ic:'⚔️',max:5,eff:{dmgPct:7}}],
-    [{nm:'Keen Edge',ic:'🗡️',max:5,eff:{crit:3}},{nm:'Brutality',ic:'💥',max:3,eff:{dmgPct:9}},{nm:'Hone',ic:'🪓',max:3,eff:{asPct:6}}],
-    [{nm:'Deadly Aim',ic:'🎯',max:3,eff:{critMultPct:14}},{nm:'Rend',ic:'🩸',max:3,eff:{dmgPct:8}},{nm:'Piercing',ic:'🏹',max:2,eff:{pierce:1}}],
-    [{nm:'Onslaught',ic:'🔥',max:3,eff:{asPct:7}},{nm:'Savagery',ic:'🦷',max:3,eff:{dmgPct:9}},{nm:'Bloodlet',ic:'💉',max:3,eff:{lifesteal:2}}],
-    [{nm:'Execute',ic:'☠️',max:3,eff:{execPct:18}},{nm:'Precision',ic:'👁️',max:3,eff:{crit:4}},{nm:'Cleave',ic:'🪓',max:2,eff:{area:8}}],
-    [{nm:'Frenzy',ic:'😤',max:3,eff:{asPct:6,dmgPct:5}},{nm:'Killing Spree',ic:'💀',max:3,eff:{dmgPct:4},procs:[{on:'kill',chance:0.4,type:'empower',dur:3}]},{nm:'Overpower',ic:'💪',max:3,eff:{dmgPct:8}}],
-    [{nm:'Lethality',ic:'🗡️',max:3,eff:{critMultPct:16}},{nm:'Berserk',ic:'🩸',max:2,eff:{dmgPct:8,lifePct:-3}},{nm:'Multishot',ic:'➰',max:2,eff:{proj:1}}],
-    [{nm:'Rampage',ic:'🔥',max:3,eff:{fervorRatePct:16}},{nm:'Bloodthirst',ic:'🦇',max:3,eff:{lifesteal:2,dmgPct:4}},{nm:'Crit Surge',ic:'⚡',max:2,eff:{crit:3},procs:[{on:'crit',chance:0.10,type:'fervor',amt:10}]}],
-    [{nm:'Annihilate',ic:'💢',max:2,eff:{dmgPct:11}},{nm:'Heartseeker',ic:'🎯',max:2,eff:{critMultPct:22}},{nm:'Reaper',ic:'⚰️',max:2,eff:{execPct:20}}],
-    [{nm:'Warbringer',ic:'⚔️',max:2,eff:{dmgPct:9,asPct:5}},{nm:'Carnage',ic:'🩸',max:2,eff:{dmgPct:6},procs:[{on:'crit',chance:0.15,type:'nova',amt:1.3,r:6}]},{nm:'Relentless',ic:'🏃',max:2,eff:{asPct:8}}],
-    [{nm:'Bloodbath',ic:'🩸',max:1,eff:{dmgPct:14,lifesteal:3}}],
-    [{nm:'Executioner',ic:'☠️',max:1,eff:{dmgPct:24,critMultPct:45,execPct:40},req:'st100',note:'Wounded foes simply die.'}],
-  ]},
-  {kw:'mn', nm:'Mender', sub:'Healing', ic:'➕', col:'#6dff8c', role:'SUSTAIN — regen, leech, life-on-everything. Outlast what you cannot outfight; Overgrowth turns healing into damage.', tiers:[
-    [{nm:'Mend',ic:'➕',max:5,eff:{lifeRegen:1.5}}],
-    [{nm:'Transfusion',ic:'🩹',max:5,eff:{lifeOnHit:2}},{nm:'Vitality',ic:'❤️',max:3,eff:{lifePct:4}},{nm:'Siphon',ic:'🧛',max:3,eff:{lifesteal:2}}],
-    [{nm:'Renew',ic:'🌿',max:3,eff:{lifeRegen:2}},{nm:'Sustain',ic:'🛟',max:3,eff:{lifePct:5}},{nm:'Lifespark',ic:'✨',max:3,eff:{lifeFlat:18}}],
-    [{nm:'Bloodpact',ic:'🔴',max:3,eff:{lifesteal:2,dmgPct:4}},{nm:'Restoration',ic:'💗',max:3,eff:{lifeRegen:2.5}},{nm:'Soothe',ic:'🍃',max:2,eff:{lifeRegen:2}}],
-    [{nm:'Lifebloom',ic:'🌸',max:3,eff:{lifeRegen:3}},{nm:'Reaper’s Boon',ic:'💚',max:3,eff:{lifeOnKill:7}},{nm:'Communion',ic:'🙏',max:2,eff:{manaRegen:2,lifeRegen:1}}],
-    [{nm:'Lifeward',ic:'🛡️',max:3,eff:{lifePct:6}},{nm:'Vampirism',ic:'🦇',max:3,eff:{lifesteal:3}},{nm:'Reprieve',ic:'💚',max:2,eff:{lifeRegen:2},procs:[{on:'hurt',chance:0.10,type:'heal',amt:0.10}]}],
-    [{nm:'Second Life',ic:'💞',max:2,eff:{lifePct:5},procs:[{on:'kill',chance:0.3,type:'heal',amt:0.05}]},{nm:'Wellspring',ic:'⛲',max:3,eff:{lifeRegen:3.5}},{nm:'Hale',ic:'❤️',max:3,eff:{lifeFlat:24}}],
-    [{nm:'Sanguine',ic:'🩸',max:3,eff:{lifesteal:2,lifeOnHit:2}},{nm:'Recover',ic:'♻️',max:3,eff:{lifeRegen:4}},{nm:'Faithguard',ic:'🛡️',max:2,eff:{lifePct:7}}],
-    [{nm:'Lifeblood',ic:'💉',max:2,eff:{lifePct:8,lifeRegen:2}},{nm:'Overflow',ic:'🌊',max:2,eff:{lifeRegen:5}},{nm:'Bloodfeast',ic:'🍖',max:2,eff:{lifesteal:4}}],
-    [{nm:'Rejuvenation',ic:'🌿',max:2,eff:{lifeRegen:5}},{nm:'Last Rites',ic:'⚰️',max:2,eff:{lifePct:6},procs:[{on:'hurt',chance:0.18,type:'shield',dur:1}]},{nm:'Lifesurge',ic:'💥',max:2,eff:{lifeOnKill:12}}],
-    [{nm:'Eternal Spring',ic:'⛲',max:1,eff:{lifeRegen:7,lifePct:8}}],
-    [{nm:'Phoenix',ic:'🔥',max:1,eff:{lifeRegen:10,lifePct:18,lifesteal:4},req:'mn100',note:'Endless renewal — death is a setback, not an end.'}],
-  ]},
-  {kw:'wd', nm:'Warden', sub:'Support', ic:'🔮', col:'#b06bff', role:'ARCANE ARTILLERY — big skills, bigger areas, a mana engine underneath. Twincast and Overclock redefine your cast loop.', tiers:[
-    [{nm:'Attunement',ic:'🔮',max:5,eff:{skillDmgPct:6}}],
-    [{nm:'Capacity',ic:'💧',max:5,eff:{manaPct:6}},{nm:'Flow',ic:'🌀',max:3,eff:{manaRegen:2}},{nm:'Focus',ic:'🎯',max:3,eff:{skillDmgPct:7}}],
-    [{nm:'Expanse',ic:'💠',max:3,eff:{area:8}},{nm:'Insight',ic:'📘',max:3,eff:{skillDmgPct:8}},{nm:'Efficiency',ic:'🧠',max:3,eff:{manaCostPct:-7}}],
-    [{nm:'Alacrity',ic:'⏩',max:3,eff:{cdrPct:6}},{nm:'Resonance',ic:'🔊',max:3,eff:{skillDmgPct:8}},{nm:'Reservoir',ic:'🫙',max:3,eff:{manaPct:8}}],
-    [{nm:'Amplify',ic:'📡',max:3,eff:{area:9}},{nm:'Conduit',ic:'⚡',max:3,eff:{skillDmgPct:9}},{nm:'Channel',ic:'🌀',max:2,eff:{manaRegen:3}}],
-    [{nm:'Surge',ic:'💥',max:3,eff:{skillDmgPct:8}},{nm:'Mana Font',ic:'⛲',max:3,eff:{manaRegen:2,manaPct:6}},{nm:'Quicken',ic:'⏱️',max:3,eff:{cdrPct:6}}],
-    [{nm:'Spellweave',ic:'🕸️',max:3,eff:{skillDmgPct:9}},{nm:'Arcane Tide',ic:'🌊',max:2,eff:{area:10}},{nm:'Recharge',ic:'🔋',max:2,eff:{manaOnKill:8}}],
-    [{nm:'Overload',ic:'⚡',max:2,eff:{skillDmgPct:8},procs:[{on:'cast',chance:0.15,type:'shock'}]},{nm:'Empower',ic:'✴️',max:3,eff:{skillDmgPct:9}},{nm:'Mind’s Eye',ic:'👁️',max:2,eff:{cdrPct:8}}],
-    [{nm:'Cataclysm',ic:'☄️',max:2,eff:{skillDmgPct:11}},{nm:'Wellspring',ic:'⛲',max:2,eff:{manaPct:10,manaRegen:3}},{nm:'Echo',ic:'🔁',max:2,eff:{skillDmgPct:6},procs:[{on:'cast',chance:0.12,type:'nova',amt:1.4,r:7}]}],
-    [{nm:'Ascendance',ic:'🌟',max:2,eff:{skillDmgPct:10,area:8}},{nm:'Flux',ic:'♒',max:2,eff:{cdrPct:8}},{nm:'Battery',ic:'🔋',max:2,eff:{manaOnKill:12,manaPct:6}}],
-    [{nm:'Convergence',ic:'🌐',max:1,eff:{skillDmgPct:16,cdrPct:10}}],
-    [{nm:'Archon',ic:'👁️',max:1,eff:{skillDmgPct:34,area:20,cdrPct:14,manaCostPct:-15},req:'wd100',note:'Master of the arcane.'}],
-  ]},
-  {kw:'rg', nm:'Ranger', sub:'Mobility', ic:'🏹', col:'#ffce4d', role:'THE BLUR — speed, dashes, first strike. Momentum makes speed itself your weapon; dash procs make dodging an attack.', tiers:[
-    [{nm:'Fleetfoot',ic:'👟',max:5,eff:{movePct:5}}],
-    [{nm:'Agility',ic:'🏃',max:5,eff:{asPct:5}},{nm:'Reflexes',ic:'👁️',max:3,eff:{crit:3}},{nm:'Vigor',ic:'⚡',max:3,eff:{movePct:5}}],
-    [{nm:'Momentum',ic:'💨',max:3,eff:{movePct:6}},{nm:'Quickstep',ic:'🥾',max:3,eff:{dashCdrPct:9}},{nm:'Quickdraw',ic:'🤠',max:3,eff:{asPct:6}}],
-    [{nm:'Evasion',ic:'🌫️',max:3,eff:{movePct:6}},{nm:'Opportunist',ic:'🗡️',max:3,eff:{critMultPct:12}},{nm:'Slipstream',ic:'🌀',max:3,eff:{dashCdrPct:14}}],
-    [{nm:'Sprint',ic:'⚡',max:3,eff:{asPct:6}},{nm:'Hunter’s Mark',ic:'🎯',max:3,eff:{crit:4}},{nm:'Skirmish',ic:'🤺',max:2,eff:{dmgPct:8}}],
-    [{nm:'Windrunner',ic:'🍃',max:3,eff:{movePct:7}},{nm:'Adrenaline',ic:'💉',max:2,eff:{asPct:5},procs:[{on:'dash',chance:0.5,type:'haste',dur:2}]},{nm:'Deadshot',ic:'🎯',max:3,eff:{critMultPct:14}}],
-    [{nm:'Ambush',ic:'🥷',max:3,eff:{dmgPct:8}},{nm:'Tumble',ic:'🤸',max:3,eff:{dashCdrPct:10}},{nm:'Bloodhound',ic:'🐕',max:2,eff:{xpPct:8}}],
-    [{nm:'Killer Instinct',ic:'🔪',max:2,eff:{crit:4},procs:[{on:'kill',chance:0.45,type:'haste',dur:2.5}]},{nm:'Featherstep',ic:'🪶',max:3,eff:{movePct:7}},{nm:'Marauder',ic:'💰',max:2,eff:{goldPct:10}}],
-    [{nm:'Phantom Strike',ic:'👤',max:2,eff:{dmgPct:9,crit:3}},{nm:'Gale Force',ic:'🌪️',max:2,eff:{asPct:8}},{nm:'Dash Master',ic:'💨',max:2,eff:{dashCdrPct:14},procs:[{on:'dash',chance:0.35,type:'nova',amt:1.2,r:6}]}],
-    [{nm:'Apex Predator',ic:'🐅',max:2,eff:{dmgPct:9,critMultPct:14}},{nm:'Tailwind',ic:'🌬️',max:2,eff:{movePct:9,asPct:5}},{nm:'Vanish',ic:'🌫️',max:2,eff:{dashCdrPct:12},procs:[{on:'dash',chance:0.5,type:'shield',dur:0.8}]}],
-    [{nm:'Stormchaser',ic:'⛈️',max:1,eff:{movePct:14,asPct:10}}],
-    [{nm:'Phantom',ic:'👻',max:1,eff:{movePct:22,asPct:18,crit:6,dashCdrPct:20},req:'rg100',note:'A blur on the battlefield.'}],
-  ]},
-  // 6th path — the ELEMENTALIST: ailments, elemental damage, and the reactions between them (tiers are regenerated by extendSpecs)
-  {kw:'el', nm:'Elementalist', sub:'Ailments', ic:'🌈', col:'#d9b6ff', role:'THE ELEMENTS — burn, freeze, shock; the ailment IS the build. Conflux guarantees ailments; Elemental Tide cycles all three.', tiers:[
-    [{nm:'Attunement',ic:'🌈',max:5,eff:{elemDmgPct:6}}],
-  ]},
-  // 7th path — THE BEAST: exclusive FORMS unlocked by BEAST RELICS dropped from Tower Lords.
-  // No points, no rows-of-stats: absorb a relic to unlock a form; only ONE form may be active at a time.
-  {kw:'bt', nm:'The Beast', sub:'Becoming', ic:'🐺', col:'#ff8c42', relic:true, role:'BOSS-BOUND — Tower Lords drop BEAST RELICS. Absorb a relic to unlock its form; only ONE form prowls at a time. Click an unlocked form to switch.', tiers:
-    BEAST_FORMS.map(f=>[{nm:f.nm, ic:f.ic, max:1, rar:f.rar, beastKey:f.key, eff:f.eff, note:f.note}]) },
+
+// ─────────────────────────────────────────────────────────────────── VANGUARD · TANK
+{kw:'tk', nm:'Vanguard', sub:'Tank', ic:'🛡️', col:'#56e0ff',
+ role:'THE WALL — hold the line, hold the aggro, refuse to fall. LANES: Main Tank (eat the boss), Off-Tank (herd the adds), Evasion (never be there), Brawler (bleed them while they bleed you).', tiers:[
+  [{nm:'Bulwark Training',ic:'🛡️',max:6,eff:{armor:18,lifePct:2}}],
+  [{nm:'Titan’s Girth',ic:'🗿',max:6,lane:'mt',eff:{lifePct:5,armor:10}},
+   {nm:'Chain Discipline',ic:'⛓️',max:6,lane:'ot',eff:{area:7,armor:8}},
+   {nm:'Footwork',ic:'🌀',max:6,lane:'ev',eff:{dodgePct:2,movePct:3}},
+   {nm:'Aggressive Guard',ic:'👊',max:6,lane:'br',eff:{dmgPct:6,lifeOnHit:2}}],
+  [{nm:'Immovable',ic:'⛰️',max:5,lane:'mt',eff:{armor:26}},
+   {nm:'Cleaving Threat',ic:'🪓',max:5,lane:'ot',eff:{area:9,dmgPct:4}},
+   {nm:'Parry Reflex',ic:'🤺',max:5,lane:'ev',eff:{dodgePct:2,asPct:4}},
+   {nm:'Blood Feast',ic:'🩸',max:5,lane:'br',eff:{lifesteal:2,dmgPct:5}}],
+  [{nm:'Learn: Taunt',ic:'📢',max:1,rar:3,grantSkill:'gTaunt',note:'The boss-wrangler’s signature — rip every eye in the room onto you.'}],
+  [{nm:'Boss-Wrangler',ic:'🎯',max:5,lane:'mt',eff:{lifeFlat:34,armor:18}},
+   {nm:'Sweeping Chain',ic:'🌪️',max:5,lane:'ot',eff:{area:11,reflectPct:5}},
+   {nm:'Blur Step',ic:'💨',max:5,lane:'ev',eff:{dodgePct:2,movePct:4},procs:[{on:'hurt',chance:0.05,type:'shield',dur:0.8}]},
+   {nm:'Unstoppable Momentum',ic:'💪',max:5,lane:'br',eff:{dmgPct:7,fervorRatePct:12}}],
+  [{nm:'Shield Wall',ic:'🏰',max:4,lane:'mt',eff:{armor:34,lifePct:4}},
+   {nm:'One Against Many',ic:'👥',max:4,lane:'ot',rar:3,gives:'oneMany',eff:{lifePct:6,area:8},note:'◆ RULE-BREAKER — +5% damage per nearby enemy (to +40%), but −15% against a lone target. Wade into the adds.'},
+   {nm:'Perfect Scar',ic:'🩹',max:4,lane:'ev',rar:3,gives:'perfectScar',eff:{dodgePct:2},note:'◆ RULE-BREAKER — each hit you take within 6s hurts 8% less than the last (to −40%). Sustained fire barely marks you.'},
+   {nm:'Feast of Wounds',ic:'🍖',max:4,lane:'br',eff:{lifeOnKill:9,dmgPct:6}}],
+  [{nm:'Learn: Singularity',ic:'🕳️',max:1,rar:3,grantSkill:'gVortex',note:'Drag the scattered adds into one pile you can actually hold.'}],
+  [{nm:'Bulwark of the Titans',ic:'🗿',max:1,rar:4,lane:'mt',eff:{lifePct:26,armor:70,asPct:-8},note:'MAIN TANK KEYSTONE — you are the thing the boss has to get through. Slower, but nothing moves you.'},
+   {nm:'Gravitational Pull',ic:'🧲',max:1,rar:4,lane:'ot',gives:'gravExec',eff:{area:30,reflectPct:16,armor:24},note:'OFF-TANK KEYSTONE — struck enemies below 20% health are dragged to you. Nothing wanders off.'},
+   {nm:'Untouchable',ic:'👻',max:1,rar:4,lane:'ev',eff:{dodgePct:16,movePct:12,lifePct:-10},note:'EVASION KEYSTONE — you are simply not where the blow lands. Trade the health pool for the dodge.'},
+   {nm:'Blood Tyrant',ic:'🩸',max:1,rar:4,lane:'br',eff:{lifesteal:7,dmgPct:20,armor:-24},note:'BRAWLER KEYSTONE — armour is for people who lose fights. Drink what you spill.'}],
+  [{nm:'The Wall Eternal',ic:'♾️',max:1,rar:5,eff:{lifePct:20,armor:50,reflectPct:12,lifeRegen:6},note:'CAPSTONE — the line does not break. It has never broken.'}],
+ ]},
+
+// ─────────────────────────────────────────────────────────────────── MENDER · HEALER
+{kw:'mn', nm:'Mender', sub:'Healer', ic:'➕', col:'#6dff8c',
+ role:'THE LIFELINE — keep everything standing. LANES: Barrier (stop damage before it lands), Regeneration (a steady tide of healing), Burst (yank them back from the brink), Utility (auras, cleanses, cooldowns).', tiers:[
+  [{nm:'Restoration',ic:'➕',max:6,eff:{lifeRegen:2,manaRegen:1}}],
+  [{nm:'Aegis Weave',ic:'🔷',max:6,lane:'ba',eff:{manaPct:8,armor:10}},
+   {nm:'Rejuvenation',ic:'🌱',max:6,lane:'ho',eff:{lifeRegen:2.5}},
+   {nm:'Emergency Focus',ic:'⚡',max:6,lane:'bu',eff:{skillDmgPct:6,cdrPct:3}},
+   {nm:'Attunement',ic:'🎵',max:6,lane:'ut',eff:{manaRegen:1.5,movePct:3}}],
+  [{nm:'Predictive Matrix',ic:'🧊',max:5,lane:'ba',eff:{manaPct:9,lifePct:3}},
+   {nm:'Blooming Field',ic:'🌾',max:5,lane:'ho',eff:{lifeRegen:3}},
+   {nm:'Flash Mending',ic:'💫',max:5,lane:'bu',eff:{cdrPct:4,skillDmgPct:6}},
+   {nm:'Hymn of Swiftness',ic:'🎶',max:5,lane:'ut',eff:{movePct:5,manaRegen:1.5}}],
+  [{nm:'Learn: Aegis Ward',ic:'🔷',max:1,rar:3,grantSkill:'gWard',note:'A pre-emptive absorb pool — cast it BEFORE the damage lands, not after.'}],
+  [{nm:'Crystalline Shell',ic:'💎',max:5,lane:'ba',eff:{manaPct:10,armor:22}},
+   {nm:'Deep Roots',ic:'🌳',max:5,lane:'ho',eff:{lifeRegen:3.5,lifePct:4}},
+   {nm:'Lay on Hands',ic:'🙌',max:5,lane:'bu',eff:{skillDmgPct:9,cdrPct:4}},
+   {nm:'Time Dial',ic:'⏱️',max:5,lane:'ut',eff:{cdrPct:5,manaCostPct:-6}}],
+  [{nm:'Mind over Matter',ic:'🧠',max:4,lane:'ba',rar:3,gives:'mindMatter',eff:{manaPct:9,lifeRegen:1.5},note:'◆ RULE-BREAKER — your MANA POOL becomes spell power: every 10 maximum mana adds skill damage. The barrier is the weapon.'},
+   {nm:'Overgrowth',ic:'🍃',max:4,lane:'ho',eff:{lifeRegen:4,lifeOnHit:4}},
+   {nm:'Mending Shockwave',ic:'💮',max:4,lane:'bu',rar:3,gives:'mendNova',eff:{lifeRegen:1.5,cdrPct:4},note:'◆ RULE-BREAKER — drinking a healing flask detonates a nova that damages nearby enemies.'},
+   {nm:'Purifying Aura',ic:'🕊️',max:4,lane:'ut',eff:{manaRegen:2.5,lifeRegen:2}}],
+  [{nm:'Learn: Purify',ic:'🕊️',max:1,rar:3,grantSkill:'gCleanse',note:'Strip the debuffs and hand out speed — party-wide in co-op.'}],
+  [{nm:'Mana Bulwark',ic:'🔷',max:1,rar:4,lane:'ba',gives:'manaShield',eff:{manaPct:26,armor:20},note:'BARRIER KEYSTONE — damage drains MANA before it touches life. Your blue bar is the health bar now.'},
+   {nm:'Eternal Bloom',ic:'🌸',max:1,rar:4,lane:'ho',eff:{lifeRegen:12,lifePct:12},note:'REGENERATION KEYSTONE — the tide never goes out. You out-heal what you cannot out-fight.'},
+   {nm:'Hand of Salvation',ic:'🙏',max:1,rar:4,lane:'bu',eff:{cdrPct:22,skillDmgPct:24,manaCostPct:18},note:'BURST KEYSTONE — the panic button comes back fast. It costs, and it is worth it.'},
+   {nm:'Chronomancer',ic:'⏳',max:1,rar:4,lane:'ut',eff:{cdrPct:16,movePct:14,manaRegen:4},note:'UTILITY KEYSTONE — you do not heal the damage; you edit the timeline that contained it.'}],
+  [{nm:'Lifebinder',ic:'♾️',max:1,rar:5,eff:{lifeRegen:8,lifeOnHit:6,lifeOnKill:12,manaRegen:3},note:'CAPSTONE — everything near you is harder to kill, including you.'}],
+ ]},
+
+// ─────────────────────────────────────────────────────────────────── STRIKER · MELEE DPS
+{kw:'st', nm:'Striker', sub:'Melee DPS', ic:'⚔️', col:'#ff6b6b',
+ role:'UP CLOSE — burst, mobility, and the boss mechanics that come with melee range. LANES: Berserker (high risk, higher reward), Assassin (crit and positioning), Martial Artist (combo speed), Executioner (finish the wounded).', tiers:[
+  [{nm:'Aggression',ic:'⚔️',max:6,eff:{dmgPct:7}}],
+  [{nm:'Reckless Fury',ic:'😤',max:6,lane:'be',eff:{dmgPct:8,armor:-6}},
+   {nm:'Shadow Craft',ic:'🗡️',max:6,lane:'as',eff:{crit:3}},
+   {nm:'Flow State',ic:'🥋',max:6,lane:'ma',eff:{asPct:5}},
+   {nm:'Finisher’s Eye',ic:'☠️',max:6,lane:'ex',eff:{execPct:14}}],
+  [{nm:'Rampage',ic:'🔥',max:5,lane:'be',eff:{fervorRatePct:14,dmgPct:5}},
+   {nm:'Deadly Aim',ic:'🎯',max:5,lane:'as',eff:{critMultPct:16}},
+   {nm:'Combo Chain',ic:'🔗',max:5,lane:'ma',eff:{asPct:6,lifeOnHit:3}},
+   {nm:'Cull the Weak',ic:'🪓',max:5,lane:'ex',eff:{execPct:16}}],
+  [{nm:'Learn: Bladestorm',ic:'🌀',max:1,rar:3,grantSkill:'gBlades',note:'A reckless flurry — exactly as controlled as it sounds.'}],
+  [{nm:'Blood Frenzy',ic:'🩸',max:5,lane:'be',eff:{dmgPct:9,lifesteal:2}},
+   {nm:'Shadowstep',ic:'👣',max:5,lane:'as',eff:{crit:4,critMultPct:10}},
+   {nm:'Frenzied Flurry',ic:'👊',max:5,lane:'ma',eff:{asPct:7,crit:2}},
+   {nm:'Mortal Strike',ic:'💀',max:5,lane:'ex',eff:{dmgPct:8,execPct:12}}],
+  [{nm:'Desperado',ic:'🎲',max:4,lane:'be',rar:3,gives:'desperation',eff:{crit:3,dmgPct:4},note:'◆ RULE-BREAKER — up to +15% crit chance as your life falls. Peak: one hit from death.'},
+   {nm:'Kinetic Hoarder',ic:'🔋',max:4,lane:'as',rar:3,gives:'kinetic',eff:{critMultPct:12},note:'◆ RULE-BREAKER — every second you do NOT attack stores +8% damage (to +120%). Your next strike spends it all.'},
+   {nm:'Perfect Form',ic:'☯️',max:4,lane:'ma',eff:{asPct:8,dmgPct:6}},
+   {nm:'Heroic Execution',ic:'⚡',max:4,lane:'ex',eff:{execPct:20,dmgPct:5}}],
+  [{nm:'Learn: Reaping Scythe',ic:'☠️',max:1,rar:3,grantSkill:'gReap',note:'A sweeping finisher for everything already bleeding.'}],
+  [{nm:'Avatar of Rage',ic:'😡',max:1,rar:4,lane:'be',eff:{dmgPct:30,asPct:12,armor:-40},note:'BERSERKER KEYSTONE — armour was slowing you down anyway.'},
+   {nm:'Glass Cannon',ic:'💥',max:1,rar:4,lane:'as',eff:{dmgPct:42,critMultPct:30,lifePct:-24},note:'ASSASSIN KEYSTONE — enormous damage for a steep chunk of your life pool. Kill it before it looks at you.'},
+   {nm:'Thousand Fists',ic:'👐',max:1,rar:4,lane:'ma',eff:{asPct:34,lifeOnHit:6},note:'MARTIAL ARTIST KEYSTONE — the combo never actually ends.'},
+   {nm:'Reaper’s Toll',ic:'☠️',max:1,rar:4,lane:'ex',eff:{execPct:60,dmgPct:12},note:'EXECUTIONER KEYSTONE — below a third health, nothing survives contact with you.'}],
+  [{nm:'Avatar of Slaughter',ic:'💀',max:1,rar:5,eff:{dmgPct:22,crit:8,critMultPct:30,asPct:10},note:'CAPSTONE — the room empties around you.'}],
+ ]},
+
+// ─────────────────────────────────────────────────────────────────── RANGER · RANGED PHYSICAL DPS
+{kw:'rg', nm:'Ranger', sub:'Ranged DPS', ic:'🏹', col:'#ffce4d',
+ role:'FROM RANGE — projectiles, mobility, uptime. LANES: Marksman (one heavy, precise shot), Gunslinger (volume of fire), Beastmaster (a companion does the walking), Kiter (never stop moving).', tiers:[
+  [{nm:'Marksmanship',ic:'🏹',max:6,eff:{dmgPct:6,movePct:2}}],
+  [{nm:'Steady Aim',ic:'🎯',max:6,lane:'mk',eff:{crit:3}},
+   {nm:'Rapid Fire',ic:'🔫',max:6,lane:'gs',eff:{asPct:5}},
+   {nm:'Trapcraft',ic:'🪤',max:6,lane:'hu',eff:{area:8}},
+   {nm:'Light Step',ic:'💨',max:6,lane:'kt',eff:{movePct:4,dashCdrPct:6}}],
+  [{nm:'Deadeye',ic:'🔭',max:6,lane:'mk',eff:{critMultPct:15}},
+   {nm:'Twin Barrels',ic:'🔫',max:2,lane:'gs',rar:3,eff:{proj:1},note:'One more projectile per rank. Volume is its own kind of accuracy.'},
+   {nm:'Explosive Traps',ic:'💣',max:6,lane:'hu',eff:{area:10,dmgPct:4}},
+   {nm:'Relentless',ic:'🏃',max:6,lane:'kt',eff:{movePct:4,asPct:4}}],
+  [{nm:'Learn: Ice Lance',ic:'🧊',max:1,rar:3,grantSkill:'gLance',note:'A piercing precision line-shot.'}],
+  [{nm:'Sniper’s Patience',ic:'🎯',max:5,lane:'mk',eff:{crit:4,dmgPct:6}},
+   {nm:'Hail of Lead',ic:'🌧️',max:5,lane:'gs',eff:{asPct:7,dmgPct:5}},
+   {nm:'Hunter’s Mark',ic:'🐺',max:5,lane:'hu',eff:{petDmgPct:16,dmgPct:4}},
+   {nm:'Kiting Mastery',ic:'🌀',max:5,lane:'kt',eff:{movePct:5,dashCdrPct:8}}],
+  [{nm:'First Strike',ic:'⚡',max:4,lane:'mk',rar:3,gives:'firstStrike',eff:{crit:3},note:'◆ RULE-BREAKER — your first hit on any enemy deals +35% damage.'},
+   {nm:'Gunslinger’s Grace',ic:'🤠',max:4,lane:'gs',eff:{asPct:8,crit:3}},
+   {nm:'Echolocation',ic:'🦇',max:4,lane:'hu',rar:3,gives:'echoloc',eff:{petDmgPct:12},note:'◆ RULE-BREAKER — +50% damage to enemies that haven’t noticed you yet. Strike from silence.'},
+   {nm:'Slipstream Edge',ic:'🌀',max:4,lane:'kt',rar:3,gives:'dashCrit',eff:{dashCdrPct:6,movePct:3},note:'◆ RULE-BREAKER — your first attack after a dash is a guaranteed CRIT.'}],
+  [{nm:'Learn: Volley',ic:'🏹',max:1,rar:3,grantSkill:'gVolley',note:'A wide burst fan — the answer to a corridor.'}],
+  [{nm:'Perfect Shot',ic:'🎯',max:1,rar:4,lane:'mk',eff:{critMultPct:60,pierce:3},note:'MARKSMAN KEYSTONE — it goes through the first one, and the second, and the third.'},
+   {nm:'Gun Kata',ic:'🔫',max:1,rar:4,lane:'gs',eff:{proj:2,asPct:20},note:'GUNSLINGER KEYSTONE — aiming is a rounding error at this rate of fire.'},
+   {nm:'Master of Beasts',ic:'🐾',max:1,rar:4,lane:'hu',eff:{petDmgPct:80,dmgPct:12},note:'BEASTMASTER KEYSTONE — your companion is the damage dealer. You are the handler.'},
+   {nm:'Never Standing Still',ic:'💨',max:1,rar:4,lane:'kt',eff:{movePct:26,asPct:18,dashCdrPct:30},note:'KITER KEYSTONE — the whole fight happens while you are moving away from it.'}],
+  [{nm:'The Blur',ic:'♾️',max:1,rar:5,eff:{dmgPct:18,asPct:14,movePct:12,proj:1},note:'CAPSTONE — nothing in the tower has ever caught you.'}],
+ ]},
+
+// ─────────────────────────────────────────────────────────────────── ELEMENTALIST · CASTER DPS
+{kw:'el', nm:'Elementalist', sub:'Caster DPS', ic:'🌈', col:'#d9b6ff',
+ role:'THE ELEMENTS — big area damage and the ailments underneath it. LANES: Pyromancer (burn), Cryomancer (freeze and control), Stormcaller (chain lightning), Warlock (rot that only grows).', tiers:[
+  [{nm:'Attunement',ic:'🌈',max:6,eff:{elemDmgPct:7}}],
+  [{nm:'Kindling',ic:'🔥',max:6,lane:'py',eff:{elemDmgPct:6,ailDmgPct:8}},
+   {nm:'Rime',ic:'❄️',max:6,lane:'cr',eff:{elemDmgPct:6,area:5}},
+   {nm:'Static',ic:'⚡',max:6,lane:'sh',eff:{elemDmgPct:6,crit:2}},
+   {nm:'Affliction',ic:'🕷️',max:6,lane:'wl',eff:{ailDmgPct:12}}],
+  [{nm:'Conflagration',ic:'🌋',max:5,lane:'py',eff:{ailDmgPct:14}},
+   {nm:'Deep Chill',ic:'🧊',max:5,lane:'cr',eff:{area:10,elemDmgPct:6}},
+   {nm:'Chain Reaction',ic:'⛓️',max:5,lane:'sh',eff:{elemDmgPct:8,area:8}},
+   {nm:'Creeping Rot',ic:'🦠',max:5,lane:'wl',eff:{ailDmgPct:15}}],
+  [{nm:'Learn: Flame Cone',ic:'🔥',max:1,rar:3,grantSkill:'gFlame',note:'Close-range ignition. Everything in the wedge burns.'}],
+  [{nm:'Meteor Heart',ic:'☄️',max:5,lane:'py',eff:{skillDmgPct:10}},
+   {nm:'Absolute Zero',ic:'🥶',max:5,lane:'cr',eff:{elemDmgPct:9,critMultPct:10}},
+   {nm:'Overcharge',ic:'🔌',max:5,lane:'sh',eff:{skillDmgPct:9,manaRegen:2}},
+   {nm:'Corrosive Venom',ic:'🧪',max:5,lane:'wl',eff:{ailDmgPct:16,dmgPct:4}}],
+  [{nm:'Trailblazer',ic:'🔥',max:4,lane:'py',rar:3,gives:'trail',eff:{elemDmgPct:6},note:'◆ RULE-BREAKER — your footsteps leave a burning trail. Enemies that cross it IGNITE.'},
+   {nm:'Frost Feed',ic:'🧊',max:4,lane:'cr',rar:3,gives:'frostFeed',eff:{elemDmgPct:6,manaRegen:1},note:'◆ RULE-BREAKER — killing a CHILLED enemy restores 5% of your mana.'},
+   {nm:'Thunderlord',ic:'🌩️',max:4,lane:'sh',eff:{skillDmgPct:12,cdrPct:6}},
+   {nm:'Resonance Cascade',ic:'🔗',max:4,lane:'wl',rar:3,gives:'cascade',eff:{ailDmgPct:16},note:'◆ RULE-BREAKER — enemies that die carrying an ailment DETONATE, damaging their neighbours.'}],
+  [{nm:'Learn: Thunderstorm',ic:'🌩️',max:1,rar:3,grantSkill:'gStorm',note:'Repeated strikes across the whole engagement.'}],
+  [{nm:'Everburn',ic:'🔥',max:1,rar:4,lane:'py',gives:'alwaysAil',eff:{elemDmgPct:24,ailDmgPct:24},note:'PYROMANCER KEYSTONE — every single hit applies your element’s ailment. No more rolling for it.'},
+   {nm:'Deep Freeze',ic:'❄️',max:1,rar:4,lane:'cr',gives:'deepFreeze',eff:{elemDmgPct:26,area:16},note:'CRYOMANCER KEYSTONE — chilled enemies freeze solid. Control is the damage.'},
+   {nm:'Conduction',ic:'⚡',max:1,rar:4,lane:'sh',gives:'conduction',eff:{elemDmgPct:26,skillDmgPct:16},note:'STORMCALLER KEYSTONE — lightning arcs between everything you have touched.'},
+   {nm:'Plague Lord',ic:'🕸️',max:1,rar:4,lane:'wl',eff:{ailDmgPct:70,dmgPct:10},note:'WARLOCK KEYSTONE — you do not kill things. You start something in them that does.'}],
+  [{nm:'Elemental Tide',ic:'♾️',max:1,rar:5,eff:{elemDmgPct:22,ailDmgPct:26,skillDmgPct:16,area:12},note:'CAPSTONE — fire, frost and storm, cycling without pause.'}],
+ ]},
+
+// ─────────────────────────────────────────────────────────────────── WARDEN · HYBRID / SUPPORT
+{kw:'wd', nm:'Warden', sub:'Support / Hybrid', ic:'🔮', col:'#b06bff',
+ role:'THE FLEX SLOT — buff, lock down, or let something else do the fighting. LANES: Enchanter (buffs and resource economy), Crowd Control (nothing gets to act), Spellblade (magic woven into melee), Summoner (a legion does the work).', tiers:[
+  [{nm:'Arcane Study',ic:'🔮',max:6,eff:{skillDmgPct:6,manaPct:6}}],
+  [{nm:'Empowerment',ic:'🎼',max:6,lane:'en',eff:{skillDmgPct:6,manaRegen:1.5}},
+   {nm:'Binding Words',ic:'🔒',max:6,lane:'cc',eff:{area:8,cdrPct:3}},
+   {nm:'Spellblade',ic:'⚔️',max:6,lane:'bm',eff:{dmgPct:6,skillDmgPct:4}},
+   {nm:'Bond',ic:'🐾',max:6,lane:'su',eff:{petDmgPct:12}}],
+  [{nm:'Power Infusion',ic:'⚡',max:5,lane:'en',eff:{asPct:5,skillDmgPct:7}},
+   {nm:'Hex Craft',ic:'🐸',max:5,lane:'cc',eff:{area:11,skillDmgPct:5}},
+   {nm:'Arcane Edge',ic:'🗡️',max:5,lane:'bm',eff:{dmgPct:7,crit:3}},
+   {nm:'Menagerie',ic:'🦴',max:5,lane:'su',eff:{petDmgPct:14}}],
+  [{nm:'Learn: Power Infusion',ic:'⚡',max:1,rar:3,grantSkill:'gEmpower',note:'Hand focused power to an ally — casting and attack speed, on demand.'}],
+  [{nm:'Resonant Field',ic:'📶',max:5,lane:'en',eff:{manaCostPct:-7,skillDmgPct:8}},
+   {nm:'Freeze Trap',ic:'🪤',max:5,lane:'cc',eff:{area:12,cdrPct:5}},
+   {nm:'Blade Weaving',ic:'🌀',max:5,lane:'bm',eff:{asPct:6,skillDmgPct:8}},
+   {nm:'Command',ic:'📯',max:5,lane:'su',eff:{petDmgPct:16,dmgPct:4}}],
+  [{nm:'Arcane Thrift',ic:'🪙',max:4,lane:'en',rar:3,gives:'thrift',eff:{manaRegen:1.5,skillDmgPct:6},note:'◆ RULE-BREAKER — every 4th skill cast is FREE.'},
+   {nm:'Poly-Hex',ic:'🐑',max:4,lane:'cc',eff:{area:14,cdrPct:6}},
+   {nm:'Overdraw',ic:'🩸',max:4,lane:'bm',rar:3,gives:'overdraw',eff:{manaPct:8,dmgPct:6},note:'◆ RULE-BREAKER — casting with too little mana pays the difference in LIFE.'},
+   {nm:'Dread Legion',ic:'👹',max:4,lane:'su',eff:{petDmgPct:20}}],
+  [{nm:'Learn: Time Warp',ic:'⏳',max:1,rar:3,grantSkill:'gSlow',note:'Warp time across a wide area — everything inside it crawls.'}],
+  [{nm:'Archmage',ic:'🧙',max:1,rar:4,lane:'en',eff:{skillDmgPct:50,manaCostPct:20},note:'ENCHANTER KEYSTONE — enormous spell power, and a bill to match.'},
+   {nm:'Absolute Control',ic:'🕸️',max:1,rar:4,lane:'cc',eff:{area:36,cdrPct:20},note:'CC KEYSTONE — the pack never gets a turn.'},
+   {nm:'Weaver',ic:'⚔️',max:1,rar:4,lane:'bm',gives:'doubleCast',eff:{dmgPct:16,skillDmgPct:16},note:'SPELLBLADE KEYSTONE — your skills cast TWICE. Sword and spell in the same motion.'},
+   {nm:'Legion Master',ic:'👺',max:1,rar:4,lane:'su',eff:{petDmgPct:80,dmgPct:10},note:'SUMMONER KEYSTONE — you have not personally fought anything in a long time.'}],
+  [{nm:'Jack of All Trades',ic:'🎭',max:1,rar:5,eff:{skillDmgPct:14,dmgPct:10,lifeRegen:4,petDmgPct:20,manaRegen:3,cdrPct:8},note:'CAPSTONE — whatever the party is missing, you are it.'}],
+ ]},
+
+// ─────────────────────────────────────────────────────────────────── THE BEAST · relic forms
+{kw:'bt', nm:'The Beast', sub:'Becoming', ic:'🐺', col:'#ff8c42', relic:true,
+ role:'BOSS-BOUND — Tower Lords drop BEAST RELICS. Absorb a relic to unlock its form; only ONE form prowls at a time. Click an unlocked form to switch.',
+ tiers: BEAST_FORMS.map(f=>[{nm:f.nm, ic:f.ic, max:1, rar:f.rar, beastKey:f.key, eff:f.eff, note:f.note}]) },
 ];
-// ---- procedural BRANCHING depth: extend each curated head into a shaped tree (rows widen/narrow, rarer & stronger downward) ----
-const TREE_ROWS=30;   // 30 rows per tree — bigger, but every node is impactful and tree-specific
-// Active SKILLS scattered through each tree — allocating the node GRANTS that skill gem (the tree is a source of skills, not just stats).
-// Lists are long so skills appear all the way down a 70-row column, themed per spec.
-const TREE_SKILLS={
-  tk:['gBulwark','gTaunt','gWhirl','gShield','gQuake','gVortex','gReap','gShock','gBlades','gLeech','gMortar','gComet','gSlow'],   // gTaunt/gVortex/gLeech placed early enough in the list to survive the placement-slot cutoff (see extendSpecs) — lands them at well-spread rows (~3/15/27) instead of falling off the tail
-  st:['gWhirl','gVolley','gReap','gFlame','gBarrage','gRecord','gComet','gBeam','gBlades','gMortar','gShock','gLance'],
-  mn:['gWard','gShield','gBloom','gPoison','gRescue','gFrost','gCleanse','gBulwark','gLeech','gSlow','gFuture','gShock','gHeal','gBlades'],   // gWard/gBloom/gRescue/gCleanse (Mender lane skills) placed at indices 0/2/4/6 — well inside the placement-slot cutoff (see extendSpecs) — lands them at spread rows (~3/9/16/21) instead of falling off the tail
-  wd:['gNova','gEmpower','gSlow','gFrost','gChain','gBeam','gShock','gMeteor','gStorm','gPoison','gVortex','gComet','gMortar','gDeja'],   // gEmpower/gSlow (Enchanter/CC Specialist lane skills) placed at indices 1/2 — well inside the placement-slot cutoff (see extendSpecs) — lands them at early, spread rows instead of falling off the tail
-  rg:['gBlink','gLance','gVolley','gReap','gShock','gBarrage','gComet','gBeam','gBlades','gSunder'],
-  el:['gTide','gFlame','gFrost','gChain','gShock','gStorm','gMeteor','gNova','gVortex','gPoison','gBeam','gSunder'],
+// Sub-role LANE labels — surfaced in every talent tooltip so you always know which archetype a node belongs to.
+const LANE_LBL={
+  mt:'Main Tank',    ot:'Off-Tank',       ev:'Evasion Tank',  br:'Brawler Tank',      // Vanguard
+  ba:'Barrier',      ho:'Regeneration',   bu:'Burst Healer',  ut:'Utility / Aura',    // Mender
+  be:'Berserker',    as:'Assassin',       ma:'Martial Artist',ex:'Executioner',       // Striker
+  mk:'Marksman',     gs:'Gunslinger',     hu:'Beastmaster',   kt:'Kiter',             // Ranger
+  py:'Pyromancer',   cr:'Cryomancer',     sh:'Stormcaller',   wl:'Warlock',           // Elementalist
+  en:'Enchanter',    cc:'Crowd Control',  bm:'Spellblade',    su:'Summoner',          // Warden
 };
-// Sub-role LANE tags for "Learn: X" skill-grant nodes (Vanguard phase 1 — reused by later spec phases).
-// Keyed 'specKw:skillId' → lane ('mt' main tank / 'ot' off-tank / 'ev' evasion / 'br' brawler / undefined = neutral).
-const TREE_SKILL_LANE={
-  'tk:gTaunt':'mt',    // Main Tank — the boss-wrangler's signature crowd-control tool
-  'tk:gVortex':'ot',   // Off-Tank — Singularity drags scattered adds into a pile you can hold
-  'tk:gLeech':'br',    // Brawler — Transfusion trades aggression for sustain
-  'mn:gWard':'ba',     // Barrier — Aegis Ward: a preemptive absorb pool, cast before the damage lands
-  'mn:gBloom':'ho',    // Regeneration — Rejuvenating Spores: continuous heal-over-time, not a burst
-  'mn:gRescue':'bu',   // Burst — Lay on Hands: a huge single-target panic-button heal
-  'mn:gCleanse':'ut',  // Utility — Purify: cleanses debuffs and grants a speed buff, party-wide in co-op
-  'st:gBlades':'be',   // Berserker — Bladestorm: a reckless flurry fits high risk/reward aggression
-  'st:gRecord':'as',   // Assassin/Burst — Recorded Strike: arm-then-replay is a crit-focused burst window
-  'st:gReap':'ex',     // Executioner/Finisher — Reaping Scythe: a sweeping finisher for wounded prey
-  'st:gBarrage':'bt',  // Brutalist/Sustained — Barrage: a rapid sustained stream, no-crit trade-based damage (code 'bt' — 'br' is already Vanguard's Brawler lane key and LANE_LBL is a shared global map, so reusing it would mislabel this node)
-  'rg:gLance':'mk',    // Marksman/Sniper — Ice Lance: a piercing precision line-shot
-  'rg:gVolley':'tr',   // Trickster/Burst — Volley: a wide burst fan fits explosive blink-driven windows
-  'rg:gBarrage':'kt',  // Kiting/Sustained — Barrage: a rapid sustained stream, continuous uptime
-  'rg:gSunder':'hu',   // Hunter/Utility — Sunder: marching ground eruptions, battlefield trickery flavour
-  'el:gFlame':'py',    // Pyromancer — Flame Cone: close-range ignite fits the fire specialist
-  'el:gFrost':'cr',    // Cryomancer — Frost Nova: chill/control fits the cold specialist
-  'el:gStorm':'sh',    // Stormcaller — Thunderstorm: repeated lightning strikes fits the shock specialist
-  'el:gPoison':'co',   // Conflux/Sustained — Toxic Cloud: a lingering damage-over-time zone is the purest "sustained ailment" fit in the skill list
-  'wd:gSlow':'cc',     // CC Specialist — Time Warp: warps time in a large area, slowing every enemy caught inside — a ready-made signature
-  'wd:gChain':'bm',    // Battlemage/Spellblade — Chain Bolt: a snappy, melee-adjacent zap
-  'wd:gMeteor':'ar',   // Arcane Artillery — Meteor: the big single-target/AoE nuke
-  'wd:gEmpower':'en',  // Enchanter/Support — Power Infusion: bestows an ally with focused casting/attack speed, the party-buff signature
-};
-function skillLane(kw,sid){ return TREE_SKILL_LANE[kw+':'+sid]; }
-const LANE_LBL={mt:'Main Tank',ot:'Off-Tank',ev:'Evasion',br:'Brawler',   // sub-role identity labels surfaced in talent tooltips (Vanguard phase 1)
-  ba:'Barrier',ho:'Regeneration',bu:'Burst',ut:'Utility',                 // Mender phase 2 lanes
-  be:'Berserker',as:'Assassin',ex:'Executioner',bt:'Brutalist',           // Striker phase 3 lanes ('bt' used instead of 'br' — that code is already Vanguard's Brawler in this shared map)
-  mk:'Marksman',tr:'Trickster',kt:'Kiting',hu:'Hunter',                   // Ranger phase 3 lanes
-  py:'Pyromancer',cr:'Cryomancer',sh:'Stormcaller',co:'Conflux',          // Elementalist phase 4 lanes
-  cc:'CC Specialist',en:'Enchanter',bm:'Battlemage',ar:'Arcane Artillery'};   // Warden phase 4 lanes
-// Unique, hand-authored KEYSTONES per spec (used at the single-node bottlenecks instead of bland stat sums).
-// A few are BUILD-DEFINING: `gives` sets a flag the engine reads (blood magic, always-ailment, double-cast, mana shield).
-const TREE_KEYSTONES={
-  tk:[{nm:'Juggernaut',ic:'🐗',eff:{lifePct:24,armor:60,asPct:-8}},{nm:'Thornmail',ic:'🌵',eff:{reflectPct:24,armor:40}},
-      {nm:'Mana Bulwark',ic:'🔷',gives:'manaShield',eff:{manaPct:24,armor:20},note:'Damage drains MANA before life (while mana lasts).'},
-      {nm:'Last Bastion',ic:'⛰️',eff:{lowHpDmgPct:30,lifePct:10},lane:'mt',note:'MAIN TANK — the lower you fall, the harder you hit back. You were built to eat the boss\'s biggest swing.'},
-      {nm:'Bloodforge',ic:'🩸',eff:{lifeOnKill:16,lifePct:8},lane:'br',note:'BRAWLER — every kill feeds you life. Trade caution for tempo.'},
-      {nm:'Aegis Core',ic:'⛨',eff:{armor:44},proc:{on:'hurt',chance:0.2,type:'shield',dur:1.0},lane:'mt',note:'MAIN TANK — armour plus a chance to shrug off the follow-up hit entirely. The boss-wrangler\'s core stat.'},
-      {nm:'Unstoppable',ic:'🗿',eff:{lifeFlat:80,armor:36}},
-      {nm:'Vengeful Wall',ic:'🛡️',eff:{reflectPct:18,lifePct:10},proc:{on:'hurt',chance:0.14,type:'nova',amt:1.5,r:7},lane:'br',note:'BRAWLER — punished for hitting you: reflect damage plus a retaliation nova on every few hits taken.'},
-      {nm:'Titanheart',ic:'💎',eff:{lifePct:20,lifeRegen:5}},
-      {nm:'Mountain Stance',ic:'🏔️',gives:'ironConvert',eff:{armor:34},note:'+1% damage per 15 armour — the wall hits back.'},
-      {nm:'One Against Many',ic:'👥',gives:'oneMany',eff:{lifePct:8},lane:'ot',note:'OFF-TANK — RULE-BREAKER — +5% damage per nearby enemy (to +40%), but −15% against a lone target. Wade into the adds.'},
-      {nm:'Perfect Scar',ic:'🩹',gives:'perfectScar',eff:{lifePct:6},lane:'ev',note:'EVASION — RULE-BREAKER — each hit you take within 6s hurts 8% less than the last (to −40%). Sustained fire barely marks you.'},
-      {nm:'Borrowed Time',ic:'⏳',gives:'borrowedTime',eff:{lifePct:5},note:'RULE-BREAKER — lethal damage cannot kill you instantly: it is STORED and lands 8 seconds later. Kill a guardian before then and the debt is forgiven.'},
-      {nm:'Refuse',ic:'🚫',gives:'refuse',eff:{armor:20},note:'DEFENSE — once per floor, flatly REFUSE the first heavy blow that lands. It simply does not happen.'},
-      {nm:'Gravitational Execution',ic:'🕳️',gives:'gravExec',eff:{dmgPct:8},lane:'ot',note:'OFF-TANK — COMBO — enemies below 20% health are dragged toward you when struck. Grab the stragglers, keep the pack together.'},
-      {nm:'Living Dungeon',ic:'🏰',gives:'livingDungeon',eff:{lifeFlat:30,int:true},note:'ULTIMATE — the slain become ROOMS within your body: every 50 absorbed, a room forms and grants a permanent trait this run.'},
-      {nm:'Bossborn',ic:'👹',gives:'bossborn',eff:{lifePct:8},lane:'mt',note:'MAIN TANK — ULTIMATE — you fight in PHASES like a guardian: above 70% health +10% damage, the middle band +25%, below 30% +40%. Your desperation is a phase transition.'},
-      {nm:'Phase Step',ic:'🌀',eff:{dodgePct:14,movePct:6},lane:'ev',note:'EVASION — ★ You are rarely where the blow lands — the first true chance to dodge attacks outright, rather than merely soften them.'}],
-  st:[{nm:'Glass Cannon',ic:'💥',eff:{dmgPct:42,critMultPct:30,lifePct:-24},lane:'as',note:'ASSASSIN — RULE-BREAKER — enormous damage and crit multiplier for a steep chunk of your life pool. Burst it down before it burns you.'},{nm:'Executioner',ic:'☠️',eff:{execPct:48,critMultPct:30},lane:'ex',note:'EXECUTIONER — wounded prey dies faster. The lower they fall, the harder you finish them.'},
-      {nm:'Blood Magic',ic:'🩸',gives:'bloodMagic',eff:{dmgPct:24},lane:'bt',note:'BRUTALIST — Skills cost LIFE instead of mana — a grinding, ever-present trade fuelling sustained damage.'},
-      {nm:'Berserker',ic:'😤',eff:{dmgPct:22,asPct:14,lifePct:-8},lane:'be',note:'BERSERKER — raw offense for a slice of your life total. High risk, higher reward.'},{nm:'Bloodlust',ic:'🦇',eff:{lifesteal:6,dmgPct:14}},
-      {nm:'Rampager',ic:'🔥',eff:{fervorRatePct:30},proc:{on:'crit',chance:0.25,type:'fervor',amt:14}},{nm:'Annihilator',ic:'💢',eff:{dmgPct:26,asPct:8}},
-      {nm:'Headhunter',ic:'🎯',eff:{critMultPct:44,crit:6},lane:'as',note:'ASSASSIN — pure crit-chance and crit-multiplier — every burst window swings for the fences.'},{nm:'Carnage',ic:'⚔️',eff:{dmgPct:16},proc:{on:'crit',chance:0.2,type:'nova',amt:1.5,r:7}},
-      {nm:'Brutalist',ic:'🔨',gives:'noCrit',eff:{skillDmgPct:50,dmgPct:25},lane:'bt',note:'BRUTALIST — Your hits can NEVER crit — but deal far more flat damage. No burst windows, just relentless grinding pressure.'},
-      {nm:'Bloodrage',ic:'🩸',gives:'noHeal',eff:{dmgPct:35,asPct:14},lane:'be',note:'BERSERKER — No passive healing (regen / leech / on-hit) — but immense offense. There is no plan B.'},
-      {nm:'Glass Soul',ic:'🪞',gives:'glassSoul',eff:{critMultPct:20},lane:'as',note:'ASSASSIN — RULE-BREAKER — you cannot gain ARMOUR. Every point of armour becomes critical damage instead — all in on the burst.'},
-      {nm:'Vendetta',ic:'🗡️',gives:'vendetta',eff:{dmgPct:10},lane:'ex',note:'EXECUTIONER — MEMORY — +25% damage against any lord who has ever killed you. The grudge cuts both ways.'},
-      {nm:'Inverted Fate',ic:'🎲',gives:'invFate',eff:{dmgPct:8},note:'RULE-BREAKER — critical hits deal NORMAL damage; every ordinary hit has a 15% chance to deal CATASTROPHIC (×3) damage instead.'},
-      {nm:'Momentum Pact',ic:'📜',gives:'momPact',eff:{dmgPct:6},lane:'be',note:'BERSERKER — RISK — each floor cleared without healing: +4% damage (max +20%)… but enemies grow +5% tougher per stack. Healing breaks the pact.'},
-      {nm:'Marked for Greatness',ic:'⭐',gives:'marked',eff:{dmgPct:5},lane:'ex',note:'EXECUTIONER — RISK — one elite per floor is CROWNED: far stronger, but felling it permanently sharpens you (+2% damage this run, stacking).'},
-      {nm:'Master of the Empty Hand',ic:'👊',gives:'emptyHand',eff:{asPct:6},note:'ULTIMATE — unequip your WEAPON entirely: bare fists gain +50% damage, +30% attack speed and +2 projectiles of pure force.'},
-      {nm:'Midas Shrapnel',ic:'🪙',gives:'midas',eff:{goldPct:10},note:'GOLD — enemies you kill BURST into gold coins… but the coins melt to nothing in 3 seconds. Sprint for your pay.'},
-      {nm:'Cursed Covenant',ic:'🪬',gives:'cursedCov',eff:{dmgPct:5},lane:'bt',note:'BRUTALIST — GEAR — +8% damage for every equipped item carrying a NEGATIVE stat. Wear your curses proudly.'}],
-  mn:[{nm:'Phoenix Heart',ic:'🔥',eff:{lifeRegen:9,lifePct:16,lifesteal:4},lane:'bu',note:'BURST — a deep well of life to draw on between the big, decisive heals.'},{nm:'Transfusion',ic:'🩹',eff:{lifeOnHit:8,lifesteal:4}},
-      {nm:'Sanctuary',ic:'✨',eff:{lifeRegen:4},proc:{on:'hurt',chance:0.22,type:'shield',dur:1.1},lane:'ba',note:'BARRIER — getting hurt has a chance to throw up a reactive shield of its own, on top of whatever you pre-cast.'},{nm:'Lifebound',ic:'💞',eff:{lifePct:14,lifeOnKill:14}},
-      {nm:'Wellspring',ic:'⛲',eff:{lifeRegen:7,manaRegen:4},lane:'ho',note:'REGENERATION — the mana to keep casting Rejuvenating Spores, plus regen to match it.'},{nm:'Bloodfeast',ic:'🍖',eff:{lifesteal:7,lifeOnKill:10}},
-      {nm:'Guardian Angel',ic:'😇',eff:{lifePct:10},proc:{on:'hurt',chance:0.16,type:'heal',amt:0.12},lane:'bu',note:'BURST — an automatic emergency heal when you are struck, the same instinct that drives Lay on Hands.'},{nm:'Immortal',ic:'♾️',eff:{lifePct:22,lifeRegen:6,dmgPct:-10}},
-      {nm:'Overgrowth',ic:'🌿',gives:'overgrowth',eff:{lifeRegen:5},lane:'ho',note:'REGENERATION — +2% damage per point of life regen/s — life feeds the harvest, and stacking HoTs feeds it fastest.'},
-      {nm:'Hungry Weapon',ic:'🦷',gives:'hungryWpn',eff:{dmgPct:10},note:'RISK — +1.5% damage per recent kill (max +30%)… but go 6s without killing and the weapon drinks YOUR blood.'},
-      {nm:'Ancestral Pattern',ic:'👘',gives:'ancestral',eff:{skillDmgPct:8},lane:'ut',note:'MEMORY / UTILITY — the ability you used most in your PREVIOUS run echoes: it casts itself, free, every ~14 seconds in combat.'},
-      {nm:'Corpse Orchard',ic:'🌱',gives:'orchard',eff:{lifeRegen:3},note:'COMBO — enemies killed while CHILLED sprout a hungry plant-spirit that fights for 5 seconds.'},
-      {nm:'Repetition',ic:'🔂',gives:'repetition',eff:{skillDmgPct:8},lane:'ut',note:'MEMORY / UTILITY — every THIRD use of the same skill repeats the first two uses simultaneously (two free echo casts) — Purify included.'},
-      {nm:'Bulwark of Faith',ic:'🔷',gives:'wardMaster',eff:{lifePct:8},lane:'ba',note:'BARRIER — ★ Aegis Ward hits harder and holds far longer — your pre-cast shield becomes the centrepiece of your kit.'}],
-  wd:[{nm:'Archmage',ic:'👁️',eff:{skillDmgPct:42,manaCostPct:-18},lane:'ar',note:'ARCANE ARTILLERY — raw, unfiltered nuking power.'},{nm:'Elementalist',ic:'🌈',gives:'alwaysAil',eff:{elemDmgPct:30,ailDmgPct:30},note:'Your elemental hits ALWAYS apply their ailment.'},
-      {nm:'Twincast',ic:'🔁',gives:'doubleCast',eff:{skillDmgPct:8,manaCostPct:8},note:'Skills have a 35% chance to fire twice.'},
-      {nm:'Overcharge',ic:'⚡',eff:{skillDmgPct:18},proc:{on:'cast',chance:0.2,type:'nova',amt:1.6,r:8}},{nm:'Channeler',ic:'🌀',eff:{area:24,cdrPct:14,manaRegen:4}},
-      {nm:'Cataclysm',ic:'☄️',eff:{skillDmgPct:26,area:12},lane:'ar',note:'ARCANE ARTILLERY — the big nuker\'s core stat: damage and area, together.'},{nm:'Battery',ic:'🔋',eff:{manaPct:20,manaOnKill:16},lane:'en',note:'ENCHANTER/SUPPORT — a deep mana pool refilled by every kill: the party\'s mana economy, solved.'},
-      {nm:'Stormcaller',ic:'🌩',eff:{skillDmgPct:14},proc:{on:'cast',chance:0.18,type:'shock'},lane:'cc',note:'CC SPECIALIST — casting sometimes locks a target down with a shock.'},{nm:'Archon',ic:'🌟',eff:{skillDmgPct:30,area:16,cdrPct:10},lane:'ar',note:'ARCANE ARTILLERY — damage, area and cooldown, all at once — the artillery officer\'s dream node.'},
-      {nm:'Overclock',ic:'⏱️',gives:'noManaRegen',eff:{cdrPct:25,manaPct:25},lane:'en',note:'ENCHANTER/SUPPORT — No mana regen — but skills recharge much faster and your mana pool is far larger.'},
-      {nm:'Stillness',ic:'🧘',gives:'stillness',eff:{skillDmgPct:10},lane:'ar',note:'ARCANE ARTILLERY — RULE-BREAKER — stand still 0.6s for +45% damage. Start moving and the bonus travels with you for 2s.'},
-      {nm:'Unspent Power',ic:'💎',gives:'unspent',eff:{manaPct:10},lane:'ar',note:'ARCANE ARTILLERY — RISK — every UNSPENT skill point grants +3% damage (max +18%). Spending them takes the power away.'},
-      {nm:'Grave of Possibilities',ic:'👻',eff:{skillDmgPct:8},proc:{on:'cast',chance:0.12,type:'minion'},note:'SUMMON — casting sometimes raises a spirit of a skill you never learned. It fights for 8 seconds.'},
-      {nm:'Unstable Casting',ic:'🎇',gives:'unstable',eff:{skillDmgPct:18},note:'RISK — every skill casts TWICE… but the second cast aims wherever it pleases.'},
-      {nm:'Damage Migration',ic:'↪️',gives:'migrate',eff:{lifePct:6},lane:'bm',note:'BATTLEMAGE/SPELLBLADE — DEFENSE — 40% of damage you take is MIGRATED onto any enemy you have MARKED (Predator Blink opens the channel).'},
-      {nm:'Tower Debt',ic:'🏦',gives:'towerDebt',eff:{manaFlat:15,int:true},note:'RISK — allocating this grants +2 skill points IMMEDIATELY… but your next 3 level-ups grant none. The tower collects.'},
-      {nm:'The Last Spell',ic:'☝️',gives:'lastSpell',eff:{manaPct:10},note:'ULTIMATE — while EXACTLY ONE skill is bound to your bar, it gains +60% damage, −30% mana cost and faster cooldowns. One answer to everything.'},
-      {nm:'Soul Contract',ic:'📜',gives:'soulContract',eff:{manaFlat:10,int:true},note:'PACT — while this is allocated, every guardian is BOUND to relinquish a UNIQUE item. The point you spent here is the fee.'},
-      {nm:'Deep Rime',ic:'🥶',gives:'deepFreeze',eff:{skillDmgPct:8},lane:'cc',note:'CC SPECIALIST — chilled enemies that take another chilling hit while still cold are FLASH-FROZEN: briefly locked in place, unable to move or attack.'},
-      {nm:'Spellblade',ic:'🗡️',gives:'spellblade',eff:{dmgPct:10},lane:'bm',note:'BATTLEMAGE/SPELLBLADE — every basic attack projects a short-range magical cleave, splashing bonus elemental damage onto nearby foes.'}],
-  el:[{nm:'Conflux',ic:'🌈',gives:'alwaysAil',eff:{elemDmgPct:20},lane:'co',note:'CONFLUX/SUSTAINED — Your elemental hits ALWAYS apply their ailment. The ailment IS the build.'},
-      {nm:'Mind over Matter',ic:'🧠',gives:'mindMatter',eff:{manaPct:16},note:'Skill damage grows with your invested mana (+1% per 10 flat mana, +1% per 3% mana).'},
-      {nm:'Cinderwake',ic:'🔥',eff:{ailDmgPct:40},proc:{on:'crit',chance:0.5,type:'ignite'},lane:'py',note:'PYROMANCER — every crit has a coin-flip chance to set the target ablaze.'},
-      {nm:'Frostheart',ic:'❄️',eff:{elemDmgPct:18,area:10},proc:{on:'hit',chance:0.25,type:'chill'},lane:'cr',note:'CRYOMANCER — a wide chilling aura woven into every hit.'},
-      {nm:'Stormlord',ic:'🌩',eff:{skillDmgPct:16,crit:5},proc:{on:'cast',chance:0.3,type:'shock'},lane:'sh',note:'STORMCALLER — casting sometimes discharges a bolt of its own.'},
-      {nm:'Trinity',ic:'🔺',eff:{elemDmgPct:24,ailDmgPct:24}},
-      {nm:'Twin Elements',ic:'🔁',gives:'doubleCast',eff:{manaCostPct:10},note:'Skills have a 35% chance to fire twice.'},
-      {nm:'Slow Burn',ic:'🕯️',eff:{ailDmgPct:55,dmgPct:-10},lane:'py',note:'PYROMANCER — The ailment IS the build.'},
-      {nm:'Reactor',ic:'☢️',eff:{elemDmgPct:14},proc:{on:'kill',chance:0.3,type:'nova',amt:1.5,r:8},lane:'sh',note:'STORMCALLER — every kill has a chance to chain into a detonation.'},
-      {nm:'Steam Rupture',ic:'♨️',gives:'steamRupture',eff:{ailDmgPct:15},lane:'cr',note:'CRYOMANCER — COMBO — THERMAL SHOCK reactions rupture in an area, scalding and chilling everything caught in the cloud.'},
-      {nm:'Grand Conduction',ic:'🌩️',gives:'conduction',eff:{elemDmgPct:12},lane:'sh',note:'STORMCALLER — COMBO — OVERLOAD and SUPERCONDUCT reactions reach half again as far and hit harder.'},
-      {nm:'Tower Hunger',ic:'🗼',gives:'towerHunger',eff:{dmgPct:6},lane:'co',note:'CONFLUX/SUSTAINED — FLOOR-BOUND — +2% damage per floor climbed without returning to the sanctuary (max +40%). Going home resets the hunger.'},
-      {nm:'Loud Magic',ic:'📣',gives:'loudMagic',eff:{skillDmgPct:22},lane:'py',note:'PYROMANCER — RISK — spells hit far harder… but casting sometimes WAKES something elsewhere on the floor.'},
-      {nm:'Walking Catastrophe',ic:'☄️',gives:'catastrophe',eff:{elemDmgPct:16,dmgPct:-8},lane:'co',note:'CONFLUX/SUSTAINED — ULTIMATE — enemies that die carrying an ailment PASS IT ON to the nearest living foe. Plagues never end.'},
-      {nm:'The Unwritten',ic:'📖',gives:'unwritten',eff:{skillDmgPct:6},note:'ULTIMATE — your class is ERASED: every row of every tree opens to you… but every node now costs TWO points.'}],
-  rg:[{nm:'Phantom',ic:'👻',eff:{movePct:22,asPct:18,crit:6,dashCdrPct:24}},{nm:'Apex Predator',ic:'🐅',eff:{dmgPct:18,critMultPct:28},lane:'mk',note:'MARKSMAN — pure damage and crit multiplier: the predator\'s eye for the killing shot.'},
-      {nm:'Momentum',ic:'🌊',gives:'momentum',eff:{movePct:12},lane:'kt',note:'KITING — +1% damage per 2% move speed bonus — speed IS power, and you never stop moving.'},
-      {nm:'Windrunner',ic:'🍃',eff:{movePct:16,asPct:8},proc:{on:'dash',chance:0.6,type:'haste',dur:2.5},lane:'kt',note:'KITING — every dash chains into more speed, keeping you perpetually ahead of the fight while you pour on continuous damage.'},
-      {nm:'Shadowdancer',ic:'🌑',eff:{dashCdrPct:26},proc:{on:'dash',chance:0.5,type:'shield',dur:0.9}},
-      {nm:'Deadeye',ic:'🎯',eff:{proj:2,dmgPct:12},lane:'mk',note:'MARKSMAN — more projectiles, more damage — precision fire support.'},{nm:'Bloodhound',ic:'🐕',eff:{xpPct:16,goldPct:20},lane:'hu',note:'HUNTER — a nose for XP and gold. The resourceful tracker\'s bread and butter.'},
-      {nm:'Tempest',ic:'🌪️',eff:{asPct:24,movePct:10,lifePct:-10}},{nm:'Trickster',ic:'🃏',eff:{crit:8,dashCdrPct:14},proc:{on:'dash',chance:0.4,type:'nova',amt:1.3,r:6},lane:'tr',note:'TRICKSTER — every dash is a loaded gun: crit chance plus a chance to detonate on the way past. Explosive burst windows.'},
-      {nm:'Hollow Victory',ic:'🕳️',gives:'hollow',eff:{goldPct:25},lane:'hu',note:'HUNTER — RULE-BREAKER — normal enemies drop NOTHING. Elites & bosses drop far more, uniques far likelier. Hunt selectively, loot heavily.'},
-      {nm:'Void Blink',ic:'🌀',gives:'blinkVoid',eff:{dashCdrPct:8},lane:'tr',note:'TRICKSTER — BLINK EVOLUTION — your departure point collapses into a vacuum, dragging enemies in and crushing them. A burst window built into your mobility.'},
-      {nm:'Echo Blink',ic:'👤',gives:'blinkEcho',eff:{dashCdrPct:8},lane:'tr',note:'TRICKSTER — BLINK EVOLUTION — your afterimage lingers, then detonates a nova one second later. Blink twice, burst twice.'},
-      {nm:'Sacrificial Blink',ic:'🩸',gives:'blinkSacr',eff:{dashCdrPct:8},lane:'hu',note:'HUNTER — BLINK EVOLUTION — Blink costs 6% life instead of mana and EXPLODES at both ends. Battlefield trickery, paid in blood.'},
-      {nm:'Armour of Distance',ic:'🏃',gives:'distArmor',eff:{movePct:8},lane:'kt',note:'KITING — RULE-BREAKER — gain up to +80 armour from ground covered in the last seconds. Standing still leaves you naked — never stop moving, never stop dealing damage.'},
-      {nm:'Predator Blink',ic:'🎯',gives:'blinkPred',eff:{dashCdrPct:8},lane:'mk',note:'MARKSMAN — BLINK EVOLUTION — Blink teleports you BEHIND the strongest nearby enemy and MARKS it: +20% damage taken for 5s. The sniper picks its target and commits.'},
-      {nm:'Unbroken Step',ic:'➡️',gives:'unbroken',eff:{movePct:6},note:'DEFENSE — take 15% less damage while advancing toward your aim… and 10% MORE while retreating. Never back down.'},
-      {nm:'Debt Collector',ic:'🪙',gives:'collector',eff:{goldPct:10},lane:'hu',note:'HUNTER — SUMMON — every ~18s in combat, a collector-spirit rises. Its bite grows with the gold you are carrying.'},
-      {nm:'Fractured Blink',ic:'🪞',gives:'blinkFrac',eff:{dashCdrPct:8},lane:'hu',note:'HUNTER — BLINK EVOLUTION — Blink offers THREE destinations, hesitates half a second while enemies commit… then takes the safest one. Battlefield trickery at its purest.'},
-      {nm:'Counterfeiter',ic:'🎭',gives:'counterfeit',eff:{goldPct:8},lane:'hu',note:'HUNTER — GOLD — a fifth of the coins you THROW (G) are fakes packed with powder: enemies that grab them DETONATE. Battlefield trickery, monetized.'},
-      {nm:'Hoarder’s Burden',ic:'🎒',gives:'hoarder',eff:{movePct:4},lane:'hu',note:'HUNTER — RULE-BREAKER — +1% move speed per EMPTY inventory slot. Travel light, arrive first — the loot-focused scavenger\'s edge.'},
-      {nm:'The Many',ic:'👥',gives:'theMany',eff:{lifePct:6},note:'ULTIMATE — you are THREE: two echo-selves fight beside you always… but each body is weaker (−20% your damage).'}],
-};
-// Unique QUIRK nodes — one-point rule-benders woven through the generated rows so the filler
-// isn't wall-to-wall stat repeats. Every one is engine-backed (see recompute / combat hooks).
-const TREE_QUIRKS={
-  tk:[{nm:'Unmoved',ic:'🗿',gives:'anchor',eff:{armor:24},note:'you CANNOT be knocked back. The mountain does not ask.'},
-      {nm:'Payback',ic:'🔁',gives:'payback',eff:{dmgPct:4},note:'for 4s after taking a hit, your next strike deals +40% damage.'},
-      {nm:'Giant Slayer',ic:'🪓',gives:'giantSlayer',eff:{dmgPct:4},note:'+20% damage to elites and guardians. The bigger they are…'},
-      {nm:'Gravity Well',ic:'🕳️',gives:'gravityWell',eff:{armor:12},note:'standing still slowly PULLS enemies toward you; moving pushes them away.'},
-      {nm:'Heavy Sleeper',ic:'😴',gives:'sleeper',eff:{lifeRegen:2},note:'stand perfectly still 3s to SLEEP: immune to everything, but the world goes dark until you move.'}],
-  st:[{nm:'Overkill',ic:'💥',gives:'overkill',eff:{dmgPct:4},note:'damage beyond a kill erupts as a shockwave into nearby foes.'},
-      {nm:'Culling Blade',ic:'🔪',gives:'cull',eff:{execPct:10},note:'non-boss enemies below 8% health simply DIE to any hit.'},
-      {nm:'Hubris',ic:'👑',gives:'hubris',eff:{dmgPct:5},note:'+30% damage to elites & guardians… but you take 15% more damage from everything.'},
-      {nm:'Desperado',ic:'🎲',gives:'desperation',eff:{crit:3},note:'up to +15% crit chance as your life falls. Peak: one hit from death.'},
-      {nm:'Kinetic Hoarder',ic:'🔋',gives:'kinetic',eff:{dmgPct:3},note:'each second you do NOT attack stores +8% damage (to +120%). Your next strike spends it all.'},
-      {nm:'Phantom Strikes',ic:'👥',gives:'phantom',eff:{crit:2},note:'shots that hit NOTHING build stacks; your next hit echoes +10% per stack (max 10).'},
-      {nm:'Momentum Siphon',ic:'⏱️',gives:'siphon',eff:{asPct:4},note:'landing a crit STEALS speed: Swift for 2.5s.'},
-      {nm:'Blood Price',ic:'🩸',gives:'bloodPrice',eff:{dmgPct:6},note:'you can no longer crit — would-be crits instead SHRED the target: +12% damage taken, permanently.'}],
-  mn:[{nm:'Pacifist’s Fury',ic:'🕊️',gives:'pacifist',eff:{lifeRegen:2},note:'healing charges a gauge; at 100% your next hit EXECUTES a non-boss enemy.'},
-      {nm:'Mending Shockwave',ic:'💮',gives:'mendNova',eff:{lifeRegen:1.5},note:'drinking a healing flask detonates a nova that damages nearby enemies.'},
-      {nm:'Vampiric Plating',ic:'🛡️',gives:'overheal',eff:{lifeRegen:1.5},note:'healing beyond full life becomes an ablative WARD that soaks the next hits.'}],
-  wd:[{nm:'Arcane Thrift',ic:'🪙',gives:'thrift',eff:{manaRegen:1.5},note:'every 4th skill cast is FREE.'},
-      {nm:'Overdraw',ic:'🩸',gives:'overdraw',eff:{manaPct:8},note:'casting with too little mana pays the difference in LIFE.'},
-      {nm:'Cursor’s Curse',ic:'🖱️',gives:'cursorCurse',eff:{skillDmgPct:5},note:'the enemy under your CURSOR withers — stacking arcane damage each second you hold it there.'}],
-  rg:[{nm:'First Strike',ic:'⚡',gives:'firstStrike',eff:{crit:3},note:'your first hit on any enemy deals +35% damage.'},
-      {nm:'Slipstream Edge',ic:'🌀',gives:'dashCrit',eff:{dashCdrPct:6},note:'your first attack after a dash is a guaranteed CRIT.'},
-      {nm:'Adrenaline',ic:'💉',gives:'adrenaline',eff:{manaRegen:1},note:'taking a hit restores 4% of your mana. Pain is fuel.'},
-      {nm:'Echolocation',ic:'🦇',gives:'echoloc',eff:{dmgPct:4},note:'+50% damage to enemies that haven’t noticed you yet. Strike from silence.'},
-      {nm:'Vector Shift',ic:'↗️',gives:'vector',eff:{movePct:4},note:'each PERFECT DODGE grants +2% move speed for the rest of the floor (stacks to 10).'},
-      {nm:'Ricochet Rush',ic:'🧱',gives:'wallDash',eff:{dashCdrPct:6},note:'dashing INTO a wall instantly recharges your dash. Bounce off the world.'},
-      {nm:'Quantum Step',ic:'⚛️',gives:'quantum',eff:{movePct:4},note:'a blow that drops you below 25% life teleports you BEHIND the attacker (8s cooldown).'},
-      {nm:'Greed',ic:'🤑',gives:'greed',eff:{goldPct:12},note:'+25% gold and gold goblins seek you out… but everything on the floor smells you: aggro +30%.'},
-      {nm:'Grudgeholder',ic:'😠',gives:'grudge',eff:{dmgPct:4},note:'+50% damage against any enemy that hurt YOU in the last 10 seconds.'}],
-  el:[{nm:'Resonance Cascade',ic:'🔗',gives:'cascade',eff:{elemDmgPct:6},note:'enemies that die carrying an ailment DETONATE, damaging their neighbours.'},
-      {nm:'Frost Feed',ic:'🧊',gives:'frostFeed',eff:{manaRegen:1},note:'killing a CHILLED enemy restores 5% of your mana.'},
-      {nm:'Trailblazer',ic:'🔥',gives:'trail',eff:{elemDmgPct:5},note:'your footsteps leave a burning trail — enemies that cross it IGNITE.'}],
-};
-function talentRarity(ti, rowLen){ let r=Math.min(4, Math.floor((ti/TREE_ROWS)*5)); if(rowLen===1) r=Math.min(4, r+1); return r; }
-(function extendSpecs(){
-  const G_=(base,grow,frac)=>({base,grow,frac:!!frac});
-  const GEN={
-    // wob = per-tree width wobble (makes each tree's silhouette different) · key = keystone (single-node bottleneck) interval
-    tk:{ wob:[0,1,0,1,-1,0], key:4,
-         pre:['Iron','Stone','Guarded','Bracing','Vital','Stalwart','Warded','Granite','Tempered','Resolute','Adamant','Bulwark','Hardened','Sentinel','Bastioned'],
-         noun:['Hide','Plating','Ward','Bastion','Aegis','Resolve','Wall','Carapace','Fortitude','Guard','Endurance','Barrier','Mettle','Anchor'],
-         stats:[{k:'armor',ic:'🛡️',...G_(14,1.2)},{k:'lifePct',ic:'❤️',...G_(4,0.05)},{k:'lifeFlat',ic:'🧱',...G_(16,1.6)},{k:'lifeRegen',ic:'➕',...G_(1.5,0.1,1)},{k:'reflectPct',ic:'🌵',...G_(5,0.05)},{k:'lifeOnKill',ic:'🩸',...G_(5,0.4)},{k:'lowHpDmgPct',ic:'⛰️',...G_(8,0.08)},{k:'dodgePct',ic:'🌀',...G_(1.5,0.05)}],
-         procOn:['hurt','kill'], procTypes:[{type:'heal',amt:0.06},{type:'nova',amt:1.1,r:6},{type:'fervor',amt:18},{type:'shield',dur:0.8}], capNm:'Eternal Vanguard', capIc:'🛡️',
-         lanes:['mt','ot','ev','br'], laneStat:{ev:'dodgePct'} },   // Vanguard phase 1 sub-role lanes — Main Tank/Off-Tank/Evasion/Brawler; evasion lane biases dodgePct filler rolls
-    st:{ wob:[1,0,1,-1,0,1,0], key:4,
-         pre:['Savage','Brutal','Honed','Vicious','Lethal','Cruel','Ferocious','Merciless','Bloody','Raging','Deadly','Razor','Primal','Wrathful'],
-         noun:['Edge','Strike','Fury','Onslaught','Carnage','Wound','Slaughter','Rage','Bloodlust','Ruin','Massacre','Bite','Frenzy','Havoc'],
-         stats:[{k:'dmgPct',ic:'⚔️',...G_(6,0.09)},{k:'crit',ic:'🗡️',...G_(3,0.03)},{k:'critMultPct',ic:'🎯',...G_(12,0.16)},{k:'asPct',ic:'🔥',...G_(5,0.05)},{k:'execPct',ic:'☠️',...G_(14,0.14)},{k:'lifesteal',ic:'💉',...G_(2,0.02)},{k:'fervorRatePct',ic:'😤',...G_(10,0.1)}],
-         procOn:['hit','crit','kill'], procTypes:[{type:'empower',dur:3},{type:'nova',amt:1.3,r:6},{type:'fervor',amt:10},{type:'ignite'}], capNm:'Avatar of Slaughter', capIc:'☠️',
-         lanes:['be','as','ex','bt'], laneStat:{} },   // Striker phase 3 sub-role lanes — Berserker/Assassin/Executioner/Brutalist; identity comes from tagged keystones + skills, existing stat pool (dmgPct/crit/critMultPct/asPct/execPct/lifesteal/fervorRatePct) already covers every lane so laneStat is intentionally empty
-    mn:{ wob:[0,1,-1,1,0,1], key:5,
-         pre:['Blessed','Sacred','Vital','Renewing','Sanguine','Living','Pure','Hallowed','Verdant','Mending','Radiant','Flowing'],
-         noun:['Mend','Renewal','Boon','Grace','Bloom','Spring','Font','Communion','Lifeblood','Restoration','Vigor','Wellspring','Salve'],
-         stats:[{k:'lifeRegen',ic:'➕',...G_(1.5,0.12,1)},{k:'lifeOnHit',ic:'🩹',...G_(2,0.18)},{k:'lifesteal',ic:'🧛',...G_(2,0.02)},{k:'lifePct',ic:'❤️',...G_(4,0.05)},{k:'lifeFlat',ic:'✨',...G_(16,1.4)},{k:'lifeOnKill',ic:'💚',...G_(6,0.45)},{k:'manaRegen',ic:'🙏',...G_(2,0.12,1)}],
-         procOn:['hurt','kill','hit'], procTypes:[{type:'heal',amt:0.07},{type:'shield',dur:1},{type:'mana',amt:0.08}], capNm:'Avatar of Life', capIc:'🔥',
-         lanes:['ba','ho','bu','ut'], laneStat:{} },   // Mender phase 2 sub-role lanes — Barrier/Regeneration/Burst/Utility; identity comes from the new lane skills + tagged keystones, not a scattered stat, so laneStat is intentionally empty
-    wd:{ wob:[1,1,0,1,-1,0,1], key:4,
-         pre:['Arcane','Mystic','Astral','Eldritch','Runic','Ethereal','Cosmic','Spectral','Occult','Lucid','Resonant','Voidic'],
-         noun:['Attunement','Focus','Surge','Conduit','Resonance','Insight','Channel','Flux','Spellweave','Ascendance','Convergence','Sigil','Nexus'],
-         stats:[{k:'skillDmgPct',ic:'🔮',...G_(6,0.09)},{k:'manaPct',ic:'💧',...G_(6,0.06)},{k:'manaRegen',ic:'🌀',...G_(2,0.12,1)},{k:'area',ic:'💠',...G_(7,0.07)},{k:'cdrPct',ic:'⏩',...G_(5,0.05)},{k:'manaOnKill',ic:'🔋',...G_(8,0.5)}],
-         procOn:['cast','hit'], procTypes:[{type:'nova',amt:1.4,r:7},{type:'shock'},{type:'mana',amt:0.06}], capNm:'Avatar of the Arcane', capIc:'👁️',
-         lanes:['cc','en','bm','ar'], laneStat:{} },   // Warden phase 4 sub-role lanes — CC Specialist/Enchanter/Battlemage/Arcane Artillery; identity comes from tagged keystones + skills, existing stat pool (skillDmgPct/manaPct/manaRegen/area/cdrPct/manaOnKill) already covers every lane so laneStat is intentionally empty
-    el:{ wob:[1,0,-1,1,0,1,1], key:4,
-         pre:['Burning','Frozen','Charged','Conductive','Smouldering','Rimed','Volatile','Storm-Touched','Cindered','Glacial','Ionic','Elemental'],
-         noun:['Attunement','Spark','Ember','Rime','Arc','Conflux','Reaction','Cascade','Overload','Bloom','Charge','Torrent','Front'],
-         stats:[{k:'elemDmgPct',ic:'🌈',...G_(7,0.09)},{k:'ailDmgPct',ic:'🫧',...G_(8,0.1)},{k:'skillDmgPct',ic:'🔮',...G_(5,0.07)},{k:'area',ic:'💠',...G_(6,0.06)},{k:'crit',ic:'⚡',...G_(3,0.03)},{k:'manaRegen',ic:'🌀',...G_(1.8,0.1,1)},{k:'cdrPct',ic:'⏩',...G_(4,0.05)}],
-         procOn:['hit','cast','crit'], procTypes:[{type:'ignite'},{type:'chill'},{type:'shock'},{type:'nova',amt:1.3,r:7}], capNm:'Avatar of the Storm-Heart', capIc:'🌈',
-         lanes:['py','cr','sh','co'], laneStat:{} },   // Elementalist phase 4 sub-role lanes — Pyromancer/Cryomancer/Stormcaller/Conflux(sustained-ailment); identity comes from tagged keystones + skills, existing stat pool (elemDmgPct/ailDmgPct/skillDmgPct/area/crit/manaRegen/cdrPct) already covers every lane so laneStat is intentionally empty
-    rg:{ wob:[0,1,1,-1,0,1], key:3,
-         pre:['Swift','Fleet','Nimble','Phantom','Gale','Shadowed','Hunting','Predatory','Windborne','Veiled','Quick','Striking'],
-         noun:['Step','Stride','Mark','Strike','Gale','Pursuit','Instinct','Slipstream','Tailwind','Vanish','Tempo','Hunt','Dash'],
-         stats:[{k:'movePct',ic:'👟',...G_(5,0.05)},{k:'asPct',ic:'🏃',...G_(5,0.05)},{k:'crit',ic:'👁️',...G_(3,0.03)},{k:'critMultPct',ic:'🗡️',...G_(12,0.14)},{k:'dmgPct',ic:'🐾',...G_(6,0.08)},{k:'dashCdrPct',ic:'💨',...G_(8,0.06)},{k:'xpPct',ic:'🐕',...G_(6,0.06)},{k:'goldPct',ic:'💰',...G_(8,0.08)}],
-         procOn:['dash','kill','crit'], procTypes:[{type:'haste',dur:2},{type:'nova',amt:1.2,r:6},{type:'shield',dur:0.8}], capNm:'Apex Phantom', capIc:'👻',
-         lanes:['mk','tr','kt','hu'], laneStat:{} },   // Ranger phase 3 sub-role lanes — Marksman/Trickster/Kiting/Hunter; identity comes from tagged keystones + skills, existing stat pool (movePct/asPct/crit/critMultPct/dmgPct/dashCdrPct/xpPct/goldPct) already covers every lane so laneStat is intentionally empty
-  };
-  const gv=(st,ti)=>{ const v=(st.base+st.grow*ti)*1.4; return st.frac? +v.toFixed(1) : Math.max(1,Math.round(v)); };   // +40% magnitude — every node feels like a real upgrade
-  const gname=(g,ti,si)=>g.pre[(ti*4+si)%g.pre.length]+' '+g.noun[(ti*3+si*7+5)%g.noun.length];
-  function rowWidth(g,ti){
-    const f=ti/TREE_ROWS;
-    let base = f<0.20?4 : f<0.45?3 : 2;                    // broad foundation up top (can hit 5), steady branches below
-    let w = base + g.wob[ti % g.wob.length];
-    if(ti>0 && ti % g.key === 0) w=1;                      // periodic single-node keystone bottleneck
-    return Math.max(1, Math.min(5, w));
-  }
-  // ---- sub-role LANES (per-spec now: each GEN entry carries its own `lanes` cycle + optional `laneStat` bias —
-  // Vanguard phase 1 introduced mt/ot/ev/br, Mender phase 2 adds ba/ho/bu/ut; specs with no `lanes` array yet
-  // (st/wd/rg/el) simply have g.lanes===undefined, so rowLane/nextKeystone below fall through harmlessly and
-  // those trees behave exactly as before this refactor — see genTalent's `g.lanes &&` guard and nextKeystone's
-  // `(g.lanes||[]).length` guard). ----
-  function rowLane(ti,g){ const L=g.lanes; if(!L||!L.length) return undefined; return L[Math.floor(ti/Math.max(1,g.key))%L.length]; }   // which lane this row is thematically leaning toward, cycling with the keystone bottleneck rhythm
-  function genTalent(g,ti,si,rar,rowLen){
-    const seed=ti*5+si*3+(ti>>2); let st=g.stats[seed%g.stats.length];   // scrambled seed → adjacent rows stop repeating the same stat/icon
-    const laneStatKey=g.lanes && g.laneStat ? g.laneStat[rowLane(ti,g)] : undefined;
-    if(laneStatKey && Math.random()<0.4){ const ls=g.stats.find(s=>s.k===laneStatKey); if(ls) st=ls; }   // lane bias: e.g. dodgePct shows up noticeably more often near the Evasion lane's rows
-    const t={ nm:gname(g,ti,si), ic:st.ic, eff:{}, rar };
-    t.eff[st.k]=gv(st,ti);
-    { const s2=g.stats[(seed+2)%g.stats.length]; if(s2.k!==st.k) t.eff[s2.k]=gv(s2,ti); }    // EVERY node combines two tree-specific effects
-    if(rar>=3 || seed%11===0){ const s3=g.stats[(seed+4)%g.stats.length]; if(!(s3.k in t.eff)) t.eff[s3.k]=gv(s3,ti); }
-    t.max = rar>=3?2 : rar>=2?3 : [4,5,3,4][seed%4];
-    if(rowLen===1) t.max=Math.min(t.max,2);               // keystones: punchy, few ranks
-    if((rar>=2 && seed%7===0) || (rar>=3 && seed%4===0)){ const p=g.procTypes[seed%g.procTypes.length]; t.procs=[Object.assign({on:g.procOn[seed%g.procOn.length], chance:+(0.08+rar*0.03).toFixed(2)}, p)]; }   // procs are each tree's FLAVOUR — roll them noticeably more often
-    if(rar>=3) t.ic='✦';
-    return t;
-  }
-  const capEff=(g,ti)=>{ const e={}; for(let i=0;i<4;i++){ const st=g.stats[(ti+i)%g.stats.length]; e[st.k]=(e[st.k]||0)+gv(st,ti); } return e; };
-  // each path's SIGNATURE skill sits at ROW 1 — one point in a tree instantly plays like that role
-  const SIG_SKILL={tk:'gBulwark', st:'gWhirl', mn:'gHeal', wd:'gNova', rg:'gBlink', el:'gTide'};
-  for(const spec of SPECS){ const g=GEN[spec.kw]; if(!g) continue;
-    spec.tiers=[];   // regenerate the whole tree (incl. the wide, varied top band) — curated heads above are superseded
-    const skills=(TREE_SKILLS[spec.kw]||[]).filter(s=>s!==SIG_SKILL[spec.kw]), keys=(TREE_KEYSTONES[spec.kw]||[]).slice().sort((a,b)=>(b.gives?1:0)-(a.gives?1:0));   // build-defining keystones first so they always reach the bottleneck slots
-    const quirks=(TREE_QUIRKS[spec.kw]||[]).slice();   // unique one-point rule-benders sprinkled between the stat rows
-    const step=Math.max(3, Math.floor((TREE_ROWS-6)/Math.max(1,skills.length)));   // spread skills down the WHOLE column
-    const skillAt={}; skills.forEach((sid,i)=>{ let ti=3+i*step; while(ti<TREE_ROWS-2 && (ti%g.key===0 || skillAt[ti])) ti++; if(ti<TREE_ROWS-2) skillAt[ti]=sid; });
-    // ---- sub-role LANE bucketing for the keystone bottleneck picker: cycle this spec's lanes (g.lanes, e.g.
-    // mt→ot→ev→br for Vanguard or ba→ho→bu→ut for Mender) so every lane is visibly represented across the tree
-    // instead of whichever lane happens to sort first (falls back to untagged/shared keystones if a lane runs
-    // dry, or if this spec has no `lanes` array at all yet — st/wd/rg/el — so the tree never comes up short a
-    // keystone and those specs behave exactly as before lanes existed). ----
-    const specLanes=g.lanes||[];
-    const laneBuckets={}; const sharedKeys=[]; for(const k of keys){ if(k.lane){ (laneBuckets[k.lane]||(laneBuckets[k.lane]=[])).push(k); } else sharedKeys.push(k); }
-    const laneIdx={}; let laneCursor=0;
-    function nextKeystone(){
-      for(let tries=0; tries<specLanes.length; tries++){   // try each lane in rotation once before falling back to shared (no-op loop when specLanes is empty)
-        const lane=specLanes[laneCursor%specLanes.length]; laneCursor++;
-        const bucket=laneBuckets[lane]; if(bucket && bucket.length){ const i=(laneIdx[lane]=(laneIdx[lane]||0)); laneIdx[lane]++; return bucket[i%bucket.length]; }
-      }
-      if(sharedKeys.length){ const i=(laneIdx._shared=(laneIdx._shared||0)); laneIdx._shared++; return sharedKeys[i%sharedKeys.length]; }
-      return keys[0];   // last-resort fallback (should be unreachable — keys is non-empty whenever this path runs)
-    }
-    while(spec.tiers.length < TREE_ROWS){
-      const ti=spec.tiers.length;
-      if(ti===TREE_ROWS-1){ spec.tiers.push([{nm:g.capNm,ic:g.capIc,max:1,rar:5,eff:capEff(g,ti),note:'The pinnacle of the '+spec.nm+' path.'}]); break; }
-      if(ti>0 && ti%g.key===0 && keys.length){   // unique hand-authored keystone at each bottleneck
-        const k=nextKeystone(); const node={nm:k.nm,ic:k.ic,max:k.max||1,rar:4,eff:k.eff,note:(k.note?'★ '+k.note:'Keystone — '+effDesc(k.eff))};
-        if(k.proc) node.procs=[k.proc]; if(k.gives) node.gives=k.gives; if(k.lane) node.lane=k.lane;
-        spec.tiers.push([node]); continue;
-      }
-      const w=rowWidth(g,ti), rar=talentRarity(ti,w);
-      const row=[]; for(let si=0;si<w;si++) row.push(genTalent(g,ti,si,rar,w));
-      if(ti===1 && SIG_SKILL[spec.kw] && SKILLS[SIG_SKILL[spec.kw]]){ const sid=SIG_SKILL[spec.kw], sk=SKILLS[sid];
-        row[0]={ nm:'Role: '+sk.nm, ic:sk.ic, max:1, rar:5, grantSkill:sid, eff:{}, note:'✦ SIGNATURE — the '+spec.nm+' playstyle in one skill, granted immediately. Bind it on your 1–9 bar.' }; }
-      else if(skillAt[ti]){ const sid=skillAt[ti], sk=SKILLS[sid]; if(sk){ const lane=skillLane(spec.kw,sid);
-        row[0]={ nm:'Learn: '+sk.nm, ic:sk.ic, max:1, rar:5, grantSkill:sid, eff:{}, note:'✦ Grants the '+sk.nm+' skill gem — bind it on your 1–9 bar.' };
-        if(lane) row[0].lane=lane; } }
-      else if(quirks.length && row.length>1 && ti>=4 && (ti%6===4 || (ti>=7 && ti%6===1))){ const q=quirks.shift();   // a hand-authored QUIRK replaces one stat filler every few rows
-        row[row.length-1]={ nm:q.nm, ic:q.ic, max:1, rar:3, gives:q.gives, eff:q.eff, note:'◆ QUIRK — '+q.note }; }
-      spec.tiers.push(row);
-    }
-  }
-})();
+function talentRarity(ti, nTiers){ return Math.max(0, Math.min(4, Math.floor((ti/Math.max(1,nTiers-1))*4.4))); }
 const TALENTMAP={};
-SPECS.forEach(spec=>spec.tiers.forEach((tier,ti)=>tier.forEach((t,si)=>{ t.id=spec.kw+ti+si; t.spec=spec; t.tier=ti; if(t.rar==null) t.rar=talentRarity(ti,tier.length); TALENTMAP[t.id]=t; })));
+SPECS.forEach(spec=>spec.tiers.forEach((tier,ti)=>tier.forEach((t,si)=>{ t.id=spec.kw+ti+si; t.spec=spec; t.tier=ti; if(t.rar==null) t.rar=talentRarity(ti,spec.tiers.length); TALENTMAP[t.id]=t; })));
 // ---- progression tuning: level cap + evolution + a skill-point budget that maxes exactly ONE tree ----
 const LEVEL_CAP=255, MAX_EVOLVE=49, ATTR_CAP=999;   // 49 evolutions = 7 colour tiers × 7 stars
 function specTotalRanks(spec){ let s=0; spec.tiers.forEach(tier=>tier.forEach(t=>{ s+=t.max||0; })); return s; }
+// ---- SKILL-TREE MIGRATION ---------------------------------------------------------------------
+// The tree was rebuilt around the trinity roles, so every talent id changed. A character saved
+// against the old tree would otherwise load with allocations pointing at nodes that no longer
+// exist — the talents silently gone AND the points gone with them. Instead: detect it, wipe the
+// stale allocation, and hand back a full tree's worth of points to re-spend on the new one.
+const TREE_VERSION=2;
+function migrateTalents(p){
+  if(!p) return 0;
+  p.alloc=p.alloc||{};
+  let stale=0, overCap=0;
+  for(const id in p.alloc){
+    const t=TALENTMAP[id];
+    if(!t){ stale+=p.alloc[id]||0; delete p.alloc[id]; }
+    else if((p.alloc[id]||0) > (t.max||0)){ overCap += p.alloc[id]-t.max; p.alloc[id]=t.max; }
+  }
+  const budgetShrank = (p.skillGranted|0) > SKILL_BUDGET;
+  if(!stale && !overCap && !budgetShrank && p.treeVer===TREE_VERSION){ p.treeVer=TREE_VERSION; return 0; }
+  if(stale || budgetShrank){
+    p.alloc={};                                            // a partial carry-over would be a nonsense build
+    p.skillGranted=Math.min(p.skillGranted|0, SKILL_BUDGET);
+    p.skillPts=Math.max(p.skillPts|0, p.skillGranted|0);   // everything you had earned, back in your hand
+    if(p.skillPts>SKILL_BUDGET) p.skillPts=SKILL_BUDGET;
+  } else if(overCap){ p.skillPts=(p.skillPts|0)+overCap; }
+  p.treeVer=TREE_VERSION;
+  return stale+overCap;
+}
+function migrateAllTalents(){
+  let touched=0;
+  try{ for(const pl of (_G.players||[])) if(migrateTalents(pl)) touched++; }catch(_){}
+  if(touched){
+    try{ recompute(); }catch(_){}
+    try{ log('🌿 THE TREES HAVE BEEN REMADE — six roles, four sub-role lanes each. Your old allocation could not be carried across, so every point you had earned has been REFUNDED. Open the Skill Tree (T) and rebuild.'); }catch(_){}
+    try{ banner('🌿 SKILL TREES REWORKED','your points have been refunded — respend them (T)'); }catch(_){}
+  }
+  return touched;
+}
 const SKILL_BUDGET=Math.max(...SPECS.filter(s=>!s.relic).map(specTotalRanks));   // lifetime skill points = enough to fully allocate one whole tree, no more (Beast forms cost relics, not points)
 const START_SKILL_PTS=3;   // the three points a brand-new character starts with — part of the budget, not on top of it
 // ---- the lifetime skill-point curve -----------------------------------------------------------
@@ -3600,9 +3507,9 @@ function skillGrantedByLevel(lv){
 function xpForLevel(lv){ return Math.floor(18 + lv*12 + lv*lv*2.2); }   // gentle quadratic curve so 255 is a long-but-reachable grind (compounding curves made it impossible)
 // ---- SKILL-TREE DIVERGENCE: once you've invested in a tree you can "branch" into its neighbours, diving into their mid tiers without re-climbing their foundation ----
 const SPEC_ADJ={}; SPECS.forEach((s,i)=>{ SPEC_ADJ[s.kw]=[SPECS[(i-1+SPECS.length)%SPECS.length].kw, SPECS[(i+1)%SPECS.length].kw]; });
-const DIVERGE_MIN=15;    // points spent in a tree before it can bridge into a neighbour
-const DIVERGE_STEP=6;    // every extra N points past the minimum dives one more tier into the bridged neighbour
-const DIVERGE_MAXTIER=9; // cap on how deep a divergence bridge reaches
+const DIVERGE_MIN=10;    // points spent in a tree before it can bridge into a neighbour
+const DIVERGE_STEP=5;    // every extra N points past the minimum dives one more tier into the bridged neighbour
+const DIVERGE_MAXTIER=6; // cap on how deep a divergence bridge reaches (trees are 9 rows deep now)
 function specByKw(kw){ return SPECS.find(s=>s.kw===kw); }
 function divergeReach(spec){ return globalReach(); }   // branch reach is now GLOBAL (your highest row anywhere), shown per-tree in the UI
 function tierGate(ti){ return ti*SPEC_GATE; }
@@ -3610,7 +3517,11 @@ function specSpent(spec){ let s=0; spec.tiers.forEach(tier=>tier.forEach(t=>{ s+
 // linear row gating: a row only unlocks once you've spent at least HALF the points needed to fully complete the row directly above it (chained all the way up the column)
 function tierSpent(spec,ti){ let s=0; (spec.tiers[ti]||[]).forEach(t=>{ s+=G.alloc[t.id]||0; }); return s; }
 function tierMaxRanks(spec,ti){ let s=0; (spec.tiers[ti]||[]).forEach(t=>{ s+=t.max||0; }); return s; }
-function tierGateNeed(spec,ti){ return Math.max(1,Math.ceil(tierMaxRanks(spec,ti)*0.5)); }   // half of this row's total ranks
+const ROW_GATE_CAP=6;   // no row ever demands more than this to open the next
+function tierMinNodeMax(spec,ti){ let m=Infinity; (spec.tiers[ti]||[]).forEach(t=>{ m=Math.min(m, t.max||1); }); return isFinite(m)?m:1; }
+// A row's gate is capped by its SMALLEST node, so following any single sub-role lane straight down
+// the column is always a legal route — you are never forced to fund a second lane to keep going.
+function tierGateNeed(spec,ti){ return Math.max(1, Math.min(ROW_GATE_CAP, Math.ceil(tierMaxRanks(spec,ti)*0.34), tierMinNodeMax(spec,ti))); }
 function tierNodesMaxed(spec,ti){ let n=0; (spec.tiers[ti]||[]).forEach(t=>{ if((G.alloc[t.id]||0)>=(t.max||1)) n++; }); return n; }
 function tierSatisfied(spec,ti){ return tierSpent(spec,ti)>=tierGateNeed(spec,ti) || tierNodesMaxed(spec,ti)>=2; }   // a row opens the next once HALF its ranks are spent OR 2 nodes are maxed
 function _frontier(spec,entry){ let ti=entry, n=spec.tiers.length; while(ti<n && tierSatisfied(spec,ti)) ti++; return ti; }
@@ -4179,6 +4090,7 @@ function dailyScoreTick(){ if(!G.dailyRun)return;
   const rec={date:dailyKey(), done:true, floor:G.floor, kills:G.run.kills||0, score:runScore({floor:G.floor,kills:G.run.kills||0,time:G.run.totalTime||0})};
   const cur=dailyState(); META.daily=(cur&&(cur.score||0)>rec.score)?cur:rec; saveMeta(); }
 loadMeta(); refreshDailyBtn(); refreshContinueBtn(); refreshMenuRank(); refreshMenuSummary();   // reflect today's daily state + any saved climb on the menu at boot
+migrateAllTalents();   // SKILL TREE REWORK: refund any character still holding allocations from the old tree
 { const _md=$('menuDaily'); if(_md) _md.onclick=()=>{
   loadMeta(); const d=dailyState();
   if(d&&d.done){ log('🌅 Today’s Daily is scored — a new tower rises at midnight UTC.'); return; }
@@ -4404,7 +4316,11 @@ function togglePanel(id){
   if(willOpen){ if(id==='treePanel'){ const _tp=$(id); ['left','top','right','bottom','width','height','transform','margin'].forEach(k=>_tp.style[k]=''); }   // purge any stale inline sizing — the tree always opens fullscreen
     if(id==='charPanel')renderChar(); else if(id==='treePanel')renderTree(); else if(id==='stashPanel')renderStash(); else if(id==='invPanel')renderInv(); else if(id==='vendorPanel'){ if((G._vendRefreshes||0)<3){ rollVendStock(); G._vendRefreshes=(G._vendRefreshes||0)+1; } renderVendor(); } else if(id==='petPanel')renderPet(); else if(id==='petYardPanel')renderPetYard(); else if(id==='scorePanel')renderScore(); else if(id==='codexPanel')renderCodex(); else if(id==='settingsPanel')renderSettings(); else if(id==='lootPanel')renderLoot(); else if(id==='craftPanel')renderCraft(); }
   if(willOpen) applyPanelPos(id);   // reopen at last-dragged spot · off-centre by default (settings stays centred)
-  if(willOpen){ if(id==='invPanel') persistPanelSize(el,'invPanel','860px','700px'); else if(id==='stashPanel') persistPanelSize(el,'stashPanel','820px','560px'); }   // sane default open size that fits content · remembers user-resized size across sessions
+  if(willOpen){   // first open = full size · after that, whatever size the player dragged it to
+    if(id==='invPanel')        persistPanelSize(el,'invPanel',   'min(1240px,94vw)');
+    else if(id==='stashPanel') persistPanelSize(el,'stashPanel', 'min(1060px,92vw)');
+    else if(id==='vendorPanel')persistPanelSize(el,'vendorPanel','min(720px,88vw)');
+  }   // sane default open size that fits content · remembers user-resized size across sessions
   if(id==='vendorPanel' && willOpen){   // shopping? bring your bag alongside (the stash has its own bag column)
     if($('invPanel').classList.contains('hidden')){ $('invPanel').classList.remove('hidden'); renderInv(); }
     _G.shopInvPaired=true; layoutShopInv(id);
@@ -4676,6 +4592,11 @@ function recompute(){
   if(G.hp>G.maxhp)G.hp=G.maxhp; if(G.mana>G.maxmana)G.mana=G.maxmana;
 }
 function dr(){ let a=G.S.armor; if(G.S.distArmor) a+=Math.min(80,(G._trav||0)*4);   // Armour of Distance: motion is your mail
+  // NEGATIVE armour must mean NO mitigation, not maximum mitigation. Left unclamped, a/(a+55+floor*8)
+  // flips sign once armour falls below −(55+floor*8) and the ratio lands above 1 — so every trade that
+  // SELLS armour for damage (Avatar of Rage, Blood Tyrant, Reckless Fury) was quietly making you
+  // near-invulnerable instead of fragile.
+  a=Math.max(0,a);
   return clamp(a/(a+55+G.floor*8),0,0.78); }
 function fervorMult(){ return 1 + Math.min(G.fervor,100)/100*0.6; }   // up to +60% dmg
 function fervorAS(){ return 1 + Math.min(G.fervor,100)/100*0.6; }      // up to +60% atk speed
@@ -11863,6 +11784,7 @@ function applyPlayerBuild(p,b){ if(!p||!b)return;
   p.name=b.name||p.name; p.gold=b.gold|0; p.level=b.level||1; p.xp=b.xp||0; p.xpNeed=b.xpNeed||(typeof xpForLevel==='function'?xpForLevel(p.level):20);
   p.xpMode=b.xpMode||'use'; p.attrPts=b.attrPts|0; p.skillPts=b.skillPts|0; p.skillGranted=b.skillGranted|0; p.evolves=b.evolves|0;
   if(b.invCap) p.invCap=b.invCap; p.attr=b.attr||p.attr; p.alloc=b.alloc||{}; p.equip=b.equip||p.equip;
+  migrateTalents(p);   // a peer on an older build could stream us allocations for nodes that no longer exist
   p.inv=b.inv||[]; p.belt=b.belt||p.belt; p.slots=b.slots||p.slots; p.sigSlot=b.sigSlot||null;
   p.pets=b.pets||p.pets||[]; p.pet=(b.petIdx>=0&&p.pets&&p.pets[b.petIdx])?p.pets[b.petIdx]:null; p.greed=b.greed||1;
   p.run=p.run||{}; p.run.boons=(b.run&&b.run.boons)||p.run.boons||[]; p.run.destiny=(b.run&&b.run.destiny)||p.run.destiny||null;
@@ -12658,6 +12580,24 @@ function makePanelDraggable(panelId){
     e.preventDefault(); e.stopPropagation(); });
 }
 ['lootPanel','petPanel','petYardPanel','charPanel','treePanel','invPanel','vendorPanel','stashPanel','scorePanel','codexPanel','craftPanel'].forEach(makePanelDraggable);
+// ---- PINNED PANEL HEADERS ----------------------------------------------------------------------
+// Every panel's contents get wrapped in a scrolling .panelBody, leaving the <h3> title bar (and the
+// tree's bigger #treeHead) as a fixed header. The ✕ is absolutely positioned against the panel, so
+// it stays reachable too: you can always see which menu you are in and close it without scrolling
+// back to the top. Done here rather than in the markup so no panel can be forgotten.
+function pinPanelHeaders(){
+  document.querySelectorAll('.panel').forEach(p=>{
+    if(p._pinned || p.id==='treePanel') return;   // the tree is already a flex column with a pinned #treeHead
+    p._pinned=true;
+    const isHeader=el=> el.tagName==='H3' || el.id==='treeHead' || (el.classList&&el.classList.contains('closeX'));
+    const body=document.createElement('div'); body.className='panelBody';
+    const move=[...p.children].filter(c=>!isHeader(c));
+    if(!move.length){ p._pinned=false; return; }
+    p.insertBefore(body, move[0]);
+    move.forEach(c=>body.appendChild(c));
+  });
+}
+try{ pinPanelHeaders(); }catch(_){}
 function takeLoot(pk){ if(!pk||pk.dead) return false; const it=pk.item;
   if(SETTINGS.autoSalvage && isJunk(it)){ pk.dead=true; const g=it.value||0; G.gold+=g; if(typeof flashGold==='function')flashGold(); sfx.gold&&sfx.gold(); cleanDeadPickups(); return true; }
   if(G.inv.length>=G.invCap){ log('🎒 Bag full ('+G.invCap+') — make room or bank loot.'); return false; }
@@ -13245,7 +13185,11 @@ function updateHUD(){
   const sc=$('sigChg'); if(sc){ sc.style.height=(G.charge/G.chargeMax*100)+'%'; $('sigSlot').classList.toggle('ready', G.charge>=G.chargeMax); }
   const rmp=$('rampage'), st=fervorStacks();
   if(G.fervor>0){ rmp.classList.add('show'); $('rampFill').style.width=clamp(G.fervor,0,100)+'%'; $('rampLabel').textContent='RAMPAGE x'+(1+st)+'  (+'+Math.round(Math.min(G.fervor,100)/100*60)+'% dmg/spd)'; } else rmp.classList.remove('show');
-  const v=$('vignette'); v.classList.toggle('low',G.hp/G.maxhp<0.3); v.classList.toggle('rage',st>=4);
+  const v=$('vignette');
+  const _alive = G.running && !G.dead && G.maxhp>0;          // no run, no corpse, no divide-by-zero
+  const _hpFrac = _alive ? (G.hp/G.maxhp) : 1;
+  v.classList.toggle('low',  _alive && _hpFrac<0.3);          // the red edge is a WARNING, not decor
+  v.classList.toggle('rage', _alive && st>=4);
   const cx2=$('clearTxt');
   if(cx2){ if(!G.practice && !G.inTown && floorType(G.floor)==='NORMAL'){
     if(G.portal&&G.portal.active){ cx2.innerHTML='<span style="color:var(--xp)">✓ PORTAL OPEN</span>'; }
@@ -13255,7 +13199,8 @@ function updateHUD(){
   if(!G.practice && floorType(G.floor)!=='SAFE' && G.portal&&G.portal.active && G.shiftT<=60){ sx.textContent='⟳ Floor reshuffles in '+Math.max(0,Math.ceil(G.shiftT))+'s · portal stays open'; sx.classList.remove('urgent'); }
   else { sx.textContent=''; sx.classList.remove('urgent'); }
   $('petChip').textContent = G.petErrand ? `Sell-run ${Math.ceil(G.petErrand.t)}s` : G.pet ? `${PET_FAMILIES[G.pet.family].ic} Lv ${G.pet.level}${(G.pets&&G.pets.length>1)?' ·'+G.pets.length:''}` : 'Pet Yard —';
-  const bt=$('bountyTxt'); if(bt){ const b=G.bounty; bt.innerHTML = b ? `◈ ${b.nm}: ${b.failed?'<span style="color:var(--hp)">failed</span>':b.done?'<span style="color:var(--xp)">✓ done</span>':b.id==='kills'?`${b.have}/${b.need}`:b.descTxt}` : ''; }
+  const bt=$('bountyTxt'); if(bt){ const b=G.bounty;
+    bt.innerHTML = b ? `<span class="qLbl">◈ QUEST</span>${b.nm} — ${b.failed?'<span style="color:var(--hp)">FAILED</span>':b.done?'<span style="color:var(--xp)">✓ COMPLETE</span>':b.id==='kills'?`<b>${b.have}/${b.need}</b>`:b.descTxt}` : ''; }
   updateBossBar();
   updateDirHud();     // top-of-screen compass: BLUE arrow → portal, RED arrow → boss
   updatePartyHud();   // online: show every player's hp/mp (draggable)

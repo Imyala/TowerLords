@@ -9,6 +9,7 @@ function check(name, fn){
 }
 function eq(a,b,what){ if(a!==b) throw new Error((what||'')+' expected '+b+' got '+a); }
 const g=k=>vm.runInContext(k, ctx);
+const run=code=>vm.runInContext(code, ctx);
 
 console.log('=== LOAD ===');
 console.log(loadErr ? '  top-level threw: '+loadErr.message+'\n'+String(loadErr.stack).split('\n').slice(0,4).join('\n') : '  script evaluated with no top-level error');
@@ -230,6 +231,318 @@ check('no duplicate top-level const/let declarations', ()=>{
   const dupes=Object.keys(names).filter(k=>names[k]>1);
   if(dupes.length) throw new Error('declared more than once: '+dupes.join(', '));
   return Object.keys(names).length+' top-level constants, all unique';
+});
+
+
+// ================================================================================================
+//  SKILL TREE INTEGRITY — the trees are pure data, so every promise they make is checkable.
+// ================================================================================================
+const ROLE_SPECS=()=>g('SPECS').filter(s=>!s.relic);
+const ALL_NODES=()=>ROLE_SPECS().flatMap(s=>s.tiers.flat());
+
+check('six role columns plus the relic Beast', ()=>{
+  const S=g('SPECS');
+  if(S.length!==7) throw new Error('expected 7 columns, got '+S.length);
+  const roles=ROLE_SPECS();
+  if(roles.length!==6) throw new Error('expected 6 point-spent roles, got '+roles.length);
+  const subs=roles.map(s=>s.sub);
+  for(const want of ['Tank','Healer','Melee DPS','Ranged DPS','Caster DPS','Support / Hybrid'])
+    if(!subs.includes(want)) throw new Error('missing role: '+want);
+  return subs.join(' · ');
+});
+
+check('every role has 9 rows and exactly 4 sub-role lanes', ()=>{
+  const out=[];
+  for(const sp of ROLE_SPECS()){
+    if(sp.tiers.length!==9) throw new Error(sp.kw+' has '+sp.tiers.length+' rows');
+    const lanes=[...new Set(sp.tiers.flat().map(n=>n.lane).filter(Boolean))];
+    if(lanes.length!==4) throw new Error(sp.kw+' has '+lanes.length+' lanes: '+lanes);
+    out.push(sp.kw+'='+lanes.join('/'));
+  }
+  return out.join('  ');
+});
+
+check('lane codes are globally unique and all have labels', ()=>{
+  const seen={}, LBL=g('LANE_LBL');
+  for(const sp of ROLE_SPECS()) for(const n of sp.tiers.flat()){
+    if(!n.lane) continue;
+    if(seen[n.lane] && seen[n.lane]!==sp.kw) throw new Error('lane "'+n.lane+'" used by both '+seen[n.lane]+' and '+sp.kw);
+    seen[n.lane]=sp.kw;
+    if(!LBL[n.lane]) throw new Error('lane "'+n.lane+'" has no LANE_LBL entry');
+  }
+  const codes=Object.keys(seen);
+  if(codes.length!==24) throw new Error('expected 24 sub-roles, found '+codes.length);
+  return codes.length+' sub-roles, all labelled';
+});
+
+check('every tree costs exactly the skill budget', ()=>{
+  const B=g('SKILL_BUDGET'), bad=[];
+  for(const sp of ROLE_SPECS()){
+    const ranks=sp.tiers.reduce((a,t)=>a+t.reduce((b,n)=>b+(n.max||0),0),0);
+    if(ranks!==B) bad.push(sp.kw+'='+ranks);
+  }
+  if(bad.length) throw new Error('trees do not all cost '+B+': '+bad.join(', ')+' — a player in a cheaper tree would be left with unspendable points');
+  return 'all six cost exactly '+B+' points';
+});
+
+check('the trees are short', ()=>{
+  const nodes=ALL_NODES().length;
+  const per=nodes/6;
+  if(per>30) throw new Error('averaging '+per+' nodes per tree — not short');
+  return nodes+' nodes across 6 roles ('+per+' each)';
+});
+
+check('every node is well formed', ()=>{
+  for(const n of ALL_NODES()){
+    if(!n.nm) throw new Error('a node has no name');
+    if(!n.ic) throw new Error(n.nm+' has no icon');
+    if(!(n.max>=1)) throw new Error(n.nm+' has max '+n.max);
+    if(!n.eff && !n.grantSkill && !n.gives && !n.procs) throw new Error(n.nm+' does nothing at all');
+  }
+  return ALL_NODES().length+' nodes, all named / iconed / ranked / effective';
+});
+
+check('every stat a node grants is a real, displayable stat', ()=>{
+  const LBL=g('EFF_LBL'), bad=new Set();
+  for(const n of ALL_NODES()) if(n.eff) for(const k in n.eff) if(!LBL[k]) bad.add(n.nm+'.'+k);
+  if(bad.size) throw new Error('unknown effect keys: '+[...bad].join(', '));
+  return 'all effect keys exist in EFF_LBL';
+});
+
+check('every skill a node teaches exists', ()=>{
+  const SK=g('SKILLS'), taught=[];
+  for(const n of ALL_NODES()) if(n.grantSkill){
+    if(!SK[n.grantSkill]) throw new Error(n.nm+' teaches "'+n.grantSkill+'" which is not a skill');
+    taught.push(SK[n.grantSkill].nm);
+  }
+  if(taught.length!==12) throw new Error('expected 12 skill nodes (2 per role), found '+taught.length);
+  for(const n of ALL_NODES()) if(n.grantSkill && n.lane) throw new Error(n.nm+' is lane-locked, but every lane must pass through the skill rows');
+  return taught.join(', ');
+});
+
+check('every keystone flag is actually implemented, not just declared', ()=>{
+  // a flag that recompute() stores but nothing ever reads is a node that lies to the player
+  const dead=[];
+  for(const n of ALL_NODES()){
+    if(!n.gives) continue;
+    const f=n.gives;
+    const re=new RegExp('\\b'+f+'\\b','g');
+    const lines=src.split('\n').filter(l=>re.test(l));
+    const reads=lines.filter(l=>
+      l.indexOf("gives:'"+f+"'")<0 &&                                  // the tree node itself
+      !new RegExp('S\\.'+f+'\\s*=\\s*!!flags\\.'+f).test(l) &&         // the plain recompute copy
+      l.indexOf('flagNames=')<0                                        // the HUD label table
+    );
+    if(!reads.length) dead.push(f);
+  }
+  if(dead.length) throw new Error('these flags are set but never read — the nodes would do nothing: '+dead.join(', '));
+  const flags=ALL_NODES().filter(n=>n.gives).map(n=>n.gives);
+  return flags.length+' rule-breaker flags, all with live implementations';
+});
+
+check('every proc a node fires is a type the engine handles', ()=>{
+  const known=new Set(['heal','nova','fervor','shield','empower','ignite','chill','shock','haste','mana','charge','minion']);
+  const bad=[];
+  for(const n of ALL_NODES()) for(const pr of (n.procs||[])) if(!known.has(pr.type)) bad.push(n.nm+':'+pr.type);
+  if(bad.length) throw new Error('unhandled proc types: '+bad.join(', '));
+  return 'all proc types handled';
+});
+
+check('each role ends in exactly one keystone row and one capstone', ()=>{
+  for(const sp of ROLE_SPECS()){
+    const keys=sp.tiers[7], cap=sp.tiers[8];
+    if(keys.length!==4) throw new Error(sp.kw+' keystone row has '+keys.length+' nodes');
+    if(keys.some(n=>n.max!==1)) throw new Error(sp.kw+' has a multi-rank keystone');
+    if(new Set(keys.map(n=>n.lane)).size!==4) throw new Error(sp.kw+' keystones do not cover all 4 lanes');
+    if(cap.length!==1 || cap[0].max!==1) throw new Error(sp.kw+' capstone row is malformed');
+  }
+  return '6 roles x 4 lane keystones + 1 capstone each';
+});
+
+check('a single lane can be climbed from the top of a tree to its keystone', ()=>{
+  const G=g('G'), report=[];
+  for(const sp of ROLE_SPECS()){
+    const lanes=[...new Set(sp.tiers.flat().map(n=>n.lane).filter(Boolean))];
+    for(const lane of lanes){
+      run('G.alloc={}; G.skillPts=9999;');
+      // spend ONLY on this lane (plus the row-0 foundation and the single-node rows)
+      for(let ti=0; ti<sp.tiers.length; ti++){
+        const row=sp.tiers[ti];
+        const mine=row.filter(n=>!n.lane || n.lane===lane);
+        if(!mine.length) throw new Error(sp.kw+'/'+lane+' has no node in row '+ti);
+        for(const n of mine){
+          run(`(function(){ const t=TALENTMAP[${JSON.stringify(n.id)}];
+            for(let i=0;i<t.max;i++){ if(talentReason(t)) break; G.alloc[t.id]=(G.alloc[t.id]||0)+1; } })();`);
+        }
+        const got=g('G.alloc');
+        if(ti<sp.tiers.length-1 && !mine.some(n=>got[n.id]>0))
+          throw new Error(sp.kw+'/'+lane+' stalled at row '+ti+' — that lane cannot open the next row alone');
+      }
+      const key=sp.tiers[7].find(n=>n.lane===lane);
+      if(!(g('G.alloc')[key.id]>0)) throw new Error(sp.kw+'/'+lane+' could not reach its keystone "'+key.nm+'" following only that lane');
+      const spent=Object.values(g('G.alloc')).reduce((a,b)=>a+b,0);
+      report.push(lane+':'+spent);
+    }
+  }
+  run('G.alloc={};');
+  const costs=report.map(r=>+r.split(':')[1]);
+  return '24/24 lanes reach their keystone solo, costing '+Math.min(...costs)+'–'+Math.max(...costs)+' points';
+});
+
+check('migration refunds a character holding allocations from the old tree', ()=>{
+  const B=g('SKILL_BUDGET');
+  run(`__mig={ alloc:{tk123:5, st99:4, zz7:3}, skillPts:0, skillGranted:213, treeVer:0 };`);
+  const moved=g('migrateTalents(__mig)');
+  const p=g('__mig');
+  if(!moved) throw new Error('migration reported no change');
+  if(Object.keys(p.alloc).length) throw new Error('stale allocation survived: '+JSON.stringify(p.alloc));
+  if(p.skillPts!==B) throw new Error('refunded '+p.skillPts+' points, expected a full budget of '+B);
+  if(p.skillGranted!==B) throw new Error('lifetime grant not clamped to the new budget: '+p.skillGranted);
+  if(p.treeVer!==g('TREE_VERSION')) throw new Error('tree version not stamped');
+  return 'stale ids dropped, '+B+' points refunded, budget re-clamped';
+});
+
+check('migration leaves an up-to-date character completely alone', ()=>{
+  const id=g('Object.keys(TALENTMAP).find(k=>TALENTMAP[k].tier===0 && !TALENTMAP[k].beastKey)');
+  run(`__mig2={ alloc:{${JSON.stringify(id)}:2}, skillPts:7, skillGranted:20, treeVer:TREE_VERSION };`);
+  const moved=g('migrateTalents(__mig2)');
+  const p=g('__mig2');
+  if(moved) throw new Error('touched a current character');
+  if(p.alloc[id]!==2 || p.skillPts!==7) throw new Error('mutated a valid save');
+  return 'no-op on a current save';
+});
+
+check('migration clamps a rank that exceeds a shrunken node', ()=>{
+  const id=g('Object.keys(TALENTMAP).find(k=>TALENTMAP[k].tier===0 && !TALENTMAP[k].beastKey)');
+  const max=g(`TALENTMAP[${JSON.stringify(id)}].max`);
+  run(`__mig3={ alloc:{${JSON.stringify(id)}:${max+4}}, skillPts:0, skillGranted:10, treeVer:TREE_VERSION };`);
+  g('migrateTalents(__mig3)');
+  const p=g('__mig3');
+  if(p.alloc[id]!==max) throw new Error('rank not clamped: '+p.alloc[id]+' > '+max);
+  if(p.skillPts!==4) throw new Error('overflow not refunded: got '+p.skillPts+' expected 4');
+  return 'over-cap rank clamped and the difference refunded';
+});
+
+
+check('negative armour means no mitigation, never maximum mitigation', ()=>{
+  run('G.floor=1;');
+  const dr=v=>{ run(`G.S={armor:${v}};`); return g('dr()'); };
+  if(dr(0)!==0) throw new Error('zero armour should mitigate nothing');
+  for(const v of [-1,-8,-40,-71,-500]){ const r=dr(v); if(r!==0) throw new Error('armour '+v+' gave '+(r*100).toFixed(1)+'% reduction'); }
+  const a=dr(200), b=dr(400); if(!(b>a&&b<=0.78)) throw new Error('positive armour curve broken: '+a+' -> '+b);
+  return 'negative clamps to 0%, 200 armour = '+(a*100).toFixed(0)+'%, 400 = '+(b*100).toFixed(0)+'%';
+});
+
+
+// ================================================================================================
+//  UI / HUD REGRESSIONS
+// ================================================================================================
+
+check('the red screen edge only appears while alive in a run', ()=>{
+  const v=g("document.getElementById('vignette')");
+  const set=o=>run(`G.running=${o.running}; G.dead=${o.dead}; G.hp=${o.hp}; G.maxhp=${o.maxhp}; G.fervor=0;`);
+  const low=()=>{ try{ g('updateHUD()'); }catch(e){} return v.classList.contains('low'); };
+  set({running:false,dead:false,hp:0,maxhp:0});     if(low()) throw new Error('red edge on the menu (no run in progress)');
+  set({running:false,dead:false,hp:10,maxhp:100});  if(low()) throw new Error('red edge with the game not running');
+  set({running:true, dead:true, hp:0,  maxhp:100}); if(low()) throw new Error('red edge stuck on after death');
+  set({running:true, dead:false,hp:0,  maxhp:0});   if(low()) throw new Error('red edge from a 0/0 divide');
+  set({running:true, dead:false,hp:90, maxhp:100}); if(low()) throw new Error('red edge at 90% health');
+  set({running:true, dead:false,hp:10, maxhp:100}); if(!low()) throw new Error('no red edge at 10% health — the warning is gone');
+  set({running:false,dead:false,hp:100,maxhp:100});
+  return 'menu / dead / 0-max-hp / healthy = clear · 10% health = warning';
+});
+
+check('panels open at their default size, then keep whatever size you drag them to', ()=>{
+  const mk=()=>{ const e=g("document.createElement('div')"); e.style.width=''; e.style.height=''; return e; };
+  run("localStorage.removeItem(PANELSIZE_KEY);");
+  const a=mk(); ctx.__pa=a; g("persistPanelSize(__pa,'testPanel','min(1240px,94vw)')");
+  if(a.style.width!=='min(1240px,94vw)') throw new Error('default width not applied, got "'+a.style.width+'"');
+  if(a.style.height) throw new Error('a default height was forced ("'+a.style.height+'") — the panel should hug its content');
+  // nothing should have been written to storage just by opening
+  if(g("localStorage.getItem(PANELSIZE_KEY)")) throw new Error('merely opening the panel persisted a size');
+  // now pretend the player dragged it
+  run(`localStorage.setItem(PANELSIZE_KEY, JSON.stringify({testPanel:{w:'640px',h:'480px'}}));`);
+  const b=mk(); ctx.__pb=b; g("persistPanelSize(__pb,'testPanel','min(1240px,94vw)')");
+  if(b.style.width!=='640px' || b.style.height!=='480px') throw new Error('saved size ignored: '+b.style.width+' x '+b.style.height);
+  run("localStorage.removeItem(PANELSIZE_KEY);");
+  return 'first open = full size, saved size wins forever after, opening never writes';
+});
+
+check('panel contents get wrapped so the title bar and ✕ stay pinned', ()=>{
+  // build a fake panel: <h3> + .closeX + three content blocks
+  run(`
+    __fake=document.createElement('div'); __fake.id='fakePanel'; __fake._cls=new Set(['panel']);
+    (function(){
+      const h=document.createElement('div'); h.tagName='H3';
+      const x=document.createElement('div'); x._cls=new Set(['closeX']);
+      __fake.appendChild(h); __fake.appendChild(x);
+      for(let i=0;i<3;i++) __fake.appendChild(document.createElement('div'));
+      __panels=[__fake];
+      __origQSA=document.querySelectorAll;
+      document.querySelectorAll=function(sel){ return sel==='.panel'?__panels:[]; };
+    })();
+    pinPanelHeaders();
+    document.querySelectorAll=__origQSA;
+  `);
+  const p=g('__fake');
+  const kids=p.children;
+  if(kids.length!==3) throw new Error('expected h3 + closeX + panelBody, got '+kids.length+' children');
+  if(kids[0].tagName!=='H3') throw new Error('the title bar is no longer the first child');
+  if(!kids[1]._cls.has('closeX')) throw new Error('the close button was swallowed into the scroll area');
+  const body=kids[2];
+  if(!body._cls.has('panelBody')) throw new Error('no .panelBody wrapper was created');
+  if(body.children.length!==3) throw new Error('content not moved into the scroll area: '+body.children.length);
+  return 'h3 + ✕ stay outside the scroll area, 3 content blocks moved into .panelBody';
+});
+
+check('the tree panel is left alone (it already has a pinned header)', ()=>{
+  run(`
+    __tp=document.createElement('div'); __tp.id='treePanel'; __tp._cls=new Set(['panel']);
+    (function(){ const h=document.createElement('div'); h.id='treeHead'; const b=document.createElement('div'); b.id='treeBody';
+      __tp.appendChild(h); __tp.appendChild(b);
+      __origQSA2=document.querySelectorAll; document.querySelectorAll=function(sel){ return sel==='.panel'?[__tp]:[]; }; })();
+    pinPanelHeaders();
+    document.querySelectorAll=__origQSA2;
+  `);
+  const p=g('__tp');
+  if(p.children.length!==2) throw new Error('the tree panel was rewrapped — #treeBody would lose its flex sizing');
+  if(p._pinned) throw new Error('tree panel marked as wrapped');
+  return '#treeHead / #treeBody left untouched';
+});
+
+check('the quest line is styled as an objective, not ambient text', ()=>{
+  const html=require('fs').readFileSync(require('path').join(__dirname,'..','towerlords.html'),'utf8');
+  if(html.indexOf('#bountyTxt:not(:empty)')<0) throw new Error('the quest line has no dedicated style');
+  const m=html.match(/#bountyTxt:not\(:empty\)\{[^}]*font-size:([\d.]+)px/);
+  if(!m || parseFloat(m[1])<13) throw new Error('quest text is still small: '+(m?m[1]:'?')+'px');
+  if(html.indexOf('questPulse')<0) throw new Error('no attention pulse on the quest card');
+  const t=html.match(/#towerInfo \.sm\{font-size:([\d.]+)px/);
+  if(!t || parseFloat(t[1])<12.5) throw new Error('top-right HUD text still small: '+(t?t[1]:'?')+'px');
+  return 'quest card '+m[1]+'px + pulse, top-right HUD '+t[1]+'px';
+});
+
+check('scrollbars are hidden but scrolling still works', ()=>{
+  const html=require('fs').readFileSync(require('path').join(__dirname,'..','towerlords.html'),'utf8');
+  if(html.indexOf('scrollbar-width:none')<0) throw new Error('no scrollbar-width:none rule');
+  const kill=html.match(/\.panel::-webkit-scrollbar[^{]*\{width:0;height:0;display:none;\}/);
+  if(!kill) throw new Error('webkit scrollbars not suppressed');
+  for(const sel of ['.panelBody','.bagGrid','#treeCols','#chatBody'])
+    if(html.indexOf(sel+'::-webkit-scrollbar')<0) throw new Error(sel+' can still paint a scrollbar');
+  if(html.indexOf('.panelBody{flex:1 1 auto;min-height:0;overflow-y:auto')<0) throw new Error('.panelBody no longer scrolls — the wheel would stop working');
+  return 'bars suppressed, .panelBody still overflow-y:auto';
+});
+
+check('panel body text is legible', ()=>{
+  const html=require('fs').readFileSync(require('path').join(__dirname,'..','towerlords.html'),'utf8');
+  const want=[['.hint{font-size:',12],['.invWrap h4,.invSec h4{font-size:',12],['.invTools .st{cursor:pointer;font-size:',10.5],['.panel h3{font-size:',15]];
+  const got=[];
+  for(const [needle,min] of want){
+    const i=html.indexOf(needle); if(i<0) throw new Error('rule missing: '+needle);
+    const px=parseFloat(html.slice(i+needle.length));
+    if(!(px>=min)) throw new Error(needle+' is '+px+'px, wanted >= '+min);
+    got.push(px+'px');
+  }
+  return 'hint/headings/chips/titles = '+got.join(' / ');
 });
 
 console.log(R.join('\n'));
