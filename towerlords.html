@@ -538,15 +538,32 @@
   .bindBtn.act{background:var(--neon);color:#04111a;}
 
   /* stash panel */
-  #stashPanel{top:50%;right:16px;transform:translateY(-50%);width:260px;padding-bottom:14px;border-color:rgba(255,206,77,.3);}
+  /* ---- STASH: its own full-size panel (bag ⇄ vault, side by side) ---- */
+  #stashPanel{top:50%;left:50%;transform:translate(-50%,-50%);width:min(820px,95vw);padding-bottom:14px;border-color:rgba(255,206,77,.34);
+    resize:both;overflow:auto;min-width:540px;min-height:400px;max-width:96vw;max-height:92vh;}
   #stashPanel h3{color:var(--gold);}
-  .stashWarn{font-size:10px;color:var(--hp);margin:0 16px 10px;line-height:1.4;}
-  .invcol{display:flex;gap:10px;padding:0 16px;}
-  .invcol>div{flex:1;} .invcol h4{font-size:10px;opacity:.6;letter-spacing:1px;margin-bottom:6px;text-transform:uppercase;}
-  .islot{font-size:11px;padding:5px 7px;border-radius:6px;margin-bottom:5px;cursor:pointer;
-    background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);}
-  .islot:hover{background:rgba(255,255,255,.12);} .islot.empty{opacity:.3;cursor:default;}
-  .stashBtns{display:flex;gap:8px;margin:10px 16px 0;}
+  .stashWarn{font-size:10.5px;color:var(--hp);margin:0 16px 8px;line-height:1.45;}
+  .stashTop{padding:0 16px;margin-bottom:10px;}
+  .stCapRow{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:8px;}
+  #stCapTxt{font-size:12px;letter-spacing:.6px;color:#cdd6e6;}
+  #stCapTxt b{color:var(--gold);font-size:14px;}
+  .stSearch{width:100%;box-sizing:border-box;font:12px system-ui,sans-serif;color:#eaf2ff;padding:7px 11px;border-radius:8px;
+    background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.13);outline:none;}
+  .stSearch:focus{border-color:var(--gold);box-shadow:0 0 0 2px rgba(255,206,77,.16);}
+  .stSearch::placeholder{color:#7a8499;}
+  .stashCols{display:flex;gap:12px;padding:0 16px;align-items:stretch;}
+  .stashSide{flex:1;min-width:0;display:flex;flex-direction:column;}
+  .stashSide .secHd{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:6px;}
+  .stashSide h4{font-size:11px;opacity:.75;letter-spacing:1.4px;margin:0;text-transform:uppercase;color:var(--neon);}
+  .stashSide.vault h4{color:var(--gold);}
+  .stashSide .bagGrid{flex:1;max-height:min(320px,40vh);align-content:start;}
+  .stashMid{display:flex;flex-direction:column;justify-content:center;gap:8px;width:128px;flex:none;}
+  .stashMid .sbtn{flex:none;font-size:10px;padding:9px 6px;line-height:1.25;}
+  .stashMid .sbtn.gold{border-color:var(--gold);color:var(--gold);background:linear-gradient(160deg,rgba(255,206,77,.14),rgba(255,206,77,.04));}
+  .stashMid .sbtn.gold:hover{background:var(--gold);color:#1a1204;box-shadow:0 2px 8px rgba(0,0,0,.35),0 0 14px rgba(255,206,77,.45);}
+  .stEmpty{grid-column:1/-1;text-align:center;font-size:11.5px;opacity:.45;padding:22px 8px;line-height:1.6;}
+  body.touch-on .stashCols{flex-direction:column;}
+  body.touch-on .stashMid{width:auto;flex-direction:row;}
   .sbtn{flex:1;cursor:pointer;text-align:center;font-size:11px;letter-spacing:1px;text-transform:uppercase;padding:8px;border-radius:7px;
     border:1px solid var(--neon);color:var(--neon);background:linear-gradient(160deg,rgba(86,224,255,.13),rgba(86,224,255,.04));font-weight:bold;
     box-shadow:0 2px 8px rgba(0,0,0,.35),inset 0 1px 0 rgba(255,255,255,.06);transition:background .15s ease,color .15s ease,box-shadow .15s ease,transform .12s ease;}
@@ -556,8 +573,7 @@
   .hint{font-size:11.5px;opacity:.5;text-align:center;letter-spacing:.6px;margin-top:11px;line-height:1.5;}
 
   /* inventory + equipment + vendor */
-  #invPanel{top:50%;left:50%;transform:translate(-50%,-50%);width:560px;padding-bottom:14px;}
-  #equipPanel{top:50%;left:calc(50% - 300px);transform:translate(-50%,-50%);width:520px;padding-bottom:14px;}
+  #invPanel{top:50%;left:50%;transform:translate(-50%,-50%);width:min(860px,95vw);padding-bottom:14px;}
   #vendorPanel{top:50%;left:50%;transform:translate(-50%,-50%);width:440px;padding-bottom:14px;border-color:rgba(255,206,77,.3);}
   #vendorPanel h3{color:var(--gold);}
   .invGrid{display:flex;gap:14px;padding:0 16px;}
@@ -595,8 +611,7 @@
   .bagList::-webkit-scrollbar-thumb{background:rgba(86,224,255,.22);border-radius:4px;} .bagList::-webkit-scrollbar-thumb:hover{background:rgba(86,224,255,.4);}
   /* ===== Torchlight-style inventory: paper-doll tiles + icon grid + inspect/compare pane ===== */
   /* Inventory (bag + stash) now stands alone — widened since it no longer shares the window with Equipment */
-  #invPanel{width:620px;resize:both;overflow:auto;min-width:420px;min-height:360px;max-width:96vw;max-height:92vh;}
-  #equipPanel{resize:both;overflow:auto;min-width:420px;min-height:360px;max-width:96vw;max-height:92vh;}
+  #invPanel{width:min(860px,95vw);resize:both;overflow:auto;min-width:560px;min-height:400px;max-width:96vw;max-height:92vh;}
   .invWrap{display:flex;gap:16px;padding:0 16px;align-items:flex-start;}
   .invLeft{width:312px;flex:none;} .invRight{flex:1;min-width:0;}
   .invWrap h4,.invSec h4{font-size:11px;opacity:.7;letter-spacing:1.5px;margin:12px 0 7px;text-transform:uppercase;color:var(--neon);}
@@ -1192,6 +1207,29 @@
   #bossBar .bbTrack{height:12px;border-radius:7px;background:rgba(0,0,0,.55);border:1px solid rgba(255,255,255,.1);overflow:hidden;}
   #bossBar .bbFill{height:100%;border-radius:7px;background:linear-gradient(90deg,#ff2d55,#ff6a3d);box-shadow:0 0 14px rgba(255,60,90,.6);transition:width .18s ease;}
   #bossBar .bbHp{font-size:9.5px;text-align:right;opacity:.72;margin-top:2px;letter-spacing:.5px;}
+  /* ---- TOP-OF-SCREEN DIRECTION COMPASS: blue = open portal · red = floor boss ---- */
+  #dirHud{position:absolute;top:10px;left:50%;transform:translateX(-50%);z-index:22;pointer-events:none;
+    display:flex;gap:10px;align-items:center;justify-content:center;flex-wrap:wrap;max-width:92vw;}
+  #dirHud.hidden{display:none;}
+  .dhChip{display:flex;align-items:center;gap:7px;padding:5px 12px 5px 9px;border-radius:20px;
+    font:bold 11px/1 system-ui,sans-serif;letter-spacing:1.2px;white-space:nowrap;
+    background:rgba(4,8,16,.86);backdrop-filter:blur(3px);}
+  .dhChip.hidden{display:none;}
+  .dhArrow{display:inline-block;font-size:17px;line-height:1;transform:rotate(0deg);
+    transition:transform .09s linear;will-change:transform;}
+  .dhD{opacity:.62;font-weight:600;letter-spacing:.5px;}
+  #dhPortal{border:1.5px solid rgba(90,175,255,.78);color:#a8d8ff;box-shadow:0 0 18px rgba(70,150,255,.38),0 3px 14px rgba(0,0,0,.5);}
+  #dhPortal .dhArrow{color:#4aa8ff;text-shadow:0 0 12px rgba(74,168,255,.95);}
+  #dhPortal.near{animation:dhPulse 1.05s ease-in-out infinite;}
+  #dhBoss{border:1.5px solid rgba(255,80,110,.8);color:#ffc0cb;box-shadow:0 0 18px rgba(255,60,90,.42),0 3px 14px rgba(0,0,0,.5);
+    animation:dhPulse 1.25s ease-in-out infinite;}
+  #dhBoss .dhArrow{color:#ff2d55;text-shadow:0 0 12px rgba(255,45,85,.95);}
+  @keyframes dhPulse{0%,100%{opacity:.86;}50%{opacity:1;}}
+  /* the compass owns the very top — slide the boss bar & subtitles down under it */
+  body.dirhud-on #bossBar{top:56px;}
+  body.dirhud-on #bossSpeech{top:118px;}
+  body.touch-on .dhChip{font-size:9.5px;padding:4px 9px 4px 7px;gap:5px;}
+  body.touch-on .dhArrow{font-size:14px;}
   /* ---- off-screen roaming-lord indicator ---- */
   #bossArrow{position:absolute;z-index:20;pointer-events:none;transform:translate(-50%,-50%);
     display:flex;align-items:center;gap:5px;padding:5px 10px;border-radius:20px;
@@ -1227,8 +1265,7 @@
       <div id="rankHud" class="mRank" title="Your fame rank — earn stars to climb the ladder"></div>
       <div class="mItem" id="openCharBtn"><span class="mKey">C</span><span class="mIc">🧬</span><span class="mLbl">Character</span><span class="pip" id="pipChar">●</span></div>
       <div class="mItem" id="openTreeBtn"><span class="mKey">T</span><span class="mIc">🌳</span><span class="mLbl">Skill Tree</span><span class="pip" id="pipTree">●</span></div>
-      <div class="mItem" id="openInvBtn"><span class="mKey">I</span><span class="mIc">🎒</span><span class="mLbl">Inventory</span></div>
-      <div class="mItem" id="openEquipBtn"><span class="mKey">K</span><span class="mIc">⚔</span><span class="mLbl">Equipment</span></div>
+      <div class="mItem" id="openInvBtn"><span class="mKey">I</span><span class="mIc">🎒</span><span class="mLbl">Inventory &amp; Equipment</span></div>
       <div class="mItem" id="openPetBtn"><span class="mKey">P</span><span class="mIc">🐾</span><span class="mLbl" id="petChip">Pet Yard —</span></div>
       <div class="mItem" id="openScoreBtn"><span class="mKey">V</span><span class="mIc">📜</span><span class="mLbl">Record</span><span class="mEnd" id="rankChip"></span></div>
       <div class="mItem" id="openCodexBtn"><span class="mKey">B</span><span class="mIc">📖</span><span class="mLbl">Bestiary</span></div>
@@ -1301,6 +1338,10 @@
   <div id="levelBanner" class="ui"><div class="lb-t">LEVEL 2</div><div class="lb-s">+1 ATTRIBUTE · +1 SKILL POINT</div></div>
   <div id="bossBar" class="hidden"><div class="bbTop"><span class="bbName" id="bbName">GUARDIAN</span><span class="bbTag" id="bbTag"></span></div><div class="bbTrack"><div class="bbFill" id="bbFill"></div></div><div class="bbHp" id="bbHp"></div></div>
   <div id="bossArrow" class="hidden"><span class="baIc">⚠</span><span class="baTx">ROAMING LORD</span></div>
+  <div id="dirHud" class="hidden">
+    <div class="dhChip hidden" id="dhPortal"><span class="dhArrow">➤</span><span class="dhTx">PORTAL</span><span class="dhD"></span></div>
+    <div class="dhChip hidden" id="dhBoss"><span class="dhArrow">➤</span><span class="dhTx">BOSS</span><span class="dhD"></span></div>
+  </div>
   <div id="bossSpeech" class="hidden"></div>
   <div id="coach" class="hidden"><div class="coach-ic" id="coachIc">💡</div><div class="coach-body"><div class="coach-t" id="coachT"></div><div class="coach-d" id="coachD"></div></div><div class="coach-x" id="coachX">✕</div></div>
 
@@ -1324,9 +1365,9 @@
   <div id="treePanel" class="panel hidden">
     <div id="treeHead">
       <h3>✦ SPECIALISATIONS</h3>
-      <div class="sp">Skill points: <b id="spNum">0</b></div>
+      <div class="sp">Skill points: <b id="spNum">0</b> <span id="spBudget" style="opacity:.5;font-weight:400"></span></div>
       <button id="respec">↺ Respec</button>
-      <div class="treeHint">left-click +1 · right-click −1 · deeper tiers need points in that spec · ⇄ invest ~15 to diverge into neighbours · <b style="color:#ff6ad5">magenta = RULE-BREAKERS</b> (hover them!) · <b style="color:var(--gold)">dashed gold = learnable SKILLS</b></div>
+      <div class="treeHint"><b style="color:var(--gold)">SHIFT+click = fill a node to max in one click</b> · left-click +1 · right-click −1 · deeper tiers need points in that spec · ⇄ invest ~15 to diverge into neighbours · <b style="color:#ff6ad5">magenta = RULE-BREAKERS</b> (hover them!) · <b style="color:var(--gold)">dashed gold = learnable SKILLS</b></div>
       <div class="closeX" data-close="treePanel">✕ <span style="font-size:11px;opacity:.6">(T)</span></div>
     </div>
     <div id="quickBuild"></div>
@@ -1336,18 +1377,33 @@
     </div>
   </div>
 
-  <!-- Stash -->
+  <!-- Stash — its own panel: carried bag on the left, the vault on the right, one click moves an item -->
   <div id="stashPanel" class="panel hidden">
     <h3>🗄 ADMINISTRATOR STASH</h3><div class="closeX" data-close="stashPanel">✕</div>
     <div class="stashWarn" id="stashWarn"></div>
-    <div class="invcol"><div><h4>Carried</h4><div id="invList"></div></div><div><h4>Stash</h4><div id="stashList"></div></div></div>
-    <div class="stashBtns"><div class="sbtn" id="depositAll">DEPOSIT ALL »</div><div class="sbtn" id="retrieveAll">« RETRIEVE</div></div>
-    <div class="hint">walk away or press F to close</div>
+    <div class="stashTop" id="stashTop"></div>
+    <div class="stashCols">
+      <div class="stashSide">
+        <div class="secHd"><h4>🎒 Carried</h4><div class="invTools" id="stBagTools"></div></div>
+        <div class="bagGrid" id="stBagGrid"></div>
+      </div>
+      <div class="stashMid">
+        <div class="sbtn gold" id="depositAll" title="Bank everything you are carrying">DEPOSIT ALL »</div>
+        <div class="sbtn" id="depositGear" title="Bank only wearable gear — keep gems, flasks &amp; potions on you">GEAR ONLY »</div>
+        <div class="sbtn" id="retrieveAll" title="Pull the vault back into your bag">« RETRIEVE ALL</div>
+      </div>
+      <div class="stashSide vault">
+        <div class="secHd"><h4>🗄 Vault</h4><div class="invTools" id="stTools"></div></div>
+        <div class="bagGrid stashGrid" id="stashGrid"></div>
+      </div>
+    </div>
+    <div class="hint">🖱 <b>click an item to move it across</b> · right-click a carried item to equip/use it · hover for full stats · walk away or press F to close</div>
   </div>
 
-  <!-- Equipment: paper-doll gear, action skills, belt flasks + the primary inspect/compare pane -->
-  <div id="equipPanel" class="panel hidden">
-    <h3>⚔ EQUIPMENT</h3><div class="closeX" data-close="equipPanel">✕ <span style="font-size:11px;opacity:.6">(K)</span></div>
+  <!-- Inventory + Equipment: ONE panel again. Paper-doll gear, skills and belt on the left; the
+       carried bag and the inspect/compare pane on the right. The stash lives in its own panel. -->
+  <div id="invPanel" class="panel hidden">
+    <h3>🎒 INVENTORY &amp; EQUIPMENT</h3><div class="closeX" data-close="invPanel">✕ <span style="font-size:11px;opacity:.6">(I / K)</span></div>
     <div class="invWrap">
       <div class="invLeft">
         <h4>Equipped</h4>
@@ -1356,25 +1412,12 @@
         <h4>Belt Flasks · keys Q / E / R / Z / X</h4><div class="slotRow" id="beltRow"></div>
       </div>
       <div class="invRight">
+        <div class="secHd"><h4>Carried — <span id="bagCount">0</span>/<span id="bagCap">24</span></h4>
+          <div class="invTools" id="bagTools"></div></div>
+        <div class="bagGrid" id="bagGrid"></div>
         <h4>Inspect</h4>
         <div class="detailPane blank" id="itemDetail">Hover an item to inspect it — carried gear compares against what you have equipped.</div>
       </div>
-    </div>
-    <div class="hint">hover to inspect &amp; compare · click gear to equip · click a gem then a socket ◯ to set it · open Inventory (I) for your carried bag &amp; stash</div>
-  </div>
-
-  <!-- Inventory: carried bag + stash, with its own inspect/compare pane -->
-  <div id="invPanel" class="panel hidden">
-    <h3>🎒 INVENTORY</h3><div class="closeX" data-close="invPanel">✕ <span style="font-size:11px;opacity:.6">(I)</span></div>
-    <div class="invSec" style="margin-top:0">
-      <div class="secHd"><h4>Carried — <span id="bagCount">0</span>/<span id="bagCap">24</span></h4>
-        <div class="invTools" id="bagTools"></div></div>
-      <div class="bagGrid" id="bagGrid"></div>
-    </div>
-    <div class="invSec" id="invStashWrap"></div>
-    <div class="invSec">
-      <h4>Inspect</h4>
-      <div class="detailPane blank" id="itemDetail2">Hover an item to inspect it — carried gear compares against what you have equipped.</div>
     </div>
     <div class="hint" id="invHint">hover to inspect &amp; compare · click gear to equip · click a gem then a socket ◯ to set it · ⇩ stash banks loot (survives death)</div>
   </div>
@@ -2343,10 +2386,14 @@ function loadDeathLog(){ try{ return JSON.parse(localStorage.getItem(DEATHLOG_KE
 function recordDeath(rec){ try{ const a=loadDeathLog(); a.push(rec); localStorage.setItem(DEATHLOG_KEY, JSON.stringify(a.slice(-40))); }catch(e){} }
 // ============================================================ META PROGRESSION (persists across runs via localStorage)
 const META_KEY='towerlords_meta_v1';
-// ---- FAME RANK: fame no longer buys power — it is a pure skill rating (a co-op badge). ----
-// Within a colour tier there are 7 stars at these fame thresholds; reaching 7★ promotes you to
-// the next colour, and each colour tier costs progressively more fame (×(tier+1) the base set).
-const STAR_BASE=[10000,50000,100000,250000,500000,750000,1000000];   // gray tier; scaled per colour
+// ================= ASCENDANT RANK: STARS ARE EVOLUTIONS, NOT FAME =============================
+// Your star rating no longer measures how much fame you have hoarded — it measures how many times
+// you have EVOLVED: hit the level cap and been reborn at Level 1 with every stat, every talent and
+// every piece of equipment intact. ONE EVOLUTION = ONE STAR. Seven stars fill a colour tier and
+// promote you to the next colour, so the whole ladder is 7 tiers × 7 stars = 49 evolutions.
+//
+// Fame is now purely a CURRENCY: it is what you SPEND to evolve (and to buy stash space), and the
+// price climbs steeply with every rank — see evolveFameCost().
 const STAR_TIERS=[
   {nm:'Gray',       col:'#aab2c5'},
   {nm:'Light Blue', col:'#7fd0ff'},
@@ -2356,23 +2403,39 @@ const STAR_TIERS=[
   {nm:'Yellow',     col:'#ffe14d'},
   {nm:'White',      col:'#ffffff'},
 ];
-// fame → {tier index/name/colour, stars 0-7, fame needed for the next step}
-function fameRank(fame){
-  fame=Math.max(0,fame||0); let floor=0, t=0;
-  for(; t<STAR_TIERS.length-1; t++){ const top=floor+STAR_BASE[6]*(t+1); if(fame<=top) break; floor=top; }
-  const mult=t+1; let stars=0; for(let s=0;s<7;s++) if(fame>=floor+STAR_BASE[s]*mult) stars++;
-  const nextAt = stars<7 ? floor+STAR_BASE[stars]*mult : null;
-  return {tier:t, name:STAR_TIERS[t].nm, col:STAR_TIERS[t].col, stars, nextAt, fame, floor};
+const STARS_PER_TIER=7;
+// evolutions → {tier index/name/colour, stars 0-7, price of the next evolution}
+function evolveRank(n){
+  n=Math.max(0, Math.min(MAX_EVOLVE, n|0));
+  let tier=Math.floor(n/STARS_PER_TIER), stars=n-tier*STARS_PER_TIER;
+  if(tier>=STAR_TIERS.length){ tier=STAR_TIERS.length-1; stars=STARS_PER_TIER; }
+  return {tier, name:STAR_TIERS[tier].nm, col:STAR_TIERS[tier].col, stars,
+          evolves:n, maxed:n>=MAX_EVOLVE,
+          nextAt:(n>=MAX_EVOLVE?null:n+1),                 // "next star" = one more evolution
+          cost:(n>=MAX_EVOLVE?null:evolveFameCost(n)),
+          fame:META.fame, floor:0};
 }
+// the account-wide badge follows the highest evolution count you have ever reached
+function metaEvolves(){
+  let run=0; try{ run=(G&&G.evolves)|0; }catch(_){ run=0; }
+  return Math.max((META&&META.evolves)|0, run);
+}
+// historical name kept so every existing call site keeps working — the argument is ignored now
+function fameRank(_fame){ return evolveRank(metaEvolves()); }
+// the fame PRICE of your next evolution — 25,000 for the first, ~4.5 million for the forty-ninth
+function evolveFameCost(n){ n=Math.max(0,n|0); return Math.round(25000*Math.pow(n+1,1.35)/500)*500; }
+// how full the rank bar is: fame banked toward the price of your next evolution
+function rankProgressPct(){ const n=metaEvolves(); if(n>=MAX_EVOLVE) return 100;
+  const c=evolveFameCost(n); return c>0 ? Math.max(0,Math.min(100,(META.fame/c)*100)) : 100; }
 function rankStars(stars){ return stars>0 ? '★'.repeat(stars) : '☆'; }   // only the stars you've earned, in your tier colour
 function rankBadgeHTML(fame,sm){ const r=fameRank(fame); const fs=sm?'14px':'17px';
   return `<span style="color:${r.col};font-weight:900;letter-spacing:2px;font-size:${fs};text-shadow:0 0 10px ${r.col}bb,0 1px 2px rgba(0,0,0,.55)">${rankStars(r.stars)}</span>`; }
-function rankHudHTML(){ const r=fameRank(META.fame);
+function rankHudHTML(){ const r=fameRank();
   return `<span class="mrk-stars" style="color:${r.col};text-shadow:0 0 12px ${r.col}aa,0 1px 2px rgba(0,0,0,.5)">${rankStars(r.stars)}</span><span class="mrk-tier" style="color:${r.col}">${r.name}</span>`; }
-function refreshMenuRank(){ const mr=$('menuRank'); if(!mr) return; const r=fameRank(META.fame); mr.classList.remove('hidden');
+function refreshMenuRank(){ const mr=$('menuRank'); if(!mr) return; const r=fameRank(); mr.classList.remove('hidden');
   mr.innerHTML=`<span class="mnrk-stars" style="color:${r.col};text-shadow:0 0 20px ${r.col}cc,0 2px 4px rgba(0,0,0,.5)">${rankStars(r.stars)}</span>`
-    +`<span class="mnrk-tier" style="color:${r.col}">${r.name} Tier · ${r.stars}/7★</span>`
-    +`<span class="mnrk-fame">✦ ${Math.round(META.fame).toLocaleString()} fame</span>`
+    +`<span class="mnrk-tier" style="color:${r.col}">${r.name} Tier · ${r.stars}/7★ · ✦×${r.evolves} evolution${r.evolves===1?'':'s'}</span>`
+    +`<span class="mnrk-fame">✦ ${Math.round(META.fame).toLocaleString()} fame${r.cost!=null?' · next evolution ✦'+r.cost.toLocaleString():' · MAX RANK'}</span>`
     +(activeTitleName&&activeTitleName()?`<span class="mnrk-title">${activeTitleName()}</span>`:''); }
 const FEATS=[
   {id:'firstboss',nm:'Giant Slayer', ds:'Slay a floor guardian',          fame:600},
@@ -2391,8 +2454,8 @@ const FEATS=[
   {id:'rescue9',  nm:'The Empty Cellar', ds:'Free every Kept One',        fame:8000},
   {id:'truesummit', nm:'Hopebringer', ds:'Open the summit for the ones below', fame:30000},
 ];
-let META={fame:0, feats:[], invRows:0, stashSlots:0, petTier:0, petSlots:0, codex:{}, ascMax:0, tips:{}, victories:0, grudges:{}, daily:null, playerName:'', playerId:'', voiceSeen:{}, materials:{}, lastBonus:'', bonusStreak:0, fieldRespec:false, recallTier:0, titles:[], title:'', savedPets:null, lastRun:0, rescued:{}, chairChoice:'', trueSummit:false, ancestral:'', beasts:{}, beastOn:'', scav:null, cache:null, soulDebt:0, stashGob:false};
-function loadMeta(){ try{ const s=localStorage.getItem(META_KEY); if(s){ const m=JSON.parse(s); META={fame:m.fame||0, feats:m.feats||[], invRows:Math.min(5,m.invRows||0), stashSlots:(m.stashSlots!=null?m.stashSlots:Math.min(25,(m.stashRows||0)*10)), petTier:m.petTier||0, petSlots:m.petSlots||0, codex:m.codex||{}, ascMax:m.ascMax||0, tips:m.tips||{}, victories:m.victories||0, grudges:m.grudges||{}, daily:m.daily||null, playerName:m.playerName||'', playerId:m.playerId||'', voiceSeen:m.voiceSeen||{}, materials:m.materials||{}, lastBonus:m.lastBonus||'', bonusStreak:m.bonusStreak||0, fieldRespec:!!m.fieldRespec, recallTier:m.recallTier||0, titles:m.titles||[], title:m.title||'', savedPets:m.savedPets||null, lastRun:m.lastRun||0, rescued:m.rescued||{}, chairChoice:m.chairChoice||'', trueSummit:!!m.trueSummit, ancestral:m.ancestral||'', beasts:m.beasts||{}, beastOn:m.beastOn||'', scav:m.scav||null, cache:m.cache||null, soulDebt:m.soulDebt||0, stashGob:!!m.stashGob}; } }catch(e){} }
+let META={fame:0, evolves:0, feats:[], invRows:0, stashSlots:0, petTier:0, petSlots:0, codex:{}, ascMax:0, tips:{}, victories:0, grudges:{}, daily:null, playerName:'', playerId:'', voiceSeen:{}, materials:{}, lastBonus:'', bonusStreak:0, fieldRespec:false, recallTier:0, titles:[], title:'', savedPets:null, lastRun:0, rescued:{}, chairChoice:'', trueSummit:false, ancestral:'', beasts:{}, beastOn:'', scav:null, cache:null, soulDebt:0, stashGob:false};
+function loadMeta(){ try{ const s=localStorage.getItem(META_KEY); if(s){ const m=JSON.parse(s); META={fame:m.fame||0, evolves:Math.min(49,m.evolves||0), feats:m.feats||[], invRows:Math.min(5,m.invRows||0), stashSlots:(m.stashSlots!=null?m.stashSlots:Math.min(25,(m.stashRows||0)*10)), petTier:m.petTier||0, petSlots:m.petSlots||0, codex:m.codex||{}, ascMax:m.ascMax||0, tips:m.tips||{}, victories:m.victories||0, grudges:m.grudges||{}, daily:m.daily||null, playerName:m.playerName||'', playerId:m.playerId||'', voiceSeen:m.voiceSeen||{}, materials:m.materials||{}, lastBonus:m.lastBonus||'', bonusStreak:m.bonusStreak||0, fieldRespec:!!m.fieldRespec, recallTier:m.recallTier||0, titles:m.titles||[], title:m.title||'', savedPets:m.savedPets||null, lastRun:m.lastRun||0, rescued:m.rescued||{}, chairChoice:m.chairChoice||'', trueSummit:!!m.trueSummit, ancestral:m.ancestral||'', beasts:m.beasts||{}, beastOn:m.beastOn||'', scav:m.scav||null, cache:m.cache||null, soulDebt:m.soulDebt||0, stashGob:!!m.stashGob}; } }catch(e){} }
 // ---------------- GLOBAL LEADERBOARD (optional backend) ----------------
 // Set LEADERBOARD_URL to a deployed copy of leaderboard-worker.js (free Cloudflare Worker —
 // see LEADERBOARD_SETUP.md next to this file). Leave null for local-only boards: the game
@@ -2450,6 +2513,7 @@ function serializeSession(){
     floor:G.floor|0, inTown:!!G.inTown, returnFloor:_G.returnFloor|0, asc:_G.asc||0, hardcore:!!G.hardcore, petHardDeath:!!_G.petHardDeath, diff:G.diff||'normal', seed:_G.seed|0, maxFloor:_G.maxFloor||50,
     name:p.name, gold:p.gold|0, level:p.level|0, xp:p.xp, xpNeed:p.xpNeed, xpMode:p.xpMode||'use',
     attrPts:p.attrPts|0, skillPts:p.skillPts|0, skillGranted:p.skillGranted|0, evolves:p.evolves|0,
+    sealK:p.sealK|0, sealD:p.sealD|0, sealF:p.sealF|0,
     attr:p.attr, alloc:p.alloc,
     equip:p.equip, inv:p.inv, belt:p.belt, slots:p.slots, sigSlot:p.sigSlot,
     pets:p.pets, petIdx:(p.pet&&p.pets)?p.pets.indexOf(p.pet):-1,
@@ -2469,13 +2533,14 @@ function resumeSession(){
   _G.asc=clamp(s.asc|0,0,99); _G.ascEff=ascEffects(_G.asc);
   _G.seed=(s.seed|0)||randi(0,9999); _G.maxFloor=s.maxFloor||50; _G.returnFloor=s.returnFloor|0; _G.recallGo=false;
   G.running=true; G.paused=false; G.hitstop=0; G.permadead=false;
-  G.floorMod=null; G.bounty=null; G.practice=false; G.tutorial=false; G.dailyRun=false; G.hardcore=!!s.hardcore; _G.petHardDeath=!!s.petHardDeath; G.diff=s.diff||(s.hardcore?'hard':'normal');
+  G.floorMod=null; G.bounty=null; G.obj=null; G.objProps=[]; G.practice=false; G.tutorial=false; G.dailyRun=false; G.hardcore=!!s.hardcore; _G.petHardDeath=!!s.petHardDeath; G.diff=s.diff||(s.hardcore?'hard':'normal');
   _G.nemesis=makeNemesis();   // per-run nemesis isn't saved (has function refs) — a fresh cast greets your return; grudges (META) persist
   _G.players.length=1; const p=_G.players[0]; p.joined=true; p.color=PLAYER_COLORS[0]; p.input=p.input||makeKbmInput();
   _G.cur=0; _G.splitscreen=false; $('hud').classList.remove('cohide');
   // ---- restore the character ----
   p.name=s.name||'Player 1'; p.gold=s.gold||0; p.level=s.level||1; p.xp=s.xp||0; p.xpNeed=s.xpNeed||xpForLevel(p.level); p.xpMode=s.xpMode||'use';
   p.attrPts=s.attrPts||0; p.skillPts=s.skillPts||0; p.skillGranted=s.skillGranted||0; p.evolves=s.evolves||0;
+  p.sealK=s.sealK||0; p.sealD=s.sealD||0; p.sealF=s.sealF||0;
   p.attr=s.attr||{str:5,dex:5,int:5,vit:5,will:5}; p.alloc=s.alloc||{};
   p.equip=s.equip||{weapon:null,helm:null,chest:null,gloves:null,boots:null,ring:null};
   p.inv=s.inv||[]; p.belt=s.belt||[null,null,null,null,null]; p.slots=s.slots||[null,null,null,null,null,null,null,null,null]; p.sigSlot=s.sigSlot||null;
@@ -3517,10 +3582,21 @@ function talentRarity(ti, rowLen){ let r=Math.min(4, Math.floor((ti/TREE_ROWS)*5
 const TALENTMAP={};
 SPECS.forEach(spec=>spec.tiers.forEach((tier,ti)=>tier.forEach((t,si)=>{ t.id=spec.kw+ti+si; t.spec=spec; t.tier=ti; if(t.rar==null) t.rar=talentRarity(ti,tier.length); TALENTMAP[t.id]=t; })));
 // ---- progression tuning: level cap + evolution + a skill-point budget that maxes exactly ONE tree ----
-const LEVEL_CAP=255, MAX_EVOLVE=20, ATTR_CAP=999;
+const LEVEL_CAP=255, MAX_EVOLVE=49, ATTR_CAP=999;   // 49 evolutions = 7 colour tiers × 7 stars
 function specTotalRanks(spec){ let s=0; spec.tiers.forEach(tier=>tier.forEach(t=>{ s+=t.max||0; })); return s; }
 const SKILL_BUDGET=Math.max(...SPECS.filter(s=>!s.relic).map(specTotalRanks));   // lifetime skill points = enough to fully allocate one whole tree, no more (Beast forms cost relics, not points)
-const SKILL_PER_LEVEL=Math.max(1,Math.round(SKILL_BUDGET/(LEVEL_CAP-15)));   // spread the budget so a single 1→255 climb roughly maxes one tree
+const START_SKILL_PTS=3;   // the three points a brand-new character starts with — part of the budget, not on top of it
+// ---- the lifetime skill-point curve -----------------------------------------------------------
+// A single climb from Level 1 to Level 255 hands out EXACTLY SKILL_BUDGET points: enough to fully
+// max one specialisation tree and not one point more. The curve is spread evenly across the climb,
+// and it is a *total*, not a per-level grant — so once you are at the cap the tap is closed.
+// EVOLVING does not reopen it. Evolution resets your level and keeps giving you attribute points
+// on the way back up, but your skill tree is finished the first time you reach 255.
+function skillGrantedByLevel(lv){
+  lv=Math.max(1, Math.min(LEVEL_CAP, lv|0));
+  if(lv>=LEVEL_CAP) return SKILL_BUDGET;
+  return Math.min(SKILL_BUDGET, START_SKILL_PTS + Math.round((SKILL_BUDGET-START_SKILL_PTS)*(lv-1)/(LEVEL_CAP-1)));
+}
 function xpForLevel(lv){ return Math.floor(18 + lv*12 + lv*lv*2.2); }   // gentle quadratic curve so 255 is a long-but-reachable grind (compounding curves made it impossible)
 // ---- SKILL-TREE DIVERGENCE: once you've invested in a tree you can "branch" into its neighbours, diving into their mid tiers without re-climbing their foundation ----
 const SPEC_ADJ={}; SPECS.forEach((s,i)=>{ SPEC_ADJ[s.kw]=[SPECS[(i-1+SPECS.length)%SPECS.length].kw, SPECS[(i+1)%SPECS.length].kw]; });
@@ -3597,6 +3673,7 @@ function makePlayer(idx){ return {
   attackCd:0, invuln:0, dead:false, fervor:0, fervorT:0, rootT:0,
   stunT:0, slowT:0, weakT:0, healCutT:0,   // enemy counter-play debuffs: stun-lock tanks, slow speedsters, weaken bruisers, mortal-wound healers
   hots:[],                                 // Mender Regeneration lane: stacking heal-over-time entries {amt,left} — see addHot()/updatePlayerStep tick
+  sealK:0, sealD:0, sealF:0,               // ASCENDANT SEALS this life — guardians slain · deepest floor · flawless-guardian flag (all shattered by death)
   adaptWarned:false, recallT:0,            // recallT: channel timer for the quick teleport back to the sanctuary
   nearStash:false, nearVendor:false, nearPortal:false, nearScore:false, nearChest:null, nearLoot:false, nearCraft:false, nearYard:false, _ph:false, _sh:false,
   aim:new THREE.Vector3(),
@@ -3605,7 +3682,7 @@ function makePlayer(idx){ return {
 }; }
 // fields that belong to a player (everything else stays shared on _G)
 const PF = new Set(['id','name','input','cam','viewport','color','joined','player','gold','level','xp','xpNeed','xpMode',
-  'attrPts','skillPts','skillGranted','evolves','attr','hp','maxhp','mana','maxmana','S','alloc','slots','cd','equip','invCap','inv','stash',
+  'attrPts','skillPts','skillGranted','evolves','sealK','sealD','sealF','attr','hp','maxhp','mana','maxmana','S','alloc','slots','cd','equip','invCap','inv','stash',
   'stashStrikes','selGem','greed','run','pet','pets','petMesh','petMagnet','petErrand','belt','charge','chargeMax','sigSlot','sigCd',
   'swiftT','perfectT','dashRewarded','dashCd','dashCdMax','dashT','dashDir','flowT','attackCd','invuln','dead','rootT',
   'stunT','slowT','weakT','healCutT','adaptWarned','recallT','hots',
@@ -3614,6 +3691,7 @@ const _G = {
   running:false, paused:false, floor:1, maxFloor:50, seed:0,
   enemies:[], projectiles:[], eProjectiles:[], pickups:[], decals:[], scenery:[], timed:[], netDeaths:[], netHits:[], chests:[], yardPets:[],
   portal:null, stashStation:null, vendorStation:null, scoreStation:null, goblin:null, craftStation:null, yardStation:null,
+  obj:null, objProps:[],   // FLOOR OBJECTIVE: what this floor wants from you before the portal opens, plus any props it spawned
   rects:[], rooms:[], obstacles:[], camps:[], respawns:[], bounds:140,
   shiftT:0, shiftWarned:false, layoutSalt:0, hitstop:0, floorMod:null, bounty:null,
   hardcore:false, diff:'normal', permadead:false, inTown:false, muted:false, practice:false, tutorial:false, modalOpen:false, inYard:false, nearYardPet:null, legacyOpen:false, petHardDeath:false,
@@ -3648,7 +3726,7 @@ const ATTR_INFO=[
 const keys={}; const mouse=new THREE.Vector2(); let mouseDown=false; let mouseR=false;
 const aimPoint=new THREE.Vector3(); const raycaster=new THREE.Raycaster();
 const groundPlane=new THREE.Plane(new THREE.Vector3(0,1,0),0);
-const PANELS=['charPanel','treePanel','stashPanel','invPanel','equipPanel','vendorPanel','petPanel','petYardPanel','scorePanel','codexPanel','settingsPanel','craftPanel'];
+const PANELS=['charPanel','treePanel','stashPanel','invPanel','vendorPanel','petPanel','petYardPanel','scorePanel','codexPanel','settingsPanel','craftPanel'];
 function anyPanelOpen(){ return _G.modalOpen || _G.legacyOpen || _G.draftOpen || PANELS.some(p=>!$(p).classList.contains('hidden')); }
 function syncPause(){ G.paused=false; }   // menus never pause gameplay — the world keeps running while you browse (mouse-attack stays suppressed via anyPanelOpen so clicking UI won't fire your weapon)
 
@@ -3658,7 +3736,7 @@ addEventListener('keydown',e=>{
   if(_G.modalOpen){ if(k==='escape'){ closeGameModal(); _gmOnOK=null; } return; }
   if(_G.legacyOpen){ if(k==='escape'||k==='l') closeLegacy(); return; }
   if(_G.netGuest){   // guest: open/close its OWN menus (rendered from the streamed build); movement/skills go up as input packets, not here
-    const gp={c:'charPanel',t:'treePanel',i:'invPanel',k:'equipPanel',p:'petPanel',v:'scorePanel',b:'codexPanel',o:'settingsPanel'}[k];
+    const gp={c:'charPanel',t:'treePanel',i:'invPanel',k:'invPanel',p:'petPanel',v:'scorePanel',b:'codexPanel',o:'settingsPanel'}[k];
     if(gp){ _G.menuOwner=0; _G.cur=0; togglePanel(gp); }
     else if(k==='escape'){ if(anyPanelOpen()){ PANELS.forEach(p=>$(p).classList.add('hidden')); refreshMenuState(); } }
     return;
@@ -3672,13 +3750,9 @@ addEventListener('keydown',e=>{
     }
     return;
   }
-  if(G.typeCast){ if(k.length===1 && /[a-z]/i.test(k)){   // TYPING CAST: the word eats the keyboard while it lasts
-      if(k.toUpperCase()===G.typeCast.seq[G.typeCast.i]){ G.typeCast.i++; showTypeCast(); tone(660+G.typeCast.i*120,0.05,'square',0.05); if(G.typeCast.i>=4) endTypeCast(true); }
-      else endTypeCast(false);
-      e.preventDefault(); return; } }
   // ---- REBINDABLE combat keybinds: dash / signature / interact / recall / skills 1-9 / flasks (any key or mouse button) ----
   { const _act=actionForKey(k); if(_act){ doAction(_act); e.preventDefault(); return; } }
-  const pk={c:'charPanel',t:'treePanel',i:'invPanel',k:'equipPanel',p:'petPanel',v:'scorePanel',b:'codexPanel',o:'settingsPanel'}[k];
+  const pk={c:'charPanel',t:'treePanel',i:'invPanel',k:'invPanel',p:'petPanel',v:'scorePanel',b:'codexPanel',o:'settingsPanel'}[k];
   if(pk){ _G.menuOwner=0; _G.cur=0; togglePanel(pk); }   // P1's keyboard always manages P1
   else if(k==='m'){ toggleMute(); }
   else if(k==='g'){ if(!G.paused) throwGold(); }    // WEAPONIZED GOLD: throw a fistful of your purse
@@ -4287,7 +4361,6 @@ $('lbNameSave').onclick=()=>{ lbSetName($('lbNameIn').value); $('lbNameIn').valu
 $('openCharBtn').onclick=()=>togglePanel('charPanel');
 $('openTreeBtn').onclick=()=>togglePanel('treePanel');
 $('openInvBtn').onclick=()=>togglePanel('invPanel');
-$('openEquipBtn').onclick=()=>togglePanel('equipPanel');
 $('openPetBtn').onclick=()=>togglePanel('petPanel');
 $('openScoreBtn').onclick=()=>togglePanel('scorePanel');
 $('openCodexBtn').onclick=()=>togglePanel('codexPanel');
@@ -4295,9 +4368,22 @@ $('openSettingsBtn').onclick=()=>togglePanel('settingsPanel');
 $('recallBtn').onclick=()=>startRecall();
 $('muteInd').onclick=(e)=>{ e.stopPropagation(); toggleMute(); };
 document.querySelectorAll('.closeX').forEach(x=>x.onclick=()=>{ $(x.dataset.close).classList.add('hidden'); syncPause(); refreshMenuState(); });
-$('depositAll').onclick=()=>{ if(G.inv?.length){ const n=stashPushMany(G.inv); G.inv=G.inv.slice(n); G.stashStrikes=0; bankCashIn(n); log(n?('Deposited '+n+' item(s)'+(G.inv.length?' — stash full, '+G.inv.length+' left in bag':'')):'Stash full — buy a stash row.'); renderStash();} };
-$('retrieveAll').onclick=()=>{ if(G.stash?.length){G.inv.push(...G.stash);G.stash=[];G.stashStrikes=0;log('Stash retrieved.');renderStash();} };
-$('respec').onclick=respec;
+$('depositAll').onclick=()=>{ if(!(G.inv&&G.inv.length)){ log('Nothing carried to deposit.'); if(sfx.deny)sfx.deny(); return; }
+  const n=stashPushMany(G.inv); G.inv=G.inv.slice(n); if(n){ G.stashStrikes=0; bankCashIn(n); if(sfx.gold)sfx.gold(); }
+  log(n?('🗄 Deposited '+n+' item(s)'+(G.inv.length?' — vault full, '+G.inv.length+' left in your bag':'')):'🗄 Vault full — buy a ＋ Slot or ＋ Row with fame.');
+  refreshItemPanels(); };
+$('depositGear').onclick=()=>{ const keep=[]; let n=0;
+  for(const it of G.inv){ if(it.slotKey && !it.isGem && !it.isSkillGem && !it.isFlask && !it.isPot && !it.isPet && !stashFull()){ G.stash.push(it); n++; } else keep.push(it); }
+  G.inv=keep; if(n){ G.stashStrikes=0; bankCashIn(n); if(sfx.gold)sfx.gold(); log('🗄 Deposited '+n+' piece(s) of gear — gems, flasks & potions stay on you.'); }
+  else log('No wearable gear in your bag to bank.');
+  refreshItemPanels(); };
+$('retrieveAll').onclick=()=>{ if(!(G.stash&&G.stash.length)){ log('The vault is empty.'); if(sfx.deny)sfx.deny(); return; }
+  const room=Math.max(0, G.invCap-G.inv.length);
+  if(room<=0){ log('🎒 Bag full — make room before retrieving.'); if(sfx.deny)sfx.deny(); return; }
+  const take=G.stash.splice(0,room); G.inv.push(...take); G.stashStrikes=0; if(sfx.pickup)sfx.pickup();
+  log('🗄 Retrieved '+take.length+' item(s)'+(G.stash.length?' — bag full, '+G.stash.length+' still banked':'')+'.');
+  refreshItemPanels(); };
+$('respec').onclick=respecPrompt;
 
 function layoutShopInv(shopId){ const shop=$(shopId), inv=$('invPanel'); if(!shop||!inv) return;
   shop.style.left='2vw'; shop.style.right='auto'; shop.style.top='50%'; shop.style.transform='translateY(-50%)';
@@ -4316,10 +4402,10 @@ function togglePanel(id){
   el.classList.toggle('hidden');
   clearPin();   // a fresh panel open/close starts with nothing selected (avoids a stale pin from a prior screen)
   if(willOpen){ if(id==='treePanel'){ const _tp=$(id); ['left','top','right','bottom','width','height','transform','margin'].forEach(k=>_tp.style[k]=''); }   // purge any stale inline sizing — the tree always opens fullscreen
-    if(id==='charPanel')renderChar(); else if(id==='treePanel')renderTree(); else if(id==='stashPanel')renderStash(); else if(id==='invPanel')renderInv(); else if(id==='equipPanel')renderInv(); else if(id==='vendorPanel'){ if((G._vendRefreshes||0)<3){ rollVendStock(); G._vendRefreshes=(G._vendRefreshes||0)+1; } renderVendor(); } else if(id==='petPanel')renderPet(); else if(id==='petYardPanel')renderPetYard(); else if(id==='scorePanel')renderScore(); else if(id==='codexPanel')renderCodex(); else if(id==='settingsPanel')renderSettings(); else if(id==='lootPanel')renderLoot(); else if(id==='craftPanel')renderCraft(); }
+    if(id==='charPanel')renderChar(); else if(id==='treePanel')renderTree(); else if(id==='stashPanel')renderStash(); else if(id==='invPanel')renderInv(); else if(id==='vendorPanel'){ if((G._vendRefreshes||0)<3){ rollVendStock(); G._vendRefreshes=(G._vendRefreshes||0)+1; } renderVendor(); } else if(id==='petPanel')renderPet(); else if(id==='petYardPanel')renderPetYard(); else if(id==='scorePanel')renderScore(); else if(id==='codexPanel')renderCodex(); else if(id==='settingsPanel')renderSettings(); else if(id==='lootPanel')renderLoot(); else if(id==='craftPanel')renderCraft(); }
   if(willOpen) applyPanelPos(id);   // reopen at last-dragged spot · off-centre by default (settings stays centred)
-  if(willOpen){ if(id==='invPanel') persistPanelSize(el,'invPanel','680px','760px'); else if(id==='equipPanel') persistPanelSize(el,'equipPanel','640px','620px'); }   // sane default open size that fits content · remembers user-resized size across sessions
-  if((id==='vendorPanel'||id==='stashPanel') && willOpen){   // shopping? bring your bag alongside
+  if(willOpen){ if(id==='invPanel') persistPanelSize(el,'invPanel','860px','700px'); else if(id==='stashPanel') persistPanelSize(el,'stashPanel','820px','560px'); }   // sane default open size that fits content · remembers user-resized size across sessions
+  if(id==='vendorPanel' && willOpen){   // shopping? bring your bag alongside (the stash has its own bag column)
     if($('invPanel').classList.contains('hidden')){ $('invPanel').classList.remove('hidden'); renderInv(); }
     _G.shopInvPaired=true; layoutShopInv(id);
   }
@@ -4328,11 +4414,11 @@ function togglePanel(id){
 // ============================================================ PER-PLAYER CO-OP MENUS
 // Each joined player can open and operate their OWN menus on their OWN character. Panels render
 // for _G.menuOwner (routed through _G.cur); gamepad owners navigate with a focus cursor while paused.
-const BUILD_PANELS=['charPanel','treePanel','invPanel','equipPanel','petPanel'];   // bumpers cycle through these
+const BUILD_PANELS=['charPanel','treePanel','invPanel','petPanel'];   // bumpers cycle through these
 function refreshMenuState(){
   const open=PANELS.find(p=>!$(p).classList.contains('hidden'));
   _G.menuPanel=open||null;
-  if(_G.shopInvPaired && $('vendorPanel').classList.contains('hidden') && $('stashPanel').classList.contains('hidden')){   // both shop panels closed → close the paired bag & reset positions
+  if(_G.shopInvPaired && $('vendorPanel').classList.contains('hidden')){   // vendor closed → close the paired bag & reset positions
     $('invPanel').classList.add('hidden'); clearPanelPos('invPanel'); clearPanelPos('vendorPanel'); clearPanelPos('stashPanel'); _G.shopInvPaired=false;
   }
   clearCoopBadge();
@@ -4358,7 +4444,7 @@ function setCoopBadge(idx){ clearCoopBadge(); if(!_G.splitscreen) return; const 
   b.style.setProperty('--pc', PLAYER_TINT[idx]||'var(--neon)'); b.textContent='▸ P'+(idx+1); h.appendChild(b); }
 // ---- gamepad focus cursor over the open panel's actionable elements ----
 function coopFocusEls(){ const pid=_G.menuPanel; if(!pid) return [];
-  const sel='.plus:not(.dim), .bindBtn, .bagItem:not(.bagEmpty), .gearSlot:not(.empty), .sock, .segBtn, .tog, .sbtn, .vbtn, .bankBtn, .islot:not(.empty), .talent, #respec';
+  const sel='.plus:not(.dim), .bindBtn, .tile:not(.empty), .sock, .segBtn, .tog, .sbtn, .vbtn, .bankBtn, .st, .buyRow:not(.maxed), .jq, .talent, #respec';
   return [...$(pid).querySelectorAll(sel)].filter(el=> el.offsetParent!==null ); }
 function clearCoopFocus(){ document.querySelectorAll('.cofocus').forEach(e=>e.classList.remove('cofocus')); }
 function coopFocusReset(){ _G.focusIdx=0; coopFocusApply(); }
@@ -4576,13 +4662,14 @@ function recompute(){
     (S.procs[pr.on]||(S.procs[pr.on]=[])).push({type:pr.type, chance:Math.min(1,pr.chance||1), amt:pr.amt||0, dur:pr.dur||0, r:pr.r||6}); } }
   // ascension "Withered": cut all healing / regen / leech
   { const hm=ascEff().healMul; if(hm!==1){ S.lifeRegen*=hm; S.manaRegen*=hm; S.lifesteal*=hm; S.lifeOnHit*=hm; S.lifeOnKill*=hm; } }
-  // ---- enemy ADAPTATION: read the player's dominant specialisation so foes can counter it (tanks get stun-locked, speedsters slowed, healers mortally wounded, etc.) ----
-  { let bestKw=null, bestN=0; const perSpec={};
-    for(const id in G.alloc){ const t=TALENTMAP[id], r=G.alloc[id]||0; if(r>0&&t){ perSpec[t.spec.kw]=(perSpec[t.spec.kw]||0)+r; } }
-    for(const kw in perSpec){ if(perSpec[kw]>bestN){ bestN=perSpec[kw]; bestKw=kw; } }
-    const KIND={tk:'tank',st:'bruiser',mn:'zealot',wd:'mage',rg:'runner',el:'mage'};
-    S.adaptKind = bestKw?KIND[bestKw]:null;
-    S.adaptLvl = bestN>=45?3 : bestN>=28?2 : bestN>=14?1 : 0; }   // how hard foes counter, by how committed the build is
+  // ---- ARCHETYPE COUNTERS ARE OFF -------------------------------------------------------------
+  // Foes used to read your dominant specialisation and counter it directly: tanks got stun-locked,
+  // speedsters slowed, healers mortally wounded. It meant the harder you committed to a role, the
+  // harder the tower punished you for it — the exact opposite of a power fantasy. Enemies now scale
+  // on TOTAL investment only (see basePowerLvl) and never target your archetype, so a tank is
+  // allowed to feel unkillable and a damage build is allowed to delete things.
+  S.adaptKind=null; S.adaptLvl=0;
+  { let tot=0; for(const id in G.alloc) tot+=G.alloc[id]||0; S.treeSpent=tot; }   // shown on the character sheet
   S.abn=abnSet;   // abnormal-effect flags collected from equipped gear (see ABNORMAL EFFECTS block)
   G.S=S;
   G.maxhp=S.maxhp; G.maxmana=S.maxmana;
@@ -4663,7 +4750,8 @@ function projBlocked(x,z){ for(const o of G.obstacles){ if((o.h==null||o.h>=1.7)
 
 function generateFloor(anchor){
   clearWorld();
-  G.floorMod=null; G.bounty=null;
+  G.floorMod=null; G.bounty=null; G.objProps=[];
+  if(!_G.objKeep) G.obj=null;   // a mid-objective reshuffle carries its progress across the new layout
   checkFloorFeats();
   if(G.dailyRun) srandOn((G.seed*7919 + G.floor*104729)>>>0);   // daily: identical layout/spawns/mods for everyone today
   const type=floorType(G.floor);
@@ -4779,7 +4867,7 @@ function generateFloor(anchor){
     spawnChests(rooms);   // 2-5 lootable chests scattered across the floor (each opens once)
     if(G._svMap){ G._svMap=false; const _mr=pick(rooms), _mp=safePt(_mr,3); spawnChest(_mp.x,_mp.z); log('🗺 Sera-Voss\'s map was true — an extra cache glints on this floor.'); }
     maybeTowerWhisper();   // rare state-keyed ambience past Act II
-    G.floorKills=0; G.killGoal=Math.max(10, Math.round(G.enemies.length*ascEff().killFrac));   // clear ~70% (more at high ascension) to open the portal
+    rollFloorObjective(rooms);   // FLOOR OBJECTIVE: what this floor wants before the portal will open
     if(G.run){ G.run.vectorStacks=0; } G.trapBuff=0; G.heat=Math.max(0,(G.heat||0)-30); G.heatFuse=0;   // per-floor resets: Vector Shift, trap salvage, some heat bleeds off
     { let _re=0; for(const _st of G.stash){ if(_st&&_st.isFlask){ const _nf=makeFlask(G.floor); _st.flaskId=_nf.flaskId; _st.name=_nf.name; _st.ic=_nf.ic; _re++; } }   // SCHRÖDINGER'S STASH: flasks left banked reroll each floor
       if(_re&&G.floor>1) log('⚗ Schrödinger’s stash — '+_re+' banked flask'+(_re===1?'':'s')+' rerolled into something new.'); }
@@ -4794,6 +4882,7 @@ function generateFloor(anchor){
   if(NET.role==='host') netBroadcastFloor();   // stream the new floor's layout to connected peers
   setMusicSet(type==='BOSS'?'boss':type==='SAFE'?'calm':'floor');   // random battle track in boss rooms, calm in safe zones, a random adventurous track on normal floors
   updateFloorUI(type);
+  _G.objKeep=false;   // safety: the reshuffle carry-over flag never survives into the next floor
   saveSession();   // autosave every floor — closing now and continuing later resumes here
 }
 let biome;
@@ -4803,7 +4892,7 @@ function generateTown(){ G._vendRefreshes=0;   // vendor restocks (3 per visit) 
   if(META.stashGob){ const _junk=G.stash.filter(isBulkJunk); if(_junk.length){   // the stash goblin has been snacking
     const _it=_junk.sort((a,b)=>(a.value||0)-(b.value||0))[0], _gld=Math.round((_it.value||10)*1.3);
     G.stash=G.stash.filter(x=>x!==_it); G.gold+=_gld; log('🧌 Your stash goblin munched '+_it.name+' → +'+_gld+'g. It looks pleased with itself.'); } }
-  G.floorMod=null; G.bounty=null; G.shiftT=999; G.shiftWarned=false;   // the sanctuary is a rest area — drop any mods/bounty/reshuffle clock carried in from the run
+  G.floorMod=null; G.bounty=null; G.obj=null; G.objProps=[]; G.shiftT=999; G.shiftWarned=false;   // the sanctuary is a rest area — drop any mods/bounty/reshuffle clock carried in from the run
   biome=BIOMES[4];                                   // Gilded Halls — the sanctuary
   scene.background=new THREE.Color(biome.fog); scene.fog=new THREE.Fog(biome.fog,46,150); hemi.groundColor.setHex(biome.fog);
   const room={cx:0,cz:0,rw:56,rh:46,x0:-28,x1:28,z0:-23,z1:23}; G.bounds=70;
@@ -4875,6 +4964,289 @@ function doRecallNow(){
 }
 
 function floorType(f){ if(f%5===0)return 'BOSS'; if(f%5===1 && f>1)return 'SAFE'; return 'NORMAL'; }
+// ================================================================================================
+//  FLOOR OBJECTIVES — ten different ways a floor can ask to be beaten
+// ================================================================================================
+//  Every NORMAL floor rolls one objective. Clearing it is what opens the portal. Boss floors still
+//  want the guardian dead; safe floors ask nothing. The first two floors always roll Purge so the
+//  default is taught before the tower starts getting clever.
+//
+//  The odd objectives (anything but Purge) pay a gold + fame bonus on completion, because they ask
+//  you to play differently rather than just play more.
+const FLOOR_OBJECTIVES=[
+  {id:'purge',    nm:'Purge',            ic:'⚔',  w:20, ds:'Put down most of this floor’s population.'},
+  {id:'exterm',   nm:'Extermination',    ic:'☠',  w:6,  ds:'Leave nothing standing. Nothing respawns.'},
+  {id:'survive',  nm:'Endure',           ic:'⏳',  w:12, ds:'Simply stay alive — the tower keeps sending more.'},
+  {id:'pacifist', nm:'Vow of Silence',   ic:'🕊',  w:7,  ds:'Harm nothing. Strike an enemy and the vow restarts.'},
+  {id:'flawless', nm:'Untouched',        ic:'🛡',  w:7,  ds:'Take no damage. One hit and the count restarts.'},
+  {id:'hunt',     nm:'Marked for Death', ic:'🎯',  w:11, ds:'Cull the marked — the rest may live.'},
+  {id:'tithe',    nm:'The Tithe',        ic:'💠',  w:11, ds:'Gather the shards the dead leave behind.'},
+  {id:'pylons',   nm:'Sealing Ritual',   ic:'🧩',  w:11, ds:'Stand at each glyph pylon until it seals.'},
+  {id:'hold',     nm:'Hold the Ground',  ic:'⬢',  w:8,  ds:'Stand inside the circle until it accepts you.'},
+  {id:'plunder',  nm:'Plunder',          ic:'📦',  w:7,  ds:'Crack open the floor’s caches.'},
+];
+function objDef(id){ return FLOOR_OBJECTIVES.find(o=>o.id===id)||FLOOR_OBJECTIVES[0]; }
+function objWeightedPick(){
+  let tot=0; for(const o of FLOOR_OBJECTIVES) tot+=o.w;
+  let r=Math.random()*tot;
+  for(const o of FLOOR_OBJECTIVES){ r-=o.w; if(r<=0) return o; }
+  return FLOOR_OBJECTIVES[0];
+}
+function objAliveCount(){ let n=0; if(G.enemies) for(const e of G.enemies){ if(!e.dead && !e.boss) n++; } return n; }
+// ---- roll (or carry over) this floor's objective, then build whatever props it needs ----
+function rollFloorObjective(rooms){
+  G.objProps=[];
+  if(_G.objKeep && G.obj && !G.obj.done){   // a reshuffle mid-objective: keep the progress, rebuild the props
+    _G.objKeep=false; objSetupProps(G.obj, rooms); objAnnounce(G.obj, true); return;
+  }
+  _G.objKeep=false;
+  const f=G.floor|0;
+  const def = (f<=2) ? objDef('purge') : objWeightedPick();
+  const o={ id:def.id, nm:def.nm, ic:def.ic, ds:def.ds, need:0, have:0, t:null, tMax:null, done:false, breaks:0 };
+  const alive=objAliveCount();
+  switch(o.id){
+    case 'purge':    o.need=Math.max(10, Math.round(alive*ascEff().killFrac)); break;
+    case 'exterm':   o.need=Math.max(1, alive); break;
+    case 'survive':  o.tMax=Math.min(105, 55+f*1.2); o.t=o.tMax; break;
+    case 'pacifist': o.tMax=Math.min(46, 26+f*0.5); o.t=o.tMax; o._grace=2.5; break;
+    case 'flawless': o.tMax=Math.min(58, 34+f*0.6); o.t=o.tMax; o._grace=2.5; break;
+    case 'hunt':     o.need=3+(f>=15?1:0)+(f>=32?1:0); break;
+    case 'tithe':    o.need=8+Math.min(10, Math.floor(f/2)); break;
+    case 'pylons':   o.need=3+(f>=20?1:0); break;
+    case 'hold':     o.need=Math.min(34, 18+f*0.4); break;   // seconds of cumulative standing
+    case 'plunder':  o.need=3+(f>=25?1:0); break;
+  }
+  G.obj=o;
+  G.floorKills=0; G.killGoal=(o.id==='purge'||o.id==='exterm')?o.need:Math.max(10,Math.round(alive*0.7));
+  objSetupProps(o, rooms);
+  objAnnounce(o, false);
+}
+// ---- spawn / re-spawn the physical props an objective needs on THIS layout ----
+function objSetupProps(o, rooms){
+  rooms=rooms||G.rooms||[]; if(!rooms.length) return;
+  const pool = rooms.length>1 ? rooms.slice(1) : rooms;
+  if(o.id==='purge'||o.id==='exterm'){   // a reshuffle changes the population — rescale what's left to do
+    const alive=objAliveCount();
+    if(o.id==='exterm') o.need=Math.max(o.have+1, o.have+alive);
+    else o.need=Math.max(o.have+1, o.have+Math.round(alive*ascEff().killFrac));
+    G.killGoal=o.need;
+  }
+  else if(o.id==='hunt'){
+    const want=Math.max(0, o.need-o.have);
+    const cands=(G.enemies||[]).filter(e=>!e.dead && !e.boss && !e._objMark);
+    for(let i=0;i<want && cands.length;i++){
+      const e=cands.splice(randi(0,cands.length-1),1)[0];
+      e._objMark=true; e.hp*=1.35; e.maxhp=e.hp; e.xp*=2; e.gold=true;
+      try{ const bm=new THREE.Mesh(new THREE.OctahedronGeometry(0.42,0), new THREE.MeshStandardMaterial({color:0xff2d55,emissive:0xff2d55,emissiveIntensity:1.6}));
+        bm.position.y=2.6*(e.scale||1)*ENEMY_VISUAL_SCALE; e.mesh.add(bm); e._objBeacon=bm;
+        const lt=new THREE.PointLight(0xff2d55,1.1,9); lt.position.y=bm.position.y; e.mesh.add(lt); }catch(_){}
+    }
+  }
+  else if(o.id==='pylons'){
+    const want=Math.max(0, o.need-o.have);
+    for(let i=0;i<want;i++){
+      const rm=pool[i%pool.length], pt=safePt(rm,3);
+      const m=new THREE.Mesh(new THREE.CylinderGeometry(0.34,0.5,2.4,6), new THREE.MeshStandardMaterial({color:0xb06bff,emissive:0xb06bff,emissiveIntensity:0.9}));
+      m.position.set(pt.x,1.2,pt.z); scene.add(m); G.scenery.push(m);
+      try{ const lt=new THREE.PointLight(0xb06bff,1.0,10); lt.position.y=1.6; m.add(lt); }catch(_){}
+      G.objProps.push({kind:'pylon', x:pt.x, z:pt.z, mesh:m, lit:false, chan:0});
+    }
+  }
+  else if(o.id==='hold'){
+    const rm=pool[randi(0,pool.length-1)], pt=safePt(rm,5), r=6.5;
+    const disc=new THREE.Mesh(new THREE.CircleGeometry(r,28), new THREE.MeshBasicMaterial({color:0x56e0ff,transparent:true,opacity:.16,side:THREE.DoubleSide}));
+    disc.rotation.x=-Math.PI/2; disc.position.set(pt.x,0.06,pt.z); scene.add(disc); G.scenery.push(disc);
+    const ring=new THREE.Mesh(new THREE.TorusGeometry(r,0.16,8,40), new THREE.MeshStandardMaterial({color:0x56e0ff,emissive:0x56e0ff,emissiveIntensity:1.2}));
+    ring.rotation.x=Math.PI/2; ring.position.set(pt.x,0.3,pt.z); scene.add(ring); G.scenery.push(ring);
+    G.objProps.push({kind:'zone', x:pt.x, z:pt.z, r:r, mesh:disc, ring:ring});
+  }
+  else if(o.id==='plunder'){
+    const have=(G.chests||[]).filter(c=>!c.opened).length;   // guarantee enough caches to finish on
+    for(let i=have;i<o.need-o.have+1;i++){ const rm=pool[randi(0,pool.length-1)], pt=safePt(rm,3); spawnChest(pt.x,pt.z); }
+  }
+}
+function objAnnounce(o, quiet){
+  if(!o) return;
+  const goal=objGoalText(o);
+  if(!quiet){
+    if(o.id==='purge') log('⚔ FLOOR OBJECTIVE — Purge: '+goal);
+    else { banner(o.ic+' '+o.nm.toUpperCase(), goal); log(o.ic+' FLOOR OBJECTIVE — '+o.nm+': '+o.ds+' ('+goal+')'); }
+    // the two vows have non-obvious damage sources — say so plainly rather than letting the player
+    // fail three times and wonder why
+    if(o.id==='pacifist'){ const auras=(G.slots||[]).filter((sk,i)=>i>=4 && sk && typeof auraOn==='function' && auraOn(sk.skillId)).length;
+      log('🕊 Anything YOU do counts as harm — attacks, damage-over-time, and toggle auras'+(auras?(' (you have '+auras+' aura'+(auras>1?'s':'')+' running — switch them off with keys 5–9)'):'')+'. Your pet is exempt.');
+      if(auras) banner('🕊 AURAS COUNT AS HARM','switch them off (keys 5–9) or the vow breaks'); }
+    else if(o.id==='flawless') log('🛡 Any damage restarts the count — including burning ground and poison. Three restarts and the floor falls back to a purge.');
+    coach('objective','◈','Floors ask different things','Each floor now has its own <b>objective</b> shown under the floor name — clear it and the <b>portal opens</b>. Some want kills, some want you to survive, hold ground, seal glyphs, gather shards, or not swing at all.');
+  } else log(o.ic+' The floor reshuffles, but the '+o.nm+' still stands — '+goal);
+}
+function objGoalText(o){
+  switch(o.id){
+    case 'purge':    return 'kill '+o.need+' of them';
+    case 'exterm':   return 'kill every last one ('+o.need+')';
+    case 'survive':  return 'survive '+Math.ceil(o.tMax)+' seconds';
+    case 'pacifist': return 'harm nothing for '+Math.ceil(o.tMax)+' seconds';
+    case 'flawless': return 'take no damage for '+Math.ceil(o.tMax)+' seconds';
+    case 'hunt':     return 'kill '+o.need+' marked foes';
+    case 'tithe':    return 'collect '+o.need+' tithe shards';
+    case 'pylons':   return 'seal '+o.need+' glyph pylons';
+    case 'hold':     return 'hold the circle for '+Math.ceil(o.need)+' seconds';
+    case 'plunder':  return 'open '+o.need+' caches';
+  }
+  return '';
+}
+// ---- completion ------------------------------------------------------------------------------
+function objComplete(){
+  const o=G.obj; if(!o||o.done) return;
+  o.done=true;
+  if(G.portal){ G.portal.active=true; G.shiftT=portalShiftT(); G.shiftWarned=false; }
+  G.floorKills=G.killGoal||1;   // legacy sync: a later reshuffle keeps treating this floor as cleared
+  banner('✦ '+o.nm.toUpperCase()+' COMPLETE','the portal opens — press F to ascend');
+  log('✦ '+o.ic+' '+o.nm+' complete — the portal is open and stays open.');
+  if(sfx.evolve)sfx.evolve();
+  if(G.player){ const p=G.player.position; floatText(p.x,p.z,'✦ FLOOR CLEARED!','big',5.2); ringFx(p.x,p.z,9,0x56e0ff); ringFx(p.x,p.z,5,0xffce4d); }
+  if(o.id!=='purge'){   // the odd objectives ask you to play differently — the tower pays for that
+    const g=Math.round(60+G.floor*14); G.gold+=g; if(typeof flashGold==='function')flashGold();
+    const fm=Math.floor(120+G.floor*10); META.fame+=fm; saveMeta();
+    log('✦ The tower pays for the unusual: +'+g+' gold, +✦'+fm+' fame.');
+  }
+  coach('portal','✦','Objective complete','Stand on the glowing <b>portal</b> and press <b>F</b> to ascend. It stays open — but the floor <b>reshuffles</b> if you linger, so loot up and move on.');
+}
+// a vow was broken — restart it, and after three breaks fall back to a plain purge so no floor
+// can ever become unwinnable
+function objBreak(why){
+  const o=G.obj; if(!o||o.done) return;
+  if((o._grace||0)>0) return;   // grace window at floor entry — lingering effects from the last fight don't count
+  o.breaks=(o.breaks||0)+1;
+  if(o.breaks>=3){ objFallbackToPurge(); return; }
+  o.t=o.tMax;
+  log('⚠ '+o.ic+' '+o.nm+' broken — '+why+'. The count restarts ('+o.breaks+'/3 before the tower gives up on you).');
+  if(sfx.deny)sfx.deny();
+  if(G.player){ const p=G.player.position; floatText(p.x,p.z,'⚠ VOW BROKEN','hurt',3.4); }
+}
+function objFallbackToPurge(){
+  const o=G.obj; if(!o||o.done) return;
+  const alive=objAliveCount();
+  o.id='purge'; o.nm='Purge'; o.ic='⚔'; o.ds=objDef('purge').ds;
+  o.need=Math.max(6, Math.round(alive*0.7)); o.have=0; o.t=null; o.tMax=null; o.breaks=0;
+  G.killGoal=o.need; G.floorKills=0;
+  banner('⚔ THE VOW COLLAPSES','this floor falls back to a purge');
+  log('⚔ Three breaks — the ritual collapses. This floor now wants a straightforward purge: '+o.need+' kills.');
+}
+// ---- hooks ------------------------------------------------------------------------------------
+function objOnKill(e){
+  const o=G.obj; if(!o||o.done) return;
+  if(o.id==='purge'||o.id==='exterm'){ o.have++; G.floorKills=o.have; if(o.have>=o.need) objComplete(); return; }
+  G.floorKills=(G.floorKills||0)+1;   // keep the legacy counter ticking for anything else that reads it
+  if(o.id==='hunt'){
+    if(e && e._objMark){ o.have++;
+      try{ floatText(e.mesh.position.x, e.mesh.position.z, '🎯 MARKED FELLED','crit',3.6); }catch(_){}
+      if(o.have>=o.need) objComplete();
+      else log('🎯 A marked foe falls — '+o.have+'/'+o.need+'.'); }
+  }
+  else if(o.id==='tithe'){
+    if(Math.random()<0.42){ try{ spawnObjShard(e.mesh.position.x, e.mesh.position.z); }catch(_){} }
+  }
+}
+function objOnHitEnemy(){   // player-sourced damage landed on something
+  const o=G.obj; if(!o||o.done||o.id!=='pacifist') return;
+  objBreak('you harmed a living thing');
+}
+function objOnPlayerHurt(){
+  const o=G.obj; if(!o||o.done||o.id!=='flawless') return;
+  objBreak('something got through');
+}
+function objOnChestOpened(){
+  const o=G.obj; if(!o||o.done||o.id!=='plunder') return;
+  o.have++;
+  if(o.have>=o.need) objComplete();
+  else log('📦 Cache opened — '+o.have+'/'+o.need+'.');
+}
+function spawnObjShard(x,z){
+  const m=new THREE.Mesh(new THREE.OctahedronGeometry(0.34,0), new THREE.MeshStandardMaterial({color:0xffce4d,emissive:0xffce4d,emissiveIntensity:1.5}));
+  m.position.set(x,0.7,z); scene.add(m);
+  G.pickups.push({mesh:m, kind:'objshard', x:x, z:z});
+}
+function objOnShard(){
+  const o=G.obj; if(!o||o.done||o.id!=='tithe') return;
+  o.have++;
+  if(G.player){ const p=G.player.position; floatText(p.x,p.z,'💠 TITHE '+o.have+'/'+o.need,'heal',2.2); }
+  if(o.have>=o.need) objComplete();
+}
+function objPressureSpawn(near){
+  if(!G.rooms||!G.rooms.length) return;
+  if(objAliveCount()>46) return;
+  // reinforcements always arrive on a legal room tile — never inside a pillar or out in the void
+  let pool=G.rooms;
+  if(near){ const close=G.rooms.filter(r=>{ const c=roomCenter(r); return Math.hypot(c.x-near.x, c.z-near.z)<34; });
+    if(close.length) pool=close; }
+  const n=randi(2,4);
+  for(let i=0;i<n;i++){
+    try{ spawnEnemy(G.floor, safePt(pool[randi(0,pool.length-1)],3)); }catch(_){}
+  }
+}
+function objTick(dt){
+  const o=G.obj; if(!o||o.done) return;
+  if(G.inTown||G.dead||!G.running||G.practice) return;
+  if(floorType(G.floor)!=='NORMAL') return;
+  if(o.id==='survive'){
+    o.t-=dt;
+    o._spawnT=(o._spawnT==null?7:o._spawnT)-dt;
+    if(o._spawnT<=0){ o._spawnT=Math.max(3.5, 8.5-G.floor*0.06); objPressureSpawn(); }
+    if(o.t<=0){ o.t=0; objComplete(); }
+  }
+  else if(o.id==='pacifist'||o.id==='flawless'){
+    if((o._grace||0)>0){ o._grace-=dt; return; }   // settle first, then start counting
+    o.t-=dt; if(o.t<=0){ o.t=0; objComplete(); }
+  }
+  else if(o.id==='pylons'){
+    const p=G.player&&G.player.position; if(!p) return;
+    for(const pr of (G.objProps||[])){
+      if(pr.kind!=='pylon'||pr.lit) continue;
+      const d=Math.hypot(p.x-pr.x, p.z-pr.z);
+      if(d<2.8){
+        pr.chan=(pr.chan||0)+dt;
+        if(pr.mesh) pr.mesh.rotation.y+=dt*(2+pr.chan*4);
+        if(pr.chan>=1.1){
+          pr.lit=true; o.have++;
+          try{ pr.mesh.material.color.setHex(0x6dff8c); pr.mesh.material.emissive.setHex(0x6dff8c); pr.mesh.material.emissiveIntensity=1.8; }catch(_){}
+          ringFx(pr.x,pr.z,3.2,0x6dff8c); floatText(pr.x,pr.z,'🧩 SEALED','heal',3.2); if(sfx.evolve)sfx.evolve();
+          if(o.have>=o.need) objComplete(); else log('🧩 Glyph pylon sealed — '+o.have+'/'+o.need+'.');
+        }
+      } else if(pr.chan) pr.chan=Math.max(0, pr.chan-dt*1.8);
+    }
+  }
+  else if(o.id==='hold'){
+    const p=G.player&&G.player.position; if(!p) return;
+    let z=null; for(const pr of (G.objProps||[])){ if(pr.kind==='zone'){ z=pr; break; } }
+    if(!z) return;
+    if(z.ring) z.ring.rotation.z+=dt*0.7;
+    const inside=Math.hypot(p.x-z.x, p.z-z.z) < z.r;
+    if(inside){
+      o.have=Math.min(o.need, o.have+dt);
+      try{ z.mesh.material.opacity=0.30; }catch(_){}
+      o._spawnT=(o._spawnT==null?5:o._spawnT)-dt;
+      if(o._spawnT<=0){ o._spawnT=Math.max(4, 9-G.floor*0.05); objPressureSpawn(z); }   // holding draws them in
+      if(o.have>=o.need) objComplete();
+    } else {
+      o.have=Math.max(0, o.have-dt*0.5);   // step out and the circle forgets you, slowly
+      try{ z.mesh.material.opacity=0.14; }catch(_){}
+    }
+  }
+}
+// ---- the HUD line under the floor name ----
+function objHudHTML(){
+  const o=G.obj; if(!o) return '';
+  let pct=0, label='';
+  if(o.t!=null && o.tMax){ pct=Math.round((1-o.t/o.tMax)*100); label=Math.ceil(o.t)+'s'; }
+  else if(o.need){ pct=Math.round(Math.min(1,o.have/o.need)*100); label=(o.id==='hold'?Math.floor(o.have):o.have)+'/'+Math.ceil(o.need); }
+  const plain=(o.id==='purge'||o.id==='exterm');
+  const col=plain?'var(--neon)':'var(--gold)';
+  return `<div style="display:flex;align-items:center;gap:5px;font-size:10px" title="${o.ds}">`
+    +`<span style="white-space:nowrap">${o.ic} <span style="opacity:.85;letter-spacing:.5px">${o.nm}</span></span>`
+    +`<div style="flex:1;min-width:36px;height:5px;background:rgba(255,255,255,.12);border-radius:3px;overflow:hidden"><div style="height:100%;width:${pct}%;background:linear-gradient(90deg,${col},var(--xp));transition:width .2s"></div></div>`
+    +`<span style="opacity:.8">${label}</span></div>`;
+}
 // ---------------- Endless Ascent / New Game+ : past the floor-50 summit the Tower rebuilds, deadlier and richer ----------------
 function ngLevel(f){ return Math.floor(((f||G.floor)-1)/SUMMIT_FLOOR); }
 function ngMult(){ return 1 + ngLevel(G.floor)*0.7; }
@@ -5010,12 +5382,9 @@ function buildProps(type){
           glow.rotation.x=Math.PI/2; glow.position.y=h*0.5; m.add(glow); ob.glow=glow;
         }
         G.obstacles.push(ob);
-      } else {
-        // floating crystal — a collectible: walk into it for a little XP + mana (the "diamonds" on the map)
-        const s=rand(.8,1.1);
-        const m=new THREE.Mesh(new THREE.OctahedronGeometry(s,0),amat); m.position.set(p.x,1.0,p.z); m.castShadow=true; scene.add(m);
-        G.pickups.push({mesh:m, kind:'crystal', val:Math.max(2,Math.round(G.floor*0.6)+2), x:p.x, z:p.z});
       }
+      // (nothing in the 'else' branch: the floating map crystals are gone for good — they used to be
+      //  free XP, and once XP moved to kills there was no reason for them to keep littering the floor)
     }
   }
   // ---- DEATH CAIRNS: the Tower keeps your dead where they fell (STORY_BIBLE §8) ----
@@ -6590,9 +6959,20 @@ function partyLevel(){ let m=1; for(const p of _G.players){ if(p.joined && p.pla
 // the player's "base power" = level implied by ALLOCATED base attributes (1 pt/level, persists through evolve) PLUS skill-tree
 // investment. Item/equipment bonuses are excluded so gear stays your EDGE over the curve. Enemies track this so leveling
 // your stats OR pouring into the tree makes the world grow to match — you never out-scale the tower for free.
-function basePowerLvl(){ let best=1; for(const pl of joinedPlayers()){ const A=pl.attr; if(!A)continue;
-  const attrPts=(A.str||0)+(A.dex||0)+(A.int||0)+(A.vit||0)+(A.will||0)-25;   // BASE attribute points only (the character-screen level-up stats)
-  best=Math.max(best, 1 + Math.max(0,attrPts)); } return best; }   // enemies scale off BASE stats ONLY — never the skill tree, never equipment bonuses
+// ---- how strong the tower thinks you are -------------------------------------------------------
+// Enemies scale off exactly two things: the BASE attribute points you have spent, and the TOTAL
+// number of points you have put into the skill tree. It is deliberately blind to WHICH tree those
+// points went into — a 60-point tank, a 60-point damage build and a 60-point healer all present the
+// same threat number. That is what lets a specialist feel genuinely overpowered inside their own
+// specialisation instead of being quietly taxed for committing to it.
+// Gear bonuses are NOT counted, so finding good loot always makes you stronger, never even.
+function treeSpentOf(pl){ let n=0; const al=(pl&&pl.alloc)||{}; for(const id in al) n+=al[id]||0; return n; }
+function basePowerLvl(){ let best=1;
+  for(const pl of joinedPlayers()){ const A=pl.attr; if(!A)continue;
+    const attrPts=(A.str||0)+(A.dex||0)+(A.int||0)+(A.vit||0)+(A.will||0)-25;   // base attribute points (character screen)
+    const treePts=treeSpentOf(pl);                                              // every talent rank, whichever column it sits in
+    best=Math.max(best, 1 + Math.max(0,attrPts) + Math.max(0,treePts)); }
+  return best; }
 function scaleLvl(floor){ return Math.max(floor, basePowerLvl()); }   // HP scaling tracks your FULL investment (attrs + tree) → enemies get tankier as you grow
 function dmgScaleLvl(floor){ return Math.max(floor, Math.min(basePowerLvl(), floor*2+30)); }   // damage tracks depth (+ some leeway) so over-investing never lets foes one-shot you
 // the strongest player's representative BIG hit (a ~3-coef skill, crit-weighted) — the unit tough foes are balanced against, so burst can't trivialise them
@@ -7416,25 +7796,7 @@ function doParry(){
   ringFx(p.x,p.z,3.2,0x8ad4ff);
   if(n){ floatText(p.x,p.z,'⚔ PARRIED ×'+n,'crit',3); sfx.cast&&sfx.cast(); G.hitstop=Math.max(G.hitstop||0,.05); addCharge(n*3); }
   else tone(300,0.06,'square',0.05,180); }
-// ---- TYPING CAST: no signature charge? Prove your nerve — type the word mid-combat and it fires anyway ----
-function startTypeCast(){
-  if(G.typeCast||G.dead) return; if((G._typeCd||0)>0){ log('⌨ The tower ignores stammering — typing cast recharging.'); return; }
-  const letters='ABCDEFGHIKLMNOPRSTUW'; let seq=''; for(let i=0;i<4;i++) seq+=letters[randi(0,letters.length-1)];
-  G.typeCast={seq, i:0, t:3.2}; showTypeCast(); }
-function showTypeCast(){ let d=document.getElementById('ovType');
-  if(!d){ d=document.createElement('div'); d.id='ovType';
-    d.style.cssText='position:fixed;left:50%;top:9%;transform:translateX(-50%);z-index:60;text-align:center;background:rgba(2,5,12,.85);border:1px solid #ffce4d;border-radius:12px;padding:12px 26px 13px;pointer-events:none;box-shadow:0 0 32px rgba(255,206,77,.28);';
-    document.body.appendChild(d); }
-  const tc=G.typeCast; if(!tc){ d.style.display='none'; return; }
-  d.style.display='block';
-  d.innerHTML='<div style="font:bold 11px/1 sans-serif;letter-spacing:2px;color:#ffce4d;opacity:.9;margin-bottom:9px">\u2328 TYPE THESE LETTERS TO CHARGE YOUR SIGNATURE</div>'
-    +'<div style="font:bold 34px monospace;letter-spacing:14px;text-shadow:0 0 18px #ffce4d">'+tc.seq.split('').map((ch,i)=>`<span style="opacity:${i<tc.i?0.35:1};color:${i<tc.i?'#6dff8c':'#ffce4d'}">${ch}</span>`).join('')+'</div>'
-    +'<div style="font:10px sans-serif;letter-spacing:1px;color:#9fb0c8;opacity:.75;margin-top:8px">out of charge \u2014 type the word to unleash your ultimate anyway</div>'; }
-function endTypeCast(ok){ const d=document.getElementById('ovType'); if(d)d.style.display='none';
-  if(ok){ G._typeCd=20; G.charge=G.chargeMax; useSignature();
-    log('⌨ TYPING CAST — the word lands. Signature unleashed on nerve alone (20s recharge).'); }
-  else { G._typeCd=6; log('⌨ The word slips — typing cast fizzles (6s).'); sfx.deny&&sfx.deny(); }
-  G.typeCast=null; }
+// ---- (the signature TYPING-CAST minigame has been removed — the ultimate fires on CHARGE alone) ----
 // ---- PUZZLE SHRINES / WAGER ALTARS / SABOTAGE LEVERS ----
 function spawnFloorPuzzles(rooms){
   G.shrines=[];
@@ -7569,9 +7931,9 @@ function dismantleTrap(t){ if(!t) return; G.traps=G.traps.filter(x=>x!==t); if(t
 function sellVal(it){ if(!it) return 0; const v=it.value||0; if(!it.born) return v;
   return Math.round(v*(1+Math.min(0.5,((Date.now()-it.born)/60000)*0.01))); }
 function updateOverhaul(dt){
-  if(G._goldCd>0)G._goldCd-=dt; if(G.parryCd>0)G.parryCd-=dt; if(G._typeCd>0)G._typeCd-=dt; if(G._qcd>0)G._qcd-=dt;
-  // typing cast timer
-  if(G.typeCast){ G.typeCast.t-=dt; if(G.typeCast.t<=0) endTypeCast(false); }
+  if(G._goldCd>0)G._goldCd-=dt; if(G.parryCd>0)G.parryCd-=dt; if(G._qcd>0)G._qcd-=dt;
+  tickDepthSeal();   // ASCENDANT SEALS: remember the deepest floor reached this life
+  objTick(dt);       // FLOOR OBJECTIVE: timers, pylon channels, ground-holding
   // weapon heat: decay + fuse
   if(G.heat>0 && performance.now()-(G._heatKT||0)>1100) G.heat=Math.max(0,G.heat-22*dt);   // cools sooner & faster — overheating now needs real SUSTAINED fire
   if(G.heatFuse){ if(G.heat<85){ G.heatFuse=0; log('🔥 The weapon cools — crisis averted.'); }
@@ -8309,9 +8671,17 @@ function sendPetErrand(){
   log(`🐾 Companion off to town with ${junk.length} item(s) → ~${gold}g, back in ${Math.ceil(t)}s.`);
   banner('🐾 SELL-RUN','companion heading to town'); refreshItemPanels();
 }
-function skillDmg(coef,pwr){ return G.S.dmgBase*coef*G.S.skillMult*fervorMult()*flowMult()*condMult()*ruleMult()*(pwr||1); }
+function skillDmg(coef,pwr){ return G.S.dmgBase*coef*G.S.skillMult*fervorMult()*flowMult()*empowerMult()*condMult()*ruleMult()*(pwr||1); }
 function areaR(base){ return base*(1+G.S.area/100); }
 function flowMult(){ return G.flowT>0 ? 1.3 : 1; }   // dash → strike combo bonus
+// Warden/Enchanter — Power Infusion (gEmpower): a long timestamp-deadline buff window, same shape as castTaunt's
+// _tauntBraceUntil (no per-player default field needed — undefined reads as "not active" and stale timestamps
+// self-expire harmlessly). +22% skill damage / +22% attack speed while active — deliberately smaller than the
+// short, situational 'empower' proc (Striker's Killing Spree, +30% via flowT for 3s) since this is a long, plannable
+// 18s support cooldown rather than a combat-proc spike; the two share semantics (flat multiplier window) but not magnitude.
+function empowerActive(){ return !!(G._empowerUntil && performance.now()<G._empowerUntil); }
+function empowerMult(){ return empowerActive() ? 1.22 : 1; }
+function empowerAS(){ return empowerActive() ? 1.22 : 1; }
 function condMult(){ return ((G.S.lowHpDmg||0)>0 && G.hp < G.maxhp*0.35) ? 1+G.S.lowHpDmg/100 : 1; }   // low-HP damage bonus
 // rule-breaker keystone multipliers: Stillness (stand & deliver) + One Against Many (wade into packs)
 function ruleMult(){ const S=G.S||{}; let m=1;
@@ -8634,6 +9004,7 @@ function killContributors(e){
 function hurtEnemy(e,dmg,crit,element,src,owner){
   element=element||'phys'; e.lastSrc = src||'player';
   const isPlayerSrc=(src||'player')==='player';
+  if(isPlayerSrc && dmg>0) objOnHitEnemy();   // FLOOR OBJECTIVE: a Vow of Silence notices this
   if(isPlayerSrc && G.weakT>0) dmg*=playerDmgMul();   // WEAKENED — enemy counter to heavy-damage builds
   if(e.shieldT>0){ dmg*=0.28; }   // bulwark damage-resistant bubble
   if(e.res) dmg *= (1-(e.res[element]||0));
@@ -8871,6 +9242,8 @@ function killEnemy(e){
   if(e.boss){ unlockFeat('firstboss');
     if(G._bossClean && !e.roaming && !e.assist && G.run){ G.run.cleanBosses=(G.run.cleanBosses||0)+1;   // LIVING TREE: perfection blooms
       if(G.run.cleanBosses===1) grantMutation('perf','Perfection','✨',{crit:5,critMultPct:15},'an untouched guardian — perfection traits bloom'); }
+    // ---- ASCENDANT SEALS: a true floor guardian advances Blood, and Perfection if it never touched you ----
+    if(!e.roaming && !e.assist && !G.practice) awardSealProgress(!!G._bossClean);
     const offPost=e.roaming||e.assist;      // a NEMESIS encounter — doesn't open portals or grant guardian rewards
     nemOnBossKilled(e);                     // advance his arc: reforge, last-stand roll, or permanent death (he speaks)
     if(!offPost){ log('⚔ GUARDIAN SLAIN! The portal awakens — ascend whenever you are ready.'); G.portal.active=true; G.shiftT=portalShiftT(); G.shiftWarned=false; }
@@ -8895,14 +9268,9 @@ function killEnemy(e){
       else if(!_G.splitscreen && !NET.role){ const cur=(_G.cur!=null?_G.cur:0); setTimeout(()=>{ if(_G.running) bossDefeatCutscene(e, ()=>{ if(_G.running) withPlayer(cur,()=>offerBoonDraft()); }); }, 900); }   // the guardian rises as a lantern (heart-wrenching), then the reward draft
     }
   }
-  else if(!G.practice && floorType(G.floor)==='NORMAL' && !e.leftRoom) G.respawns.push({t:15, room:e.room, home:e.home});   // repopulate its room after ~15s
-  // clear-gate: putting down the floor's population opens the portal
-  if(!e.boss && floorType(G.floor)==='NORMAL' && G.portal && !G.portal.active){
-    G.floorKills=(G.floorKills||0)+1;
-    if(G.floorKills>=(G.killGoal||999)){ G.portal.active=true; G.shiftT=portalShiftT(); G.shiftWarned=false; banner('✦ PORTAL OPEN','press F to ascend whenever you are ready'); log('✦ Floor cleared — the portal is open and stays open. The layout reshuffles every minute, but the portal remains.'); if(sfx.evolve)sfx.evolve();
-      if(G.player){ const _cp=G.player.position; floatText(_cp.x,_cp.z,'✦ FLOOR CLEARED!','big',5.2); ringFx(_cp.x,_cp.z,9,0x56e0ff); ringFx(_cp.x,_cp.z,5,0xffce4d); }
-      coach('portal','✦','Floor cleared','Stand on the glowing <b>portal</b> and press <b>F</b> to descend. It stays open — but the floor <b>reshuffles</b> if you linger too long, so loot up and move on.'); }
-  }
+  else if(!G.practice && floorType(G.floor)==='NORMAL' && !e.leftRoom && !(G.obj&&G.obj.id==='exterm')) G.respawns.push({t:15, room:e.room, home:e.home});   // repopulate its room after ~15s (never during an Extermination)
+  // ---- FLOOR OBJECTIVE: a kill may or may not be what this particular floor is asking for ----
+  if(!e.boss && floorType(G.floor)==='NORMAL' && G.portal && !G.portal.active) objOnKill(e);
   burst(e.mesh.position.x,e.mesh.position.z,e.color);
   if(NET.role==='host') _G.netDeaths.push({x:Math.round(e.mesh.position.x*100)/100, z:Math.round(e.mesh.position.z*100)/100, c:e.color, b:e.boss?1:0});   // peers replay the death FX
   scene.remove(e.mesh); G.enemies=G.enemies.filter(x=>x!==e);
@@ -9004,28 +9372,123 @@ function doLevelUp(){   // consume one level's worth of banked XP and apply the 
   if(G.xp<G.xpNeed) return false;
   if(G.level>=LEVEL_CAP){ G.xp=Math.min(G.xp,G.xpNeed); return false; }   // capped — bank the XP; the player must EVOLVE to keep growing
   G.xp-=G.xpNeed; G.level++; G.attrPts+=1;                                // +1 attribute per level (1 stat point / level)
-  // skill points: draw from a lifetime budget sized to fully allocate exactly ONE tree — no maxing every tree
-  let grant=Math.min(SKILL_PER_LEVEL, Math.max(0, SKILL_BUDGET-(G.skillGranted||0)));
+  // skill points: a LIFETIME budget sized to fully allocate exactly ONE tree by Level 255.
+  // Past the cap — and therefore for every life after your first evolution — the tap is shut.
+  let grant = (G.evolves||0)>0 ? 0 : Math.max(0, skillGrantedByLevel(G.level)-(G.skillGranted||0));
+  if(grant>0) grant=Math.min(grant, Math.max(0, SKILL_BUDGET-(G.skillGranted||0)));
   if(G._debtLevels>0){ G._debtLevels--; if(grant>0){ G.skillGranted=(G.skillGranted||0)+grant; } grant=0; log('🏦 The tower collects — this level\'s skill point pays the debt ('+G._debtLevels+' remain).'); }
   if(grant>0){ G.skillPts+=grant; G.skillGranted=(G.skillGranted||0)+grant; }
   G.xpNeed=xpForLevel(G.level);
   G.hp=G.maxhp; G.mana=G.maxmana;   // full restore on level — a real reward beat
-  log('⬆ LEVEL '+G.level+'!  +1 attribute (C)'+(grant>0?', +'+grant+' skill point'+(grant>1?'s':'')+' (T)':' · skill budget spent'));
+  log('⬆ LEVEL '+G.level+'!  +1 attribute (C)'+(grant>0?', +'+grant+' skill point'+(grant>1?'s':'')+' (T)'
+    :((G.evolves||0)>0?' · skill tree complete — evolutions grant attributes only':' · skill budget spent')));
   levelUpFx(G.level, grant); sfx.level();
-  if(G.level>=LEVEL_CAP && (G.evolves||0)<MAX_EVOLVE){ banner('✦ LEVEL CAP','Open Character (C) to EVOLVE'); log('✦ LEVEL 255 — you can EVOLVE (Character screen): reborn at Level 1, keeping every attribute.'); }
+  if(G.level>=LEVEL_CAP && (G.evolves||0)<MAX_EVOLVE){ banner('✦ LEVEL CAP','gather the three ASCENDANT SEALS, then EVOLVE (C)'); log('✦ LEVEL '+LEVEL_CAP+' — the cap. To grow further you must EVOLVE: hold all three ASCENDANT SEALS at once, pay the fame, and be reborn at Level 1 with every stat and item intact. Open Character (C).'); }
   coach('tree','🌿','You levelled up','Open the <b>Skill Tree (T)</b> and spend your <b>skill points</b> — that\'s where your build takes shape. Spend <b>attributes (C)</b> too. The world keeps moving while menus are open.');
   return true;
 }
-function canEvolve(){ return G.level>=LEVEL_CAP && (G.evolves||0)<MAX_EVOLVE; }
-function evolve(){   // rebirth: back to Level 1 but KEEP attributes/skills, so re-levelling grants more stat points (up to 20 rebirths, 999 per attribute)
-  if(!canEvolve()){ log((G.evolves||0)>=MAX_EVOLVE?'✦ Fully evolved ×'+MAX_EVOLVE+' — the pinnacle.':'Reach Level '+LEVEL_CAP+' to evolve.'); return; }
+// ==============================================================================================
+//  ASCENDANT SEALS — the gate on EVOLUTION
+// ==============================================================================================
+//  Hitting the level cap is no longer enough. The Tower demands PROOF: three Ascendant Seals, all
+//  held AT THE SAME TIME, all earned inside a SINGLE LIFE. Dying SHATTERS every seal you hold, so
+//  the run that finally evolves you has to be a clean one.
+//
+//    🩸 SEAL OF BLOOD       slay N floor guardians this life   (N = 3 + your evolution count, cap 25)
+//    ⛰ SEAL OF DEPTH        reach floor D this life            (D = 20 + 10 × count, cap 250)
+//    💠 SEAL OF PERFECTION   kill a floor guardian FLAWLESSLY — it must never land a single hit on
+//                            you for the entire fight
+//
+//  On top of the seals, evolving SPENDS fame, and the price climbs with rank (evolveFameCost):
+//  25,000 for your first evolution, ~4.5 million for your forty-ninth.
+const EVOLVE_SEALS=3;
+function sealBloodNeed(n){ return Math.min(25, 3+(n|0)); }
+function sealDepthNeed(n){ return Math.min(250, 20+10*(n|0)); }
+function sealState(){
+  const n=G.evolves||0, nb=sealBloodNeed(n), nd=sealDepthNeed(n);
+  const hb=G.sealK|0, hd=G.sealD|0, hf=!!(G.sealF|0);
+  return { need:{blood:nb, depth:nd}, have:{blood:hb, depth:hd, flaw:hf},
+           blood:hb>=nb, depth:hd>=nd, flaw:hf };
+}
+function sealsHeld(){ const s=sealState(); return (s.blood?1:0)+(s.depth?1:0)+(s.flaw?1:0); }
+function shatterSeals(quiet){
+  const had=sealsHeld(), any=(G.sealK|0)||(G.sealD|0)||(G.sealF|0);
+  G.sealK=0; G.sealD=0; G.sealF=0;
+  if(any && !quiet) log('💔 Your ASCENDANT SEALS shatter'+(had?' ('+had+'/'+EVOLVE_SEALS+' were held)':'')+' — the Tower takes no proof from the dead. Begin again.');
+}
+// a guardian fell: advance Blood, and Perfection if it never laid a finger on you
+function awardSealProgress(clean){
+  const before=sealState();
+  G.sealK=(G.sealK|0)+1;
+  if(clean) G.sealF=1;
+  const after=sealState();
+  if(!before.blood && after.blood){ banner('🩸 SEAL OF BLOOD','ascendant seal earned'); log('🩸 SEAL OF BLOOD — '+after.have.blood+' guardians put down this life. '+(EVOLVE_SEALS-sealsHeld())+' seal(s) still to find.'); sfx.evolve&&sfx.evolve(); }
+  else if(!after.blood) log('🩸 Seal of Blood — '+after.have.blood+'/'+after.need.blood+' guardians.');
+  if(!before.flaw && after.flaw){ banner('💠 SEAL OF PERFECTION','it never laid a finger on you'); log('💠 SEAL OF PERFECTION — a floor guardian died without landing a single hit on you. '+(EVOLVE_SEALS-sealsHeld())+' seal(s) still to find.'); sfx.evolve&&sfx.evolve(); }
+}
+// deepest-floor ticker (called each frame from updateOverhaul — cheap)
+function tickDepthSeal(){
+  if(G.inTown || G.practice || !G.running) return;
+  const f=G.floor|0;
+  for(const pl of joinedPlayers()){   // seals are per-character: everyone on the floor earns the depth
+    if(f<=(pl.sealD|0)) continue;
+    withPlayer(pl.id, ()=>{
+      const before=sealState().depth; G.sealD=f; const after=sealState().depth;
+      if(!before && after){ banner('⛰ SEAL OF DEPTH','ascendant seal earned'); log('⛰ SEAL OF DEPTH — floor '+f+' reached in a single life. '+(EVOLVE_SEALS-sealsHeld())+' seal(s) still to find.'); sfx.evolve&&sfx.evolve(); }
+    });
+  }
+}
+function evolveCost(){ return evolveFameCost(G.evolves||0); }
+function canEvolve(){ return G.level>=LEVEL_CAP && (G.evolves||0)<MAX_EVOLVE && sealsHeld()>=EVOLVE_SEALS && META.fame>=evolveCost(); }
+function evolveReady(){ return G.level>=LEVEL_CAP && (G.evolves||0)<MAX_EVOLVE; }   // the button shows from the cap on, even before the seals are in
+function evolveBlocker(){
+  if((G.evolves||0)>=MAX_EVOLVE) return 'Fully evolved ×'+MAX_EVOLVE+' — the pinnacle. There is nothing above you.';
+  if(G.level<LEVEL_CAP) return 'Reach Level '+LEVEL_CAP+' before the Tower will hear you.';
+  if(sealsHeld()<EVOLVE_SEALS) return 'You hold '+sealsHeld()+'/'+EVOLVE_SEALS+' Ascendant Seals — the Tower wants all three at once.';
+  const c=evolveCost(); if(META.fame<c) return 'Evolving costs ✦'+c.toLocaleString()+' fame — you have '+Math.floor(META.fame).toLocaleString()+'.';
+  return null;
+}
+// the confirmation screen: the seal checklist and the price, before anything is spent
+function evolvePrompt(){
+  const n=G.evolves||0, st=sealState(), cost=evolveCost();
+  const rk=evolveRank(metaEvolves()), nx=evolveRank(Math.min(MAX_EVOLVE,metaEvolves()+1));
+  const row=(ok,ic,nm,ds)=>`<div style="display:flex;gap:9px;align-items:flex-start;margin:7px 0">`
+    +`<span style="font-size:15px;line-height:1.2;width:18px;flex:none;text-align:center">${ok?'✅':'⬜'}</span>`
+    +`<span style="flex:1"><b style="color:${ok?'#6dff8c':'#e6ecf7'}">${ic} ${nm}</b><br><span style="opacity:.66;font-size:11.5px">${ds}</span></span></div>`;
+  const body='<div style="text-align:left;line-height:1.55">'
+    +`<div style="text-align:center;margin-bottom:10px">`
+      +`<span style="color:${rk.col};font-size:22px;letter-spacing:4px">${rankStars(rk.stars)}</span>`
+      +`<span style="opacity:.55;margin:0 8px">→</span>`
+      +`<span style="color:${nx.col};font-size:22px;letter-spacing:4px">${rankStars(nx.stars)}</span>`
+      +`<div style="font-size:11px;opacity:.65;margin-top:3px">${rk.name} ${rk.stars}★ → ${nx.name} ${nx.stars}★ · evolution ${n+1} of ${MAX_EVOLVE}</div></div>`
+    +'<div style="font-size:11.5px;opacity:.72;margin-bottom:8px">Reborn at <b>Level 1</b>. You keep <b>every attribute, every talent and every item</b> — so climbing back up hands you a whole second set of stat and skill points.</div>'
+    +row(st.blood,'🩸','Seal of Blood', `Slay ${st.need.blood} floor guardians this life — <b>${Math.min(st.have.blood,st.need.blood)}/${st.need.blood}</b>`)
+    +row(st.depth,'⛰','Seal of Depth', `Reach floor ${st.need.depth} this life — deepest so far <b>${st.have.depth||0}</b>`)
+    +row(st.flaw, '💠','Seal of Perfection','Kill a floor guardian without it landing a single hit on you')
+    +`<div style="margin-top:10px;padding-top:9px;border-top:1px solid rgba(255,255,255,.1);font-size:12px">`
+      +`Price <b style="color:var(--gold)">✦ ${cost.toLocaleString()} fame</b> — you have ${Math.floor(META.fame).toLocaleString()}.</div>`
+    +'<div style="font-size:11px;opacity:.55;margin-top:6px">⚠ Dying shatters every seal you are holding.</div>'
+    +'</div>';
+  const blocked=evolveBlocker();
+  if(blocked){ gameConfirm('Evolve', body+'<div style="color:var(--hp);font-size:12px;margin-top:8px;text-align:center"><b>'+blocked+'</b></div>', null, {ic:'✦', ok:'Understood', noCancel:true}); if(sfx.deny)sfx.deny(); return; }
+  gameConfirm('Evolve', body, ()=>evolve(), {ic:'✦', ok:'✦ EVOLVE — ✦'+cost.toLocaleString(), cancel:'✕ Not yet'});
+}
+function evolve(){   // rebirth: back to Level 1 but KEEP attributes/talents/gear, so re-levelling grants a fresh set of points
+  const blocked=evolveBlocker();
+  if(blocked){ log('✦ '+blocked); if(sfx.deny)sfx.deny(); return; }
+  const cost=evolveCost();
+  META.fame=Math.max(0, META.fame-cost);
   G.evolves=(G.evolves||0)+1;
-  G.level=1; G.xp=0; G.xpNeed=xpForLevel(1);   // attributes, allocated skills and skillGranted all persist
+  META.evolves=Math.max(META.evolves|0, G.evolves); saveMeta();
+  G.sealK=0; G.sealD=0; G.sealF=0;                              // the seals are spent along with the fame
+  G.level=1; G.xp=0; G.xpNeed=xpForLevel(1);                    // attributes, talents, gear and skillGranted all persist
   recompute(); G.hp=G.maxhp; G.mana=G.maxmana;
-  banner('✦ EVOLVED ×'+G.evolves,'Reborn at Level 1 — attributes kept'); sfx.evolve&&sfx.evolve();
+  const rk=evolveRank(metaEvolves());
+  banner('✦ EVOLVED ×'+G.evolves, rk.name+' '+rk.stars+'★ — reborn at Level 1, everything kept'); sfx.evolve&&sfx.evolve();
   if(G.player){ const p=G.player.position; floatText(p.x,p.z,'EVOLVED ×'+G.evolves,'big',4); ringFx(p.x,p.z,9,0xff6a3d); ringFx(p.x,p.z,5,0xffce4d); burst(p.x,p.z,0xff6a3d); }
   shakeCam(1.0); G.hitstop=Math.max(G.hitstop||0,.2);
-  log('✦ EVOLVED ×'+G.evolves+'/'+MAX_EVOLVE+'! Reborn at Level 1 with your attributes intact — climb again for more stat points.');
+  log('✦ EVOLVED ×'+G.evolves+'/'+MAX_EVOLVE+' (−✦'+cost.toLocaleString()+' fame) — rank is now '+rk.name+' '+rankStars(rk.stars)+'. Reborn at Level 1 with every stat and every item intact; the next evolution will cost ✦'+evolveFameCost(G.evolves).toLocaleString()+'.');
+  refreshMenuRank&&refreshMenuRank(); updateFameBar&&updateFameBar();
   updatePips(); if(!$('charPanel').classList.contains('hidden'))renderChar();
 }
 function spendBankedXP(all){   // collect-mode: level up once, or as many times as the banked XP allows
@@ -9322,7 +9785,7 @@ function updatePet(dt){
         G.projectiles.push({mesh:m,vx:dx/l*22,vz:dz/l*22,dmg:petAbilVal('bomber',pet.level)*(1+(G.S.petDmg||0)),life:1.2,crit:false,pierce:0,hit:null,element:'phys',fuse:Math.min(1.0,l/22),blast:3.5,pulse:true,src:'pet'}); } } }
 }
 function refreshItemPanels(){ if(_G.netApplying) return;   // host applying a guest's action → don't repaint the host's own panels with guest data
-  if((!$('invPanel').classList.contains('hidden'))||($('equipPanel')&&!$('equipPanel').classList.contains('hidden')))renderInv(); if(!$('stashPanel').classList.contains('hidden'))renderStash(); if(!$('petPanel').classList.contains('hidden'))renderPet(); if($('petYardPanel')&&!$('petYardPanel').classList.contains('hidden'))renderPetYard(); }
+  if(!$('invPanel').classList.contains('hidden'))renderInv(); if(!$('stashPanel').classList.contains('hidden'))renderStash(); if(!$('petPanel').classList.contains('hidden'))renderPet(); if($('petYardPanel')&&!$('petYardPanel').classList.contains('hidden'))renderPetYard(); }
 function feedAllJunk(){
   if(NET.role==='peer') return netPeerCmd('feedAllJunk',[]);
   if(!G.pet){ log('No active pet to feed.'); return; }
@@ -9613,7 +10076,7 @@ function enterPetYard(){
   if(!G.inTown && !_G.inYard){ log('🏡 Visit the Pet Yard from the Sanctuary — press H to recall there first.'); return; }
   PANELS.forEach(p=>$(p).classList.add('hidden')); syncPause(); refreshMenuState();
   clearWorld(); _G.inYard=true; G.inTown=false; setMusicSet('calm');
-  G.floorMod=null; G.bounty=null; G.shiftT=999; G.shiftWarned=false;
+  G.floorMod=null; G.bounty=null; G.obj=null; G.objProps=[]; G.shiftT=999; G.shiftWarned=false;
   biome=BIOMES[4];
   scene.background=new THREE.Color(biome.fog); scene.fog=new THREE.Fog(biome.fog,46,150); hemi.groundColor.setHex(biome.fog);
   const room={cx:0,cz:0,rw:52,rh:46,x0:-26,x1:26,z0:-23,z1:23}; G.bounds=64;
@@ -9679,6 +10142,7 @@ function openPetAction(yp){ if(!yp) return; const pet=yp.pet; const gm=$('gameMo
 function doFloorShift(){
   if(G.inTown || floorType(G.floor)!=='NORMAL'){ G.shiftT=999; return; }   // SAFE zones & town are rest areas — never reshuffle / never kick the player out
   const wasOpen=G.portal && G.portal.active;   // remember the portal was already unlocked so the reshuffle doesn't make you re-clear
+  _G.objKeep = !!(G.obj && !G.obj.done);      // mid-objective? carry the progress across the new layout
   const f=$('shiftFlash'); f.classList.remove('go'); void f.offsetWidth; f.classList.add('go'); sfx.shift();
   log('✦ THE TOWER HAS SHIFTED — a new layout (your portal stays open).');
   G.layoutSalt++;
@@ -9690,7 +10154,10 @@ function spendAttr(k){ if(NET.role==='peer') return netPeerCmd('spendAttr',[k]);
   if(!G._reflexUsed && !G.inTown && G.enemies.some(e=>e.boss&&!e.dead)){ G._reflexUsed=true;   // MID-COMBAT REFLEXES: growth under fire is its own medicine
     const _h=Math.min(G.maxhp*0.15,G.maxhp-G.hp); if(_h>0){ G.hp+=_h; G.run.healSelf+=_h;
       floatText(G.player.position.x,G.player.position.z,'🧠 REFLEXES +'+Math.round(_h),'heal',3); log('🧠 MID-COMBAT REFLEXES — assigning a stat point mid-bossfight knits your wounds (+15% life, once per guardian).'); } } }
-function updatePips(){ if(_G.netApplying) return; $('pipChar').classList.toggle('on',G.attrPts>0); $('pipTree').classList.toggle('on',G.skillPts>0); $('spNum').textContent=G.skillPts; $('ptsNum').textContent=G.attrPts; renderQuickBuild(); }
+function updatePips(){ if(_G.netApplying) return; $('pipChar').classList.toggle('on',G.attrPts>0); $('pipTree').classList.toggle('on',G.skillPts>0); $('spNum').textContent=G.skillPts; $('ptsNum').textContent=G.attrPts;
+  { const sb=$('spBudget'); if(sb){ const got=G.skillGranted||0, done=got>=SKILL_BUDGET;
+      sb.textContent='· lifetime '+got+'/'+SKILL_BUDGET+(done?((G.evolves||0)>0?' · COMPLETE (evolutions grant no more)':' · COMPLETE'):''); } }
+  renderQuickBuild(); }
 
 // ============================================================ SKILL TREE UI
 function investTalent(id){
@@ -9707,7 +10174,31 @@ function investTalent(id){
   if(t.grantSkill && rank===0){ const sk=SKILLS[t.grantSkill]; if(sk){ const gem=makeSkillGem(G.floor||1, t.grantSkill); G.inv.push(gem); autoBind(gem);
     banner('✦ SKILL LEARNED', sk.ic+' '+sk.nm); log('✦ Learned '+sk.nm+' — bind it on your 1–9 bar (Inventory).'); sfx.evolve&&sfx.evolve(); refreshItemPanels(); } }
   recompute(); SPECS.forEach(refreshSpec); updatePips();   // refresh every column: investing here can open divergence bridges into neighbours
-  log('✦ '+t.nm+' '+(rank+1)+'/'+t.max);
+  if(!_bulkTalent) log('✦ '+t.nm+' '+(rank+1)+'/'+t.max);
+}
+// ---- SHIFT+CLICK: pour points into one node until it is maxed (0/5 → 5/5 in a single click) ----
+let _bulkTalent=false;
+function investTalentMax(id){
+  const t=TALENTMAP[id]; if(!t) return;
+  if(t.beastKey) return investTalent(id);                       // beast forms are relic-unlocked, never ranked
+  if(NET.role==='peer'){ const need=Math.max(1, t.max-(G.alloc[id]||0)); for(let i=0;i<need;i++) netPeerCmd('investTalent',[id]); return; }
+  const before=G.alloc[id]||0;
+  if(before>=t.max){ log('✦ '+t.nm+' is already '+t.max+'/'+t.max+'.'); return; }
+  const reason=talentReason(t); if(reason){ log('🔒 '+t.nm+' — '+reason); return; }
+  _bulkTalent=true;
+  try{
+    for(let i=0;i<t.max+2;i++){
+      const r=G.alloc[id]||0; if(r>=t.max) break;
+      const pts=G.skillPts;
+      investTalent(id);
+      if((G.alloc[id]||0)===r && G.skillPts===pts) break;       // blocked (out of points / gated) — stop quietly
+    }
+  } finally { _bulkTalent=false; }
+  const after=G.alloc[id]||0, gained=after-before;
+  if(gained>0){
+    log('✦ '+t.nm+' '+after+'/'+t.max+'  (+'+gained+' rank'+(gained>1?'s':'')+' in one click)');
+    if(after>=t.max && sfx.evolve) sfx.evolve();
+  } else log('✦ '+t.nm+' — no skill points left to spend.');
 }
 // ---- one-click "recommended build": pour all available points down a chosen spec (newcomer-friendly) ----
 function autoBuild(si){
@@ -9843,7 +10334,7 @@ function renderTree(){
         G._tipAt=performance.now(); investTalent(c.dataset.tid);
         tip.innerHTML=talentTip(c.dataset.tid)+'<div style="margin-top:6px;color:var(--gold);font-size:11px">tap again to invest · hold to refund</div>';
         return; }
-      investTalent(c.dataset.tid); });
+      if(e.shiftKey) investTalentMax(c.dataset.tid); else investTalent(c.dataset.tid); });
     cont.addEventListener('contextmenu', e=>{ const c=e.target.closest('.talent'); if(c){ e.preventDefault(); removeTalent(c.dataset.tid); } });
     if(_touchUI){ let _lpT=null,_lpTid=null,_lpX=0,_lpY=0;   // iOS-safe long-press refund (contextmenu never fires there)
       cont.addEventListener('pointerdown', e=>{ const c=e.target.closest('.talent'); if(!c) return;
@@ -9871,6 +10362,24 @@ function unbindSig(){ if(NET.role==='peer') return netPeerCmd('unbindSig',[]); i
 function bindFlask(item,i){ if(NET.role==='peer') return netPeerCmd('bindFlask',[item&&item.uid,i]); if(!item.isFlask)return; G.inv=G.inv.filter(x=>x!==item); const ex=G.belt.indexOf(item); if(ex>=0)G.belt[ex]=null; if(G.belt[i])G.inv.push(G.belt[i]); G.belt[i]=item; renderActionbar(); refreshItemPanels(); }
 function unbindFlask(i){ if(NET.role==='peer') return netPeerCmd('unbindFlask',[i]); if(!G.belt[i])return; if(G.inv.length>=G.invCap){log('Inventory full.');return;} G.inv.push(G.belt[i]); G.belt[i]=null; renderActionbar(); refreshItemPanels(); }
 function autoBeltFlask(item){ if(G.belt.includes(item))return; const i=G.belt.indexOf(null); if(i<0)return; G.inv=G.inv.filter(x=>x!==item); G.belt[i]=item; renderActionbar(); }
+// ---- respec is never silent: it wipes an entire build, so ALWAYS ask first ----
+function respecPrompt(){
+  if(NET.role==='peer') return netPeerCmd('respec',[]);
+  let total=0; for(const id in G.alloc) total+=G.alloc[id]||0;
+  if(total<=0){ log('Nothing allocated to respec.'); if(sfx.deny)sfx.deny(); return; }
+  if(!(G.inTown || floorType(G.floor)==='SAFE' || META.fieldRespec)){
+    log('↺ Respec is only available in a safe zone. Unlock 🔧 Field Respecialisation in the Legacy menu (L) to respec on any floor.'); if(sfx.deny)sfx.deny(); return; }
+  const cost=respecCost(), poor=G.gold<cost;
+  const body='<div style="text-align:left;line-height:1.65">'
+    +'This <b>unspends every talent you have invested</b> and resets your whole tree to zero.<br><br>'
+    +'<b style="color:var(--gold)">'+total+'</b> skill point'+(total===1?'':'s')+' will be refunded.<br>'
+    +'Skill gems that talents granted you are <b>stripped</b> along with them.<br><br>'
+    +'Cost <b style="color:var(--gold)">'+cost.toLocaleString()+' gold</b> — you have '+Math.floor(G.gold).toLocaleString()+'g.'
+    +(poor?'<br><br><b style="color:var(--hp)">⚠ Not enough gold.</b>':'')
+    +'</div>';
+  if(poor){ gameConfirm('Respecialise?', body, null, {ic:'↺', ok:'Understood', noCancel:true}); if(sfx.deny)sfx.deny(); return; }
+  gameConfirm('Respecialise?', body, ()=>respec(), {ic:'↺', ok:'↺ Respec — '+cost.toLocaleString()+'g', cancel:'✕ Keep my build'});
+}
 function respec(){
   if(NET.role==='peer') return netPeerCmd('respec',[]);
   if(!(G.inTown || floorType(G.floor)==='SAFE' || META.fieldRespec)){ log('↺ Respec is only available in a safe zone. Unlock 🔧 Field Respecialisation in the Legacy menu (L) to respec on any floor.'); if(sfx.deny)sfx.deny(); return; }
@@ -9909,22 +10418,35 @@ function renderChar(){ if(_G.netApplying) return;
   // ---- header: identity · level/XP · fame ----
   const head=$('csHead');
   if(head){
-    const fr=fameRank(META.fame), mult=fr.tier+1;
-    let lo,hi; if(fr.stars>=7){ lo=hi=fr.floor+STAR_BASE[6]*mult; } else { lo=fr.stars>0?fr.floor+STAR_BASE[fr.stars-1]*mult:fr.floor; hi=fr.nextAt; }
-    const famePct=hi>lo?clamp((META.fame-lo)/(hi-lo)*100,0,100):100;
+    const fr=evolveRank(metaEvolves());
+    const famePct=rankProgressPct();                     // fame banked toward the next evolution
     const xpPct=Math.min(100,G.xp/G.xpNeed*100);
-    const evoBadge = (G.evolves||0)>0 ? `<span class="cs-evo" title="Evolutions — rebirths that kept your attributes">✦×${G.evolves}</span>` : '';
+    const evoBadge = (G.evolves||0)>0 ? `<span class="cs-evo" title="Evolutions — rebirths that kept every stat and item">✦×${G.evolves}</span>` : '';
     const atCap = G.level>=LEVEL_CAP;
+    const st=sealState(), held=sealsHeld(), cost=evolveCost();
+    // seal chips — the ONLY route to another star
+    const chip=(ok,ic,nm,txt)=>`<span title="${nm} — ${txt}" style="display:inline-flex;align-items:center;gap:4px;font-size:10px;letter-spacing:.4px;`
+      +`padding:3px 8px;border-radius:12px;border:1px solid ${ok?'rgba(109,255,140,.55)':'rgba(160,180,215,.25)'};`
+      +`color:${ok?'#6dff8c':'#8d99ae'};background:${ok?'rgba(109,255,140,.1)':'rgba(255,255,255,.03)'}">${ic} ${txt}</span>`;
+    const sealRow=`<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;justify-content:center">`
+      +chip(st.blood,'🩸','Seal of Blood',   `${Math.min(st.have.blood,st.need.blood)}/${st.need.blood} guardians`)
+      +chip(st.depth,'⛰','Seal of Depth',   `floor ${st.have.depth||0}/${st.need.depth}`)
+      +chip(st.flaw, '💠','Seal of Perfection', st.flaw?'flawless kill ✓':'flawless kill')
+      +`</div>`;
     head.innerHTML=
       `<div class="cs-id"><span class="cs-nm">${G.name}</span>${evoBadge}<span class="cs-lv">LEVEL ${G.level}${atCap?' · MAX':''}</span></div>`+
       `<div class="cs-bar xp"><i style="width:${xpPct}%"></i></div>`+
-      `<div class="cs-barlbl"><span>Experience</span><b>${atCap?'MAX':Math.floor(G.xp).toLocaleString()+' / '+G.xpNeed.toLocaleString()}</b></div>`+
+      `<div class="cs-barlbl"><span>Experience</span><b>${atCap?'MAX — evolve to keep growing':Math.floor(G.xp).toLocaleString()+' / '+G.xpNeed.toLocaleString()}</b></div>`+
       `<div class="cs-bar fame"><i style="width:${famePct}%"></i></div>`+
-      `<div class="cs-barlbl"><span>Fame · <b style="color:${fr.col}">★ ${fr.stars}/7 ${fr.name}</b></span><b>${Math.floor(META.fame).toLocaleString()}${fr.nextAt?' / '+fr.nextAt.toLocaleString():' · MAX'}</b></div>`+
-      (canEvolve()
-        ? `<button class="vbtn gold" id="evolveBtn" style="width:calc(100% - 0px);margin-top:8px">✦ EVOLVE (${(G.evolves||0)}/${MAX_EVOLVE}) — reborn Lv1, keep stats</button>`
-        : atCap && (G.evolves||0)>=MAX_EVOLVE ? `<div class="cs-barlbl" style="color:var(--gold);justify-content:center;margin-top:6px">✦ Fully evolved ×${MAX_EVOLVE} — the pinnacle</div>` : '');
-    const evb=$('evolveBtn'); if(evb) evb.onclick=evolve;
+      `<div class="cs-barlbl"><span>Rank · <b style="color:${fr.col}">${rankStars(fr.stars)} ${fr.stars}/7 ${fr.name}</b> · ✦×${fr.evolves} evolutions</span>`+
+        `<b>✦ ${Math.floor(META.fame).toLocaleString()}${fr.cost!=null?' / '+fr.cost.toLocaleString():' · MAX'}</b></div>`+
+      `<div class="cs-barlbl" style="opacity:.6;font-size:10px"><span>Stars are EVOLUTIONS — fame is what you spend to buy them</span><span>${held}/${EVOLVE_SEALS} seals</span></div>`+
+      sealRow+
+      (evolveReady()
+        ? `<button class="vbtn gold" id="evolveBtn" style="width:100%;margin-top:9px${canEvolve()?'':';opacity:.72'}">✦ EVOLVE ${(G.evolves||0)+1}/${MAX_EVOLVE} — ${held}/${EVOLVE_SEALS} seals · ✦${cost.toLocaleString()}</button>`
+        : (G.evolves||0)>=MAX_EVOLVE ? `<div class="cs-barlbl" style="color:var(--gold);justify-content:center;margin-top:6px">✦ Fully evolved ×${MAX_EVOLVE} — the pinnacle</div>`
+        : `<div class="cs-barlbl" style="justify-content:center;margin-top:6px;opacity:.55;font-size:10.5px">Reach Level ${LEVEL_CAP} with all three seals in hand to evolve</div>`);
+    const evb=$('evolveBtn'); if(evb) evb.onclick=evolvePrompt;
   }
   // ---- attribute cards ----
   const list=$('attrList'); list.innerHTML='';
@@ -9986,11 +10508,10 @@ function renderChar(){ if(_G.netApplying) return;
   const skillsLearned=Object.keys(G.alloc).filter(id=>{ const t=TALENTMAP[id]; return t&&t.grantSkill&&(G.alloc[id]||0)>0; }).length;
   const shots=(w.shots||1)+(S.proj||0);
   const dps=Math.round(S.dmgBase*w.dmgMult*shots*S.asFactor*(w.asMult||1)*(1+S.crit*(S.critMult-1)));
-  const KINDNM={tank:'🛡 Vanguard wall',bruiser:'⚔ Striker slaughter',zealot:'➕ Mender sustain',mage:'🔮 Arcane caster',runner:'🏹 Ranger blur'};
   const build=[
     ['Est. basic DPS', dps.toLocaleString()],
     ['Dash cooldown', (G.dashCdMax||3).toFixed(1)+'s'],
-    ['Dominant path', S.adaptKind?(KINDNM[S.adaptKind]||S.adaptKind)+(S.adaptLvl?' · deep ×'+S.adaptLvl:''):'— undecided'],
+    ['Tree investment', (S.treeSpent||0)+' / '+SKILL_BUDGET+' points'],
     ['Talent procs', procN?procN+' rolling effect'+(procN>1?'s':''):'—'],
     ['Skills from trees', skillsLearned||'—'],
     ['Organs attuned', (G.run&&G.run.trophies&&G.run.trophies.length)? G.run.trophies.map(k=>TROPHIES[k]?TROPHIES[k].ic+' '+TROPHIES[k].nm:k).join(' · ')+' ('+G.run.trophies.length+'/2)' : '— slay lords for organs'],
@@ -10011,19 +10532,73 @@ function renderChar(){ if(_G.netApplying) return;
 }
 
 // ============================================================ STASH UI
+// ================= STASH PANEL =================================================================
+// Carried bag on the left, the vault on the right, both as proper icon grids. ONE CLICK moves an
+// item across. Both columns share a live text filter and each has its own sort bar.
+function stashMatch(it){
+  const q=(STASH_Q||'').trim().toLowerCase(); if(!q) return true;
+  const hay=((it.name||'')+' '+(it.slotNm||'')+' '+(it.rarity?it.rarity.nm:'')+' '+(it.desc||'')+' '
+    +(it.isGem?'gem ':'')+(it.isSkillGem?'skill gem ':'')+(it.isFlask?'flask ':'')+(it.isPot?'potion ':'')+(it.isPet?'egg pet ':'')).toLowerCase();
+  return hay.indexOf(q)>=0;
+}
 function renderStash(){
-  const inv=$('invList'), st=$('stashList');
-  const row=(it,from)=>{ const d=document.createElement('div'); d.className='islot'; d.style.color='var(--'+it.rarity.css+')'; d.textContent=`${it.slotIc||''} ${it.name} · ${it.value}g`;
-    d.onclick=()=>{ if(from==='inv'){ if(stashPush(it)){ G.inv=G.inv.filter(x=>x!==it); bankCashIn(1); } } else {G.stash=G.stash.filter(x=>x!==it);G.inv.push(it);} G.stashStrikes=0; renderStash(); };
-    d.oncontextmenu=(e)=>{ e.preventDefault();
-      if(from==='inv'){ if(e.ctrlKey){ d.onclick(); } else { quickUse(it); renderStash(); } }   // bag: right-click equips/uses · Ctrl+right-click banks to stash
-      else { d.onclick(); } };   // stash: right-click retrieves to the bag
-    d.classList.add('has-gtip'); d.addEventListener('mouseenter',()=>showTileTip(lootTip(it))); d.addEventListener('mousemove',moveTileTip); d.addEventListener('mouseleave',hideTileTip);   // hover → full item info
-    return d; };
-  inv.innerHTML=''; st.innerHTML='';
-  if(!G.inv.length) inv.innerHTML='<div class="islot empty">empty</div>'; else G.inv.forEach(it=>inv.appendChild(row(it,'inv')));
-  if(!G.stash.length) st.innerHTML='<div class="islot empty">empty</div>'; else G.stash.forEach(it=>st.appendChild(row(it,'stash')));
-  $('stashWarn').innerHTML = (G.stash.length && G.stashStrikes>=1) ? '⚠ One death already. A second death without retrieving WIPES the stash!' : 'Banked loot survives one death. Retrieve or re-bank to reset the counter.';
+  if(_G.netApplying) return;
+  const top=$('stashTop');
+  if(top && !top._built){   // built ONCE so the search box never loses focus mid-typing
+    top.innerHTML='<div class="stCapRow"><span id="stCapTxt"></span><div class="invTools" id="stBuyTools"></div></div>'
+      +'<input id="stashSearch" class="stSearch" type="text" autocomplete="off" spellcheck="false" placeholder="🔎 filter both columns — name, slot or rarity">';
+    const sq=$('stashSearch');
+    if(sq){ sq.value=STASH_Q||'';
+      sq.addEventListener('keydown',ev=>{ ev.stopPropagation(); if(ev.key==='Escape'){ sq.value=''; STASH_Q=''; renderStashGrids(); sq.blur(); } });
+      sq.addEventListener('keyup',ev=>ev.stopPropagation());
+      sq.addEventListener('keypress',ev=>ev.stopPropagation());
+      sq.addEventListener('input',()=>{ STASH_Q=sq.value; renderStashGrids(); }); }
+    top._built=true;
+  }
+  renderStashGrids();
+}
+function renderStashGrids(){
+  const bg=$('stBagGrid'), sg=$('stashGrid'); if(!bg||!sg) return;
+  const cap=stashCap(), maxed=stashSlotsBought()>=STASH_SLOT_MAX, filtering=!!(STASH_Q||'').trim();
+  // ---- header: capacity + fame-funded expansion ----
+  const ct=$('stCapTxt'); if(ct) ct.innerHTML=`🎒 Carried <b>${G.inv.length}</b>/${G.invCap} &nbsp;·&nbsp; 🗄 Vault <b>${G.stash.length}</b>/${cap}`;
+  const bt=$('stBuyTools'); if(bt){
+    bt.innerHTML=buyChip('buyStashSlotBtn', maxed, stashSlotCost(), '＋ Slot')+buyChip('buyStashRowBtn', maxed, stashRowCost(), '＋ Row (5)');
+    const b1=$('buyStashSlotBtn'); if(b1) b1.onclick=()=>{ buyStashSlot(); renderStashGrids(); };
+    const b2=$('buyStashRowBtn'); if(b2) b2.onclick=()=>{ buyStashRow(); renderStashGrids(); };
+  }
+  const wn=$('stashWarn'); if(wn) wn.innerHTML = (G.stash.length && G.stashStrikes>=1)
+    ? '⚠ One death already — a SECOND death without retrieving WIPES the vault.'
+    : 'Banked loot survives one death. Retrieve or re-bank to reset the counter.';
+  // ---- sort bars ----
+  const bTools=$('stBagTools'); if(bTools){ bTools.innerHTML=sortChipsHTML(STASH_BAG_SORT); wireSortChips(bTools, m=>{ STASH_BAG_SORT=m; renderStashGrids(); }); }
+  const sTools=$('stTools');    if(sTools){ sTools.innerHTML=sortChipsHTML(STASH_SORT);     wireSortChips(sTools, m=>{ STASH_SORT=m; renderStashGrids(); }); }
+  // ---- LEFT: carried — click banks it ----
+  bg.innerHTML='';
+  const bagList=sortItems(G.inv, STASH_BAG_SORT).filter(stashMatch);
+  bagList.forEach(it=>{
+    const t=itemTile(it,{ctx:null, tip:lootTip(it)+'<div style="margin-top:7px;color:var(--gold);font-size:11px">click → bank it in the vault · right-click → equip / use</div>',
+      onclick:()=>{ if(stashPush(it)){ G.inv=G.inv.filter(x=>x!==it); G.stashStrikes=0; bankCashIn(1); if(sfx.pickup)sfx.pickup(); refreshItemPanels(); } else { if(sfx.deny)sfx.deny(); renderStashGrids(); } }});
+    t.addEventListener('contextmenu',e=>{ e.preventDefault(); quickUse(it); refreshItemPanels(); });
+    bg.appendChild(t);
+  });
+  if(!filtering) for(let i=bagList.length;i<Math.max(G.invCap,bagList.length);i++) bg.appendChild(blankCell());
+  if(!bagList.length){ const n=document.createElement('div'); n.className='stEmpty';
+    n.innerHTML=filtering?'Nothing carried matches that filter.':'Your bag is empty — go and fill it.'; bg.prepend(n); }
+  // ---- RIGHT: the vault — click pulls it back ----
+  sg.innerHTML='';
+  const stList=sortItems(G.stash, STASH_SORT).filter(stashMatch);
+  stList.forEach(it=>{
+    const back=()=>{ if(G.inv.length>=G.invCap){ log('🎒 Bag full — make room first.'); if(sfx.deny)sfx.deny(); return; }
+      G.stash=G.stash.filter(x=>x!==it); G.inv.push(it); G.stashStrikes=0; if(sfx.pickup)sfx.pickup(); refreshItemPanels(); };
+    const t=itemTile(it,{ctx:null, tip:lootTip(it)+'<div style="margin-top:7px;color:var(--gold);font-size:11px">click → straight back into your bag</div>', onclick:back});
+    t.addEventListener('contextmenu',e=>{ e.preventDefault(); back(); });
+    sg.appendChild(t);
+  });
+  if(!filtering) for(let i=stList.length;i<Math.max(cap,stList.length);i++) sg.appendChild(blankCell());
+  if(!stList.length){ const n=document.createElement('div'); n.className='stEmpty';
+    n.innerHTML=filtering?'Nothing banked matches that filter.':'Empty vault.<br>Click anything on the left to bank it —<br>banked loot survives one death.'; sg.prepend(n); }
+  refreshPinSel();
 }
 // ---------------- inventory / equipment ----------------
 function equipItem(it){
@@ -10176,7 +10751,7 @@ function blankCell(){ const d=document.createElement('div'); d.className='tile e
 // ---- inspect / compare pane: shows the hovered item's stats + a comparison against what's equipped ----
 // item split into "Equipment" (#itemDetail) and "Inventory" (#itemDetail2) panels — both inspect panes stay in sync
 // and are fully wired, so hovering/inspecting works correctly regardless of which panel(s) happen to be open.
-function itemDetailEls(){ const out=[]; const a=document.getElementById('itemDetail'); if(a) out.push(a); const b=document.getElementById('itemDetail2'); if(b) out.push(b); return out; }
+function itemDetailEls(){ const a=document.getElementById('itemDetail'); return a?[a]:[]; }
 function showItemDetail(it, ctx){ ctx=ctx||{}; const dps=itemDetailEls(); if(!dps.length) return; dps.forEach(dp=>showItemDetailInto(dp,it,ctx)); }
 function showItemDetailInto(dp, it, ctx){ ctx=ctx||{}; if(!dp) return; dp.classList.remove('blank');
   const rc = it.rarity ? it.rarity.css : 'common';
@@ -10281,20 +10856,36 @@ function showItemDetailInto(dp, it, ctx){ ctx=ctx||{}; if(!dp) return; dp.classL
 }
 function clearItemDetail(){ itemDetailEls().forEach(dp=>{ dp.className='detailPane blank'; dp.textContent='Hover an item to inspect it — carried gear compares against what you have equipped.'; }); }
 
-// ---- bag management: sorting + one-click stash-all-gear ----
-let BAG_SORT='slot';
+// ---- shared item sorting: every grid (bag · stash · vendor) uses the SAME modes ----
+let BAG_SORT='type', STASH_SORT='type', STASH_BAG_SORT='type', VEND_SORT='type';
+let STASH_Q='';   // live text filter applied to BOTH columns of the stash panel
 const RARITY_RANK={common:0,rare:1,epic:2,legend:3,unique:4};
+const SORT_MODES=[
+  {k:'type',   nm:'Type',   ti:'Group by slot & kind — weapon, armour, jewellery, then gems, skills, flasks, potions, eggs'},
+  {k:'rarity', nm:'Rarity', ti:'Best rarity first (unique → legendary → epic → rare → common)'},
+  {k:'value',  nm:'Value',  ti:'Most valuable first'},
+  {k:'name',   nm:'Name',   ti:'Alphabetical'},
+  {k:'new',    nm:'Newest', ti:'Most recently acquired first'},
+];
 function itemSortKey(it){
   const slotIdx = it.slotKey ? SLOTS.findIndex(s=>s.k===it.slotKey) : 50;
-  const kind = it.isGem?60 : it.isSkillGem?61 : it.isFlask?62 : it.isPot?63 : it.isPet?64 : slotIdx;
+  const kind = it.isGem?60 : it.isSkillGem?61 : it.isFlask?62 : it.isPot?63 : it.isPet?64 : it.isTrophy?65 : it.isRelic?66 : slotIdx;
   return {kind, rr:(it.rarity?RARITY_RANK[it.rarity.css]:-1)};
 }
-function sortedBag(){
-  const a=G.inv.slice();
-  if(BAG_SORT==='new') return a.reverse();   // newest pickups first
-  if(BAG_SORT==='rarity') return a.sort((x,y)=>{ const kx=itemSortKey(x),ky=itemSortKey(y); return (ky.rr-kx.rr)||(kx.kind-ky.kind); });
-  return a.sort((x,y)=>{ const kx=itemSortKey(x),ky=itemSortKey(y); return (kx.kind-ky.kind)||(ky.rr-kx.rr); });   // by slot
+function _itemNm(it){ return String((it&&it.name)||''); }
+function sortItems(list, mode){
+  const a=(list||[]).slice();
+  if(mode==='new')    return a.reverse();                                                        // newest first
+  if(mode==='name')   return a.sort((x,y)=>_itemNm(x).localeCompare(_itemNm(y)));
+  if(mode==='value')  return a.sort((x,y)=>((y.value||0)-(x.value||0))||_itemNm(x).localeCompare(_itemNm(y)));
+  if(mode==='rarity') return a.sort((x,y)=>{ const kx=itemSortKey(x),ky=itemSortKey(y); return (ky.rr-kx.rr)||(kx.kind-ky.kind)||((y.value||0)-(x.value||0)); });
+  return a.sort((x,y)=>{ const kx=itemSortKey(x),ky=itemSortKey(y); return (kx.kind-ky.kind)||(ky.rr-kx.rr)||((y.value||0)-(x.value||0)); });   // 'type' (default)
 }
+// chips markup + one-line wiring helper, so every panel gets an identical sort bar
+function sortChipsHTML(cur){ return '<span class="st" style="cursor:default;opacity:.45;border-color:transparent;padding-left:0">Sort</span>'
+  +SORT_MODES.map(m=>`<span class="st${cur===m.k?' on':''}" data-sortg="${m.k}" title="${m.ti}">${m.nm}</span>`).join(''); }
+function wireSortChips(el, onPick){ if(!el) return; el.querySelectorAll('[data-sortg]').forEach(b=>{ b.onclick=()=>onPick(b.dataset.sortg); }); }
+function sortedBag(){ return sortItems(G.inv, BAG_SORT); }
 function stashAllGear(){ const keep=[]; let n=0;
   for(const it of G.inv){ if(it.slotKey && !it.isGem && !stashFull()){ G.stash.push(it); n++; } else keep.push(it); }
   G.inv=keep; if(n){ G.stashStrikes=0; bankCashIn(n); log('⇩ Stashed '+n+' gear item(s) — survives death.'); } else log('No loose gear to stash.');
@@ -10305,12 +10896,12 @@ function renderInv(){ if(_G.netApplying) return;
   // ---- bag toolbar (sort modes + quick-stash) ----
   const tools=$('bagTools'); if(tools){
     const _thr=junkThreshold(); const _jsel=`<span class="junkSel" title="Highest rarity that counts as junk for Sell junk (uniques & mythos never count)">Junk ≤ ${RARITY.slice(0,4).map((r,i)=>`<b class="jq${_thr===i?' on':''}" data-jq="${i}" style="--jc:var(--${r.css})">${r.nm}</b>`).join('')}</span>`;
-    tools.innerHTML=['slot','rarity','new'].map(m=>`<span class="st${BAG_SORT===m?' on':''}" data-sort="${m}">${m}</span>`).join('')
+    tools.innerHTML=sortChipsHTML(BAG_SORT)
       +`<span class="st" id="stashAllBtn" style="border-color:rgba(255,206,77,.4);color:var(--gold)">⇩ All gear</span>`
       +`<span class="st" id="sellJunkBtn" style="border-color:rgba(255,120,140,.4);color:#ff8a9c" title="Sell all junk at or below your Junk rarity for gold">💰 Sell junk</span>`
       +_jsel
       +rowBuyChip('buyInvRowBtn', (META.invRows||0)>=INV_ROWS_MAX, invRowCost());
-    tools.querySelectorAll('[data-sort]').forEach(b=>b.onclick=()=>{ BAG_SORT=b.dataset.sort; renderInv(); });
+    wireSortChips(tools, m=>{ BAG_SORT=m; renderInv(); });
     tools.querySelectorAll('.jq').forEach(b=>b.onclick=()=>{ SETTINGS.junkMaxRarity=+b.dataset.jq; saveSettings(); renderInv(); });
     const sa=$('stashAllBtn'); if(sa) sa.onclick=stashAllGear;
     const sj=$('sellJunkBtn'); if(sj) sj.onclick=sellJunk;
@@ -10349,20 +10940,7 @@ function renderInv(){ if(_G.netApplying) return;
   // pad to capacity with empty slot-boxes so the backpack reads as a full container
   for(let i=G.inv.length;i<Math.max(G.invCap,G.inv.length);i++) bag.appendChild(blankCell());
   if(!G.inv.length){ const n=document.createElement('div'); n.className='bagEmptyNote'; n.textContent='Empty — kill things and pick up loot.'; bag.prepend(n); }
-  // ---- stash ----
-  const sw=$('invStashWrap'); if(sw){
-    const stashMaxed=stashSlotsBought()>=STASH_SLOT_MAX;
-    sw.innerHTML=`<div class="secHd"><h4>🗄 Stash — survives death · ${G.stash.length}/${stashCap()}${(G.stash.length&&G.stashStrikes>=1)?' · <span style="color:var(--hp)">⚠ one death already!</span>':''}</h4>`
-      +`<div class="invTools">${buyChip('buyStashSlotBtn', stashMaxed, stashSlotCost(), '＋ Slot')}${buyChip('buyStashRowBtn', stashMaxed, stashRowCost(), '＋ Row (5)')}</div></div>`;
-    const bslot=$('buyStashSlotBtn'); if(bslot) bslot.onclick=buyStashSlot;
-    const bs=$('buyStashRowBtn'); if(bs) bs.onclick=buyStashRow;
-    const sg=document.createElement('div'); sg.className='bagGrid stashGrid'; sg.style.maxHeight='196px'; sg.style.gridTemplateColumns='repeat('+STASH_COLS+',1fr)';
-    G.stash.forEach(it=>sg.appendChild(itemTile(it,{ctx:{kind:'stash'}, onclick:()=>showItemDetail(it,{kind:'stash'})})));
-    for(let i=G.stash.length;i<Math.max(stashCap(),G.stash.length);i++) sg.appendChild(blankCell());
-    if(!G.stash.length){ const n=document.createElement('div'); n.className='bagEmptyNote'; n.textContent='Bank loot here via ⇩ Stash — it survives death.'; sg.prepend(n); }
-    sw.appendChild(sg);
-  }
-  const hint=$('invHint'); if(hint) hint.innerHTML = G.selGem ? 'Stat gem selected — click an item with a socket, or just <b>drag the gem onto it</b> to auto-socket.' : '<b>Right-click</b> to auto-equip / bind · <b>drag a gem</b> onto a socketed item to slot it · <b>Ctrl+right-click</b> a socketed gem to remove it (fame) · click to inspect.';
+  const hint=$('invHint'); if(hint) hint.innerHTML = G.selGem ? 'Stat gem selected — click an item with a socket, or just <b>drag the gem onto it</b> to auto-socket.' : '<b>Right-click</b> to auto-equip / bind · <b>drag a gem</b> onto a socketed item to slot it · <b>Ctrl+right-click</b> a bag item to bank it in the 🗄 Stash · click to inspect.';
   refreshPinSel();   // re-apply the selected-tile highlight after the grid rebuilt
 }
 // ---------------- vendor (gold sink) ----------------
@@ -10407,13 +10985,17 @@ function renderVendor(){
     G.gold-=gemCost(); const g=makeGem(G.floor); G.inv.push(g); log('💠 Bought '+g.name); renderVendor(); };
   $('buyEggBtn').onclick=()=>{ if(G.gold<eggCost()){log('Not enough gold for an egg.');return;} if(G.inv.length>=G.invCap){log('Inventory full.');return;}
     G.gold-=eggCost(); const e=makeEgg(G.floor,1); G.inv.push(e); log('🥚 Bought a pet egg — Hatch it from your Inventory (I) or Pet Yard (P).'); renderVendor(); refreshItemPanels(); };
-  $('respecBtn2').onclick=()=>respec();
+  $('respecBtn2').onclick=()=>respecPrompt();
   const list=$('vendList'); list.innerHTML='';
   renderVendStock(list);   // rotating wares (restocks on reopen) shown above the sell list
   if(!G.inv.length){ const _eb=document.createElement('div'); _eb.className='bagEmpty'; _eb.textContent='Nothing carried to sell.'; list.appendChild(_eb); _vendSel=null; return; }
   if(_vendSel && !G.inv.includes(_vendSel)) _vendSel=null;
+  const sortBar=document.createElement('div'); sortBar.className='invTools'; sortBar.style.cssText='margin:0 0 8px;flex-wrap:wrap;margin-left:0';
+  sortBar.innerHTML=sortChipsHTML(VEND_SORT);
+  wireSortChips(sortBar, m=>{ VEND_SORT=m; renderVendor(); });
+  list.appendChild(sortBar);
   const grid=document.createElement('div'); grid.className='vendGrid';
-  G.inv.forEach(it=>{ const t=itemTile(it,{ctx:null,sel:_vendSel===it}); t.title=it.name+(it.rarity?' · '+it.rarity.nm:'');
+  sortItems(G.inv, VEND_SORT).forEach(it=>{ const t=itemTile(it,{ctx:null,sel:_vendSel===it}); t.title=it.name+(it.rarity?' · '+it.rarity.nm:'');
     t.addEventListener('click',()=>{ _vendSel=it; renderVendor(); });
     t.addEventListener('contextmenu',e=>{ e.preventDefault(); if(it.locked){ log('🔒 Locked — unlock to sell.'); return; } const _sv=sellVal(it); G.gold+=_sv; G.inv=G.inv.filter(x=>x!==it); if(G.selGem===it)G.selGem=null; if(_vendSel===it)_vendSel=null; flashGold(); log('Sold '+it.name+' (+'+_sv+'g'+(_sv>(it.value||0)?' · vintage':'')+')'); renderVendor(); });
     grid.appendChild(t); });
@@ -10522,6 +11104,7 @@ function die(){ if(G.dead)return;
   if(G.practice){ G.hp=G.maxhp; G.invuln=1; return; }   // no death in the practice arena
   if(_G.victoryPending||G.victoryOpen){ G.hp=Math.max(1,G.hp); G.invuln=2; return; }   // the tower fell first — victory outranks a stray bullet
   G.dead=true; G.running=false; G.recallT=0; _G.returnFloor=0;   // death ends the descent — no recalled depth to return to
+  shatterSeals();   // ASCENDANT SEALS: proof does not survive the grave — every seal you held is lost
   if(G.dailyRun) dailyScoreTick();   // FAST-DEATH FIX: score today's daily even on an instant death
   PANELS.forEach(p=>$(p).classList.add('hidden'));
   setMusicSet('grief');   // a death — the grief music plays
@@ -10870,7 +11453,7 @@ function enterPractice(){
   G.inv=[]; G.stash=[]; G.stashStrikes=0; G.dead=false; G.running=true; G.paused=false; G.fervor=0; G.hitstop=0; G.greed=1;
   G.dashCd=0; G.dashT=0; G.flowT=0; G.permadead=false; G.selGem=null;
   G.belt=[makeFlask(1,'life'),makeFlask(1,'mana'),makeFlask(1,'swift'),null,null]; G.charge=100; G.sigSlot=makeSkillGem(1,'gMeteor'); G.sigCd=0; G.swiftT=0; G.hots=[]; G.petErrand=null;
-  G.floorMod=null; G.bounty=null;
+  G.floorMod=null; G.bounty=null; G.obj=null; G.objProps=[];
   if(G.petMesh){ scene.remove(G.petMesh); G.petMesh=null; } G.pet=null; G.pets=[]; G.petMagnet=0;
   G.run={kills:0,assists:0,healSelf:0,healOthers:0,xp:0,floorTime:0,totalTime:0,floorsCleared:0,boons:[],destiny:null};
   G.practice=true; G.inTown=false; G.hardcore=false; G.diff='normal'; G.seed=randi(0,9999);
@@ -10991,18 +11574,25 @@ function renderScore(){
   // ---------- LEFT COLUMN: this run + fame + feats ----------
   let left=`<h4 class="scoreHd neon">⚑ This Run</h4>`+scoreSummary();
   // fame rank
-  const rk=fameRank(META.fame), mult=rk.tier+1;
-  const prevAt = rk.stars>0 ? rk.floor+STAR_BASE[rk.stars-1]*mult : rk.floor;
-  const pct = rk.nextAt!=null ? clamp((META.fame-prevAt)/(rk.nextAt-prevAt)*100,0,100) : 100;
+  const rk=evolveRank(metaEvolves());
+  const pct=rankProgressPct();
+  const _sst=sealState(), _sh=sealsHeld();
+  const _sc=(ok,ic,txt)=>`<span style="display:inline-flex;align-items:center;gap:4px;font-size:10px;padding:3px 8px;border-radius:12px;`
+    +`border:1px solid ${ok?'rgba(109,255,140,.55)':'rgba(160,180,215,.25)'};color:${ok?'#6dff8c':'#8d99ae'};background:${ok?'rgba(109,255,140,.1)':'rgba(255,255,255,.03)'}">${ic} ${txt}</span>`;
   left+=`<div class="scoreSect">
-    <h4 class="scoreHd gold">★ Fame Rank</h4>
+    <h4 class="scoreHd gold">✦ Ascendant Rank</h4>
     <div style="text-align:center;margin-bottom:8px">
       <div style="font-size:12px;letter-spacing:3px;color:${rk.col};text-transform:uppercase">${rk.name} Tier</div>
       <div style="font-size:30px;color:${rk.col};letter-spacing:5px;text-shadow:0 0 14px ${rk.col}99;margin:4px 0">${rankStars(rk.stars)}</div>
-      <div style="font-size:12px">${META.fame.toLocaleString()} fame · ${rk.nextAt!=null?('next ★ at '+rk.nextAt.toLocaleString()):'<span style="color:'+rk.col+'">MAX RANK</span>'}</div>
+      <div style="font-size:12px">✦×${rk.evolves} evolution${rk.evolves===1?'':'s'} · ${Math.floor(META.fame).toLocaleString()} fame ${rk.cost!=null?('· next evolution costs ✦'+rk.cost.toLocaleString()):'<span style="color:'+rk.col+'">· MAX RANK</span>'}</div>
     </div>
     <div style="height:8px;background:rgba(255,255,255,.08);border-radius:5px;overflow:hidden"><div style="height:100%;width:${pct}%;background:${rk.col};box-shadow:0 0 8px ${rk.col};transition:width .2s"></div></div>
-    <div style="font-size:10px;opacity:.55;margin-top:6px">A skill rating — earned from runs, bounties &amp; feats. Grants no power. Reach 7★ to advance to the next colour tier (Gray → Light Blue → … → White).</div>
+    <div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:center;margin-top:8px">
+      ${_sc(_sst.blood,'🩸',Math.min(_sst.have.blood,_sst.need.blood)+'/'+_sst.need.blood+' guardians')}
+      ${_sc(_sst.depth,'⛰','floor '+(_sst.have.depth||0)+'/'+_sst.need.depth)}
+      ${_sc(_sst.flaw,'💠','flawless kill')}
+    </div>
+    <div style="font-size:10px;opacity:.55;margin-top:6px"><b>One star = one EVOLUTION.</b> Reach Level ${LEVEL_CAP}, hold all three ASCENDANT SEALS at once (${_sh}/${EVOLVE_SEALS} right now), and spend the fame — you are reborn at Level 1 keeping every stat and item. Dying shatters your seals. 7★ promotes you to the next colour (Gray → Light Blue → … → White), 49 evolutions in all.</div>
   </div>`;
   left+=`<div class="scoreSect"><h4 class="scoreHd neon">Feats — ${META.feats.length}/${FEATS.length}</h4>`;
   for(const f of FEATS){ const got=META.feats.includes(f.id);
@@ -11108,7 +11698,7 @@ function startGameConfirmed(after){
   if(_G.asc>0) log('⛧ Ascension '+_G.asc+' — '+ASC_MODS.slice(0,_G.asc).map(m=>m.nm).join(', ')+'. Fame ×'+ascFameMult().toFixed(2)+'.');
   // shared run state
   G.floor=1; G.running=true; G.paused=false; G.hitstop=0; G.permadead=false;
-  G.floorMod=null; G.bounty=null; G.practice=false; G.tutorial=false; G.dailyRun=false; G.seed=randi(0,9999); _G.returnFloor=0; _G.recallGo=false;
+  G.floorMod=null; G.bounty=null; G.obj=null; G.objProps=[]; G.practice=false; G.tutorial=false; G.dailyRun=false; G.seed=randi(0,9999); _G.returnFloor=0; _G.recallGo=false;
   _G.nemesis=makeNemesis();   // NEMESIS: fresh epithets, traits and grudge-arcs for every climb — no two runs meet the same lords
   // start solo (co-op players drop-in by pressing START on a controller); rebuild P1's character
   _G.players.length=1; const p0=_G.players[0]; p0.joined=true; p0.color=PLAYER_COLORS[0]; p0.input=p0.input||makeKbmInput();
@@ -11810,8 +12400,8 @@ function updatePlayerPickups(dt){
   for(const pk of G.pickups){ if(pk.dead)continue; if(pk.owner!=null && pk.owner!==_G.cur) continue;   // soulbound loot: only its owner may grab it
     if(pk.kind!=='cairn'){ pk.mesh.rotation.y+=dt*3; pk.mesh.position.y=.6+Math.sin(performance.now()*0.005+pk.x)*0.15; }   // bob & spin IN PLACE — nothing chases the player (cairns stay planted: they are graves)
     const d=Math.hypot(p.x-pk.mesh.position.x,p.z-pk.mesh.position.z);
-    if(pk.kind==='crystal'){ if(d<1.8){ pk.dead=true; sfx.pickup(); G.mana=Math.min(G.maxmana,G.mana+G.maxmana*0.08); floatText(pk.mesh.position.x,pk.mesh.position.z,'✦ +'+pk.val+' XP','heal',1.6); gainXP(pk.val); ringFx(pk.mesh.position.x,pk.mesh.position.z,1.4,biome?biome.accent:0x56e0ff); } }
-    else if(pk.kind==='gem'){ pk.dead=true; gainXP(pk.val); }   // legacy XP orb: bank instantly, never chase
+    if(pk.kind==='crystal'||pk.kind==='gem'){ pk.dead=true; }   // world XP orbs are RETIRED — XP comes from kills (and rarely a chest)
+    else if(pk.kind==='objshard'){ if(d<2.0){ pk.dead=true; if(sfx.pickup)sfx.pickup(); ringFx(pk.mesh.position.x,pk.mesh.position.z,1.6,0xffce4d); objOnShard(); } }   // FLOOR OBJECTIVE: a tithe shard
     else if(pk.kind==='cairn'){ if(d<2.4){ pk.dead=true; sfx.pickup&&sfx.pickup();   // your own grave, reclaimed (STORY_BIBLE §8)
       const rec=pk.rec||{}; G.gold+=pk.val; if(typeof flashGold==='function')flashGold();
       floatText(pk.mesh.position.x,pk.mesh.position.z,'⚰ +'+pk.val+' gold','goldtxt',3);
@@ -12067,7 +12657,7 @@ function makePanelDraggable(panelId){
     window.addEventListener('pointermove',move); window.addEventListener('pointerup',up);
     e.preventDefault(); e.stopPropagation(); });
 }
-['lootPanel','petPanel','petYardPanel','charPanel','treePanel','invPanel','equipPanel','vendorPanel','stashPanel','scorePanel','codexPanel','craftPanel'].forEach(makePanelDraggable);
+['lootPanel','petPanel','petYardPanel','charPanel','treePanel','invPanel','vendorPanel','stashPanel','scorePanel','codexPanel','craftPanel'].forEach(makePanelDraggable);
 function takeLoot(pk){ if(!pk||pk.dead) return false; const it=pk.item;
   if(SETTINGS.autoSalvage && isJunk(it)){ pk.dead=true; const g=it.value||0; G.gold+=g; if(typeof flashGold==='function')flashGold(); sfx.gold&&sfx.gold(); cleanDeadPickups(); return true; }
   if(G.inv.length>=G.invCap){ log('🎒 Bag full ('+G.invCap+') — make room or bank loot.'); return false; }
@@ -12107,8 +12697,10 @@ function openChest(c){ if(!c||c.opened) return;
   sfx.evolve&&sfx.evolve(); sfx.drop&&sfx.drop(4);
   try{ if(c.lid){ c.lid.rotation.x=-1.15; c.lid.position.y=1.1; } if(c.glow&&c.glow.material) c.glow.material.emissiveIntensity=0.12; }catch(_){}
   ringFx(c.x,c.z,3.2,0xffce4d); floatText(c.x,c.z,'✦ CHEST ✦','big',3.2);
+  objOnChestOpened();   // FLOOR OBJECTIVE: Plunder counts caches
   const fl=Math.max(1,G.floor||1);
-  const xp=Math.round((G.xpNeed||40)*rand(0.35,0.85)); gainXP(xp); floatText(c.x,c.z,'+'+xp+' XP','heal',2.4);   // XP straight to the bar/bank — no orb
+  // XP from a chest is a RARE bonus (~18%) — the reliable source of experience is killing things
+  if(Math.random()<0.18){ const xp=Math.round((G.xpNeed||40)*rand(0.35,0.85)); gainXP(xp); floatText(c.x,c.z,'✦ +'+xp+' XP — a rare spark','heal',2.6); }
   if(Math.random()<0.72){ const m=pick(MATERIALS); grantMaterials(m.key, randi(2,5)); }
   const g=Math.round((40+fl*6)*rand(0.8,1.6)); G.gold+=g; if(typeof flashGold==='function')flashGold(); floatText(c.x,c.z,'+'+g+' gold','goldtxt',2.0);
   const n=randi(1,3);
@@ -12193,7 +12785,7 @@ function enterTutorialFloor(){
   G.inv=[]; G.stash=[]; G.stashStrikes=0; G.dead=false; G.running=true; G.paused=false; G.fervor=0; G.hitstop=0; G.greed=1;
   G.dashCd=0; G.dashT=0; G.flowT=0; G.permadead=false; G.selGem=null;
   G.belt=[makeFlask(1,'life'),makeFlask(1,'mana'),null,null,null]; G.charge=100; G.sigSlot=null; G.sigCd=0; G.swiftT=0; G.hots=[]; G.petErrand=null;
-  G.floorMod=null; G.bounty=null;
+  G.floorMod=null; G.bounty=null; G.obj=null; G.objProps=[];
   if(G.petMesh){ scene.remove(G.petMesh); G.petMesh=null; } G.pet=null; G.pets=[]; G.petMagnet=0;
   G.run={kills:0,assists:0,healSelf:0,healOthers:0,xp:0,floorTime:0,totalTime:0,floorsCleared:0,boons:[],destiny:null};
   G.practice=true; G.tutorial=true; G.inTown=false; G.hardcore=false; G.diff='normal'; G.seed=randi(0,9999);
@@ -12349,7 +12941,7 @@ function updateWorld(dt){
     if(!e.boss && !e.aggro && d<aggroRange) e.aggro=true;   // wake on proximity, then hunt until it (or the player) dies
     // a chaser leaving its home room forces an immediate replacement to spawn back in that room (once)
     if(!e.boss && e.aggro && e.room && !e.leftRoom && !ptInRoom(ex,ez,e.room,1.5)){ e.leftRoom=true;
-      if(floorType(G.floor)==='NORMAL') G.respawns.push({t:0.5, room:e.room}); }
+      if(floorType(G.floor)==='NORMAL' && !(G.obj&&G.obj.id==='exterm')) G.respawns.push({t:0.5, room:e.room}); }
     // movement intent
     let mode=null;
     if(e.boss){ if(e.roaming){ e.roamT=(e.roamT||0)+dt; if(d>e.r+1.6) mode='toward'; }   // roaming lords relentlessly hunt you, closing in as the chase drags on
@@ -12364,10 +12956,6 @@ function updateWorld(dt){
     else if(mode==='wander') wanderEnemy(e, ex, ez, espd, dt);
     // apply knockback / dash through collision so they don't pass walls
     if(Math.abs(e.kx)>0.001||Math.abs(e.kz)>0.001) moveEntity(e.mesh.position, e.mesh.position.x+e.kx, e.mesh.position.z+e.kz, e.r*0.55);
-    // ---- ADAPTATION: an aggro'd foe periodically counters the player's dominant build (elites/bosses do it faster) ----
-    if(e.aggro && d<14 && tp.S && tp.S.adaptKind && tp.S.adaptLvl>0){
-      e.adaptCd=(e.adaptCd==null?rand(3.5,6.5):e.adaptCd)-dt;
-      if(e.adaptCd<=0){ e.adaptCd=Math.max(2.6, (e.boss?4:e.elite?6:9) - tp.S.adaptLvl*0.8); applyEnemyCounter(e, tp); } }
     // charger lunge (only when awake)
     if(e.dash && e.aggro){ e.dashCd-=dt; if(e.dashCd<=0 && d<15 && d>3.5){ e.dashCd=rand(3,5); e.kx=dx*6; e.kz=dz*6; floatText(cx,cz,'CHARGE!','hurt',e.scale*1.5+1.2); } }
     // warden: periodically heals nearby wounded foes
@@ -12510,22 +13098,7 @@ function addHot(g,amt,dur){ g.hots=g.hots||[];
   else g.hots.push({amt,left:dur});
 }
 function adaptTick(dt){ if(G.stunT>0)G.stunT-=dt; if(G.slowT>0)G.slowT-=dt; if(G.weakT>0)G.weakT-=dt; if(G.healCutT>0)G.healCutT-=dt; }
-function applyEnemyCounter(e, tp){ const S=tp.S; if(!S||!S.adaptKind)return; const lvl=S.adaptLvl;
-  withPlayer(tp.id, ()=>{
-    if(G.invuln>0) return;   // respect i-frames
-    const px=G.player.position.x, pz=G.player.position.z;
-    switch(S.adaptKind){
-      case 'tank':   if(G.stunT<=0){ G.stunT=0.45+lvl*0.16; floatText(px,pz,'⚡ STUNNED','hurt',3.1); } break;   // break the immortal wall by taking its turns away
-      case 'runner': G.slowT=Math.max(G.slowT,1.1+lvl*0.5); floatText(px,pz,'🕸 SLOWED','hurt',3.1); break;
-      case 'zealot': G.healCutT=Math.max(G.healCutT,2+lvl*0.8); floatText(px,pz,'💔 MORTAL WOUND','hurt',3.1); break;
-      case 'bruiser':G.weakT=Math.max(G.weakT,1.8+lvl*0.6); floatText(px,pz,'⬇ WEAKENED','hurt',3.1); break;
-      case 'mage':   { const burn=Math.min(G.mana,G.maxmana*(0.12+lvl*0.06)); G.mana-=burn; floatText(px,pz,'🔥 MANA BURN','mana',3.1); } break;
-    }
-    if(!G.adaptWarned){ G.adaptWarned=true; log('🧠 The tower ADAPTS — foes have learned to counter your build. Diversify, or play around it.'); }
-  });
-  if(e.mesh) ringFx(e.mesh.position.x,e.mesh.position.z,e.r+2,0xb06bff);
-}
-let _hurtFlashT;
+// (the build-countering system was removed — see the ARCHETYPE COUNTERS note in recompute())
 function hurtFlash(strong){ const v=$('vignette'); if(!v)return; v.classList.remove('hit','hitBig'); void v.offsetWidth; v.classList.add(strong?'hitBig':'hit'); clearTimeout(_hurtFlashT); _hurtFlashT=setTimeout(()=>v.classList.remove('hit','hitBig'), strong?360:220); }
 function hurtPlayer(dmg, opts){ if(G.invuln>0)return;
   if(G.S.dodgePct>0 && Math.random()*100<G.S.dodgePct){ perfectDodge(); return; }   // passive evasion — a clean dodge, same reward language as a perfect dash-dodge
@@ -12568,6 +13141,7 @@ function hurtPlayer(dmg, opts){ if(G.invuln>0)return;
     if(_now-(G._lowSurvT||0)>4000){ G._lowSurvT=_now; G.run.lowSurvives=(G.run.lowSurvives||0)+1;
       if(G.run.lowSurvives===3) grantMutation('desp','Desperation','🩸',{lowHpDmgPct:18},'three brushes with the edge — a desperation branch grows'); } }
   if(G.enemies) for(const _b of G.enemies){ if(_b.boss&&!_b.dead){ G._bossClean=false; break; } }   // Perfection tracking: this guardian marked you
+  objOnPlayerHurt();   // FLOOR OBJECTIVE: an Untouched run notices this
   // ---- HEART EVOLUTION: survive one lethal blow per floor (TREE_VISION §7) ----
   if(G.hp<=0 && G.S.heart3 && G._heartFl!==G.floor){ G._heartFl=G.floor; G.hp=1; G.invuln=Math.max(G.invuln,1.2);
     banner('🫀 THE HEART REFUSES','one death, declined — once per floor');
@@ -12591,15 +13165,14 @@ function hurtPlayer(dmg, opts){ if(G.invuln>0)return;
 // ---- bottom gold Fame bar: fills toward the next star (cosmetic skill rating, no power) ----
 function updateFameBar(){
   const ff=$('fameStripFill'); if(!ff) return;
-  const fr=fameRank(META.fame), mult=fr.tier+1;
-  let lo, hi;
-  if(fr.stars>=7){ lo=hi=fr.floor+STAR_BASE[6]*mult; }            // maxed colour tier — bar full
-  else { lo = fr.stars>0 ? fr.floor+STAR_BASE[fr.stars-1]*mult : fr.floor; hi=fr.nextAt; }
-  const famePct=(hi>lo?clamp((META.fame-lo)/(hi-lo)*100,0,100):100);
+  const fr=evolveRank(metaEvolves());
+  const famePct=rankProgressPct();                                // fame banked toward the next evolution
   ff.style.width=famePct+'%';
   const xpPct=Math.min(100,G.xp/G.xpNeed*100);
   const xc=$('xpCap'); if(xc) xc.textContent='LV '+G.level+' · '+Math.floor(G.xp)+' / '+G.xpNeed+' XP · '+Math.round(xpPct)+'%';
-  const fc=$('fameCap'); if(fc){ fc.style.color=fr.col; fc.textContent='★ '+fr.stars+'/7 · '+fr.name+(fr.stars>=7?' · MAX':' · '+Math.round(famePct)+'%'); }
+  const fc=$('fameCap'); if(fc){ fc.style.color=fr.col;
+    fc.textContent = fr.maxed ? ('★ 7/7 · '+fr.name+' · MAX')
+      : ('★ '+fr.stars+'/7 · '+fr.name+' · ✦×'+fr.evolves+' · next evolution '+Math.round(famePct)+'%'); }
 }
 // ---- player buff/status stack: surface active timed states as a Torchlight-style icon row ----
 const ABN_LABEL={ reverseRun:{ic:'↩',nm:'Reversed Move'}, drunkShots:{ic:'🌀',nm:'Weaving Shots'}, homingHate:{ic:'🎯',nm:'Homing Shots'},
@@ -12676,8 +13249,7 @@ function updateHUD(){
   const cx2=$('clearTxt');
   if(cx2){ if(!G.practice && !G.inTown && floorType(G.floor)==='NORMAL'){
     if(G.portal&&G.portal.active){ cx2.innerHTML='<span style="color:var(--xp)">✓ PORTAL OPEN</span>'; }
-    else { const _kf=G.floorKills||0, _kg=G.killGoal||1, _kp=Math.round(_kf/_kg*100);
-      cx2.innerHTML=`<div style="display:flex;align-items:center;gap:5px;font-size:10px">⚔ <div style="flex:1;height:5px;background:rgba(255,255,255,.12);border-radius:3px;overflow:hidden"><div style="height:100%;width:${_kp}%;background:linear-gradient(90deg,var(--neon),var(--xp));transition:width .2s"></div></div><span style="opacity:.8">${_kf}/${_kg}</span></div>`; }
+    else cx2.innerHTML=objHudHTML();
   } else cx2.textContent=''; }
   const sx=$('shiftTxt');
   if(!G.practice && floorType(G.floor)!=='SAFE' && G.portal&&G.portal.active && G.shiftT<=60){ sx.textContent='⟳ Floor reshuffles in '+Math.max(0,Math.ceil(G.shiftT))+'s · portal stays open'; sx.classList.remove('urgent'); }
@@ -12685,7 +13257,49 @@ function updateHUD(){
   $('petChip').textContent = G.petErrand ? `Sell-run ${Math.ceil(G.petErrand.t)}s` : G.pet ? `${PET_FAMILIES[G.pet.family].ic} Lv ${G.pet.level}${(G.pets&&G.pets.length>1)?' ·'+G.pets.length:''}` : 'Pet Yard —';
   const bt=$('bountyTxt'); if(bt){ const b=G.bounty; bt.innerHTML = b ? `◈ ${b.nm}: ${b.failed?'<span style="color:var(--hp)">failed</span>':b.done?'<span style="color:var(--xp)">✓ done</span>':b.id==='kills'?`${b.have}/${b.need}`:b.descTxt}` : ''; }
   updateBossBar();
+  updateDirHud();     // top-of-screen compass: BLUE arrow → portal, RED arrow → boss
   updatePartyHud();   // online: show every player's hp/mp (draggable)
+}
+// ---- TOP-OF-SCREEN DIRECTION COMPASS ----------------------------------------------------------
+// A BLUE arrow appears the moment the portal opens and always points at it; a RED arrow appears
+// whenever a boss is alive on the floor and always points at the boss. Both rotate in screen space,
+// so the arrow head genuinely faces the way you have to walk, whichever way the camera is turned.
+function _screenBearing(x,z){   // radians, maths convention (0 = screen-right, +ve = counter-clockwise)
+  _proj.set(x,1.6,z).project(camera);
+  let ax=_proj.x, ay=_proj.y;
+  if(_proj.z>1){ ax=-ax; ay=-ay; }        // behind the camera → mirror so the arrow still points the right way
+  if(Math.abs(ax)<1e-5 && Math.abs(ay)<1e-5) ay=1e-5;
+  return Math.atan2(ay,ax);
+}
+function _setDirChip(el, wx, wz, label){
+  const p=G.player&&G.player.position; if(!p||!el){ if(el)el.classList.add('hidden'); return; }
+  const ang=_screenBearing(wx,wz);
+  const arw=el.querySelector('.dhArrow'); if(arw) arw.style.transform='rotate('+(-ang*180/Math.PI).toFixed(1)+'deg)';
+  const d=Math.hypot(wx-p.x, wz-p.z);
+  const dd=el.querySelector('.dhD'); if(dd) dd.textContent=Math.round(d)+'m';
+  const tx=el.querySelector('.dhTx'); if(tx&&label) tx.textContent=label;
+  el.classList.toggle('near', d<6);
+  el.classList.remove('hidden');
+}
+function updateDirHud(){
+  const hud=$('dirHud'); if(!hud) return;
+  const pc=$('dhPortal'), bc=$('dhBoss');
+  if(!G.running || G.dead || !G.player){ hud.classList.add('hidden'); document.body.classList.remove('dirhud-on'); return; }
+  // ---- BLUE: the portal, from the instant it opens ----
+  let showP=false;
+  if(G.portal && G.portal.active && G.portal.x!=null){
+    showP=true;
+    _setDirChip(pc, G.portal.x, G.portal.z, G.portal.town?'DESCEND':G.portal.yard?'RETURN':'PORTAL');
+  } else if(pc) pc.classList.add('hidden');
+  // ---- RED: the floor guardian / roaming lord ----
+  let boss=null;
+  if(G.enemies) for(const e of G.enemies){ if(e.boss && !e.dead && e.mesh){ if(!boss || (boss.roaming&&!e.roaming) || (e.roaming===boss.roaming && e.hp>boss.hp)) boss=e; } }
+  let showB=false;
+  if(boss){ showB=true; _setDirChip(bc, boss.mesh.position.x, boss.mesh.position.z, boss.roaming?'ROAMING LORD':'BOSS'); }
+  else if(bc) bc.classList.add('hidden');
+  const on=showP||showB;
+  hud.classList.toggle('hidden', !on);
+  document.body.classList.toggle('dirhud-on', on);
 }
 // ---- boss health bar (top of screen) + off-screen roaming indicator so the player always knows a lord is out there ----
 function updateBossBar(){
