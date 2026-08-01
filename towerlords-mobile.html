@@ -28,7 +28,7 @@
 
   /* top-left */
   /* top-left command menu (SWTOR-style: one cohesive glass panel, keycap badges, icon rows) */
-  #stats{top:12px;left:14px;width:212px;display:flex;flex-direction:column;gap:2px;padding:8px;
+  #stats{top:12px;left:14px;width:212px;display:flex;flex-direction:column;gap:2px;padding:8px;z-index:20;
     background:linear-gradient(180deg,rgba(13,18,34,.84),rgba(8,11,22,.84));border:1px solid rgba(120,150,200,.22);
     border-radius:13px;box-shadow:0 8px 30px rgba(0,0,0,.55),inset 0 0 0 1px rgba(255,255,255,.03);backdrop-filter:blur(7px);}
   .mHdr{display:flex;align-items:center;gap:8px;padding:3px 7px 9px;margin-bottom:4px;border-bottom:1px solid rgba(255,255,255,.1);}
@@ -47,20 +47,20 @@
   .pip.on{opacity:1;}
 
   /* top-right */
-  #towerInfo{top:12px;right:14px;text-align:right;
+  #towerInfo{top:12px;right:14px;text-align:right;z-index:20;
     resize:both;overflow:auto;pointer-events:auto;min-width:150px;min-height:70px;max-width:420px;max-height:60vh;padding:4px 2px;}
   #towerInfo .big{font-size:22px;font-weight:bold;color:var(--neon);}
   #towerInfo .sm{font-size:11px;opacity:.65;letter-spacing:1px;}
 
   /* rampage meter */
-  #rampage{top:64px;left:50%;transform:translateX(-50%);width:280px;text-align:center;opacity:0;transition:opacity .2s;}
+  #rampage{top:64px;left:50%;transform:translateX(-50%);width:280px;text-align:center;opacity:0;transition:opacity .2s;z-index:20;}
   #rampage.show{opacity:1;}
   #rampWrap{height:8px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.16);border-radius:5px;overflow:hidden;}
   #rampFill{height:100%;width:0%;background:linear-gradient(90deg,#ff7a3d,#ffce4d);transition:width .1s linear;box-shadow:0 0 12px rgba(255,150,60,.7);}
   #rampLabel{font-size:13px;font-weight:bold;letter-spacing:3px;margin-top:3px;color:var(--gold);text-shadow:0 0 14px rgba(255,206,77,.6);}
 
   /* orbs + action bar */
-  #dock{position:absolute;bottom:16px;left:50%;transform:translateX(-50%);display:flex;align-items:flex-end;gap:13px;pointer-events:none;}
+  #dock{position:absolute;bottom:16px;left:50%;transform:translateX(-50%);display:flex;align-items:flex-end;gap:13px;pointer-events:none;z-index:20;}
   #dock .orb{display:none;}   /* HP & MP now live on the player ring — no duplicate orbs at the bottom */
   .orb{width:100px;height:100px;border-radius:50%;position:relative;overflow:hidden;
     border:2px solid rgba(255,255,255,.18);background:rgba(0,0,0,.45);box-shadow:0 0 24px rgba(0,0,0,.6);}
@@ -144,7 +144,7 @@
 
   /* bottom progress bars — blue character XP + gold Fame (Torchlight-style stacked pair) */
   /* bottom-centre progress widget: readable XP + Fame bars (level / next-level progress) */
-  #progressBars{position:absolute;bottom:122px;left:50%;transform:translateX(-50%);width:min(440px,44vw);display:flex;flex-direction:column;gap:5px;pointer-events:none;z-index:13;}
+  #progressBars{position:absolute;bottom:122px;left:50%;transform:translateX(-50%);width:min(440px,44vw);display:flex;flex-direction:column;gap:5px;pointer-events:none;z-index:20;}
   #xpStrip{position:relative;height:21px;border-radius:11px;background:rgba(6,10,20,.78);border:1px solid rgba(86,224,255,.32);overflow:hidden;box-shadow:0 3px 12px rgba(0,0,0,.55);}
   #xpStripFill{position:absolute;inset:0;width:0%;background:linear-gradient(90deg,var(--xp),var(--neon));box-shadow:0 0 16px var(--xp);transition:width .2s ease;border-radius:11px;}
   #fameStrip{position:relative;height:16px;border-radius:9px;background:rgba(6,10,20,.78);border:1px solid rgba(255,206,77,.3);overflow:hidden;box-shadow:0 3px 12px rgba(0,0,0,.55);}
@@ -155,7 +155,7 @@
 
   /* player status / buff stack (above the action bar — Torchlight-style icon row) */
   #buffBar{position:absolute;bottom:174px;left:50%;transform:translateX(-50%);display:flex;gap:7px;
-    justify-content:center;align-items:flex-end;flex-wrap:wrap-reverse;max-width:700px;pointer-events:none;}
+    justify-content:center;align-items:flex-end;flex-wrap:wrap-reverse;max-width:700px;pointer-events:none;z-index:20;}
   .buff{position:relative;overflow:hidden;display:flex;align-items:center;gap:5px;padding:4px 9px 5px 7px;border-radius:8px;
     background:rgba(8,12,22,.85);border:1px solid var(--bc,rgba(255,255,255,.22));
     box-shadow:0 2px 10px rgba(0,0,0,.5),0 0 12px color-mix(in srgb,var(--bc,#fff) 22%,transparent);
@@ -393,16 +393,20 @@
   /* skill tree — SWTOR-style specialisation columns */
   #treePanel{position:fixed!important;inset:0!important;width:100vw!important;height:100vh!important;transform:none!important;margin:0!important;
     display:flex;flex-direction:column;border-radius:0;max-width:100vw;max-height:100vh;}
-  #treeHead{display:flex;align-items:center;gap:16px;padding:14px 20px;border-bottom:1px solid rgba(255,255,255,.1);
+  #treeHead{display:flex;align-items:center;justify-content:center;gap:16px;padding:14px 56px;border-bottom:1px solid rgba(255,255,255,.1);
     background:linear-gradient(180deg,rgba(20,26,44,.7),rgba(8,11,20,.5));box-shadow:0 4px 18px -6px rgba(0,0,0,.5);}
   #treeHead h3{padding:0;font-size:16px;letter-spacing:2px;text-shadow:0 0 14px color-mix(in srgb,var(--neon) 55%,transparent);}
   #treeHead .sp{font-size:13px;opacity:.85;} #treeHead .sp b{color:var(--gold);font-size:19px;text-shadow:0 0 10px color-mix(in srgb,var(--gold) 50%,transparent);}
   #treeHead .treeHint{font-size:10.5px;opacity:.5;letter-spacing:.3px;}
-  /* quick-build bar: one-click "build me toward [role]" for newcomers facing the big tree */
-  #quickBuild{display:flex;align-items:center;gap:9px;flex-wrap:wrap;padding:11px 20px;border-bottom:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.02);}
+  /* quick-build bar: one-click "build me toward [role]" for newcomers facing the big tree
+     — the button ROW mirrors #treeCols exactly (same padding/gap/centering trick) so each button sits directly above its own tree column */
+  #quickBuild{display:flex;flex-direction:column;gap:6px;padding:11px 18px;border-bottom:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.02);}
   #quickBuild:empty{display:none;}
-  #quickBuild .qbLbl{font-size:10.5px;letter-spacing:2px;text-transform:uppercase;opacity:.6;margin-right:2px;}
-  .qbBtn{cursor:pointer;pointer-events:auto;display:flex;align-items:center;gap:7px;padding:8px 13px;border-radius:9px;
+  #quickBuild .qbLbl{font-size:10.5px;letter-spacing:2px;text-transform:uppercase;opacity:.6;}
+  #quickBuild .qbRow{display:flex;align-items:center;gap:22px;flex-wrap:wrap;justify-content:flex-start;}
+  #quickBuild .qbRow>.qbBtn:first-child{margin-left:auto;} #quickBuild .qbRow>.qbBtn:last-child{margin-right:auto;}
+  .qbBtn{cursor:pointer;pointer-events:auto;display:flex;align-items:center;justify-content:center;gap:7px;padding:8px 13px;border-radius:9px;
+    width:308px;box-sizing:border-box;flex:0 0 auto;
     border:1px solid color-mix(in srgb,var(--qc,#56e0ff) 48%,transparent);
     background:linear-gradient(160deg,color-mix(in srgb,var(--qc,#56e0ff) 16%,rgba(14,18,32,.75)),color-mix(in srgb,var(--qc,#56e0ff) 5%,rgba(6,9,17,.85)));
     box-shadow:0 2px 8px rgba(0,0,0,.45),inset 0 1px 0 rgba(255,255,255,.08);
@@ -412,6 +416,7 @@
   .qbBtn:active{transform:translateY(0) scale(.97);filter:brightness(1.1);}
   .qbBtn .qbi{font-size:14px;filter:drop-shadow(0 0 4px color-mix(in srgb,var(--qc,#56e0ff) 60%,transparent));} .qbBtn small{font-size:9px;opacity:.65;letter-spacing:1px;text-transform:uppercase;font-weight:normal;}
   .qbBtn.dim{opacity:.35;pointer-events:none;filter:grayscale(.5);}
+  .qbBtn.qbSpacer{visibility:hidden;pointer-events:none;}
   #respec{cursor:pointer;font-size:11px;letter-spacing:1.5px;text-transform:uppercase;padding:8px 16px;border-radius:8px;pointer-events:auto;font-family:inherit;
     border:1px solid var(--hp);color:var(--hp);background:linear-gradient(160deg,rgba(255,77,109,.14),rgba(255,77,109,.04));font-weight:bold;
     box-shadow:0 2px 8px rgba(0,0,0,.4),inset 0 1px 0 rgba(255,255,255,.06);transition:background .15s ease,color .15s ease,box-shadow .15s ease,transform .12s ease;}
@@ -439,6 +444,9 @@
     #treeCols{flex-wrap:wrap;justify-content:center;align-content:flex-start;overflow-x:hidden;overflow-y:auto;gap:14px;}
     #treeCols>.spec:first-child{margin-left:0;} #treeCols>.spec:last-child{margin-right:0;}
     .spec{width:min(300px,44vw);}
+    #quickBuild .qbRow{justify-content:center;gap:14px;}
+    #quickBuild .qbRow>.qbBtn:first-child{margin-left:0;} #quickBuild .qbRow>.qbBtn:last-child{margin-right:0;}
+    .qbBtn{width:min(300px,44vw);}
   }
   /* touch devices: the tooltip docks at the bottom of the screen instead of chasing a cursor */
   #treeTip.dock{position:fixed!important;left:10px!important;right:10px!important;top:auto!important;bottom:78px!important;max-width:none!important;z-index:99;pointer-events:none;}
@@ -446,6 +454,8 @@
   @media (max-width:760px), (pointer:coarse){
     .spec{width:min(85vw,308px);scroll-snap-align:center;padding:12px 8px 18px;}
     #treeCols{gap:12px;padding:10px;scroll-snap-type:x proximity;-webkit-overflow-scrolling:touch;}
+    .qbBtn{width:min(85vw,308px);}
+    #quickBuild .qbRow{gap:12px;}
     .talent .tbox{width:48px;height:48px;} .talent .tic{font-size:22px;}
     .talent.rar0 .tbox{width:44px;height:44px;} .talent.rar0 .tic{font-size:20px;}
     .talent.rar2 .tbox{width:52px;height:52px;} .talent.rar2 .tic{font-size:24px;}
@@ -455,7 +465,7 @@
     .talent.skillnode .tbox{width:62px;height:62px;} .talent.skillnode .tic{font-size:30px;}
     .trow{min-height:52px;gap:8px;} .specGrid{gap:11px;}
     .treeHint{font-size:9.5px;}
-    #treeHead{flex-wrap:wrap;row-gap:6px;}
+    #treeHead{flex-wrap:wrap;row-gap:6px;padding:14px 40px;}
     #petPanel{width:96vw;}
     [data-body]{min-height:40px;font-size:13px;padding:6px 14px!important;}
   }
@@ -625,12 +635,12 @@
   .invSec .secHd{display:flex;align-items:center;gap:10px;}
   /* bag management toolbar (sort + quick-stash) */
   .invTools{display:flex;align-items:center;gap:6px;margin-left:auto;}
-  .invTools .st{cursor:pointer;font-size:9.5px;font-weight:bold;letter-spacing:.5px;padding:4px 9px;border-radius:6px;
+  .invTools .st{cursor:pointer;font-size:9.5px;font-weight:bold;letter-spacing:.5px;padding:4px 9px;border-radius:6px;line-height:14px;box-sizing:border-box;display:inline-flex;align-items:center;white-space:nowrap;flex-shrink:0;
     border:1px solid rgba(255,255,255,.16);background:rgba(255,255,255,.04);color:#cfd6e6;text-transform:uppercase;pointer-events:auto;transition:.1s;}
   .invTools .st:hover{border-color:var(--neon);color:var(--neon);}
   .invTools .st.on{border-color:var(--neon);background:rgba(86,224,255,.14);color:var(--neon);}
   /* fame-funded storage-row purchase chips (✦ = fame) */
-  .buyRow{cursor:pointer;font-size:9.5px;font-weight:bold;letter-spacing:.4px;padding:4px 9px;border-radius:6px;pointer-events:auto;
+  .buyRow{cursor:pointer;font-size:9.5px;font-weight:bold;letter-spacing:.4px;padding:4px 9px;border-radius:6px;pointer-events:auto;line-height:14px;box-sizing:border-box;display:inline-flex;align-items:center;flex-shrink:0;
     border:1px solid rgba(157,123,255,.5);color:#c7b6ff;background:rgba(157,123,255,.12);text-transform:uppercase;white-space:nowrap;transition:.1s;}
   .buyRow:hover{background:rgba(157,123,255,.26);color:#fff;border-color:#9d7bff;}
   .buyRow.cant{border-color:rgba(255,122,138,.42);color:#ffabb6;background:rgba(255,122,138,.08);}
@@ -1162,8 +1172,8 @@
   /* ---- character evolve badge ---- */
   .cs-id .cs-evo{background:rgba(255,106,61,.16);border:1px solid rgba(255,106,61,.5);color:#ff9a6b;border-radius:6px;padding:0 6px;font-size:11px;font-weight:bold;margin-left:8px;}
   /* ---- junk-quality selector (pet yard) ---- */
-  .junkSel{font-size:9.5px;color:#8893a8;letter-spacing:.3px;display:inline-flex;align-items:center;gap:4px;margin-right:8px;}
-  .junkSel .jq{cursor:pointer;padding:1px 6px;border-radius:5px;border:1px solid rgba(255,255,255,.14);color:var(--jc,#cbd3e6);opacity:.6;transition:.12s;}
+  .junkSel{font-size:9.5px;color:#8893a8;letter-spacing:.3px;display:inline-flex;align-items:center;gap:4px;margin-right:8px;flex-shrink:0;white-space:nowrap;}
+  .junkSel .jq{cursor:pointer;padding:4px 6px;line-height:14px;box-sizing:border-box;display:inline-flex;align-items:center;border-radius:5px;border:1px solid rgba(255,255,255,.14);color:var(--jc,#cbd3e6);opacity:.6;transition:.12s;white-space:nowrap;flex-shrink:0;}
   .junkSel .jq:hover{opacity:1;border-color:var(--jc);}
   .junkSel .jq.on{opacity:1;background:color-mix(in srgb,var(--jc) 22%,transparent);border-color:var(--jc);color:#fff;}
   .yardLbl{font-size:9.5px;color:#8893a8;letter-spacing:.3px;margin-right:8px;}
@@ -1172,7 +1182,7 @@
   #vignette.hit{box-shadow:inset 0 0 220px rgba(0,0,0,.7),inset 0 0 120px rgba(255,30,60,.5);}
   #vignette.hitBig{box-shadow:inset 0 0 220px rgba(0,0,0,.7),inset 0 0 200px rgba(255,20,50,.7);}
   /* ---- boss health bar (top of screen) ---- */
-  #bossBar{position:absolute;top:16px;left:50%;transform:translateX(-50%);width:min(560px,64vw);z-index:9;pointer-events:none;
+  #bossBar{position:absolute;top:16px;left:50%;transform:translateX(-50%);width:min(560px,64vw);z-index:20;pointer-events:none;
     background:linear-gradient(180deg,rgba(12,8,14,.9),rgba(20,8,12,.82));border:1px solid rgba(255,80,110,.45);
     border-radius:11px;padding:8px 14px 9px;box-shadow:0 6px 26px rgba(0,0,0,.55),0 0 24px rgba(255,60,90,.18);}
   #bossBar.roam{border-color:rgba(255,170,60,.6);box-shadow:0 6px 26px rgba(0,0,0,.55),0 0 26px rgba(255,150,40,.3);}
@@ -1183,7 +1193,7 @@
   #bossBar .bbFill{height:100%;border-radius:7px;background:linear-gradient(90deg,#ff2d55,#ff6a3d);box-shadow:0 0 14px rgba(255,60,90,.6);transition:width .18s ease;}
   #bossBar .bbHp{font-size:9.5px;text-align:right;opacity:.72;margin-top:2px;letter-spacing:.5px;}
   /* ---- off-screen roaming-lord indicator ---- */
-  #bossArrow{position:absolute;z-index:9;pointer-events:none;transform:translate(-50%,-50%);
+  #bossArrow{position:absolute;z-index:20;pointer-events:none;transform:translate(-50%,-50%);
     display:flex;align-items:center;gap:5px;padding:5px 10px;border-radius:20px;
     background:rgba(20,8,12,.9);border:1.5px solid rgba(255,80,110,.7);box-shadow:0 0 18px rgba(255,60,90,.4);
     font-size:11px;font-weight:bold;letter-spacing:.5px;color:#ffb9c4;white-space:nowrap;animation:baPulse 1.1s ease-in-out infinite;}
@@ -1191,7 +1201,7 @@
   #bossArrow .baIc{font-size:14px;}
   @keyframes baPulse{0%,100%{opacity:.8;transform:translate(-50%,-50%) scale(1);}50%{opacity:1;transform:translate(-50%,-50%) scale(1.08);}}
   /* ---- boss speech subtitle ---- */
-  #bossSpeech{position:absolute;top:74px;left:50%;transform:translateX(-50%);z-index:9;pointer-events:none;
+  #bossSpeech{position:absolute;top:74px;left:50%;transform:translateX(-50%);z-index:20;pointer-events:none;
     max-width:min(680px,80vw);text-align:center;padding:10px 20px;border-radius:12px;
     background:linear-gradient(180deg,rgba(12,10,20,.9),rgba(8,6,14,.86));border:1px solid rgba(255,206,77,.4);
     box-shadow:0 8px 30px rgba(0,0,0,.6);opacity:0;}
@@ -1346,7 +1356,7 @@
       <div class="sp">Skill points: <b id="spNum">0</b></div>
       <button id="respec">↺ Respec</button>
       <div class="treeHint">left-click +1 · right-click −1 · deeper tiers need points in that spec · ⇄ invest ~15 to diverge into neighbours · <b style="color:#ff6ad5">magenta = RULE-BREAKERS</b> (hover them!) · <b style="color:var(--gold)">dashed gold = learnable SKILLS</b></div>
-      <div class="closeX" data-close="treePanel" style="position:static;margin-left:auto;">✕ <span style="font-size:11px;opacity:.6">(T)</span></div>
+      <div class="closeX" data-close="treePanel">✕ <span style="font-size:11px;opacity:.6">(T)</span></div>
     </div>
     <div id="quickBuild"></div>
     <div id="treeBody">
@@ -2341,6 +2351,21 @@ function loadSettings(){ try{ const s=localStorage.getItem(SETTINGS_KEY); if(s){
 function junkThreshold(){ return clamp(SETTINGS.junkMaxRarity|0,0,4); }
 function isBulkJunk(it){ if(!it||it.isPet||it.isPot||it.isFlask||it.isSkillGem||it.locked||it.unique) return false; const _ri=RARITY.indexOf(it.rarity); return _ri>=0 && _ri<=junkThreshold(); }   // uniques & out-of-array rarities (mythos) are NEVER junk
 function saveSettings(){ try{ localStorage.setItem(SETTINGS_KEY, JSON.stringify(SETTINGS)); }catch(e){} }
+// ---- panel size memory: default open size (fits content) + remembers user-resized size across sessions ----
+const PANELSIZE_KEY='towerlords_panelsize_v1';
+function persistPanelSize(el, key, defaultW, defaultH){
+  if(!el) return;
+  try{ const all=JSON.parse(localStorage.getItem(PANELSIZE_KEY)||'{}'); const s=all[key];
+    if(s&&s.w) el.style.width=s.w; if(s&&s.h) el.style.height=s.h; }catch(_){}
+  if(!el.style.width && defaultW) el.style.width=defaultW;
+  if(!el.style.height && defaultH) el.style.height=defaultH;
+  if(el._sizeObs) return;   // avoid double-binding if called again on a later open
+  if(typeof ResizeObserver==='undefined') return;
+  const ro=new ResizeObserver(()=>{ try{ const all=JSON.parse(localStorage.getItem(PANELSIZE_KEY)||'{}');
+    all[key]={ w:el.style.width||el.offsetWidth+'px', h:el.style.height||el.offsetHeight+'px' };
+    localStorage.setItem(PANELSIZE_KEY, JSON.stringify(all)); }catch(_){} });
+  ro.observe(el); el._sizeObs=ro;
+}
 // ---- death log (persist last 40 runs) ----
 const DEATHLOG_KEY='towerlords_deathlog_v1';
 function loadDeathLog(){ try{ return JSON.parse(localStorage.getItem(DEATHLOG_KEY)||'[]'); }catch(e){ return []; } }
@@ -2468,7 +2493,7 @@ function clearSession(){ try{ localStorage.removeItem(RUN_KEY); }catch(e){} }
 function hasSession(){ const s=loadSession(); return !!(s && s.level); }
 function resumeSession(){
   const s=loadSession(); if(!s || !s.level){ log('No saved climb to continue.'); return false; }
-  $('start').classList.add('hidden'); $('hud').classList.remove('hidden');
+  $('start').classList.add('hidden'); $('hud').classList.remove('hidden'); try{ persistPanelSize($('towerInfo'),'towerInfo','190px','120px'); }catch(_){}
   loadMeta(); loadSettings();
   _G.asc=clamp(s.asc|0,0,99); _G.ascEff=ascEffects(_G.asc);
   _G.seed=(s.seed|0)||randi(0,9999); _G.maxFloor=s.maxFloor||50; _G.returnFloor=s.returnFloor|0; _G.recallGo=false;
@@ -4274,6 +4299,7 @@ function togglePanel(id){
   if(willOpen){ if(id==='treePanel'){ const _tp=$(id); ['left','top','right','bottom','width','height','transform','margin'].forEach(k=>_tp.style[k]=''); }   // purge any stale inline sizing — the tree always opens fullscreen
     if(id==='charPanel')renderChar(); else if(id==='treePanel')renderTree(); else if(id==='stashPanel')renderStash(); else if(id==='invPanel')renderInv(); else if(id==='equipPanel')renderInv(); else if(id==='vendorPanel'){ if((G._vendRefreshes||0)<3){ rollVendStock(); G._vendRefreshes=(G._vendRefreshes||0)+1; } renderVendor(); } else if(id==='petPanel')renderPet(); else if(id==='petYardPanel')renderPetYard(); else if(id==='scorePanel')renderScore(); else if(id==='codexPanel')renderCodex(); else if(id==='settingsPanel')renderSettings(); else if(id==='lootPanel')renderLoot(); else if(id==='craftPanel')renderCraft(); }
   if(willOpen) applyPanelPos(id);   // reopen at last-dragged spot · off-centre by default (settings stays centred)
+  if(willOpen){ if(id==='invPanel') persistPanelSize(el,'invPanel','680px','760px'); else if(id==='equipPanel') persistPanelSize(el,'equipPanel','640px','620px'); }   // sane default open size that fits content · remembers user-resized size across sessions
   if((id==='vendorPanel'||id==='stashPanel') && willOpen){   // shopping? bring your bag alongside
     if($('invPanel').classList.contains('hidden')){ $('invPanel').classList.remove('hidden'); renderInv(); }
     _G.shopInvPaired=true; layoutShopInv(id);
@@ -9591,9 +9617,12 @@ function autoBuild(si){
 function renderQuickBuild(){
   const w=$('quickBuild'); if(!w) return;
   const dim = G.skillPts<=0;
-  w.innerHTML='<span class="qbLbl">⚡ Quick build</span>'+SPECS.map((s,i)=> s.relic?'':
-    `<button class="qbBtn${dim?' dim':''}" data-si="${i}" style="--qc:${s.col}" title="Pour all your points toward a ${s.sub} build down the ${s.nm} tree — refine by hand after"><span class="qbi">${s.ic}</span>${s.nm}<small>${s.sub}</small></button>`).join('');
-  w.querySelectorAll('.qbBtn').forEach(b=>b.onclick=()=>autoBuild(+b.dataset.si));
+  // one button PER SPECS entry, in the same order as #treeCols' columns, so each lands directly above its own tree column —
+  // The Beast (relic:true) gets an invisible same-width spacer instead of a button since it's never point-built
+  w.innerHTML='<span class="qbLbl">⚡ Quick build</span><span class="qbRow">'+SPECS.map((s,i)=> s.relic?
+    `<span class="qbBtn qbSpacer" aria-hidden="true"></span>`:
+    `<button class="qbBtn${dim?' dim':''}" data-si="${i}" style="--qc:${s.col}" title="Pour all your points toward a ${s.sub} build down the ${s.nm} tree — refine by hand after"><span class="qbi">${s.ic}</span>${s.nm}<small>${s.sub}</small></button>`).join('')+'</span>';
+  w.querySelectorAll('.qbBtn:not(.qbSpacer)').forEach(b=>b.onclick=()=>autoBuild(+b.dataset.si));
 }
 function _dropSkillGem(sid){   // remove one learned copy of a granted skill (so refunding a node is NOT free-gem farming)
   for(let i=0;i<G.slots.length;i++){ const g=G.slots[i]; if(g&&g.isSkillGem&&g.skillId===sid){ G.slots[i]=null; return; } }
@@ -10003,6 +10032,10 @@ function itemTile(it, o){ o=o||{};
     d.addEventListener('click', ()=>{ if(it.isGem) G.selGem=(G.selGem===it)?null:it; pinItem(it, cx); if(it.isGem) renderInv(); });  // click = select & lock to the inspect pane
     if(cx.kind==='bag') d.addEventListener('contextmenu', e=>{ e.preventDefault(); if(e.ctrlKey){ stashFromBag(it); } else quickUse(it); });   // right-click = equip/bind/socket · Ctrl+right-click = send to stash
     else if(cx.kind==='stash') d.addEventListener('contextmenu', e=>{ e.preventDefault(); if(G.inv.length>=G.invCap){ log('🎒 Bag full — make room first.'); return; } G.stash=G.stash.filter(x=>x!==it); G.inv.push(it); G.stashStrikes=0; refreshItemPanels(); });   // right-click a stashed item → back to the bag
+    else if(cx.kind==='equip') d.addEventListener('contextmenu', e=>{ e.preventDefault(); unequip(cx.slotKey); });               // right-click an equipped item → unequip back to bag
+    else if(cx.kind==='skillslot') d.addEventListener('contextmenu', e=>{ e.preventDefault(); unbindSkill(cx.idx); });           // right-click a bound action skill → unbind
+    else if(cx.kind==='sigslot') d.addEventListener('contextmenu', e=>{ e.preventDefault(); unbindSig(); });                     // right-click the bound signature → unbind
+    else if(cx.kind==='beltslot') d.addEventListener('contextmenu', e=>{ e.preventDefault(); unbindFlask(cx.idx); });            // right-click a belt flask → unbind
   } else if(o.onclick) d.onclick=o.onclick;   // action tiles (e.g. pet feed) still act immediately on click
   return d;
 }
@@ -10172,20 +10205,20 @@ function renderInv(){ if(_G.netApplying) return;
   // ---- equipped paper-doll ----
   const eq=$('equipGrid'); eq.innerHTML='';
   for(const s of SLOTS){ const it=G.equip[s.k];
-    if(it) eq.appendChild(itemTile(it,{label:s.nm, ctx:{kind:'equip',slotKey:s.k}, onclick:()=>unequip(s.k)}));
+    if(it) eq.appendChild(itemTile(it,{label:s.nm, ctx:{kind:'equip',slotKey:s.k}}));
     else eq.appendChild(emptyTile(s.nm, s.ic)); }
   // ---- action skills (skill bar 1-9 + signature) ----
   const sr=$('skillRow'); sr.innerHTML='';
   for(let i=0;i<9;i++){ const g=G.slots[i], sk=g?SKILLS[g.skillId]:null;
-    if(sk) sr.appendChild(itemTile(g,{key:SLOT_LABEL[i], ctx:{kind:'skillslot',idx:i}, onclick:()=>unbindSkill(i)}));
+    if(sk) sr.appendChild(itemTile(g,{key:SLOT_LABEL[i], ctx:{kind:'skillslot',idx:i}}));
     else sr.appendChild(emptyTile('', SLOT_LABEL[i])); }
   { const g=G.sigSlot, sk=g?SKILLS[g.skillId]:null;
-    if(sk){ const t=itemTile(g,{key:'⇧', ctx:{kind:'sigslot'}, onclick:()=>unbindSig()}); t.classList.remove('r-'+(g.rarity?g.rarity.css:'common')); t.classList.add('r-legend'); sr.appendChild(t); }
+    if(sk){ const t=itemTile(g,{key:'⇧', ctx:{kind:'sigslot'}}); t.classList.remove('r-'+(g.rarity?g.rarity.css:'common')); t.classList.add('r-legend'); sr.appendChild(t); }
     else sr.appendChild(emptyTile('SIG','⇧')); }
   // ---- belt flasks ----
   const br=$('beltRow'); br.innerHTML='';
   for(let i=0;i<5;i++){ const fl=G.belt[i];
-    if(fl) br.appendChild(itemTile(fl,{key:FLASK_LABEL[i], ctx:{kind:'beltslot',idx:i}, onclick:()=>unbindFlask(i)}));
+    if(fl) br.appendChild(itemTile(fl,{key:FLASK_LABEL[i], ctx:{kind:'beltslot',idx:i}}));
     else br.appendChild(emptyTile('', FLASK_LABEL[i])); }
   // ---- carried bag (icon grid) ----
   const bag=$('bagGrid'); bag.innerHTML='';
@@ -10293,26 +10326,31 @@ function skillGemCost(){ return 100 + G.floor*18; }
 function flaskCost(){ return 50 + G.floor*8; }
 // ===== PERSISTENT EVENT LOG (MMO-style chat window) — records everything even with pop-ups off =====
 const CHATLOG=[]; let _chatMin=false;
-(function(){ try{ const st=document.createElement('style'); st.textContent='#chatLog{position:fixed;left:10px;bottom:12px;width:340px;max-width:44vw;z-index:16;font-family:system-ui,sans-serif;background:rgba(6,8,15,.72);border:1px solid rgba(120,150,200,.22);border-radius:10px;box-shadow:0 4px 20px rgba(0,0,0,.5);backdrop-filter:blur(3px);display:none;flex-direction:column;overflow:hidden;resize:both;min-width:220px;min-height:80px;max-width:80vw;max-height:70vh}#chatLog.on{display:flex}#chatHd{display:flex;justify-content:space-between;align-items:center;padding:5px 10px;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#9fb0c8;cursor:move;background:rgba(255,255,255,.03);border-bottom:1px solid rgba(120,150,200,.15);user-select:none;touch-action:none;flex:none}#chatHd:hover{color:#cfe0ff}#chatMin{font-size:14px;line-height:1;padding:0 4px}#chatBody{flex:1;max-height:none;overflow-y:auto;padding:6px 10px 8px;font-size:12px;line-height:1.5;color:#cdd6e6;scrollbar-width:thin}#chatBody::-webkit-scrollbar{width:8px}#chatBody::-webkit-scrollbar-thumb{background:rgba(120,150,200,.3);border-radius:4px}#chatLog.min #chatBody{display:none}#chatLog.min{resize:none}.chatLine{padding:1px 0;word-wrap:break-word;border-bottom:1px solid rgba(255,255,255,.03)}.chatLine.chatBanner{color:#ffe1a6}.chatLine.chatCoach{color:#bfe0ff}body.touch-on #chatLog{display:none!important}'; document.head.appendChild(st); }catch(_){} })();
+(function(){ try{ const st=document.createElement('style'); st.textContent='#chatLog{position:fixed;left:10px;bottom:12px;width:340px;max-width:44vw;z-index:12;font-family:system-ui,sans-serif;background:rgba(6,8,15,.72);border:1px solid rgba(120,150,200,.22);border-radius:10px;box-shadow:0 4px 20px rgba(0,0,0,.5);backdrop-filter:blur(3px);display:none;flex-direction:column;overflow:hidden;resize:both;min-width:220px;min-height:80px;max-width:80vw;max-height:70vh}#chatLog.on{display:flex}#chatHd{display:flex;justify-content:space-between;align-items:center;padding:5px 10px;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#9fb0c8;cursor:move;background:rgba(255,255,255,.03);border-bottom:1px solid rgba(120,150,200,.15);user-select:none;touch-action:none;flex:none}#chatHd:hover{color:#cfe0ff}#chatMin{font-size:14px;line-height:1;padding:0 4px}#chatBody{flex:1;max-height:none;overflow-y:auto;padding:6px 10px 8px;font-size:12px;line-height:1.5;color:#cdd6e6;scrollbar-width:thin}#chatBody::-webkit-scrollbar{width:8px}#chatBody::-webkit-scrollbar-thumb{background:rgba(120,150,200,.3);border-radius:4px}#chatLog.min #chatBody{display:none}#chatLog.min{resize:none}.chatLine{padding:1px 0;word-wrap:break-word;border-bottom:1px solid rgba(255,255,255,.03)}.chatLine.chatBanner{color:#ffe1a6}.chatLine.chatCoach{color:#bfe0ff}body.touch-on #chatLog{display:none!important}'; document.head.appendChild(st); }catch(_){} })();
 function ensureChatLog(){ let el=document.getElementById('chatLog'); if(el) return el;
   el=document.createElement('div'); el.id='chatLog'; el.className='on'+(_chatMin?' min':'');
   el.innerHTML='<div id="chatHd"><span>\u{1F4DC} Event Log</span><span id="chatMin" title="Minimize / expand">\u2013</span></div><div id="chatBody"></div>';
-  document.body.appendChild(el); el.querySelector('#chatHd').onclick=toggleChatMin;
+  document.body.appendChild(el);
   const body=el.querySelector('#chatBody'); for(const e of CHATLOG){ const d=document.createElement('div'); d.className='chatLine'+(e.c?' '+e.c:''); d.innerHTML=e.m; body.appendChild(d); } body.scrollTop=body.scrollHeight;
   try{ makeChatLogDraggable(el); }catch(_){}
+  try{ persistPanelSize(el,'chatLog','340px','420px'); }catch(_){}   // sane default open size · remembers user-resized size across sessions
   return el; }
 // draggable via its #chatHd header (the shared makeDraggable/makePanelDraggable helpers key off '#treeHead'/'h3', neither of which #chatHd is \u2014 so a small dedicated setup lives here, following the same clamp-to-viewport convention as makePanelDraggable)
+// minimize is resolved HERE (by total pointer travel) rather than via a separate click handler racing the drag \u2014
+// a plain click (near-zero movement) toggles minimize, a real drag (movement past the threshold) does not.
 function makeChatLogDraggable(el){ if(!el || el._drag) return; const h=el.querySelector('#chatHd'); if(!h) return; el._drag=true;
-  let ox=0, oy=0;
-  const move=e=>{ let nx=e.clientX-ox, ny=e.clientY-oy;
+  let ox=0, oy=0, sx=0, sy=0, moved=false; const CLICK_SLOP=5;
+  const move=e=>{ if(Math.abs(e.clientX-sx)>CLICK_SLOP || Math.abs(e.clientY-sy)>CLICK_SLOP) moved=true;
+    let nx=e.clientX-ox, ny=e.clientY-oy;
     nx=Math.max(6, Math.min(innerWidth-el.offsetWidth-6, nx)); ny=Math.max(6, Math.min(innerHeight-el.offsetHeight-6, ny));
     el.style.left=nx+'px'; el.style.top=ny+'px'; el.style.right='auto'; el.style.bottom='auto'; };
-  const up=()=>{ window.removeEventListener('pointermove',move); window.removeEventListener('pointerup',up); };
+  const up=()=>{ window.removeEventListener('pointermove',move); window.removeEventListener('pointerup',up); if(!moved) toggleChatMin(); };
   h.addEventListener('pointerdown',e=>{ if(e.target.closest('#chatMin')) return;
     const r=el.getBoundingClientRect(); el.style.left=r.left+'px'; el.style.top=r.top+'px'; el.style.right='auto'; el.style.bottom='auto';
-    ox=e.clientX-r.left; oy=e.clientY-r.top;
+    ox=e.clientX-r.left; oy=e.clientY-r.top; sx=e.clientX; sy=e.clientY; moved=false;
     window.addEventListener('pointermove',move); window.addEventListener('pointerup',up);
-    e.preventDefault(); }); }
+    e.preventDefault(); });
+  const m=el.querySelector('#chatMin'); if(m) m.addEventListener('pointerdown', e=>{ e.stopPropagation(); }); if(m) m.addEventListener('click', e=>{ e.stopPropagation(); toggleChatMin(); }); }
 function toggleChatMin(){ _chatMin=!_chatMin; const el=document.getElementById('chatLog'); if(el) el.classList.toggle('min',_chatMin); const m=document.getElementById('chatMin'); if(m)m.textContent=_chatMin?'\u25A1':'\u2013'; }
 function chatPush(msg,cls){ if(msg==null) return; CHATLOG.push({m:String(msg),c:cls||''}); if(CHATLOG.length>240) CHATLOG.shift();
   const el=(typeof G!=='undefined'&&G.running)?ensureChatLog():document.getElementById('chatLog'); if(!el) return; el.classList.add('on');
@@ -10710,7 +10748,7 @@ function renderDeathLog(){ const a=loadDeathLog().slice().reverse(), b=$('deathl
 }
 // ---- practice arena (hands-on sandbox launched from the tutorial; harmless dummies, no stakes) ----
 function enterPractice(){
-  $('start').classList.add('hidden'); $('tutorial').classList.add('hidden'); $('hud').classList.remove('hidden');
+  $('start').classList.add('hidden'); $('tutorial').classList.add('hidden'); $('hud').classList.remove('hidden'); try{ persistPanelSize($('towerInfo'),'towerInfo','190px','120px'); }catch(_){}
   loadMeta(); loadSettings();
   G.floor=1; G.gold=100; G.level=1; G.xp=0; G.xpNeed=20; G.attrPts=0; G.skillPts=0;
   G.attr={str:5,dex:5,int:5,vit:5,will:5}; G.alloc={}; G.slots=[makeSkillGem(1,'gNova'),makeSkillGem(1,'gFrost'),makeSkillGem(1,'gChain'),null,makeSkillGem(1,'tAegis'),makeSkillGem(1,'tGale'),makeSkillGem(1,'tFervor'),null,null]; G.cd={}; G.auras={};
@@ -10950,7 +10988,7 @@ function startGameConfirmed(after){
   }
   _G._petAsked=false; if(!G.hardcore) _G.petHardDeath=false;
   clearSession(); _G.fusedRecipes={};   // a fresh character supersedes any saved run (and its fused-skill recipes)
-  $('start').classList.add('hidden'); $('hud').classList.remove('hidden');
+  $('start').classList.add('hidden'); $('hud').classList.remove('hidden'); try{ persistPanelSize($('towerInfo'),'towerInfo','190px','120px'); }catch(_){}
   loadMeta(); loadSettings();
   _G.asc=clamp(selAsc|0, 0, META.ascMax||0); _G.ascEff=ascEffects(_G.asc);   // lock in the chosen ascension for this climb
   if(_G.asc>0) log('⛧ Ascension '+_G.asc+' — '+ASC_MODS.slice(0,_G.asc).map(m=>m.nm).join(', ')+'. Fame ×'+ascFameMult().toFixed(2)+'.');
@@ -11320,7 +11358,7 @@ function netPeerEnter(){   // enter a lightweight render-only state (no local wo
     gnd.rotation.x=-Math.PI/2; gnd.position.y=0; scene.add(gnd); NET.peer.ground=gnd; }   // placeholder until the floor layout arrives
   // the guest gets the FULL HUD — health orbs, mana, skill bar with live cooldowns, flasks, xp, gold, rampage/buffs —
   // driven by the host's streamed build (recomputed locally) + live vitals. Host-only controls are hidden.
-  $('start').classList.add('hidden'); $('hud').classList.remove('hidden'); document.body.classList.add('netGuest');
+  $('start').classList.add('hidden'); $('hud').classList.remove('hidden'); try{ persistPanelSize($('towerInfo'),'towerInfo','190px','120px'); }catch(_){} document.body.classList.add('netGuest');
   const ring=$('playerRing'); if(ring && ring.parentElement!==$('app')){ $('app').appendChild(ring); }   // keep the on-hero ring above the world
   // send my saved character up so a returning guest keeps its own build (a fresh guest starts fresh but still
   // brings its OWN account pets, so the Pet Yard shows the guest's pets — never the host's).
@@ -11777,7 +11815,8 @@ function updatePlayerStations(dt){
     const near=d<4.2; if(isP0){ if(near && !G.nearStash && !G.inTown && $('stashPanel').classList.contains('hidden')) togglePanel('stashPanel'); if(!near && G.nearStash && !$('stashPanel').classList.contains('hidden')){ $('stashPanel').classList.add('hidden'); syncPause(); } } G.nearStash=near; } else G.nearStash=false;
   if(G.vendorStation){ if(isP0) G.vendorStation.mesh.children[1].rotation.y+=dt*1.5; const d=Math.hypot(p.x-G.vendorStation.x,p.z-G.vendorStation.z);
     const near=d<4.4; if(isP0){ if(near && !G.nearVendor && !G.inTown && $('vendorPanel').classList.contains('hidden')) togglePanel('vendorPanel'); if(!near && G.nearVendor && !$('vendorPanel').classList.contains('hidden')){ $('vendorPanel').classList.add('hidden'); syncPause(); } } G.nearVendor=near; } else G.nearVendor=false;
-  if(G.scoreStation){ if(isP0) G.scoreStation.mesh.rotation.y+=dt*0.6; const d=Math.hypot(p.x-G.scoreStation.x,p.z-G.scoreStation.z); G.nearScore=d<4.4;
+  if(G.scoreStation){ if(isP0) G.scoreStation.mesh.rotation.y+=dt*0.6; const d=Math.hypot(p.x-G.scoreStation.x,p.z-G.scoreStation.z);
+    if(!G.nearScore && d<4.4) G.nearScore=true; else if(G.nearScore && d>6.5) G.nearScore=false;   // hysteresis: prevents dash-jitter across the boundary from re-spamming the log
     if(G.nearScore){ if(!G._sh){ log('▣ Press F to view your record'); G._sh=true; } } else G._sh=false; } else G.nearScore=false;
   // crafting bench (sanctuary)
   if(G.craftStation){ if(isP0) G.craftStation.mesh.children[1].rotation.y+=dt*0.9; const d=Math.hypot(p.x-G.craftStation.x,p.z-G.craftStation.z); G.nearCraft=d<4.2;
@@ -12028,7 +12067,7 @@ function renderTutChoice(){
 }
 let _tutStep=0, _tutFlags={};
 function enterTutorialFloor(){
-  $('start').classList.add('hidden'); $('tutorial').classList.add('hidden'); $('hud').classList.remove('hidden');
+  $('start').classList.add('hidden'); $('tutorial').classList.add('hidden'); $('hud').classList.remove('hidden'); try{ persistPanelSize($('towerInfo'),'towerInfo','190px','120px'); }catch(_){}
   loadMeta(); loadSettings();
   G.floor=1; G.gold=100; G.level=1; G.xp=0; G.xpNeed=20; G.attrPts=0; G.skillPts=0;
   G.attr={str:5,dex:5,int:5,vit:5,will:5}; G.alloc={}; G.slots=[makeSkillGem(1,'gNova'),null,null,null,makeSkillGem(1,'tAegis'),null,null,null,null]; G.cd={}; G.auras={};
