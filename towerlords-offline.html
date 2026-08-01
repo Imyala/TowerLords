@@ -2642,6 +2642,8 @@ const SKILLS = {
   gBloom:  {nm:'Rejuvenating Spores', ic:'🌱', mana:16, cd:5.0, cast:castBloom},
   gRescue: {nm:'Lay on Hands',ic:'✋', mana:34, cd:60.0, cast:castRescue},
   gCleanse:{nm:'Purify',      ic:'✨', mana:18, cd:14.0, cast:castCleanse},
+  // --- Warden sub-role lane addition (phase 4 — Enchanter/Support) ---
+  gEmpower:{nm:'Power Infusion', ic:'⚡', mana:26, cd:20.0, cast:castEmpower},
 };
 const SKILL_IDS=Object.keys(SKILLS);
 // short hover descriptions for every active skill — surfaced in the skill-gem inspect pane, action bar & tree "Learn:" nodes
@@ -2681,6 +2683,7 @@ const SKILL_DESC={
   gBloom:'Plants a stacking heal-over-time on yourself — steady regeneration, not a big burst. In co-op, also seeds a smaller HoT on whichever ally needs it most.',
   gRescue:'A massive emergency heal — long cooldown, huge payoff. Solo it heals you; in co-op it finds and saves whichever ally (including you) is closest to death.',
   gCleanse:'Instantly clears every debuff holding you down and grants a burst of speed. In co-op, the same cleanse washes over nearby allies too.',
+  gEmpower:'Bestows focused power on an ally, boosting their casting and attack speed for a long window. Solo it empowers you; in co-op it seeks out the nearest ally instead.',
 };
 for(const id in SKILLS){ if(SKILL_DESC[id]) SKILLS[id].ds=SKILL_DESC[id]; }
 const SLOT_KEYS=['1','2','3','4','5','6','7','8','9']; const SLOT_LABEL=['1','2','3','4','5','6','7','8','9'];   // 9-skill bar (Torchlight-style)
@@ -2740,6 +2743,12 @@ function abnHitEnemy(e,dmg,crit,element){
     if(abnHas('goldHit')&&Math.random()<0.08){ G.gold=(G.gold||0)+1; }
     if(abnHas('marked')&&Math.random()<0.25&&!e.dead) applyAilment(e,'shock',dmg);
     if(abnHas('chainSpark')&&Math.random()<0.16){ const t=nearestEnemyTo(x,z,10); if(t&&t!==e&&!t.dead) hurtEnemy(t,dmg*0.5,false,'light','player'); }
+    // Warden/Battlemage keystone (Spellblade): every basic-attack hit projects a small magical cleave onto nearby
+    // foes — "every sword swing to project short-range magical cleaves." Same recursion-safe shape as chainSpark
+    // above (the _abnBusy guard stops the cleave's own hurtEnemy call from re-entering this function). Modest
+    // magnitude — 35% of the triggering hit, 3.2 radius — since this is a single-keystone passive, not an active skill.
+    if(G.S&&G.S.spellblade){ const R=3.2, splash=dmg*0.35;
+      for(const o of G.enemies){ if(o===e||o.dead)continue; if(Math.hypot(o.mesh.position.x-x,o.mesh.position.z-z)<R+o.r) hurtEnemy(o,splash,false,element,'player'); } }
   }catch(_){}
   _abnBusy=false; return dmg;
 }
@@ -3220,7 +3229,7 @@ const TREE_SKILLS={
   tk:['gBulwark','gTaunt','gWhirl','gShield','gQuake','gVortex','gReap','gShock','gBlades','gLeech','gMortar','gComet','gSlow'],   // gTaunt/gVortex/gLeech placed early enough in the list to survive the placement-slot cutoff (see extendSpecs) — lands them at well-spread rows (~3/15/27) instead of falling off the tail
   st:['gWhirl','gVolley','gReap','gFlame','gBarrage','gRecord','gComet','gBeam','gBlades','gMortar','gShock','gLance'],
   mn:['gWard','gShield','gBloom','gPoison','gRescue','gFrost','gCleanse','gBulwark','gLeech','gSlow','gFuture','gShock','gHeal','gBlades'],   // gWard/gBloom/gRescue/gCleanse (Mender lane skills) placed at indices 0/2/4/6 — well inside the placement-slot cutoff (see extendSpecs) — lands them at spread rows (~3/9/16/21) instead of falling off the tail
-  wd:['gNova','gFrost','gChain','gBeam','gShock','gMeteor','gStorm','gPoison','gVortex','gComet','gMortar','gSlow','gDeja'],
+  wd:['gNova','gEmpower','gSlow','gFrost','gChain','gBeam','gShock','gMeteor','gStorm','gPoison','gVortex','gComet','gMortar','gDeja'],   // gEmpower/gSlow (Enchanter/CC Specialist lane skills) placed at indices 1/2 — well inside the placement-slot cutoff (see extendSpecs) — lands them at early, spread rows instead of falling off the tail
   rg:['gBlink','gLance','gVolley','gReap','gShock','gBarrage','gComet','gBeam','gBlades','gSunder'],
   el:['gTide','gFlame','gFrost','gChain','gShock','gStorm','gMeteor','gNova','gVortex','gPoison','gBeam','gSunder'],
 };
@@ -3242,12 +3251,21 @@ const TREE_SKILL_LANE={
   'rg:gVolley':'tr',   // Trickster/Burst — Volley: a wide burst fan fits explosive blink-driven windows
   'rg:gBarrage':'kt',  // Kiting/Sustained — Barrage: a rapid sustained stream, continuous uptime
   'rg:gSunder':'hu',   // Hunter/Utility — Sunder: marching ground eruptions, battlefield trickery flavour
+  'el:gFlame':'py',    // Pyromancer — Flame Cone: close-range ignite fits the fire specialist
+  'el:gFrost':'cr',    // Cryomancer — Frost Nova: chill/control fits the cold specialist
+  'el:gStorm':'sh',    // Stormcaller — Thunderstorm: repeated lightning strikes fits the shock specialist
+  'el:gPoison':'co',   // Conflux/Sustained — Toxic Cloud: a lingering damage-over-time zone is the purest "sustained ailment" fit in the skill list
+  'wd:gSlow':'cc',     // CC Specialist — Time Warp: warps time in a large area, slowing every enemy caught inside — a ready-made signature
+  'wd:gChain':'bm',    // Battlemage/Spellblade — Chain Bolt: a snappy, melee-adjacent zap
+  'wd:gMeteor':'ar',   // Arcane Artillery — Meteor: the big single-target/AoE nuke
 };
 function skillLane(kw,sid){ return TREE_SKILL_LANE[kw+':'+sid]; }
 const LANE_LBL={mt:'Main Tank',ot:'Off-Tank',ev:'Evasion',br:'Brawler',   // sub-role identity labels surfaced in talent tooltips (Vanguard phase 1)
   ba:'Barrier',ho:'Regeneration',bu:'Burst',ut:'Utility',                 // Mender phase 2 lanes
   be:'Berserker',as:'Assassin',ex:'Executioner',bt:'Brutalist',           // Striker phase 3 lanes ('bt' used instead of 'br' — that code is already Vanguard's Brawler in this shared map)
-  mk:'Marksman',tr:'Trickster',kt:'Kiting',hu:'Hunter'};                  // Ranger phase 3 lanes
+  mk:'Marksman',tr:'Trickster',kt:'Kiting',hu:'Hunter',                   // Ranger phase 3 lanes
+  py:'Pyromancer',cr:'Cryomancer',sh:'Stormcaller',co:'Conflux',          // Elementalist phase 4 lanes
+  cc:'CC Specialist',en:'Enchanter',bm:'Battlemage',ar:'Arcane Artillery'};   // Warden phase 4 lanes
 // Unique, hand-authored KEYSTONES per spec (used at the single-node bottlenecks instead of bland stat sums).
 // A few are BUILD-DEFINING: `gives` sets a flag the engine reads (blood magic, always-ailment, double-cast, mana shield).
 const TREE_KEYSTONES={
@@ -3293,34 +3311,36 @@ const TREE_KEYSTONES={
       {nm:'Corpse Orchard',ic:'🌱',gives:'orchard',eff:{lifeRegen:3},note:'COMBO — enemies killed while CHILLED sprout a hungry plant-spirit that fights for 5 seconds.'},
       {nm:'Repetition',ic:'🔂',gives:'repetition',eff:{skillDmgPct:8},lane:'ut',note:'MEMORY / UTILITY — every THIRD use of the same skill repeats the first two uses simultaneously (two free echo casts) — Purify included.'},
       {nm:'Bulwark of Faith',ic:'🔷',gives:'wardMaster',eff:{lifePct:8},lane:'ba',note:'BARRIER — ★ Aegis Ward hits harder and holds far longer — your pre-cast shield becomes the centrepiece of your kit.'}],
-  wd:[{nm:'Archmage',ic:'👁️',eff:{skillDmgPct:42,manaCostPct:-18}},{nm:'Elementalist',ic:'🌈',gives:'alwaysAil',eff:{elemDmgPct:30,ailDmgPct:30},note:'Your elemental hits ALWAYS apply their ailment.'},
+  wd:[{nm:'Archmage',ic:'👁️',eff:{skillDmgPct:42,manaCostPct:-18},lane:'ar',note:'ARCANE ARTILLERY — raw, unfiltered nuking power.'},{nm:'Elementalist',ic:'🌈',gives:'alwaysAil',eff:{elemDmgPct:30,ailDmgPct:30},note:'Your elemental hits ALWAYS apply their ailment.'},
       {nm:'Twincast',ic:'🔁',gives:'doubleCast',eff:{skillDmgPct:8,manaCostPct:8},note:'Skills have a 35% chance to fire twice.'},
       {nm:'Overcharge',ic:'⚡',eff:{skillDmgPct:18},proc:{on:'cast',chance:0.2,type:'nova',amt:1.6,r:8}},{nm:'Channeler',ic:'🌀',eff:{area:24,cdrPct:14,manaRegen:4}},
-      {nm:'Cataclysm',ic:'☄️',eff:{skillDmgPct:26,area:12}},{nm:'Battery',ic:'🔋',eff:{manaPct:20,manaOnKill:16}},
-      {nm:'Stormcaller',ic:'🌩',eff:{skillDmgPct:14},proc:{on:'cast',chance:0.18,type:'shock'}},{nm:'Archon',ic:'🌟',eff:{skillDmgPct:30,area:16,cdrPct:10}},
-      {nm:'Overclock',ic:'⏱️',gives:'noManaRegen',eff:{cdrPct:25,manaPct:25},note:'No mana regen — but skills recharge much faster and your mana pool is far larger.'},
-      {nm:'Stillness',ic:'🧘',gives:'stillness',eff:{skillDmgPct:10},note:'RULE-BREAKER — stand still 0.6s for +45% damage. Start moving and the bonus travels with you for 2s.'},
-      {nm:'Unspent Power',ic:'💎',gives:'unspent',eff:{manaPct:10},note:'RISK — every UNSPENT skill point grants +3% damage (max +18%). Spending them takes the power away.'},
+      {nm:'Cataclysm',ic:'☄️',eff:{skillDmgPct:26,area:12},lane:'ar',note:'ARCANE ARTILLERY — the big nuker\'s core stat: damage and area, together.'},{nm:'Battery',ic:'🔋',eff:{manaPct:20,manaOnKill:16},lane:'en',note:'ENCHANTER/SUPPORT — a deep mana pool refilled by every kill: the party\'s mana economy, solved.'},
+      {nm:'Stormcaller',ic:'🌩',eff:{skillDmgPct:14},proc:{on:'cast',chance:0.18,type:'shock'},lane:'cc',note:'CC SPECIALIST — casting sometimes locks a target down with a shock.'},{nm:'Archon',ic:'🌟',eff:{skillDmgPct:30,area:16,cdrPct:10},lane:'ar',note:'ARCANE ARTILLERY — damage, area and cooldown, all at once — the artillery officer\'s dream node.'},
+      {nm:'Overclock',ic:'⏱️',gives:'noManaRegen',eff:{cdrPct:25,manaPct:25},lane:'en',note:'ENCHANTER/SUPPORT — No mana regen — but skills recharge much faster and your mana pool is far larger.'},
+      {nm:'Stillness',ic:'🧘',gives:'stillness',eff:{skillDmgPct:10},lane:'ar',note:'ARCANE ARTILLERY — RULE-BREAKER — stand still 0.6s for +45% damage. Start moving and the bonus travels with you for 2s.'},
+      {nm:'Unspent Power',ic:'💎',gives:'unspent',eff:{manaPct:10},lane:'ar',note:'ARCANE ARTILLERY — RISK — every UNSPENT skill point grants +3% damage (max +18%). Spending them takes the power away.'},
       {nm:'Grave of Possibilities',ic:'👻',eff:{skillDmgPct:8},proc:{on:'cast',chance:0.12,type:'minion'},note:'SUMMON — casting sometimes raises a spirit of a skill you never learned. It fights for 8 seconds.'},
       {nm:'Unstable Casting',ic:'🎇',gives:'unstable',eff:{skillDmgPct:18},note:'RISK — every skill casts TWICE… but the second cast aims wherever it pleases.'},
-      {nm:'Damage Migration',ic:'↪️',gives:'migrate',eff:{lifePct:6},note:'DEFENSE — 40% of damage you take is MIGRATED onto any enemy you have MARKED (Predator Blink opens the channel).'},
+      {nm:'Damage Migration',ic:'↪️',gives:'migrate',eff:{lifePct:6},lane:'bm',note:'BATTLEMAGE/SPELLBLADE — DEFENSE — 40% of damage you take is MIGRATED onto any enemy you have MARKED (Predator Blink opens the channel).'},
       {nm:'Tower Debt',ic:'🏦',gives:'towerDebt',eff:{manaFlat:15,int:true},note:'RISK — allocating this grants +2 skill points IMMEDIATELY… but your next 3 level-ups grant none. The tower collects.'},
       {nm:'The Last Spell',ic:'☝️',gives:'lastSpell',eff:{manaPct:10},note:'ULTIMATE — while EXACTLY ONE skill is bound to your bar, it gains +60% damage, −30% mana cost and faster cooldowns. One answer to everything.'},
-      {nm:'Soul Contract',ic:'📜',gives:'soulContract',eff:{manaFlat:10,int:true},note:'PACT — while this is allocated, every guardian is BOUND to relinquish a UNIQUE item. The point you spent here is the fee.'}],
-  el:[{nm:'Conflux',ic:'🌈',gives:'alwaysAil',eff:{elemDmgPct:20},note:'Your elemental hits ALWAYS apply their ailment.'},
+      {nm:'Soul Contract',ic:'📜',gives:'soulContract',eff:{manaFlat:10,int:true},note:'PACT — while this is allocated, every guardian is BOUND to relinquish a UNIQUE item. The point you spent here is the fee.'},
+      {nm:'Deep Rime',ic:'🥶',gives:'deepFreeze',eff:{skillDmgPct:8},lane:'cc',note:'CC SPECIALIST — chilled enemies that take another chilling hit while still cold are FLASH-FROZEN: briefly locked in place, unable to move or attack.'},
+      {nm:'Spellblade',ic:'🗡️',gives:'spellblade',eff:{dmgPct:10},lane:'bm',note:'BATTLEMAGE/SPELLBLADE — every basic attack projects a short-range magical cleave, splashing bonus elemental damage onto nearby foes.'}],
+  el:[{nm:'Conflux',ic:'🌈',gives:'alwaysAil',eff:{elemDmgPct:20},lane:'co',note:'CONFLUX/SUSTAINED — Your elemental hits ALWAYS apply their ailment. The ailment IS the build.'},
       {nm:'Mind over Matter',ic:'🧠',gives:'mindMatter',eff:{manaPct:16},note:'Skill damage grows with your invested mana (+1% per 10 flat mana, +1% per 3% mana).'},
-      {nm:'Cinderwake',ic:'🔥',eff:{ailDmgPct:40},proc:{on:'crit',chance:0.5,type:'ignite'}},
-      {nm:'Frostheart',ic:'❄️',eff:{elemDmgPct:18,area:10},proc:{on:'hit',chance:0.25,type:'chill'}},
-      {nm:'Stormlord',ic:'🌩',eff:{skillDmgPct:16,crit:5},proc:{on:'cast',chance:0.3,type:'shock'}},
+      {nm:'Cinderwake',ic:'🔥',eff:{ailDmgPct:40},proc:{on:'crit',chance:0.5,type:'ignite'},lane:'py',note:'PYROMANCER — every crit has a coin-flip chance to set the target ablaze.'},
+      {nm:'Frostheart',ic:'❄️',eff:{elemDmgPct:18,area:10},proc:{on:'hit',chance:0.25,type:'chill'},lane:'cr',note:'CRYOMANCER — a wide chilling aura woven into every hit.'},
+      {nm:'Stormlord',ic:'🌩',eff:{skillDmgPct:16,crit:5},proc:{on:'cast',chance:0.3,type:'shock'},lane:'sh',note:'STORMCALLER — casting sometimes discharges a bolt of its own.'},
       {nm:'Trinity',ic:'🔺',eff:{elemDmgPct:24,ailDmgPct:24}},
       {nm:'Twin Elements',ic:'🔁',gives:'doubleCast',eff:{manaCostPct:10},note:'Skills have a 35% chance to fire twice.'},
-      {nm:'Slow Burn',ic:'🕯️',eff:{ailDmgPct:55,dmgPct:-10},note:'The ailment IS the build.'},
-      {nm:'Reactor',ic:'☢️',eff:{elemDmgPct:14},proc:{on:'kill',chance:0.3,type:'nova',amt:1.5,r:8}},
-      {nm:'Steam Rupture',ic:'♨️',gives:'steamRupture',eff:{ailDmgPct:15},note:'COMBO — THERMAL SHOCK reactions rupture in an area, scalding and chilling everything caught in the cloud.'},
-      {nm:'Grand Conduction',ic:'🌩️',gives:'conduction',eff:{elemDmgPct:12},note:'COMBO — OVERLOAD and SUPERCONDUCT reactions reach half again as far and hit harder.'},
-      {nm:'Tower Hunger',ic:'🗼',gives:'towerHunger',eff:{dmgPct:6},note:'FLOOR-BOUND — +2% damage per floor climbed without returning to the sanctuary (max +40%). Going home resets the hunger.'},
-      {nm:'Loud Magic',ic:'📣',gives:'loudMagic',eff:{skillDmgPct:22},note:'RISK — spells hit far harder… but casting sometimes WAKES something elsewhere on the floor.'},
-      {nm:'Walking Catastrophe',ic:'☄️',gives:'catastrophe',eff:{elemDmgPct:16,dmgPct:-8},note:'ULTIMATE — enemies that die carrying an ailment PASS IT ON to the nearest living foe. Plagues never end.'},
+      {nm:'Slow Burn',ic:'🕯️',eff:{ailDmgPct:55,dmgPct:-10},lane:'py',note:'PYROMANCER — The ailment IS the build.'},
+      {nm:'Reactor',ic:'☢️',eff:{elemDmgPct:14},proc:{on:'kill',chance:0.3,type:'nova',amt:1.5,r:8},lane:'sh',note:'STORMCALLER — every kill has a chance to chain into a detonation.'},
+      {nm:'Steam Rupture',ic:'♨️',gives:'steamRupture',eff:{ailDmgPct:15},lane:'cr',note:'CRYOMANCER — COMBO — THERMAL SHOCK reactions rupture in an area, scalding and chilling everything caught in the cloud.'},
+      {nm:'Grand Conduction',ic:'🌩️',gives:'conduction',eff:{elemDmgPct:12},lane:'sh',note:'STORMCALLER — COMBO — OVERLOAD and SUPERCONDUCT reactions reach half again as far and hit harder.'},
+      {nm:'Tower Hunger',ic:'🗼',gives:'towerHunger',eff:{dmgPct:6},lane:'co',note:'CONFLUX/SUSTAINED — FLOOR-BOUND — +2% damage per floor climbed without returning to the sanctuary (max +40%). Going home resets the hunger.'},
+      {nm:'Loud Magic',ic:'📣',gives:'loudMagic',eff:{skillDmgPct:22},lane:'py',note:'PYROMANCER — RISK — spells hit far harder… but casting sometimes WAKES something elsewhere on the floor.'},
+      {nm:'Walking Catastrophe',ic:'☄️',gives:'catastrophe',eff:{elemDmgPct:16,dmgPct:-8},lane:'co',note:'CONFLUX/SUSTAINED — ULTIMATE — enemies that die carrying an ailment PASS IT ON to the nearest living foe. Plagues never end.'},
       {nm:'The Unwritten',ic:'📖',gives:'unwritten',eff:{skillDmgPct:6},note:'ULTIMATE — your class is ERASED: every row of every tree opens to you… but every node now costs TWO points.'}],
   rg:[{nm:'Phantom',ic:'👻',eff:{movePct:22,asPct:18,crit:6,dashCdrPct:24}},{nm:'Apex Predator',ic:'🐅',eff:{dmgPct:18,critMultPct:28},lane:'mk',note:'MARKSMAN — pure damage and crit multiplier: the predator\'s eye for the killing shot.'},
       {nm:'Momentum',ic:'🌊',gives:'momentum',eff:{movePct:12},lane:'kt',note:'KITING — +1% damage per 2% move speed bonus — speed IS power, and you never stop moving.'},
@@ -3403,12 +3423,14 @@ function talentRarity(ti, rowLen){ let r=Math.min(4, Math.floor((ti/TREE_ROWS)*5
          pre:['Arcane','Mystic','Astral','Eldritch','Runic','Ethereal','Cosmic','Spectral','Occult','Lucid','Resonant','Voidic'],
          noun:['Attunement','Focus','Surge','Conduit','Resonance','Insight','Channel','Flux','Spellweave','Ascendance','Convergence','Sigil','Nexus'],
          stats:[{k:'skillDmgPct',ic:'🔮',...G_(6,0.09)},{k:'manaPct',ic:'💧',...G_(6,0.06)},{k:'manaRegen',ic:'🌀',...G_(2,0.12,1)},{k:'area',ic:'💠',...G_(7,0.07)},{k:'cdrPct',ic:'⏩',...G_(5,0.05)},{k:'manaOnKill',ic:'🔋',...G_(8,0.5)}],
-         procOn:['cast','hit'], procTypes:[{type:'nova',amt:1.4,r:7},{type:'shock'},{type:'mana',amt:0.06}], capNm:'Avatar of the Arcane', capIc:'👁️' },
+         procOn:['cast','hit'], procTypes:[{type:'nova',amt:1.4,r:7},{type:'shock'},{type:'mana',amt:0.06}], capNm:'Avatar of the Arcane', capIc:'👁️',
+         lanes:['cc','en','bm','ar'], laneStat:{} },   // Warden phase 4 sub-role lanes — CC Specialist/Enchanter/Battlemage/Arcane Artillery; identity comes from tagged keystones + skills, existing stat pool (skillDmgPct/manaPct/manaRegen/area/cdrPct/manaOnKill) already covers every lane so laneStat is intentionally empty
     el:{ wob:[1,0,-1,1,0,1,1], key:4,
          pre:['Burning','Frozen','Charged','Conductive','Smouldering','Rimed','Volatile','Storm-Touched','Cindered','Glacial','Ionic','Elemental'],
          noun:['Attunement','Spark','Ember','Rime','Arc','Conflux','Reaction','Cascade','Overload','Bloom','Charge','Torrent','Front'],
          stats:[{k:'elemDmgPct',ic:'🌈',...G_(7,0.09)},{k:'ailDmgPct',ic:'🫧',...G_(8,0.1)},{k:'skillDmgPct',ic:'🔮',...G_(5,0.07)},{k:'area',ic:'💠',...G_(6,0.06)},{k:'crit',ic:'⚡',...G_(3,0.03)},{k:'manaRegen',ic:'🌀',...G_(1.8,0.1,1)},{k:'cdrPct',ic:'⏩',...G_(4,0.05)}],
-         procOn:['hit','cast','crit'], procTypes:[{type:'ignite'},{type:'chill'},{type:'shock'},{type:'nova',amt:1.3,r:7}], capNm:'Avatar of the Storm-Heart', capIc:'🌈' },
+         procOn:['hit','cast','crit'], procTypes:[{type:'ignite'},{type:'chill'},{type:'shock'},{type:'nova',amt:1.3,r:7}], capNm:'Avatar of the Storm-Heart', capIc:'🌈',
+         lanes:['py','cr','sh','co'], laneStat:{} },   // Elementalist phase 4 sub-role lanes — Pyromancer/Cryomancer/Stormcaller/Conflux(sustained-ailment); identity comes from tagged keystones + skills, existing stat pool (elemDmgPct/ailDmgPct/skillDmgPct/area/crit/manaRegen/cdrPct) already covers every lane so laneStat is intentionally empty
     rg:{ wob:[0,1,1,-1,0,1], key:3,
          pre:['Swift','Fleet','Nimble','Phantom','Gale','Shadowed','Hunting','Predatory','Windborne','Veiled','Quick','Striking'],
          noun:['Step','Stride','Mark','Strike','Gale','Pursuit','Instinct','Slipstream','Tailwind','Vanish','Tempo','Hunt','Dash'],
@@ -4507,6 +4529,8 @@ function recompute(){
   S.collector=!!flags.collector; S.catastrophe=!!flags.catastrophe; S.marked=!!flags.marked;
   S.repetition=!!flags.repetition; S.bossborn=!!flags.bossborn; S.theMany=!!flags.theMany; S.livingDungeon=!!flags.livingDungeon;
   S.wardMaster=!!flags.wardMaster;   // Bulwark of Faith (Mender/Barrier) — Aegis Ward hits harder & lasts longer, read by castWard
+  S.spellblade=!!flags.spellblade;   // Warden/Battlemage keystone — basic attacks also cleave nearby foes, read by abnHitEnemy
+  S.deepFreeze=!!flags.deepFreeze;   // Warden/CC Specialist keystone — heavy chill stacks flash-freeze the target, read by applyAilment
   // ---- QUIRKS: unique one-point rule-benders scattered through the generated rows ----
   S.anchor=!!flags.anchor; S.payback=!!flags.payback; S.giantSlayer=!!flags.giantSlayer;
   S.overkill=!!flags.overkill; S.cull=!!flags.cull; S.hubris=!!flags.hubris; S.desperation=!!flags.desperation;
@@ -8156,7 +8180,7 @@ function basicAttack(){
     const ang=baseAng+(shots>1?(i-(shots-1)/2)*spread:0), dx=Math.sin(ang), dz=Math.cos(ang);
     let critCh=G.S.crit; if(G.S.desperation) critCh+=(1-G.hp/Math.max(1,G.maxhp))*0.15;   // Desperado quirk: the edge sharpens you
     let crit=Math.random()<critCh; if(G.S.dashCrit&&G._dashCritArm){ crit=true; G._dashCritArm=false; }   // Slipstream Edge: guaranteed
-    const dmg=G.S.dmgBase*w.dmgMult*(crit?G.S.critMult:1)*fervorMult()*flowMult()*condMult()*ruleMult()*_kin*_ph*_heatM;
+    const dmg=G.S.dmgBase*w.dmgMult*(crit?G.S.critMult:1)*fervorMult()*flowMult()*empowerMult()*condMult()*ruleMult()*_kin*_ph*_heatM;
     const o={imp:w.imp}; if(w.wave)o.wave=w.wave; if(w.boomerang)o.boomerang=w.boomerang; if(w.homing)o.homing=w.homing; if(w.accel)o.accel=w.accel; if(w.bounce)o.bounce=w.bounce;
     if(w.shape)o.shape=w.shape; if(w.fuse!=null){o.fuse=w.fuse; o.blast=w.blast;} if(w.sling)o.sling=w.sling; if(w.zig)o.zig=w.zig;
     fireBolt(p.x+dx,p.z+dz,dx,dz,dmg,crit,G.S.pierce+w.pierce,w.size,w.speed,G.S.element,w.life,o);
@@ -8281,9 +8305,17 @@ function sendPetErrand(){
   log(`🐾 Companion off to town with ${junk.length} item(s) → ~${gold}g, back in ${Math.ceil(t)}s.`);
   banner('🐾 SELL-RUN','companion heading to town'); refreshItemPanels();
 }
-function skillDmg(coef,pwr){ return G.S.dmgBase*coef*G.S.skillMult*fervorMult()*flowMult()*condMult()*ruleMult()*(pwr||1); }
+function skillDmg(coef,pwr){ return G.S.dmgBase*coef*G.S.skillMult*fervorMult()*flowMult()*empowerMult()*condMult()*ruleMult()*(pwr||1); }
 function areaR(base){ return base*(1+G.S.area/100); }
 function flowMult(){ return G.flowT>0 ? 1.3 : 1; }   // dash → strike combo bonus
+// Warden/Enchanter — Power Infusion (gEmpower): a long timestamp-deadline buff window, same shape as castTaunt's
+// _tauntBraceUntil (no per-player default field needed — undefined reads as "not active" and stale timestamps
+// self-expire harmlessly). +22% skill damage / +22% attack speed while active — deliberately smaller than the
+// short, situational 'empower' proc (Striker's Killing Spree, +30% via flowT for 3s) since this is a long, plannable
+// 18s support cooldown rather than a combat-proc spike; the two share semantics (flat multiplier window) but not magnitude.
+function empowerActive(){ return !!(G._empowerUntil && performance.now()<G._empowerUntil); }
+function empowerMult(){ return empowerActive() ? 1.22 : 1; }
+function empowerAS(){ return empowerActive() ? 1.22 : 1; }
 function condMult(){ return ((G.S.lowHpDmg||0)>0 && G.hp < G.maxhp*0.35) ? 1+G.S.lowHpDmg/100 : 1; }   // low-HP damage bonus
 // rule-breaker keystone multipliers: Stillness (stand & deliver) + One Against Many (wade into packs)
 function ruleMult(){ const S=G.S||{}; let m=1;
@@ -8544,6 +8576,22 @@ function castCleanse(pwr){ const p=G.player.position;
       withPlayer(pl.id, ()=>{ cleanseOne(); ringFx(G.player.position.x,G.player.position.z,areaR(2.6),0xffffff); }); }
   }
 }
+// ---- Warden sub-role lane skill (phase 4 — Enchanter/Support) ----
+// Power Infusion: bestows focused casting/attack speed on an ally (or self if solo). Distinct from Taunt/Ward/Bloom's
+// party-wide sweep (castCleanse) — this is a single-target buff, aimed at whichever ally needs the DPS window most.
+function castEmpower(pwr){ const p=G.player.position, myId=_G.cur, dur=(15+2*((pwr||1)-1))*1000;
+  let targetId=myId, targetName='yourself';
+  if(joinedPlayers().length>1){   // co-op: buff the nearest OTHER live ally instead of yourself, if one is in range
+    const R=areaR(11); let best=null, bd=1e9;
+    for(const pl of livePlayers()){ if(pl.id===myId || !pl.player) continue;
+      const d=Math.hypot(pl.player.position.x-p.x, pl.player.position.z-p.z); if(d<R && d<bd){ bd=d; best=pl; } }
+    if(best){ targetId=best.id; targetName=best.name||'ally'; }
+  }
+  withPlayer(targetId, ()=>{ G._empowerUntil=performance.now()+dur;
+    const tp=G.player.position; ringFx(tp.x,tp.z,areaR(3.2),0xffce4d); ringFx(tp.x,tp.z,areaR(2),0xfff2c2);
+    floatText(tp.x,tp.z,'⚡ EMPOWERED','crit',2.9); });
+  if(targetId!==myId) floatText(p.x,p.z,'⚡ INFUSED '+targetName,'crit',2.6); else floatText(p.x,p.z,'⚡ POWER INFUSION','crit',2.6);
+}
 // ---- bespoke fused-skill effects (a synergy that lists `fx` ignores the generic "fire both" cast) ----
 function fxSupernova(P){ const tx=aimPoint.x, tz=aimPoint.z;   // Meteor+Singularity: collapse, then a giant fiery detonation
   for(let k=0;k<3;k++) G.timed.push({t:k*0.13, fn:()=>{ for(const e of G.enemies){ const dx=tx-e.mesh.position.x,dz=tz-e.mesh.position.z,d=Math.hypot(dx,dz); if(d<areaR(12)&&d>0.2){ const pull=Math.min(d-0.3,3.2); e.mesh.position.x+=dx/d*pull; e.mesh.position.z+=dz/d*pull; } } ringFx(tx,tz,areaR(2+k*1.5),0xb06bff); }});
@@ -8650,7 +8698,16 @@ function hurtEnemy(e,dmg,crit,element,src,owner){
 function applyAilment(e, ail, dmg){
   const x=e.mesh.position.x, z=e.mesh.position.z;
   if(ail==='ignite'){ const dps=Math.max(e.ignite?e.ignite.dps:0, dmg*0.25*(G.S.igniteMult||1)*(1+(G.S.ailDmg||0))); e.ignite={dps,t:3}; if(!e._aT||performance.now()-e._aT>500){e._aT=performance.now();floatText(x,z,'IGNITE','fire',e.r+2.3);} }
-  else if(ail==='chill'){ e.chill=2.5; floatText(x,z,'CHILL','cold',e.r+2.3); }
+  else if(ail==='chill'){
+    // Warden/CC Specialist keystone (Deep Rime, gives:'deepFreeze'): re-chilling an already-chilled target stacks
+    // exposure; at 3 stacks it FLASH-FREEZES the target (e.frozen — read by the enemy movement/windup loop below,
+    // ~line 12550). Stacks decay to 0 once chill itself expires (see the ailment-tick pass).
+    if(G.S&&G.S.deepFreeze && !e.boss){   // bosses stay immune to the hard-freeze lock (they already take the normal chill slow)
+      e._chillStacks = (e.chill>0 ? (e._chillStacks||0)+1 : 1);
+      if(e._chillStacks>=3){ e._chillStacks=0; e.frozen=1.1; floatText(x,z,'❄ FROZEN','crit',e.r+2.6); ringFx(x,z,e.r+1.6,0x9fefff); }
+    }
+    e.chill=2.5; floatText(x,z,'CHILL','cold',e.r+2.3);
+  }
   else if(ail==='shock'){ e.shock=3.0; floatText(x,z,'SHOCK','light',e.r+2.3); }
   if(!e.dead) checkReactions(e, dmg);   // elemental combo reactions when two ailments coexist
 }
@@ -11732,7 +11789,7 @@ function updatePlayerStep(dt){
   p.y=1;
   const pmk=G.player.userData.marker; if(pmk) pmk.material.color.setHex(G.flowT>0?0xffce4d:(pObj.color||0x56e0ff));
   // attack (held)
-  if(pObj.in.atk && !anyPanelOpen() && G.attackCd<=0 && !stunned && !G.vacuumOn && !G.sleeping){ basicAttack(); G.attackCd=Math.max(0.05, 0.36/G.S.wpn.asMult/G.S.asFactor/fervorAS()/heatAS()/(1+Math.min(2,(G.od||0)*0.1))/(auraOn('tGale')?1.25:1));
+  if(pObj.in.atk && !anyPanelOpen() && G.attackCd<=0 && !stunned && !G.vacuumOn && !G.sleeping){ basicAttack(); G.attackCd=Math.max(0.05, 0.36/G.S.wpn.asMult/G.S.asFactor/fervorAS()/heatAS()/empowerAS()/(1+Math.min(2,(G.od||0)*0.1))/(auraOn('tGale')?1.25:1));
     if(G.S.wpn.moveMult<1) G.rootT=Math.max(G.rootT||0, G.attackCd*0.92); }   // heavy weapons root you for the firing cycle, even on a single tap
   // gamepad action edges (keyboard P1 fires these from the keydown handler instead)
   if(pObj.input && pObj.input.pollActions && !G.paused){ const inp=pObj.in;
@@ -12253,6 +12310,8 @@ function updateWorld(dt){
       if(e.ignite.t<=0) e.ignite=null;
       if(e.hp<=0 && !e.dead){ e.dead=true; killEnemy(e); continue; } }
     if(e.chill>0) e.chill-=dt; if(e.shock>0) e.shock-=dt;
+    if(e.chill<=0 && e._chillStacks) e._chillStacks=0;   // Deep Rime: exposure resets once the chill itself lapses
+    if(e.frozen>0) e.frozen-=dt;                          // Deep Rime: flash-freeze window ticks down here too
   }
   // enemies
   for(let i=0;i<G.enemies.length;i++){ const e=G.enemies[i]; const ex=e.mesh.position.x, ez=e.mesh.position.z;
@@ -12283,7 +12342,7 @@ function updateWorld(dt){
     const tp=nearestPlayerTo(ex,ez,e); const p=tp.player.position;   // chase the nearest living player (Taunt marks can redirect this)
     let dx=p.x-ex, dz=p.z-ez; const d=Math.hypot(dx,dz)||1; dx/=d;dz/=d;
     e.hitFlash=Math.max(0,e.hitFlash-dt); e.kx=(e.kx||0)*0.85; e.kz=(e.kz||0)*0.85;
-    const atkRange=e.r+2.0; const espd=e.speed*(e.chill>0?0.5:1)*(e.hasteT>0?1.4:1);
+    const atkRange=e.r+2.0; const espd=(e.frozen>0?0:e.speed)*(e.chill>0?0.5:1)*(e.hasteT>0?1.4:1);   // Deep Rime: flash-frozen enemies stop moving entirely
     // separation — push apart so they don't phase through each other
     let sx=0,sz=0; for(let j=0;j<G.enemies.length;j++){ if(j===i)continue; const o=G.enemies[j]; const od=Math.hypot(ex-o.mesh.position.x,ez-o.mesh.position.z), min=e.r+o.r;
       if(od>0.01 && od<min){ const f=(min-od)/min; sx+=(ex-o.mesh.position.x)/od*f; sz+=(ez-o.mesh.position.z)/od*f; } }
@@ -12341,7 +12400,7 @@ function updateWorld(dt){
     b.position.y=(e.scale*.95)+Math.sin(performance.now()*0.004+ex)*0.12 + (telling?0.28:0);
     b.scale.setScalar(telling?1.18:1);
     // ranged enemy projectiles — shoot faster, with type-specific patterns (only when awake)
-    if(e.range && !e.boss && e.aggro){
+    if(e.range && !e.boss && e.aggro && !(e.frozen>0)){   // Deep Rime: flash-frozen ranged enemies can't aim or fire either
       if(e.aimT>0){ e.aimT-=dt; if(e.aimT<=0){ enemyShoot(e,cx,cz,dx,dz,p); e.shootCd=rand(0.7,1.4); } }   // wind-up elapsed → fire (you had a window to dash)
       else { e.shootCd-=dt; if(e.shootCd<=0 && d<e.range+6){ e.aimT=ENEMY_AIM; aimTell(e,0xffb13d); } }       // telegraph the shot instead of firing instantly
     }
@@ -12354,7 +12413,7 @@ function updateWorld(dt){
         if(e.moveCd[mi]<=0 && d<38){ e.moveCd[mi]=rand(mv[mi].cd[0],mv[mi].cd[1])*cr; mv[mi].fn(e); } }
       nemTryAssist(e,d); }
     // melee wind-up strike → damage the targeted player
-    if(!e.boss && !e.range){
+    if(!e.boss && !e.range && !(e.frozen>0)){   // Deep Rime: flash-frozen enemies neither progress a wind-up nor start a new one
       if(e.windup>0){ e.windup-=dt; if(e.windup<=0){ if(d<atkRange+0.7){ e._hurtT=performance.now(); withPlayer(tp.id,()=>{ if(G.invuln<=0){ setKiller(enemyName(e)); const _hp0=G.hp; hurtPlayer(e.dmg);
               if(G.hp<_hp0){ const pp=G.player.position; ringFx(pp.x,pp.z,e.r+2.4,0xff2d3d); ringFx(cx,cz,e.r+1.2,0xff5c5c); burst(pp.x,pp.z,0xff4d4d); shakeCam(0.85); if(typeof hurtFlash==='function')hurtFlash(false); }   // clear melee-impact flash so you SEE the blow land
             } else if(G.perfectT>0) perfectDodge(); }); if(e.vampiric){ e.hp=Math.min(e.maxhp,e.hp+e.maxhp*0.06); ringFx(cx,cz,e.r+1,0xff3b6b); } } e.atkCd=rand(0.8,1.3); } }
