@@ -3263,10 +3263,20 @@ const TREE_SKILL_LANE={
   'mn:gBloom':'ho',    // Regeneration — Rejuvenating Spores: continuous heal-over-time, not a burst
   'mn:gRescue':'bu',   // Burst — Lay on Hands: a huge single-target panic-button heal
   'mn:gCleanse':'ut',  // Utility — Purify: cleanses debuffs and grants a speed buff, party-wide in co-op
+  'st:gBlades':'be',   // Berserker — Bladestorm: a reckless flurry fits high risk/reward aggression
+  'st:gRecord':'as',   // Assassin/Burst — Recorded Strike: arm-then-replay is a crit-focused burst window
+  'st:gReap':'ex',     // Executioner/Finisher — Reaping Scythe: a sweeping finisher for wounded prey
+  'st:gBarrage':'bt',  // Brutalist/Sustained — Barrage: a rapid sustained stream, no-crit trade-based damage (code 'bt' — 'br' is already Vanguard's Brawler lane key and LANE_LBL is a shared global map, so reusing it would mislabel this node)
+  'rg:gLance':'mk',    // Marksman/Sniper — Ice Lance: a piercing precision line-shot
+  'rg:gVolley':'tr',   // Trickster/Burst — Volley: a wide burst fan fits explosive blink-driven windows
+  'rg:gBarrage':'kt',  // Kiting/Sustained — Barrage: a rapid sustained stream, continuous uptime
+  'rg:gSunder':'hu',   // Hunter/Utility — Sunder: marching ground eruptions, battlefield trickery flavour
 };
 function skillLane(kw,sid){ return TREE_SKILL_LANE[kw+':'+sid]; }
 const LANE_LBL={mt:'Main Tank',ot:'Off-Tank',ev:'Evasion',br:'Brawler',   // sub-role identity labels surfaced in talent tooltips (Vanguard phase 1)
-  ba:'Barrier',ho:'Regeneration',bu:'Burst',ut:'Utility'};                // Mender phase 2 lanes
+  ba:'Barrier',ho:'Regeneration',bu:'Burst',ut:'Utility',                 // Mender phase 2 lanes
+  be:'Berserker',as:'Assassin',ex:'Executioner',bt:'Brutalist',           // Striker phase 3 lanes ('bt' used instead of 'br' — that code is already Vanguard's Brawler in this shared map)
+  mk:'Marksman',tr:'Trickster',kt:'Kiting',hu:'Hunter'};                  // Ranger phase 3 lanes
 // Unique, hand-authored KEYSTONES per spec (used at the single-node bottlenecks instead of bland stat sums).
 // A few are BUILD-DEFINING: `gives` sets a flag the engine reads (blood magic, always-ailment, double-cast, mana shield).
 const TREE_KEYSTONES={
@@ -3287,21 +3297,21 @@ const TREE_KEYSTONES={
       {nm:'Living Dungeon',ic:'🏰',gives:'livingDungeon',eff:{lifeFlat:30,int:true},note:'ULTIMATE — the slain become ROOMS within your body: every 50 absorbed, a room forms and grants a permanent trait this run.'},
       {nm:'Bossborn',ic:'👹',gives:'bossborn',eff:{lifePct:8},lane:'mt',note:'MAIN TANK — ULTIMATE — you fight in PHASES like a guardian: above 70% health +10% damage, the middle band +25%, below 30% +40%. Your desperation is a phase transition.'},
       {nm:'Phase Step',ic:'🌀',eff:{dodgePct:14,movePct:6},lane:'ev',note:'EVASION — ★ You are rarely where the blow lands — the first true chance to dodge attacks outright, rather than merely soften them.'}],
-  st:[{nm:'Glass Cannon',ic:'💥',eff:{dmgPct:42,critMultPct:30,lifePct:-24}},{nm:'Executioner',ic:'☠️',eff:{execPct:48,critMultPct:30}},
-      {nm:'Blood Magic',ic:'🩸',gives:'bloodMagic',eff:{dmgPct:24},note:'Skills cost LIFE instead of mana.'},
-      {nm:'Berserker',ic:'😤',eff:{dmgPct:22,asPct:14,lifePct:-8}},{nm:'Bloodlust',ic:'🦇',eff:{lifesteal:6,dmgPct:14}},
+  st:[{nm:'Glass Cannon',ic:'💥',eff:{dmgPct:42,critMultPct:30,lifePct:-24},lane:'as',note:'ASSASSIN — RULE-BREAKER — enormous damage and crit multiplier for a steep chunk of your life pool. Burst it down before it burns you.'},{nm:'Executioner',ic:'☠️',eff:{execPct:48,critMultPct:30},lane:'ex',note:'EXECUTIONER — wounded prey dies faster. The lower they fall, the harder you finish them.'},
+      {nm:'Blood Magic',ic:'🩸',gives:'bloodMagic',eff:{dmgPct:24},lane:'bt',note:'BRUTALIST — Skills cost LIFE instead of mana — a grinding, ever-present trade fuelling sustained damage.'},
+      {nm:'Berserker',ic:'😤',eff:{dmgPct:22,asPct:14,lifePct:-8},lane:'be',note:'BERSERKER — raw offense for a slice of your life total. High risk, higher reward.'},{nm:'Bloodlust',ic:'🦇',eff:{lifesteal:6,dmgPct:14}},
       {nm:'Rampager',ic:'🔥',eff:{fervorRatePct:30},proc:{on:'crit',chance:0.25,type:'fervor',amt:14}},{nm:'Annihilator',ic:'💢',eff:{dmgPct:26,asPct:8}},
-      {nm:'Headhunter',ic:'🎯',eff:{critMultPct:44,crit:6}},{nm:'Carnage',ic:'⚔️',eff:{dmgPct:16},proc:{on:'crit',chance:0.2,type:'nova',amt:1.5,r:7}},
-      {nm:'Brutalist',ic:'🔨',gives:'noCrit',eff:{skillDmgPct:50,dmgPct:25},note:'Your hits can NEVER crit — but deal far more flat damage.'},
-      {nm:'Bloodrage',ic:'🩸',gives:'noHeal',eff:{dmgPct:35,asPct:14},note:'No passive healing (regen / leech / on-hit) — but immense offense.'},
-      {nm:'Glass Soul',ic:'🪞',gives:'glassSoul',eff:{critMultPct:20},note:'RULE-BREAKER — you cannot gain ARMOUR. Every point of armour becomes critical damage instead.'},
-      {nm:'Vendetta',ic:'🗡️',gives:'vendetta',eff:{dmgPct:10},note:'MEMORY — +25% damage against any lord who has ever killed you. The grudge cuts both ways.'},
+      {nm:'Headhunter',ic:'🎯',eff:{critMultPct:44,crit:6},lane:'as',note:'ASSASSIN — pure crit-chance and crit-multiplier — every burst window swings for the fences.'},{nm:'Carnage',ic:'⚔️',eff:{dmgPct:16},proc:{on:'crit',chance:0.2,type:'nova',amt:1.5,r:7}},
+      {nm:'Brutalist',ic:'🔨',gives:'noCrit',eff:{skillDmgPct:50,dmgPct:25},lane:'bt',note:'BRUTALIST — Your hits can NEVER crit — but deal far more flat damage. No burst windows, just relentless grinding pressure.'},
+      {nm:'Bloodrage',ic:'🩸',gives:'noHeal',eff:{dmgPct:35,asPct:14},lane:'be',note:'BERSERKER — No passive healing (regen / leech / on-hit) — but immense offense. There is no plan B.'},
+      {nm:'Glass Soul',ic:'🪞',gives:'glassSoul',eff:{critMultPct:20},lane:'as',note:'ASSASSIN — RULE-BREAKER — you cannot gain ARMOUR. Every point of armour becomes critical damage instead — all in on the burst.'},
+      {nm:'Vendetta',ic:'🗡️',gives:'vendetta',eff:{dmgPct:10},lane:'ex',note:'EXECUTIONER — MEMORY — +25% damage against any lord who has ever killed you. The grudge cuts both ways.'},
       {nm:'Inverted Fate',ic:'🎲',gives:'invFate',eff:{dmgPct:8},note:'RULE-BREAKER — critical hits deal NORMAL damage; every ordinary hit has a 15% chance to deal CATASTROPHIC (×3) damage instead.'},
-      {nm:'Momentum Pact',ic:'📜',gives:'momPact',eff:{dmgPct:6},note:'RISK — each floor cleared without healing: +4% damage (max +20%)… but enemies grow +5% tougher per stack. Healing breaks the pact.'},
-      {nm:'Marked for Greatness',ic:'⭐',gives:'marked',eff:{dmgPct:5},note:'RISK — one elite per floor is CROWNED: far stronger, but felling it permanently sharpens you (+2% damage this run, stacking).'},
+      {nm:'Momentum Pact',ic:'📜',gives:'momPact',eff:{dmgPct:6},lane:'be',note:'BERSERKER — RISK — each floor cleared without healing: +4% damage (max +20%)… but enemies grow +5% tougher per stack. Healing breaks the pact.'},
+      {nm:'Marked for Greatness',ic:'⭐',gives:'marked',eff:{dmgPct:5},lane:'ex',note:'EXECUTIONER — RISK — one elite per floor is CROWNED: far stronger, but felling it permanently sharpens you (+2% damage this run, stacking).'},
       {nm:'Master of the Empty Hand',ic:'👊',gives:'emptyHand',eff:{asPct:6},note:'ULTIMATE — unequip your WEAPON entirely: bare fists gain +50% damage, +30% attack speed and +2 projectiles of pure force.'},
       {nm:'Midas Shrapnel',ic:'🪙',gives:'midas',eff:{goldPct:10},note:'GOLD — enemies you kill BURST into gold coins… but the coins melt to nothing in 3 seconds. Sprint for your pay.'},
-      {nm:'Cursed Covenant',ic:'🪬',gives:'cursedCov',eff:{dmgPct:5},note:'GEAR — +8% damage for every equipped item carrying a NEGATIVE stat. Wear your curses proudly.'}],
+      {nm:'Cursed Covenant',ic:'🪬',gives:'cursedCov',eff:{dmgPct:5},lane:'bt',note:'BRUTALIST — GEAR — +8% damage for every equipped item carrying a NEGATIVE stat. Wear your curses proudly.'}],
   mn:[{nm:'Phoenix Heart',ic:'🔥',eff:{lifeRegen:9,lifePct:16,lifesteal:4},lane:'bu',note:'BURST — a deep well of life to draw on between the big, decisive heals.'},{nm:'Transfusion',ic:'🩹',eff:{lifeOnHit:8,lifesteal:4}},
       {nm:'Sanctuary',ic:'✨',eff:{lifeRegen:4},proc:{on:'hurt',chance:0.22,type:'shield',dur:1.1},lane:'ba',note:'BARRIER — getting hurt has a chance to throw up a reactive shield of its own, on top of whatever you pre-cast.'},{nm:'Lifebound',ic:'💞',eff:{lifePct:14,lifeOnKill:14}},
       {nm:'Wellspring',ic:'⛲',eff:{lifeRegen:7,manaRegen:4},lane:'ho',note:'REGENERATION — the mana to keep casting Rejuvenating Spores, plus regen to match it.'},{nm:'Bloodfeast',ic:'🍖',eff:{lifesteal:7,lifeOnKill:10}},
@@ -3341,23 +3351,23 @@ const TREE_KEYSTONES={
       {nm:'Loud Magic',ic:'📣',gives:'loudMagic',eff:{skillDmgPct:22},note:'RISK — spells hit far harder… but casting sometimes WAKES something elsewhere on the floor.'},
       {nm:'Walking Catastrophe',ic:'☄️',gives:'catastrophe',eff:{elemDmgPct:16,dmgPct:-8},note:'ULTIMATE — enemies that die carrying an ailment PASS IT ON to the nearest living foe. Plagues never end.'},
       {nm:'The Unwritten',ic:'📖',gives:'unwritten',eff:{skillDmgPct:6},note:'ULTIMATE — your class is ERASED: every row of every tree opens to you… but every node now costs TWO points.'}],
-  rg:[{nm:'Phantom',ic:'👻',eff:{movePct:22,asPct:18,crit:6,dashCdrPct:24}},{nm:'Apex Predator',ic:'🐅',eff:{dmgPct:18,critMultPct:28}},
-      {nm:'Momentum',ic:'🌊',gives:'momentum',eff:{movePct:12},note:'+1% damage per 2% move speed bonus — speed IS power.'},
-      {nm:'Windrunner',ic:'🍃',eff:{movePct:16,asPct:8},proc:{on:'dash',chance:0.6,type:'haste',dur:2.5}},
+  rg:[{nm:'Phantom',ic:'👻',eff:{movePct:22,asPct:18,crit:6,dashCdrPct:24}},{nm:'Apex Predator',ic:'🐅',eff:{dmgPct:18,critMultPct:28},lane:'mk',note:'MARKSMAN — pure damage and crit multiplier: the predator\'s eye for the killing shot.'},
+      {nm:'Momentum',ic:'🌊',gives:'momentum',eff:{movePct:12},lane:'kt',note:'KITING — +1% damage per 2% move speed bonus — speed IS power, and you never stop moving.'},
+      {nm:'Windrunner',ic:'🍃',eff:{movePct:16,asPct:8},proc:{on:'dash',chance:0.6,type:'haste',dur:2.5},lane:'kt',note:'KITING — every dash chains into more speed, keeping you perpetually ahead of the fight while you pour on continuous damage.'},
       {nm:'Shadowdancer',ic:'🌑',eff:{dashCdrPct:26},proc:{on:'dash',chance:0.5,type:'shield',dur:0.9}},
-      {nm:'Deadeye',ic:'🎯',eff:{proj:2,dmgPct:12}},{nm:'Bloodhound',ic:'🐕',eff:{xpPct:16,goldPct:20}},
-      {nm:'Tempest',ic:'🌪️',eff:{asPct:24,movePct:10,lifePct:-10}},{nm:'Trickster',ic:'🃏',eff:{crit:8,dashCdrPct:14},proc:{on:'dash',chance:0.4,type:'nova',amt:1.3,r:6}},
-      {nm:'Hollow Victory',ic:'🕳️',gives:'hollow',eff:{goldPct:25},note:'RULE-BREAKER — normal enemies drop NOTHING. Elites & bosses drop far more, uniques far likelier.'},
-      {nm:'Void Blink',ic:'🌀',gives:'blinkVoid',eff:{dashCdrPct:8},note:'BLINK EVOLUTION — your departure point collapses into a vacuum, dragging enemies in and crushing them.'},
-      {nm:'Echo Blink',ic:'👤',gives:'blinkEcho',eff:{dashCdrPct:8},note:'BLINK EVOLUTION — your afterimage lingers, then detonates a nova one second later.'},
-      {nm:'Sacrificial Blink',ic:'🩸',gives:'blinkSacr',eff:{dashCdrPct:8},note:'BLINK EVOLUTION — Blink costs 6% life instead of mana and EXPLODES at both ends.'},
-      {nm:'Armour of Distance',ic:'🏃',gives:'distArmor',eff:{movePct:8},note:'RULE-BREAKER — gain up to +80 armour from ground covered in the last seconds. Standing still leaves you naked.'},
-      {nm:'Predator Blink',ic:'🎯',gives:'blinkPred',eff:{dashCdrPct:8},note:'BLINK EVOLUTION — Blink teleports you BEHIND the strongest nearby enemy and MARKS it: +20% damage taken for 5s.'},
+      {nm:'Deadeye',ic:'🎯',eff:{proj:2,dmgPct:12},lane:'mk',note:'MARKSMAN — more projectiles, more damage — precision fire support.'},{nm:'Bloodhound',ic:'🐕',eff:{xpPct:16,goldPct:20},lane:'hu',note:'HUNTER — a nose for XP and gold. The resourceful tracker\'s bread and butter.'},
+      {nm:'Tempest',ic:'🌪️',eff:{asPct:24,movePct:10,lifePct:-10}},{nm:'Trickster',ic:'🃏',eff:{crit:8,dashCdrPct:14},proc:{on:'dash',chance:0.4,type:'nova',amt:1.3,r:6},lane:'tr',note:'TRICKSTER — every dash is a loaded gun: crit chance plus a chance to detonate on the way past. Explosive burst windows.'},
+      {nm:'Hollow Victory',ic:'🕳️',gives:'hollow',eff:{goldPct:25},lane:'hu',note:'HUNTER — RULE-BREAKER — normal enemies drop NOTHING. Elites & bosses drop far more, uniques far likelier. Hunt selectively, loot heavily.'},
+      {nm:'Void Blink',ic:'🌀',gives:'blinkVoid',eff:{dashCdrPct:8},lane:'tr',note:'TRICKSTER — BLINK EVOLUTION — your departure point collapses into a vacuum, dragging enemies in and crushing them. A burst window built into your mobility.'},
+      {nm:'Echo Blink',ic:'👤',gives:'blinkEcho',eff:{dashCdrPct:8},lane:'tr',note:'TRICKSTER — BLINK EVOLUTION — your afterimage lingers, then detonates a nova one second later. Blink twice, burst twice.'},
+      {nm:'Sacrificial Blink',ic:'🩸',gives:'blinkSacr',eff:{dashCdrPct:8},lane:'hu',note:'HUNTER — BLINK EVOLUTION — Blink costs 6% life instead of mana and EXPLODES at both ends. Battlefield trickery, paid in blood.'},
+      {nm:'Armour of Distance',ic:'🏃',gives:'distArmor',eff:{movePct:8},lane:'kt',note:'KITING — RULE-BREAKER — gain up to +80 armour from ground covered in the last seconds. Standing still leaves you naked — never stop moving, never stop dealing damage.'},
+      {nm:'Predator Blink',ic:'🎯',gives:'blinkPred',eff:{dashCdrPct:8},lane:'mk',note:'MARKSMAN — BLINK EVOLUTION — Blink teleports you BEHIND the strongest nearby enemy and MARKS it: +20% damage taken for 5s. The sniper picks its target and commits.'},
       {nm:'Unbroken Step',ic:'➡️',gives:'unbroken',eff:{movePct:6},note:'DEFENSE — take 15% less damage while advancing toward your aim… and 10% MORE while retreating. Never back down.'},
-      {nm:'Debt Collector',ic:'🪙',gives:'collector',eff:{goldPct:10},note:'SUMMON — every ~18s in combat, a collector-spirit rises. Its bite grows with the gold you are carrying.'},
-      {nm:'Fractured Blink',ic:'🪞',gives:'blinkFrac',eff:{dashCdrPct:8},note:'BLINK EVOLUTION — Blink offers THREE destinations, hesitates half a second while enemies commit… then takes the safest one.'},
-      {nm:'Counterfeiter',ic:'🎭',gives:'counterfeit',eff:{goldPct:8},note:'GOLD — a fifth of the coins you THROW (G) are fakes packed with powder: enemies that grab them DETONATE.'},
-      {nm:'Hoarder’s Burden',ic:'🎒',gives:'hoarder',eff:{movePct:4},note:'RULE-BREAKER — +1% move speed per EMPTY inventory slot. Travel light, arrive first.'},
+      {nm:'Debt Collector',ic:'🪙',gives:'collector',eff:{goldPct:10},lane:'hu',note:'HUNTER — SUMMON — every ~18s in combat, a collector-spirit rises. Its bite grows with the gold you are carrying.'},
+      {nm:'Fractured Blink',ic:'🪞',gives:'blinkFrac',eff:{dashCdrPct:8},lane:'hu',note:'HUNTER — BLINK EVOLUTION — Blink offers THREE destinations, hesitates half a second while enemies commit… then takes the safest one. Battlefield trickery at its purest.'},
+      {nm:'Counterfeiter',ic:'🎭',gives:'counterfeit',eff:{goldPct:8},lane:'hu',note:'HUNTER — GOLD — a fifth of the coins you THROW (G) are fakes packed with powder: enemies that grab them DETONATE. Battlefield trickery, monetized.'},
+      {nm:'Hoarder’s Burden',ic:'🎒',gives:'hoarder',eff:{movePct:4},lane:'hu',note:'HUNTER — RULE-BREAKER — +1% move speed per EMPTY inventory slot. Travel light, arrive first — the loot-focused scavenger\'s edge.'},
       {nm:'The Many',ic:'👥',gives:'theMany',eff:{lifePct:6},note:'ULTIMATE — you are THREE: two echo-selves fight beside you always… but each body is weaker (−20% your damage).'}],
 };
 // Unique QUIRK nodes — one-point rule-benders woven through the generated rows so the filler
@@ -3410,7 +3420,8 @@ function talentRarity(ti, rowLen){ let r=Math.min(4, Math.floor((ti/TREE_ROWS)*5
          pre:['Savage','Brutal','Honed','Vicious','Lethal','Cruel','Ferocious','Merciless','Bloody','Raging','Deadly','Razor','Primal','Wrathful'],
          noun:['Edge','Strike','Fury','Onslaught','Carnage','Wound','Slaughter','Rage','Bloodlust','Ruin','Massacre','Bite','Frenzy','Havoc'],
          stats:[{k:'dmgPct',ic:'⚔️',...G_(6,0.09)},{k:'crit',ic:'🗡️',...G_(3,0.03)},{k:'critMultPct',ic:'🎯',...G_(12,0.16)},{k:'asPct',ic:'🔥',...G_(5,0.05)},{k:'execPct',ic:'☠️',...G_(14,0.14)},{k:'lifesteal',ic:'💉',...G_(2,0.02)},{k:'fervorRatePct',ic:'😤',...G_(10,0.1)}],
-         procOn:['hit','crit','kill'], procTypes:[{type:'empower',dur:3},{type:'nova',amt:1.3,r:6},{type:'fervor',amt:10},{type:'ignite'}], capNm:'Avatar of Slaughter', capIc:'☠️' },
+         procOn:['hit','crit','kill'], procTypes:[{type:'empower',dur:3},{type:'nova',amt:1.3,r:6},{type:'fervor',amt:10},{type:'ignite'}], capNm:'Avatar of Slaughter', capIc:'☠️',
+         lanes:['be','as','ex','bt'], laneStat:{} },   // Striker phase 3 sub-role lanes — Berserker/Assassin/Executioner/Brutalist; identity comes from tagged keystones + skills, existing stat pool (dmgPct/crit/critMultPct/asPct/execPct/lifesteal/fervorRatePct) already covers every lane so laneStat is intentionally empty
     mn:{ wob:[0,1,-1,1,0,1], key:5,
          pre:['Blessed','Sacred','Vital','Renewing','Sanguine','Living','Pure','Hallowed','Verdant','Mending','Radiant','Flowing'],
          noun:['Mend','Renewal','Boon','Grace','Bloom','Spring','Font','Communion','Lifeblood','Restoration','Vigor','Wellspring','Salve'],
@@ -3431,7 +3442,8 @@ function talentRarity(ti, rowLen){ let r=Math.min(4, Math.floor((ti/TREE_ROWS)*5
          pre:['Swift','Fleet','Nimble','Phantom','Gale','Shadowed','Hunting','Predatory','Windborne','Veiled','Quick','Striking'],
          noun:['Step','Stride','Mark','Strike','Gale','Pursuit','Instinct','Slipstream','Tailwind','Vanish','Tempo','Hunt','Dash'],
          stats:[{k:'movePct',ic:'👟',...G_(5,0.05)},{k:'asPct',ic:'🏃',...G_(5,0.05)},{k:'crit',ic:'👁️',...G_(3,0.03)},{k:'critMultPct',ic:'🗡️',...G_(12,0.14)},{k:'dmgPct',ic:'🐾',...G_(6,0.08)},{k:'dashCdrPct',ic:'💨',...G_(8,0.06)},{k:'xpPct',ic:'🐕',...G_(6,0.06)},{k:'goldPct',ic:'💰',...G_(8,0.08)}],
-         procOn:['dash','kill','crit'], procTypes:[{type:'haste',dur:2},{type:'nova',amt:1.2,r:6},{type:'shield',dur:0.8}], capNm:'Apex Phantom', capIc:'👻' },
+         procOn:['dash','kill','crit'], procTypes:[{type:'haste',dur:2},{type:'nova',amt:1.2,r:6},{type:'shield',dur:0.8}], capNm:'Apex Phantom', capIc:'👻',
+         lanes:['mk','tr','kt','hu'], laneStat:{} },   // Ranger phase 3 sub-role lanes — Marksman/Trickster/Kiting/Hunter; identity comes from tagged keystones + skills, existing stat pool (movePct/asPct/crit/critMultPct/dmgPct/dashCdrPct/xpPct/goldPct) already covers every lane so laneStat is intentionally empty
   };
   const gv=(st,ti)=>{ const v=(st.base+st.grow*ti)*1.4; return st.frac? +v.toFixed(1) : Math.max(1,Math.round(v)); };   // +40% magnitude — every node feels like a real upgrade
   const gname=(g,ti,si)=>g.pre[(ti*4+si)%g.pre.length]+' '+g.noun[(ti*3+si*7+5)%g.noun.length];
