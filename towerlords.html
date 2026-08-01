@@ -2636,6 +2636,7 @@ const SKILLS = {
   gDeja:   {nm:'Déjà Vu',     ic:'🌀', mana:22, cd:9.0, cast:castDeja},
   gFuture: {nm:'Future Self', ic:'🔮', mana:28, cd:14.0, cast:castFuture},
   gRecord: {nm:'Recorded Strike', ic:'⏺', mana:8, cd:2.0, cast:castRecord},
+  gTaunt:  {nm:'Taunt',       ic:'📢', mana:14, cd:16.0, cast:castTaunt},
 };
 const SKILL_IDS=Object.keys(SKILLS);
 // short hover descriptions for every active skill — surfaced in the skill-gem inspect pane, action bar & tree "Learn:" nodes
@@ -2670,6 +2671,7 @@ const SKILL_DESC={
   gReap:'A sweeping scythe arc that reaps enemies in front of you.',
   gComet:'Launches a fast comet that detonates on impact.',
   gBulwark:'Hardens your skin — a small heal plus brief damage resistance.',
+  gTaunt:'Brace for the hit that\'s coming — a burst of damage reduction. In co-op, nearby enemies fixate on YOU for a few seconds.',
 };
 for(const id in SKILLS){ if(SKILL_DESC[id]) SKILLS[id].ds=SKILL_DESC[id]; }
 const SLOT_KEYS=['1','2','3','4','5','6','7','8','9']; const SLOT_LABEL=['1','2','3','4','5','6','7','8','9'];   // 9-skill bar (Torchlight-style)
@@ -3055,7 +3057,7 @@ const EFF_LBL={dmgPct:'% attack damage',asPct:'% attack speed',crit:'% crit chan
   lowHpDmgPct:'% damage while low HP',lifeOnKill:' life on kill',manaOnKill:' mana on kill',
   reflectPct:'% damage reflected',fervorRatePct:'% rampage gain',chargeRatePct:'% signature charge',
   xpPct:'% XP gained',goldPct:'% gold found',ailDmgPct:'% ailment damage',petDmgPct:'% companion damage',
-  dashCdrPct:'% reduced dash cooldown'};
+  dashCdrPct:'% reduced dash cooldown',dodgePct:'% chance to dodge attacks entirely (diminishing returns feel — stack with care)'};
 function effDesc(eff){ return Object.keys(eff).map(k=>`${eff[k]>0?'+':''}${eff[k]}${EFF_LBL[k]||(' '+k)}`).join(', '); }
 function buildTreeNodes(){
   const CX=560, CY=380, COUNT=14;
@@ -3206,29 +3208,42 @@ const TREE_ROWS=30;   // 30 rows per tree — bigger, but every node is impactfu
 // Active SKILLS scattered through each tree — allocating the node GRANTS that skill gem (the tree is a source of skills, not just stats).
 // Lists are long so skills appear all the way down a 70-row column, themed per spec.
 const TREE_SKILLS={
-  tk:['gBulwark','gWhirl','gShield','gQuake','gReap','gShock','gBlades','gMortar','gComet','gSlow'],
+  tk:['gBulwark','gTaunt','gWhirl','gShield','gQuake','gVortex','gReap','gShock','gBlades','gLeech','gMortar','gComet','gSlow'],   // gTaunt/gVortex/gLeech placed early enough in the list to survive the placement-slot cutoff (see extendSpecs) — lands them at well-spread rows (~3/15/27) instead of falling off the tail
   st:['gWhirl','gVolley','gReap','gFlame','gBarrage','gRecord','gComet','gBeam','gBlades','gMortar','gShock','gLance'],
   mn:['gHeal','gShield','gPoison','gFrost','gBulwark','gLeech','gSlow','gFuture','gShock','gHeal','gBlades'],
   wd:['gNova','gFrost','gChain','gBeam','gShock','gMeteor','gStorm','gPoison','gVortex','gComet','gMortar','gSlow','gDeja'],
   rg:['gBlink','gLance','gVolley','gReap','gShock','gBarrage','gComet','gBeam','gBlades','gSunder'],
   el:['gTide','gFlame','gFrost','gChain','gShock','gStorm','gMeteor','gNova','gVortex','gPoison','gBeam','gSunder'],
 };
+// Sub-role LANE tags for "Learn: X" skill-grant nodes (Vanguard phase 1 — reused by later spec phases).
+// Keyed 'specKw:skillId' → lane ('mt' main tank / 'ot' off-tank / 'ev' evasion / 'br' brawler / undefined = neutral).
+const TREE_SKILL_LANE={
+  'tk:gTaunt':'mt',    // Main Tank — the boss-wrangler's signature crowd-control tool
+  'tk:gVortex':'ot',   // Off-Tank — Singularity drags scattered adds into a pile you can hold
+  'tk:gLeech':'br',    // Brawler — Transfusion trades aggression for sustain
+};
+function skillLane(kw,sid){ return TREE_SKILL_LANE[kw+':'+sid]; }
+const LANE_LBL={mt:'Main Tank',ot:'Off-Tank',ev:'Evasion',br:'Brawler'};   // sub-role identity labels surfaced in talent tooltips (Vanguard phase 1)
 // Unique, hand-authored KEYSTONES per spec (used at the single-node bottlenecks instead of bland stat sums).
 // A few are BUILD-DEFINING: `gives` sets a flag the engine reads (blood magic, always-ailment, double-cast, mana shield).
 const TREE_KEYSTONES={
   tk:[{nm:'Juggernaut',ic:'🐗',eff:{lifePct:24,armor:60,asPct:-8}},{nm:'Thornmail',ic:'🌵',eff:{reflectPct:24,armor:40}},
       {nm:'Mana Bulwark',ic:'🔷',gives:'manaShield',eff:{manaPct:24,armor:20},note:'Damage drains MANA before life (while mana lasts).'},
-      {nm:'Last Bastion',ic:'⛰️',eff:{lowHpDmgPct:30,lifePct:10}},{nm:'Bloodforge',ic:'🩸',eff:{lifeOnKill:16,lifePct:8}},
-      {nm:'Aegis Core',ic:'⛨',eff:{armor:44},proc:{on:'hurt',chance:0.2,type:'shield',dur:1.0}},{nm:'Unstoppable',ic:'🗿',eff:{lifeFlat:80,armor:36}},
-      {nm:'Vengeful Wall',ic:'🛡️',eff:{reflectPct:18,lifePct:10},proc:{on:'hurt',chance:0.14,type:'nova',amt:1.5,r:7}},{nm:'Titanheart',ic:'💎',eff:{lifePct:20,lifeRegen:5}},
+      {nm:'Last Bastion',ic:'⛰️',eff:{lowHpDmgPct:30,lifePct:10},lane:'mt',note:'MAIN TANK — the lower you fall, the harder you hit back. You were built to eat the boss\'s biggest swing.'},
+      {nm:'Bloodforge',ic:'🩸',eff:{lifeOnKill:16,lifePct:8},lane:'br',note:'BRAWLER — every kill feeds you life. Trade caution for tempo.'},
+      {nm:'Aegis Core',ic:'⛨',eff:{armor:44},proc:{on:'hurt',chance:0.2,type:'shield',dur:1.0},lane:'mt',note:'MAIN TANK — armour plus a chance to shrug off the follow-up hit entirely. The boss-wrangler\'s core stat.'},
+      {nm:'Unstoppable',ic:'🗿',eff:{lifeFlat:80,armor:36}},
+      {nm:'Vengeful Wall',ic:'🛡️',eff:{reflectPct:18,lifePct:10},proc:{on:'hurt',chance:0.14,type:'nova',amt:1.5,r:7},lane:'br',note:'BRAWLER — punished for hitting you: reflect damage plus a retaliation nova on every few hits taken.'},
+      {nm:'Titanheart',ic:'💎',eff:{lifePct:20,lifeRegen:5}},
       {nm:'Mountain Stance',ic:'🏔️',gives:'ironConvert',eff:{armor:34},note:'+1% damage per 15 armour — the wall hits back.'},
-      {nm:'One Against Many',ic:'👥',gives:'oneMany',eff:{lifePct:8},note:'RULE-BREAKER — +5% damage per nearby enemy (to +40%), but −15% against a lone target. Wade IN.'},
-      {nm:'Perfect Scar',ic:'🩹',gives:'perfectScar',eff:{lifePct:6},note:'RULE-BREAKER — each hit you take within 6s hurts 8% less than the last (to −40%). Sustained fire barely marks you.'},
+      {nm:'One Against Many',ic:'👥',gives:'oneMany',eff:{lifePct:8},lane:'ot',note:'OFF-TANK — RULE-BREAKER — +5% damage per nearby enemy (to +40%), but −15% against a lone target. Wade into the adds.'},
+      {nm:'Perfect Scar',ic:'🩹',gives:'perfectScar',eff:{lifePct:6},lane:'ev',note:'EVASION — RULE-BREAKER — each hit you take within 6s hurts 8% less than the last (to −40%). Sustained fire barely marks you.'},
       {nm:'Borrowed Time',ic:'⏳',gives:'borrowedTime',eff:{lifePct:5},note:'RULE-BREAKER — lethal damage cannot kill you instantly: it is STORED and lands 8 seconds later. Kill a guardian before then and the debt is forgiven.'},
       {nm:'Refuse',ic:'🚫',gives:'refuse',eff:{armor:20},note:'DEFENSE — once per floor, flatly REFUSE the first heavy blow that lands. It simply does not happen.'},
-      {nm:'Gravitational Execution',ic:'🕳️',gives:'gravExec',eff:{dmgPct:8},note:'COMBO — enemies below 20% health are dragged toward you when struck. The end pulls them in.'},
+      {nm:'Gravitational Execution',ic:'🕳️',gives:'gravExec',eff:{dmgPct:8},lane:'ot',note:'OFF-TANK — COMBO — enemies below 20% health are dragged toward you when struck. Grab the stragglers, keep the pack together.'},
       {nm:'Living Dungeon',ic:'🏰',gives:'livingDungeon',eff:{lifeFlat:30,int:true},note:'ULTIMATE — the slain become ROOMS within your body: every 50 absorbed, a room forms and grants a permanent trait this run.'},
-      {nm:'Bossborn',ic:'👹',gives:'bossborn',eff:{lifePct:8},note:'ULTIMATE — you fight in PHASES like a guardian: above 70% health +10% damage, the middle band +25%, below 30% +40%. Your desperation is a phase transition.'}],
+      {nm:'Bossborn',ic:'👹',gives:'bossborn',eff:{lifePct:8},lane:'mt',note:'MAIN TANK — ULTIMATE — you fight in PHASES like a guardian: above 70% health +10% damage, the middle band +25%, below 30% +40%. Your desperation is a phase transition.'},
+      {nm:'Phase Step',ic:'🌀',eff:{dodgePct:14,movePct:6},lane:'ev',note:'EVASION — ★ You are rarely where the blow lands — the first true chance to dodge attacks outright, rather than merely soften them.'}],
   st:[{nm:'Glass Cannon',ic:'💥',eff:{dmgPct:42,critMultPct:30,lifePct:-24}},{nm:'Executioner',ic:'☠️',eff:{execPct:48,critMultPct:30}},
       {nm:'Blood Magic',ic:'🩸',gives:'bloodMagic',eff:{dmgPct:24},note:'Skills cost LIFE instead of mana.'},
       {nm:'Berserker',ic:'😤',eff:{dmgPct:22,asPct:14,lifePct:-8}},{nm:'Bloodlust',ic:'🦇',eff:{lifesteal:6,dmgPct:14}},
@@ -3344,7 +3359,7 @@ function talentRarity(ti, rowLen){ let r=Math.min(4, Math.floor((ti/TREE_ROWS)*5
     tk:{ wob:[0,1,0,1,-1,0], key:4,
          pre:['Iron','Stone','Guarded','Bracing','Vital','Stalwart','Warded','Granite','Tempered','Resolute','Adamant','Bulwark','Hardened','Sentinel','Bastioned'],
          noun:['Hide','Plating','Ward','Bastion','Aegis','Resolve','Wall','Carapace','Fortitude','Guard','Endurance','Barrier','Mettle','Anchor'],
-         stats:[{k:'armor',ic:'🛡️',...G_(14,1.2)},{k:'lifePct',ic:'❤️',...G_(4,0.05)},{k:'lifeFlat',ic:'🧱',...G_(16,1.6)},{k:'lifeRegen',ic:'➕',...G_(1.5,0.1,1)},{k:'reflectPct',ic:'🌵',...G_(5,0.05)},{k:'lifeOnKill',ic:'🩸',...G_(5,0.4)},{k:'lowHpDmgPct',ic:'⛰️',...G_(8,0.08)}],
+         stats:[{k:'armor',ic:'🛡️',...G_(14,1.2)},{k:'lifePct',ic:'❤️',...G_(4,0.05)},{k:'lifeFlat',ic:'🧱',...G_(16,1.6)},{k:'lifeRegen',ic:'➕',...G_(1.5,0.1,1)},{k:'reflectPct',ic:'🌵',...G_(5,0.05)},{k:'lifeOnKill',ic:'🩸',...G_(5,0.4)},{k:'lowHpDmgPct',ic:'⛰️',...G_(8,0.08)},{k:'dodgePct',ic:'🌀',...G_(1.5,0.05)}],
          procOn:['hurt','kill'], procTypes:[{type:'heal',amt:0.06},{type:'nova',amt:1.1,r:6},{type:'fervor',amt:18},{type:'shield',dur:0.8}], capNm:'Eternal Vanguard', capIc:'🛡️' },
     st:{ wob:[1,0,1,-1,0,1,0], key:4,
          pre:['Savage','Brutal','Honed','Vicious','Lethal','Cruel','Ferocious','Merciless','Bloody','Raging','Deadly','Razor','Primal','Wrathful'],
@@ -3381,8 +3396,14 @@ function talentRarity(ti, rowLen){ let r=Math.min(4, Math.floor((ti/TREE_ROWS)*5
     if(ti>0 && ti % g.key === 0) w=1;                      // periodic single-node keystone bottleneck
     return Math.max(1, Math.min(5, w));
   }
+  // ---- sub-role LANES (Vanguard phase 1 — mt/ot/ev/br cycle; reusable by later spec phases) ----
+  const LANES=['mt','ot','ev','br'];
+  const LANE_STAT={ ev:'dodgePct' };   // a lane can "own" a stat key that should cluster near its keystones (evasion → dodge chance)
+  function rowLane(ti,g){ return LANES[Math.floor(ti/Math.max(1,g.key))%LANES.length]; }   // which lane this row is thematically leaning toward, cycling with the keystone bottleneck rhythm
   function genTalent(g,ti,si,rar,rowLen){
-    const seed=ti*5+si*3+(ti>>2), st=g.stats[seed%g.stats.length];   // scrambled seed → adjacent rows stop repeating the same stat/icon
+    const seed=ti*5+si*3+(ti>>2); let st=g.stats[seed%g.stats.length];   // scrambled seed → adjacent rows stop repeating the same stat/icon
+    const laneStatKey=LANE_STAT[rowLane(ti,g)];
+    if(laneStatKey && Math.random()<0.4){ const ls=g.stats.find(s=>s.k===laneStatKey); if(ls) st=ls; }   // lane bias: e.g. dodgePct shows up noticeably more often near the Evasion lane's rows
     const t={ nm:gname(g,ti,si), ic:st.ic, eff:{}, rar };
     t.eff[st.k]=gv(st,ti);
     { const s2=g.stats[(seed+2)%g.stats.length]; if(s2.k!==st.k) t.eff[s2.k]=gv(s2,ti); }    // EVERY node combines two tree-specific effects
@@ -3402,20 +3423,34 @@ function talentRarity(ti, rowLen){ let r=Math.min(4, Math.floor((ti/TREE_ROWS)*5
     const quirks=(TREE_QUIRKS[spec.kw]||[]).slice();   // unique one-point rule-benders sprinkled between the stat rows
     const step=Math.max(3, Math.floor((TREE_ROWS-6)/Math.max(1,skills.length)));   // spread skills down the WHOLE column
     const skillAt={}; skills.forEach((sid,i)=>{ let ti=3+i*step; while(ti<TREE_ROWS-2 && (ti%g.key===0 || skillAt[ti])) ti++; if(ti<TREE_ROWS-2) skillAt[ti]=sid; });
-    let keyIdx=0;
+    // ---- sub-role LANE bucketing for the keystone bottleneck picker: cycle mt→ot→ev→br→mt… so every lane is
+    // visibly represented across the tree instead of whichever lane happens to sort first (falls back to
+    // untagged/shared keystones if a lane runs dry so the tree never comes up short a keystone). ----
+    const laneBuckets={}; const sharedKeys=[]; for(const k of keys){ if(k.lane){ (laneBuckets[k.lane]||(laneBuckets[k.lane]=[])).push(k); } else sharedKeys.push(k); }
+    const laneIdx={}; let laneCursor=0;
+    function nextKeystone(){
+      for(let tries=0; tries<LANES.length; tries++){   // try each lane in rotation once before falling back to shared
+        const lane=LANES[laneCursor%LANES.length]; laneCursor++;
+        const bucket=laneBuckets[lane]; if(bucket && bucket.length){ const i=(laneIdx[lane]=(laneIdx[lane]||0)); laneIdx[lane]++; return bucket[i%bucket.length]; }
+      }
+      if(sharedKeys.length){ const i=(laneIdx._shared=(laneIdx._shared||0)); laneIdx._shared++; return sharedKeys[i%sharedKeys.length]; }
+      return keys[0];   // last-resort fallback (should be unreachable — keys is non-empty whenever this path runs)
+    }
     while(spec.tiers.length < TREE_ROWS){
       const ti=spec.tiers.length;
       if(ti===TREE_ROWS-1){ spec.tiers.push([{nm:g.capNm,ic:g.capIc,max:1,rar:5,eff:capEff(g,ti),note:'The pinnacle of the '+spec.nm+' path.'}]); break; }
       if(ti>0 && ti%g.key===0 && keys.length){   // unique hand-authored keystone at each bottleneck
-        const k=keys[keyIdx++ % keys.length]; const node={nm:k.nm,ic:k.ic,max:k.max||1,rar:4,eff:k.eff,note:(k.note?'★ '+k.note:'Keystone — '+effDesc(k.eff))};
-        if(k.proc) node.procs=[k.proc]; if(k.gives) node.gives=k.gives;
+        const k=nextKeystone(); const node={nm:k.nm,ic:k.ic,max:k.max||1,rar:4,eff:k.eff,note:(k.note?'★ '+k.note:'Keystone — '+effDesc(k.eff))};
+        if(k.proc) node.procs=[k.proc]; if(k.gives) node.gives=k.gives; if(k.lane) node.lane=k.lane;
         spec.tiers.push([node]); continue;
       }
       const w=rowWidth(g,ti), rar=talentRarity(ti,w);
       const row=[]; for(let si=0;si<w;si++) row.push(genTalent(g,ti,si,rar,w));
       if(ti===1 && SIG_SKILL[spec.kw] && SKILLS[SIG_SKILL[spec.kw]]){ const sid=SIG_SKILL[spec.kw], sk=SKILLS[sid];
         row[0]={ nm:'Role: '+sk.nm, ic:sk.ic, max:1, rar:5, grantSkill:sid, eff:{}, note:'✦ SIGNATURE — the '+spec.nm+' playstyle in one skill, granted immediately. Bind it on your 1–9 bar.' }; }
-      else if(skillAt[ti]){ const sid=skillAt[ti], sk=SKILLS[sid]; if(sk) row[0]={ nm:'Learn: '+sk.nm, ic:sk.ic, max:1, rar:5, grantSkill:sid, eff:{}, note:'✦ Grants the '+sk.nm+' skill gem — bind it on your 1–9 bar.' }; }
+      else if(skillAt[ti]){ const sid=skillAt[ti], sk=SKILLS[sid]; if(sk){ const lane=skillLane(spec.kw,sid);
+        row[0]={ nm:'Learn: '+sk.nm, ic:sk.ic, max:1, rar:5, grantSkill:sid, eff:{}, note:'✦ Grants the '+sk.nm+' skill gem — bind it on your 1–9 bar.' };
+        if(lane) row[0].lane=lane; } }
       else if(quirks.length && row.length>1 && ti>=4 && (ti%6===4 || (ti>=7 && ti%6===1))){ const q=quirks.shift();   // a hand-authored QUIRK replaces one stat filler every few rows
         row[row.length-1]={ nm:q.nm, ic:q.ic, max:1, rar:3, gives:q.gives, eff:q.eff, note:'◆ QUIRK — '+q.note }; }
       spec.tiers.push(row);
@@ -3651,7 +3686,10 @@ function joinedPlayers(){ return _G.players.filter(p=>p.joined); }
 // never split the host's view, claim a viewport, or appear in the local co-op HUD.
 function localViewPlayers(){ return _G.players.filter(p=>p.joined && !p.isRemote); }
 function livePlayers(){ return _G.players.filter(p=>p.joined && !p.downed && p.player); }
-function nearestPlayerTo(x,z){ let best=null,bd=Infinity; for(const p of _G.players){ if(!p.joined||p.downed||!p.player)continue;
+function nearestPlayerTo(x,z,e){   // e (optional): the enemy asking — lets a live Taunt mark redirect its target
+  if(e && e._tauntPlayer!=null && e._tauntUntil>performance.now()){ const tp=_G.players[e._tauntPlayer];
+    if(tp && tp.joined && !tp.downed && tp.player) return tp; }   // taunted: fixate on the caster while the mark holds (no-op in solo — nothing to redirect FROM)
+  let best=null,bd=Infinity; for(const p of _G.players){ if(!p.joined||p.downed||!p.player)continue;
   const dx=p.player.position.x-x, dz=p.player.position.z-z, d=dx*dx+dz*dz; if(d<bd){bd=d;best=p;} } return best || _G.players[0]; }
 function hurtPlayerObj(pl,dmg){ if(!pl) return; withPlayer(pl.id, ()=>hurtPlayer(dmg)); }
 
@@ -4334,7 +4372,7 @@ function recompute(){
   const A=G.attr;
   const m={dmgPct:0,asPct:0,crit:0,critMultPct:0,proj:0,pierce:0,area:0,movePct:0,
     lifeFlat:0,lifePct:0,lifeRegen:0,manaFlat:0,manaPct:0,manaRegen:0,armor:0,lifeOnHit:0,lifesteal:0,
-    skillDmgPct:0,manaCostPct:0};
+    skillDmgPct:0,manaCostPct:0,dodgePct:0};
   const attrItem={str:0,dex:0,int:0,vit:0,will:0};   // attribute bonuses from gear/gems — kept SEPARATE from base so we can show "70 (+50)" and scale enemies off base only
   const addMod=(k,v)=>{ if(attrItem[k]!==undefined) attrItem[k]+=v; else m[k]=(m[k]||0)+v; };
   let talLifeRegen=0, talManaRegen=0;   // regen comes ONLY from skill-tree talents (+ pet abilities below) — never gear or base stats
@@ -4461,6 +4499,7 @@ function recompute(){
   S.lifeOnKill = m.lifeOnKill||0;
   S.manaOnKill = m.manaOnKill||0;
   S.reflect    = (m.reflectPct||0)/100;                     // thorns: % of damage taken returned
+  S.dodgePct   = clamp(m.dodgePct||0, 0, 75);                // passive evasion — soft-capped so stacking never approaches immunity
   S.fervorRate = 1 + (m.fervorRatePct||0)/100;
   S.chargeRate = 1 + (m.chargeRatePct||0)/100;
   S.xpBonus    = m.xpPct||0;
@@ -6661,7 +6700,7 @@ function bPresets(){ const f=G.floor; return {
 }; }
 
 // ---- boss bullet-hell helpers ----
-function bAimAng(e){ const ex=e.mesh.position.x,ez=e.mesh.position.z, p=nearestPlayerTo(ex,ez).player.position; return Math.atan2(p.x-ex,p.z-ez); }
+function bAimAng(e){ const ex=e.mesh.position.x,ez=e.mesh.position.z, p=nearestPlayerTo(ex,ez,e).player.position; return Math.atan2(p.x-ex,p.z-ez); }
 function bossSay(e,txt){ floatText(e.mesh.position.x,e.mesh.position.z,txt,'hurt',e.scale*1.5+1.6); sfx.cast(); }
 // ---- attack patterns (a boss's identity = which of these it uses) — all driven by emit() now ----
 function mRing(e){ const n=16+Math.min(16,Math.floor(G.floor/3));
@@ -6691,7 +6730,7 @@ function mScythe(e){   // whirling blade ring — slow, heavy, readable
 function mFeatherStorm(e){ emit(e,{ count:7, arc:1.5, waves:2, wDelay:0.4, speed:11, dmg:0.5, wave:{amp:1.4,freq:9}, shape:'feather', mat:'weave' }); bossSay(e,'✺ MOLT'); }
 function mBombRain(e){ emit(e,{ count:3, arc:0.9, speed:10, dmg:0.6, fuse:0.8, burst:{count:10,speed:9}, shape:'bomb', mat:'ring' }); bossSay(e,'✺ SHELLS'); }
 function mGale(e){ emit(e,{ count:7, arc:1.7, waves:2, wDelay:0.5, speed:12, dmg:0.6, shape:'wind', accel:6, mat:'fan' }); bossSay(e,'✺ GALE'); }
-function mSlam(e){ const p=nearestPlayerTo(e.mesh.position.x,e.mesh.position.z).player.position; telegraphAoE(p.x,p.z,7,0.8,e.dmg*1.7,0xff3b5c); bossSay(e,'✺ SLAM'); }
+function mSlam(e){ const p=nearestPlayerTo(e.mesh.position.x,e.mesh.position.z,e).player.position; telegraphAoE(p.x,p.z,7,0.8,e.dmg*1.7,0xff3b5c); bossSay(e,'✺ SLAM'); }
 function mAdds(e){ const x=e.mesh.position.x,z=e.mesh.position.z, n=2+Math.min(3,Math.floor(G.floor/10));
   for(let i=0;i<n;i++){ const a=rand(0,Math.PI*2), px=x+Math.sin(a)*4, pz=z+Math.cos(a)*4; if(inAny(px,pz,0.6)) spawnEnemy(G.floor,{x:px,z:pz},ETYPES[1]); }
   ringFx(x,z,5,0xb06bff); bossSay(e,'✺ SUMMON'); }
@@ -6705,16 +6744,16 @@ function mMines(e){ const n=6+Math.min(6,Math.floor(G.floor/8)); bossSay(e,'✺ 
   for(let k=0;k<n;k++){ const a=rand(0,Math.PI*2), r=rand(4,14), mx=e.mesh.position.x+Math.sin(a)*r, mz=e.mesh.position.z+Math.cos(a)*r;
     if(inAny(mx,mz,0.6)) telegraphAoE(mx,mz,4,0.9+k*0.06,e.dmg*1.3,0xff7a3d); } }
 function mRain(e){ const n=8+Math.min(8,Math.floor(G.floor/5)); bossSay(e,'✺ BOMBARDMENT');   // meteors rain on the players' area
-  const tp=nearestPlayerTo(e.mesh.position.x,e.mesh.position.z).player.position;
+  const tp=nearestPlayerTo(e.mesh.position.x,e.mesh.position.z,e).player.position;
   for(let k=0;k<n;k++) G.timed.push({t:k*0.14, fn:()=>{ telegraphAoE(tp.x+rand(-10,10), tp.z+rand(-10,10), 3.6, 0.6, e.dmg*1.1, 0xff5a2d); }}); }
-function mTeleSlam(e){ const tp=nearestPlayerTo(e.mesh.position.x,e.mesh.position.z).player.position; bossSay(e,'✺ HUNT');   // blink to the player, then slam
+function mTeleSlam(e){ const tp=nearestPlayerTo(e.mesh.position.x,e.mesh.position.z,e).player.position; bossSay(e,'✺ HUNT');   // blink to the player, then slam
   const tx=tp.x-(tp.x-e.mesh.position.x)*0.1, tz=tp.z-(tp.z-e.mesh.position.z)*0.1;
   let bx=tp.x+rand(-3,3), bz=tp.z+rand(-3,3); if(!canStand(bx,bz,e.r)){ bx=e.mesh.position.x; bz=e.mesh.position.z; }
   ringFx(e.mesh.position.x,e.mesh.position.z,3,0xff3b5c); e.mesh.position.set(bx,0,bz); ringFx(bx,bz,3,0xff3b5c);
   telegraphAoE(tp.x,tp.z,6.5,0.7,e.dmg*1.8,0xff3b5c); }
 function mLaserCross(e){   // four rotating beams sweeping the arena
   emit(e,{ count:4, ring:true, waves:20, wDelay:0.06, spin:0.13, speed:20, dmg:0.6, aimed:false, mat:'fan' }); bossSay(e,'✺ LASERS'); }
-function mCrossAoE(e){ const tp=nearestPlayerTo(e.mesh.position.x,e.mesh.position.z).player.position; bossSay(e,'✺ CROSSFIRE');   // a + of telegraphed ground zones on you — step into a gap
+function mCrossAoE(e){ const tp=nearestPlayerTo(e.mesh.position.x,e.mesh.position.z,e).player.position; bossSay(e,'✺ CROSSFIRE');   // a + of telegraphed ground zones on you — step into a gap
   for(const o of [[0,0],[6.5,0],[-6.5,0],[0,6.5],[0,-6.5]]) telegraphAoE(tp.x+o[0],tp.z+o[1],3.4,0.95,e.dmg*1.5,0xff5a2d); }
 function mPillars(e){ bossSay(e,'✺ ERUPTION'); const n=10+Math.min(10,Math.floor(G.floor/5));   // arena-wide eruptions on a rhythm — keep moving
   for(let k=0;k<n;k++) G.timed.push({t:k*0.13, fn:()=>{ if(!G.enemies.includes(e))return; const x=rand(-G.bounds/2+4,G.bounds/2-4), z=rand(-G.bounds/2+4,G.bounds/2-4); if(inAny(x,z,1)) telegraphAoE(x,z,3,0.6,e.dmg*1.25,0xffae3d); }}); }
@@ -8407,6 +8446,16 @@ function castReap(pwr){ const p=G.player.position, base=Math.atan2(aimPoint.x-p.
 function castComet(pwr){ const p=G.player.position, a=Math.atan2(aimPoint.x-p.x,aimPoint.z-p.z), dx=Math.sin(a),dz=Math.cos(a), crit=Math.random()<G.S.crit;
   fireBolt(p.x+dx,p.z+dz,dx,dz,skillDmg(2.0,pwr)*(crit?G.S.critMult:1),crit,(G.S.pierce||0)+2,0.6,46,'fire',0.7,{forceAil:'ignite'}); }
 function castBulwark(pwr){ const p=G.player.position; const h=Math.min(G.maxhp*0.14,G.maxhp-G.hp); if(h>0){G.hp+=h;G.run.healSelf+=h;} G.invuln=Math.max(G.invuln,0.9); ringFx(p.x,p.z,areaR(3.4),0x8aa0c0); floatText(p.x,p.z,'🪨 STONESKIN','heal',2.8); }
+// Main Tank signature: brace for the hit that's coming (solo & co-op alike), and in co-op pull nearby aggro onto you.
+function castTaunt(pwr){ const p=G.player.position, myId=_G.cur;
+  G._tauntBraceUntil=performance.now()+2500+((pwr||1)-1)*400;   // % damage-reduction window — distinct from Aegis's full invuln
+  ringFx(p.x,p.z,areaR(3.8),0xff9a3d); ringFx(p.x,p.z,areaR(2.4),0xffce4d); floatText(p.x,p.z,'📢 TAUNT','heal',2.9); shakeCam(.5);
+  if(joinedPlayers().length>1){   // co-op only: mark nearby enemies to fixate on the caster for a few seconds
+    const R=areaR(9), until=performance.now()+5000+((pwr||1)-1)*600; let marked=0;
+    for(const e of G.enemies){ if(e.dead)continue; const d=Math.hypot(e.mesh.position.x-p.x,e.mesh.position.z-p.z); if(d<R+e.r){ e._tauntPlayer=myId; e._tauntUntil=until; e.aggro=true; marked++; } }
+    if(marked) floatText(p.x,p.z,marked+' TAUNTED','crit',3.4);
+  }
+}
 // ---- bespoke fused-skill effects (a synergy that lists `fx` ignores the generic "fire both" cast) ----
 function fxSupernova(P){ const tx=aimPoint.x, tz=aimPoint.z;   // Meteor+Singularity: collapse, then a giant fiery detonation
   for(let k=0;k<3;k++) G.timed.push({t:k*0.13, fn:()=>{ for(const e of G.enemies){ const dx=tx-e.mesh.position.x,dz=tz-e.mesh.position.z,d=Math.hypot(dx,dz); if(d<areaR(12)&&d>0.2){ const pull=Math.min(d-0.3,3.2); e.mesh.position.x+=dx/d*pull; e.mesh.position.z+=dz/d*pull; } } ringFx(tx,tz,areaR(2+k*1.5),0xb06bff); }});
@@ -9582,6 +9631,7 @@ function talentTip(id){
     if(rank>0) h+=`<div class="tt-d" style="color:#9dffb4">Current: <b>${effDesc(scaleEff(t.eff,rank))}</b></div>`; }
   if(t.procs) for(const pr of t.procs) h+=`<div class="tt-d" style="color:#c7b6ff">✦ ${procLine(pr)}${t.max>1?' <span style="opacity:.55">(per rank)</span>':''}</div>`;
   if(t.note) h+=`<div class="tt-d" style="opacity:.65;font-style:italic;margin-top:4px">${t.note}</div>`;
+  if(t.lane && LANE_LBL[t.lane]) h+=`<div class="tt-d" style="opacity:.8;color:#ffb454">— ${LANE_LBL[t.lane]} path</div>`;
   if(reason==='maxed') h+=`<div class="tt-max">✓ Maxed</div>`;
   else if(reason) h+=`<div class="tt-lock">🔒 ${reason}</div>`;
   else h+=`<div class="tt-ok">Left-click +1${rank>0?' · Right-click −1':''}</div>`;
@@ -12138,7 +12188,7 @@ function updateWorld(dt){
       const bb=e.mesh.userData.body; if(bb){ bb.rotation.y+=dt*3; bb.position.y=(e.scale*.95)+Math.sin(performance.now()*0.004+ex)*0.12; }
       continue;
     }
-    const tp=nearestPlayerTo(ex,ez); const p=tp.player.position;   // chase the nearest living player
+    const tp=nearestPlayerTo(ex,ez,e); const p=tp.player.position;   // chase the nearest living player (Taunt marks can redirect this)
     let dx=p.x-ex, dz=p.z-ez; const d=Math.hypot(dx,dz)||1; dx/=d;dz/=d;
     e.hitFlash=Math.max(0,e.hitFlash-dt); e.kx=(e.kx||0)*0.85; e.kz=(e.kz||0)*0.85;
     const atkRange=e.r+2.0; const espd=e.speed*(e.chill>0?0.5:1)*(e.hasteT>0?1.4:1);
@@ -12322,10 +12372,13 @@ function applyEnemyCounter(e, tp){ const S=tp.S; if(!S||!S.adaptKind)return; con
 }
 let _hurtFlashT;
 function hurtFlash(strong){ const v=$('vignette'); if(!v)return; v.classList.remove('hit','hitBig'); void v.offsetWidth; v.classList.add(strong?'hitBig':'hit'); clearTimeout(_hurtFlashT); _hurtFlashT=setTimeout(()=>v.classList.remove('hit','hitBig'), strong?360:220); }
-function hurtPlayer(dmg, opts){ if(G.invuln>0)return; opts=opts||{}; const heavy=!!opts.heavy; bountyFail();
+function hurtPlayer(dmg, opts){ if(G.invuln>0)return;
+  if(G.S.dodgePct>0 && Math.random()*100<G.S.dodgePct){ perfectDodge(); return; }   // passive evasion — a clean dodge, same reward language as a perfect dash-dodge
+  opts=opts||{}; const heavy=!!opts.heavy; bountyFail();
   // recall is non-interruptable — taking a hit no longer cancels the channel; ride it out and you still teleport home
   let real=dmg*(1-dr())*ascEff().dmgTaken*diffCfg().dmgTaken;
   if(G.S.hubris) real*=1.15;   // Hubris quirk: pride pays interest
+  if(G._tauntBraceUntil && performance.now()<G._tauntBraceUntil) real*=0.6;   // Taunt: braced for the hit — 40% mitigation window
   // ---- Unbroken Step: advancing is armour, retreating is exposure ----
   if(G.S.unbroken && G._fwdDot!=null){ if(G._fwdDot>0.3) real*=0.85; else if(G._fwdDot<-0.3) real*=1.10; }
   // ---- Refuse: once per floor, the first heavy blow simply does not happen ----
