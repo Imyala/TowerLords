@@ -1,0 +1,210 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1050" height="600" viewBox="0 0 1050 600">
+<rect width="1050" height="600" fill="#080b14"/>
+<g transform="translate(31.0,20)"><rect width="88" height="88" rx="18" fill="#121a2c" stroke="#ffffff" stroke-opacity=".45" stroke-width="2"/>
+<g transform="translate(15,15) scale(2.42)" fill="none" stroke="#ffffff" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round">
+<path d="M12 2.5 L14.4 9.6 21.5 12 14.4 14.4 12 21.5 9.6 14.4 2.5 12 9.6 9.6 Z"/>
+</g></g>
+<text x="75.0" y="126" fill="#9fb0c8" font-family="sans-serif" font-size="13" text-anchor="middle">Foundation</text>
+<g transform="translate(181.0,20)"><rect width="88" height="88" rx="18" fill="#121a2c" stroke="#ffce4d" stroke-opacity=".45" stroke-width="2"/>
+<g transform="translate(15,15) scale(2.42)" fill="none" stroke="#ffce4d" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round">
+<path d="M12 2.5 L21.5 12 12 21.5 2.5 12 Z"/>
+<path d="M12 7.5 V16.5"/>
+<path d="M7.5 12 H16.5"/>
+</g></g>
+<text x="225.0" y="126" fill="#9fb0c8" font-family="sans-serif" font-size="13" text-anchor="middle">Skill</text>
+<g transform="translate(331.0,20)"><rect width="88" height="88" rx="18" fill="#121a2c" stroke="#ffce4d" stroke-opacity=".45" stroke-width="2"/>
+<g transform="translate(15,15) scale(2.42)" fill="none" stroke="#ffce4d" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round">
+<path d="M3.5 18.5 L6 7.5 10 12 12 4.5 14 12 18 7.5 20.5 18.5 Z"/>
+<path d="M3.5 18.5 H20.5"/>
+</g></g>
+<text x="375.0" y="126" fill="#9fb0c8" font-family="sans-serif" font-size="13" text-anchor="middle">Capstone</text>
+<g transform="translate(481.0,20)"><rect width="88" height="88" rx="18" fill="#121a2c" stroke="#ff8c42" stroke-opacity=".45" stroke-width="2"/>
+<g transform="translate(15,15) scale(2.42)" fill="none" stroke="#ff8c42" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round">
+<path d="M12 13.4 C14.4 13.4 16.2 15.2 16.2 17.4 C16.2 19.2 14.8 20.2 13 19.8 a6 6 0 0 0 -2 0 C9.2 20.2 7.8 19.2 7.8 17.4 C7.8 15.2 9.6 13.4 12 13.4 Z"/>
+<ellipse cx="6.6" cy="10.2" rx="2" ry="2.6"/>
+<ellipse cx="17.4" cy="10.2" rx="2" ry="2.6"/>
+<ellipse cx="12" cy="6.4" rx="2" ry="2.7"/>
+</g></g>
+<text x="525.0" y="126" fill="#9fb0c8" font-family="sans-serif" font-size="13" text-anchor="middle">Beast</text>
+<g transform="translate(631.0,20)"><rect width="88" height="88" rx="18" fill="#121a2c" stroke="#56e0ff" stroke-opacity=".45" stroke-width="2"/>
+<g transform="translate(15,15) scale(2.42)" fill="none" stroke="#56e0ff" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round">
+<path d="M12 2.8 L19.2 6 V12 C19.2 16.4 16 19.6 12 21.2 C8 19.6 4.8 16.4 4.8 12 V6 Z"/>
+<path d="M12 7 V16"/>
+</g></g>
+<text x="675.0" y="126" fill="#9fb0c8" font-family="sans-serif" font-size="13" text-anchor="middle">Main Tank</text>
+<g transform="translate(781.0,20)"><rect width="88" height="88" rx="18" fill="#121a2c" stroke="#56e0ff" stroke-opacity=".45" stroke-width="2"/>
+<g transform="translate(15,15) scale(2.42)" fill="none" stroke="#56e0ff" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round">
+<path d="M7.4 8.6 h3.4 a3.4 3.4 0 0 1 0 6.8 H7.4 a3.4 3.4 0 0 1 0 -6.8 Z"/>
+<path d="M13.2 8.6 h3.4 a3.4 3.4 0 0 1 0 6.8 h-3.4"/>
+</g></g>
+<text x="825.0" y="126" fill="#9fb0c8" font-family="sans-serif" font-size="13" text-anchor="middle">Off-Tank</text>
+<g transform="translate(931.0,20)"><rect width="88" height="88" rx="18" fill="#121a2c" stroke="#56e0ff" stroke-opacity=".45" stroke-width="2"/>
+<g transform="translate(15,15) scale(2.42)" fill="none" stroke="#56e0ff" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round">
+<path d="M3.5 8.5 h9.5 a2.5 2.5 0 1 0 -2.4 -3.1"/>
+<path d="M3.5 12.5 h13 a2.8 2.8 0 1 1 -2.7 3.5"/>
+<path d="M3.5 16.5 h6"/>
+</g></g>
+<text x="975.0" y="126" fill="#9fb0c8" font-family="sans-serif" font-size="13" text-anchor="middle">Evasion Tank</text>
+<g transform="translate(31.0,170)"><rect width="88" height="88" rx="18" fill="#121a2c" stroke="#56e0ff" stroke-opacity=".45" stroke-width="2"/>
+<g transform="translate(15,15) scale(2.42)" fill="none" stroke="#56e0ff" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round">
+<path d="M6.2 13.4 V9.8 a2.05 2.05 0 0 1 4.1 0 V8.4 a2.05 2.05 0 0 1 4.1 0 v1.4 a2.05 2.05 0 0 1 4.1 0 V14 a6.1 6.1 0 0 1 -12.3 0 Z"/>
+<path d="M10.3 9.8 v2.6"/>
+<path d="M14.4 9.8 v2.6"/>
+</g></g>
+<text x="75.0" y="276" fill="#9fb0c8" font-family="sans-serif" font-size="13" text-anchor="middle">Brawler Tank</text>
+<g transform="translate(181.0,170)"><rect width="88" height="88" rx="18" fill="#121a2c" stroke="#6dff8c" stroke-opacity=".45" stroke-width="2"/>
+<g transform="translate(15,15) scale(2.42)" fill="none" stroke="#6dff8c" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round">
+<path d="M12 2.8 L20 7.4 V16.6 L12 21.2 4 16.6 V7.4 Z"/>
+<path d="M12 7.4 L16 9.7 v4.6 L12 16.6 8 14.3 V9.7 Z"/>
+</g></g>
+<text x="225.0" y="276" fill="#9fb0c8" font-family="sans-serif" font-size="13" text-anchor="middle">Barrier</text>
+<g transform="translate(331.0,170)"><rect width="88" height="88" rx="18" fill="#121a2c" stroke="#6dff8c" stroke-opacity=".45" stroke-width="2"/>
+<g transform="translate(15,15) scale(2.42)" fill="none" stroke="#6dff8c" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round">
+<path d="M4.5 19.5 C4.5 11 11 4.5 19.5 4.5 C19.5 13 13 19.5 4.5 19.5 Z"/>
+<path d="M4.5 19.5 C8.5 15.5 12.5 13.5 16.5 12.5"/>
+</g></g>
+<text x="375.0" y="276" fill="#9fb0c8" font-family="sans-serif" font-size="13" text-anchor="middle">Regeneration</text>
+<g transform="translate(481.0,170)"><rect width="88" height="88" rx="18" fill="#121a2c" stroke="#6dff8c" stroke-opacity=".45" stroke-width="2"/>
+<g transform="translate(15,15) scale(2.42)" fill="none" stroke="#6dff8c" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round">
+<path d="M12 3 V21"/>
+<path d="M3 12 H21"/>
+<path d="M6.2 6.2 L9 9"/>
+<path d="M17.8 6.2 L15 9"/>
+<path d="M6.2 17.8 L9 15"/>
+<path d="M17.8 17.8 L15 15"/>
+</g></g>
+<text x="525.0" y="276" fill="#9fb0c8" font-family="sans-serif" font-size="13" text-anchor="middle">Burst Healer</text>
+<g transform="translate(631.0,170)"><rect width="88" height="88" rx="18" fill="#121a2c" stroke="#6dff8c" stroke-opacity=".45" stroke-width="2"/>
+<g transform="translate(15,15) scale(2.42)" fill="none" stroke="#6dff8c" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round">
+<circle cx="12" cy="12" r="2.6"/>
+<path d="M6.4 6.4 A8 8 0 0 0 6.4 17.6"/>
+<path d="M17.6 6.4 A8 8 0 0 1 17.6 17.6"/>
+</g></g>
+<text x="675.0" y="276" fill="#9fb0c8" font-family="sans-serif" font-size="13" text-anchor="middle">Utility / Aura</text>
+<g transform="translate(781.0,170)"><rect width="88" height="88" rx="18" fill="#121a2c" stroke="#ff6b6b" stroke-opacity=".45" stroke-width="2"/>
+<g transform="translate(15,15) scale(2.42)" fill="none" stroke="#ff6b6b" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round">
+<path d="M6 20 L15.5 8.5"/>
+<path d="M13.5 3.5 a6.2 6.2 0 0 1 5.2 7.2 L11.5 5.8 a6.2 6.2 0 0 1 2 -2.3 Z"/>
+</g></g>
+<text x="825.0" y="276" fill="#9fb0c8" font-family="sans-serif" font-size="13" text-anchor="middle">Berserker</text>
+<g transform="translate(931.0,170)"><rect width="88" height="88" rx="18" fill="#121a2c" stroke="#ff6b6b" stroke-opacity=".45" stroke-width="2"/>
+<g transform="translate(15,15) scale(2.42)" fill="none" stroke="#ff6b6b" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round">
+<path d="M12 2.8 L14.2 8.2 V15 H9.8 V8.2 Z"/>
+<path d="M8.4 15 H15.6"/>
+<path d="M12 15 V21.2"/>
+</g></g>
+<text x="975.0" y="276" fill="#9fb0c8" font-family="sans-serif" font-size="13" text-anchor="middle">Assassin</text>
+<g transform="translate(31.0,320)"><rect width="88" height="88" rx="18" fill="#121a2c" stroke="#ff6b6b" stroke-opacity=".45" stroke-width="2"/>
+<g transform="translate(15,15) scale(2.42)" fill="none" stroke="#ff6b6b" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round">
+<circle cx="12" cy="12" r="2.4"/>
+<path d="M7.4 7.4 L3.8 3.8"/>
+<path d="M16.6 7.4 L20.2 3.8"/>
+<path d="M7.4 16.6 L3.8 20.2"/>
+<path d="M16.6 16.6 L20.2 20.2"/>
+</g></g>
+<text x="75.0" y="426" fill="#9fb0c8" font-family="sans-serif" font-size="13" text-anchor="middle">Martial Artist</text>
+<g transform="translate(181.0,320)"><rect width="88" height="88" rx="18" fill="#121a2c" stroke="#ff6b6b" stroke-opacity=".45" stroke-width="2"/>
+<g transform="translate(15,15) scale(2.42)" fill="none" stroke="#ff6b6b" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round">
+<path d="M4.6 19.6 C4.6 11.2 11.2 4.6 19.6 4.6"/>
+<path d="M19.6 4.6 C14.4 6.2 10.6 9.6 9 14"/>
+<path d="M4.6 19.6 H17.5"/>
+<path d="M15.4 19.6 L16.6 16.4"/>
+</g></g>
+<text x="225.0" y="426" fill="#9fb0c8" font-family="sans-serif" font-size="13" text-anchor="middle">Executioner</text>
+<g transform="translate(331.0,320)"><rect width="88" height="88" rx="18" fill="#121a2c" stroke="#ffce4d" stroke-opacity=".45" stroke-width="2"/>
+<g transform="translate(15,15) scale(2.42)" fill="none" stroke="#ffce4d" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round">
+<circle cx="12" cy="12" r="7"/>
+<circle cx="12" cy="12" r="1.5"/>
+<path d="M12 1.6 V5.2"/>
+<path d="M12 18.8 V22.4"/>
+<path d="M1.6 12 H5.2"/>
+<path d="M18.8 12 H22.4"/>
+</g></g>
+<text x="375.0" y="426" fill="#9fb0c8" font-family="sans-serif" font-size="13" text-anchor="middle">Marksman</text>
+<g transform="translate(481.0,320)"><rect width="88" height="88" rx="18" fill="#121a2c" stroke="#ffce4d" stroke-opacity=".45" stroke-width="2"/>
+<g transform="translate(15,15) scale(2.42)" fill="none" stroke="#ffce4d" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round">
+<path d="M3 8.5 H14.5 L11.6 5.6"/>
+<path d="M14.5 8.5 L11.6 11.4"/>
+<path d="M3 15.5 H19 L16.1 12.6"/>
+<path d="M19 15.5 L16.1 18.4"/>
+</g></g>
+<text x="525.0" y="426" fill="#9fb0c8" font-family="sans-serif" font-size="13" text-anchor="middle">Gunslinger</text>
+<g transform="translate(631.0,320)"><rect width="88" height="88" rx="18" fill="#121a2c" stroke="#ffce4d" stroke-opacity=".45" stroke-width="2"/>
+<g transform="translate(15,15) scale(2.42)" fill="none" stroke="#ffce4d" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round">
+<path d="M12 13.4 C14.4 13.4 16.2 15.2 16.2 17.4 C16.2 19.2 14.8 20.2 13 19.8 a6 6 0 0 0 -2 0 C9.2 20.2 7.8 19.2 7.8 17.4 C7.8 15.2 9.6 13.4 12 13.4 Z"/>
+<ellipse cx="6.6" cy="10.2" rx="2" ry="2.6"/>
+<ellipse cx="17.4" cy="10.2" rx="2" ry="2.6"/>
+<ellipse cx="12" cy="6.4" rx="2" ry="2.7"/>
+</g></g>
+<text x="675.0" y="426" fill="#9fb0c8" font-family="sans-serif" font-size="13" text-anchor="middle">Beastmaster</text>
+<g transform="translate(781.0,320)"><rect width="88" height="88" rx="18" fill="#121a2c" stroke="#ffce4d" stroke-opacity=".45" stroke-width="2"/>
+<g transform="translate(15,15) scale(2.42)" fill="none" stroke="#ffce4d" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round">
+<path d="M3.5 7.5 H14"/>
+<path d="M5.5 12 H17"/>
+<path d="M3.5 16.5 H15"/>
+<path d="M17.5 7.5 L21 12 17.5 16.5"/>
+</g></g>
+<text x="825.0" y="426" fill="#9fb0c8" font-family="sans-serif" font-size="13" text-anchor="middle">Kiter</text>
+<g transform="translate(931.0,320)"><rect width="88" height="88" rx="18" fill="#121a2c" stroke="#d9b6ff" stroke-opacity=".45" stroke-width="2"/>
+<g transform="translate(15,15) scale(2.42)" fill="none" stroke="#d9b6ff" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round">
+<path d="M12 21 C8.1 21 5.6 18.4 5.6 15 C5.6 10.2 11.6 8.2 10.8 3 C15.8 6 18.4 10.2 18.4 15 C18.4 18.4 15.9 21 12 21 Z"/>
+<path d="M12 21 C10.2 21 9 19.8 9 18.2 C9 16 12 15.2 11.6 12.6 C13.8 14.2 15 16 15 18.2 C15 19.8 13.8 21 12 21 Z"/>
+</g></g>
+<text x="975.0" y="426" fill="#9fb0c8" font-family="sans-serif" font-size="13" text-anchor="middle">Pyromancer</text>
+<g transform="translate(31.0,470)"><rect width="88" height="88" rx="18" fill="#121a2c" stroke="#d9b6ff" stroke-opacity=".45" stroke-width="2"/>
+<g transform="translate(15,15) scale(2.42)" fill="none" stroke="#d9b6ff" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round">
+<path d="M12 2.5 V21.5"/>
+<path d="M4.2 7 L19.8 17"/>
+<path d="M4.2 17 L19.8 7"/>
+<path d="M12 6.6 L9.4 4"/>
+<path d="M12 6.6 L14.6 4"/>
+<path d="M12 17.4 L9.4 20"/>
+<path d="M12 17.4 L14.6 20"/>
+</g></g>
+<text x="75.0" y="576" fill="#9fb0c8" font-family="sans-serif" font-size="13" text-anchor="middle">Cryomancer</text>
+<g transform="translate(181.0,470)"><rect width="88" height="88" rx="18" fill="#121a2c" stroke="#d9b6ff" stroke-opacity=".45" stroke-width="2"/>
+<g transform="translate(15,15) scale(2.42)" fill="none" stroke="#d9b6ff" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round">
+<path d="M13.4 2 L5.4 13.2 H10 L8.8 22 L18 10.4 H13 Z"/>
+</g></g>
+<text x="225.0" y="576" fill="#9fb0c8" font-family="sans-serif" font-size="13" text-anchor="middle">Stormcaller</text>
+<g transform="translate(331.0,470)"><rect width="88" height="88" rx="18" fill="#121a2c" stroke="#d9b6ff" stroke-opacity=".45" stroke-width="2"/>
+<g transform="translate(15,15) scale(2.42)" fill="none" stroke="#d9b6ff" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round">
+<path d="M5.2 11.2 C5.2 6.7 8.2 3.2 12 3.2 C15.8 3.2 18.8 6.7 18.8 11.2 C18.8 13.4 17.9 14.8 17 15.6 V18.6 H7 V15.6 C6.1 14.8 5.2 13.4 5.2 11.2 Z"/>
+<circle cx="9.5" cy="10.8" r="1.6"/>
+<circle cx="14.5" cy="10.8" r="1.6"/>
+<path d="M10.6 18.6 V15.8"/>
+<path d="M13.4 18.6 V15.8"/>
+</g></g>
+<text x="375.0" y="576" fill="#9fb0c8" font-family="sans-serif" font-size="13" text-anchor="middle">Warlock</text>
+<g transform="translate(481.0,470)"><rect width="88" height="88" rx="18" fill="#121a2c" stroke="#b06bff" stroke-opacity=".45" stroke-width="2"/>
+<g transform="translate(15,15) scale(2.42)" fill="none" stroke="#b06bff" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round">
+<path d="M12 2.8 L20 12 12 21.2 4 12 Z"/>
+<path d="M12 6.8 V17.2"/>
+<path d="M8.6 12 H15.4"/>
+</g></g>
+<text x="525.0" y="576" fill="#9fb0c8" font-family="sans-serif" font-size="13" text-anchor="middle">Enchanter</text>
+<g transform="translate(631.0,470)"><rect width="88" height="88" rx="18" fill="#121a2c" stroke="#b06bff" stroke-opacity=".45" stroke-width="2"/>
+<g transform="translate(15,15) scale(2.42)" fill="none" stroke="#b06bff" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round">
+<circle cx="12" cy="12" r="8"/>
+<path d="M12 4 V20"/>
+<path d="M4 12 H20"/>
+<path d="M6.3 6.3 L17.7 17.7"/>
+<path d="M17.7 6.3 L6.3 17.7"/>
+</g></g>
+<text x="675.0" y="576" fill="#9fb0c8" font-family="sans-serif" font-size="13" text-anchor="middle">Crowd Control</text>
+<g transform="translate(781.0,470)"><rect width="88" height="88" rx="18" fill="#121a2c" stroke="#b06bff" stroke-opacity=".45" stroke-width="2"/>
+<g transform="translate(15,15) scale(2.42)" fill="none" stroke="#b06bff" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round">
+<path d="M6 18.5 L16.6 7.4"/>
+<path d="M14.2 3.6 h6.2 v6.2"/>
+<path d="M8.4 16.2 L5 19.6"/>
+<path d="M9.4 4.4 l1.05 2.1 2.1 1.05 -2.1 1.05 -1.05 2.1 -1.05 -2.1 -2.1 -1.05 2.1 -1.05 Z"/>
+</g></g>
+<text x="825.0" y="576" fill="#9fb0c8" font-family="sans-serif" font-size="13" text-anchor="middle">Spellblade</text>
+<g transform="translate(931.0,470)"><rect width="88" height="88" rx="18" fill="#121a2c" stroke="#b06bff" stroke-opacity=".45" stroke-width="2"/>
+<g transform="translate(15,15) scale(2.42)" fill="none" stroke="#b06bff" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round">
+<circle cx="12" cy="12" r="8.2"/>
+<path d="M12 5.2 L17.8 16 H6.2 Z"/>
+<circle cx="12" cy="12" r="1.9"/>
+</g></g>
+<text x="975.0" y="576" fill="#9fb0c8" font-family="sans-serif" font-size="13" text-anchor="middle">Summoner</text>
+</svg>

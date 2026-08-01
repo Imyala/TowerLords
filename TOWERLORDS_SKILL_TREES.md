@@ -192,3 +192,42 @@ forever after.
 
 The test sandbox also gained real DOM reparenting and a `className` that writes through to
 `classList`, without which those last checks would have been reading nothing.
+
+---
+
+## 9. Stash grid layout fix
+
+The stash's two item grids were sized with `flex:1` inside a flex column that has **no definite
+height of its own** — the panel now hugs its content, so nothing up the chain resolves to a fixed
+height. A `flex-basis:0` child in an indefinite column is precisely the case browsers resolve
+inconsistently, and because grid items default to `align-items:stretch`, whatever height the row
+landed on was then forced onto each tile — overriding `.tile`'s `aspect-ratio:1/1` and smearing the
+icons into tall vertical strips.
+
+This was introduced by the panel rework (§8): before that, panels opened at a fixed `820×560`, which
+gave the chain a definite height by accident.
+
+Fixed at both ends so it cannot recur:
+
+```css
+.bagGrid{ grid-auto-rows:min-content;   /* a row is exactly one tile tall */
+          align-content:start;          /* pack rows at the top */
+          align-items:start; }          /* never stretch a tile to fill its row */
+.bagGrid > .tile{ width:100% }          /* aspect-ratio:1/1 then decides the height */
+
+.stashSide .bagGrid{ flex:0 0 auto; height:min(46vh,430px); max-height:none; }
+.stashCols{ align-items:flex-start }    /* columns no longer stretch each other */
+.stashMid{ align-self:center }          /* transfer buttons centre against the grids */
+```
+
+Resulting geometry, independent of window size: both columns render **6 square 64×64px tiles per
+row, ~5 rows visible**, identical on each side, scrolling by wheel.
+
+`align-items:start` was applied to the shared `.bagGrid` rule (and `.eqGrid` / `.slotRow`), so the
+inventory panel's bag and paper-doll are protected from the same failure mode.
+
+A regression test asserts `.bagGrid` keeps all three no-stretch properties, that the stash grids
+keep a definite height rather than `flex:1`, and that tiles keep their square aspect-ratio.
+
+> Verified by CSS reasoning and a layout calculation, not visually — no browser was reachable from
+> this environment at the time. Worth a quick look in-game to confirm.

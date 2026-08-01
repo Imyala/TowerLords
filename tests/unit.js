@@ -545,6 +545,134 @@ check('panel body text is legible', ()=>{
   return 'hint/headings/chips/titles = '+got.join(' / ');
 });
 
+
+check('item grids cannot be stretched out of shape', ()=>{
+  const html=require('fs').readFileSync(require('path').join(__dirname,'..','towerlords.html'),'utf8');
+  const m=html.match(/\.bagGrid\{display:grid[^}]*\}/); if(!m) throw new Error('.bagGrid rule missing');
+  for(const need of ['grid-auto-rows:min-content','align-content:start','align-items:start'])
+    if(m[0].indexOf(need)<0) throw new Error('.bagGrid is missing '+need+' — a tall row would stretch the tiles and override aspect-ratio');
+  const st=html.match(/\.stashSide \.bagGrid\{[^}]*\}/); if(!st) throw new Error('stash grid rule missing');
+  if(st[0].indexOf('flex:0 0 auto')<0) throw new Error('stash grids still stretch with flex:1 inside an indefinite column');
+  if(!/height:min\(/.test(st[0])) throw new Error('stash grids have no definite height');
+  if(html.indexOf('.tile{position:relative;aspect-ratio:1/1')<0) throw new Error('tiles lost their square aspect-ratio');
+  return 'rows are min-content, items align to start, stash grids have a definite height';
+});
+
+
+check('every lane and node role has a glyph', ()=>{
+  const GL=g('TREE_GLYPH'), LBL=g('LANE_LBL');
+  for(const lane of Object.keys(LBL)) if(!GL[lane]) throw new Error('lane "'+lane+'" has no glyph');
+  for(const k of ['core','skill','capstone','beast']) if(!GL[k]) throw new Error('missing structural glyph: '+k);
+  return Object.keys(GL).length+' glyphs covering 24 lanes + 4 structural roles';
+});
+
+check('every glyph is valid drawing data', ()=>{
+  const GL=g('TREE_GLYPH');
+  for(const k in GL) for(const p of GL[k].split('|')){
+    if(p.charAt(0)==='C'){ const a=p.slice(2).split(','); if(a.length!==3||a.some(n=>isNaN(parseFloat(n)))) throw new Error(k+': bad circle "'+p+'"'); }
+    else if(p.charAt(0)==='E'){ const a=p.slice(2).split(','); if(a.length!==4||a.some(n=>isNaN(parseFloat(n)))) throw new Error(k+': bad ellipse "'+p+'"'); }
+    else if(!/^[Mm]/.test(p)) throw new Error(k+': a path must start with a move command, got "'+p.slice(0,12)+'"');
+    // relative commands (h/v/l/a/c) carry DELTAS, not coordinates, so a negative value is
+    // legitimate — this is a typo guard, not a grid check
+    else { const nums=p.match(/-?\d*\.?\d+/g)||[]; for(const n of nums){ const v=parseFloat(n); if(v<-30||v>30) throw new Error(k+': number '+v+' is far off the 24x24 grid — likely a typo'); } }
+  }
+  return Object.keys(GL).length+' glyphs, all well-formed and in scale';
+});
+
+check('lane labels are labels, not stray data', ()=>{
+  // a line-anchored regex once overwrote LANE_LBL.mk with SVG path data because the same two-letter
+  // keys appear in both LANE_LBL and TREE_GLYPH — this catches that class of mistake
+  const LBL=g('LANE_LBL');
+  for(const k in LBL){
+    const v=LBL[k];
+    if(typeof v!=='string' || !/^[A-Za-z][A-Za-z /-]*$/.test(v)) throw new Error('LANE_LBL.'+k+' is not a readable label: "'+String(v).slice(0,40)+'"');
+    if(v.length>24) throw new Error('LANE_LBL.'+k+' is suspiciously long');
+  }
+  return Object.keys(LBL).length+' lane labels, all plain text';
+});
+
+check('the tree draws glyphs, not emoji', ()=>{
+  if(src.indexOf('<span class="tic">')>=0) throw new Error('a talent cell still renders an emoji span');
+  if(src.indexOf('function treeIconSVG')<0) throw new Error('the glyph renderer is missing');
+  const svg=g('treeIconSVG(TALENTMAP[Object.keys(TALENTMAP)[0]])');
+  if(svg.indexOf('<svg')!==0 || svg.indexOf('viewBox="0 0 24 24"')<0) throw new Error('bad svg output: '+svg.slice(0,60));
+  return 'talent cells and tooltips both render inline SVG';
+});
+
+
+// ================================================================================================
+//  CLASS PURITY — a player can dip into any tree, so each tree must grant only ITS class's stats.
+//  The 16 stat nodes (rows 1,2,4,5) plus the foundation are held to a per-class whitelist.
+//  Row 7 KEYSTONES and the row 8 capstone are exempt: a keystone's whole job is to be the one
+//  deliberate trade, and each says so in its own text.
+// ================================================================================================
+const CLASS_STATS={
+  tk:['armor','lifePct','lifeFlat','lifeRegen','reflectPct','dodgePct','lifeOnHit','lifeOnKill','area'],
+  mn:['lifeRegen','lifeOnHit','lifeOnKill','lifePct','manaFlat','manaPct','manaRegen','manaCostPct','cdrPct','armor'],
+  st:['dmgPct','crit','critMultPct','asPct','execPct','lifesteal','fervorRatePct','lowHpDmgPct','area'],
+  rg:['dmgPct','asPct','crit','critMultPct','proj','pierce','movePct','dashCdrPct','petDmgPct','area'],
+  el:['elemDmgPct','ailDmgPct','skillDmgPct','area','manaRegen','cdrPct','critMultPct'],
+  wd:['skillDmgPct','manaPct','manaFlat','manaRegen','manaCostPct','cdrPct','area','petDmgPct','dmgPct','asPct'],
+};
+check('each tree grants only its own class of stats', ()=>{
+  const bad=[], summary=[];
+  for(const sp of g('SPECS').filter(s=>!s.relic)){
+    const allow=new Set(CLASS_STATS[sp.kw]||[]);
+    if(!allow.size) throw new Error('no stat whitelist defined for '+sp.kw);
+    const used=new Set();
+    sp.tiers.forEach((row,ti)=>{
+      if(ti===3||ti===6||ti===7||ti===8) return;      // skill rows, keystones, capstone are exempt
+      for(const n of row) for(const k in (n.eff||{})){
+        used.add(k);
+        if(!allow.has(k)) bad.push(`${sp.nm} row ${ti} "${n.nm}" grants ${k}`);
+      }
+    });
+    summary.push(sp.kw+':'+used.size);
+  }
+  if(bad.length) throw new Error('off-class stats:\n           '+bad.join('\n           '));
+  return 'all six trees stay inside their own vocabulary ('+summary.join(' ')+' distinct stats each)';
+});
+
+check('the tank tree grants no damage, crit or attack speed', ()=>{
+  const sp=g('SPECS').find(s=>s.kw==='tk'); const bad=[];
+  sp.tiers.forEach((row,ti)=>{ if(ti===7||ti===8) return;
+    for(const n of row) for(const k of ['dmgPct','crit','critMultPct','asPct','lifesteal','execPct'])
+      if(n.eff&&n.eff[k]!=null) bad.push(n.nm+'.'+k); });
+  if(bad.length) throw new Error('offensive stats on tank nodes: '+bad.join(', '));
+  const key=sp.tiers[7].find(n=>n.lane==='br');
+  if(!key.eff.lifesteal) throw new Error('the Brawler keystone should still be the sanctioned defence-for-offence trade');
+  return 'clean — the only lifesteal/damage is the Brawler KEYSTONE, which is the deliberate trade';
+});
+
+check('the healer tree grants no damage or move speed', ()=>{
+  const sp=g('SPECS').find(s=>s.kw==='mn'); const bad=[];
+  sp.tiers.forEach((row,ti)=>{ if(ti===7||ti===8) return;
+    for(const n of row) for(const k of ['dmgPct','crit','critMultPct','asPct','movePct','skillDmgPct','elemDmgPct'])
+      if(n.eff&&n.eff[k]!=null) bad.push(n.nm+'.'+k); });
+  if(bad.length) throw new Error('off-class stats on healer nodes: '+bad.join(', '));
+  return 'clean — healing, mana and cooldowns only';
+});
+
+check('only the hybrid column mixes weapon damage with spell power', ()=>{
+  const mixers=[];
+  for(const sp of g('SPECS').filter(s=>!s.relic)){
+    let wep=false, spell=false;
+    sp.tiers.forEach((row,ti)=>{ if(ti===7||ti===8) return;
+      for(const n of row){ if(n.eff&&(n.eff.dmgPct||n.eff.asPct)) wep=true;
+        if(n.eff&&(n.eff.skillDmgPct||n.eff.elemDmgPct)) spell=true; } });
+    if(wep&&spell) mixers.push(sp.kw);
+  }
+  if(mixers.length!==1 || mixers[0]!=='wd')
+    throw new Error('expected only the Warden to mix, got: '+(mixers.join(', ')||'none'));
+  return 'Warden alone — mixing is its class identity';
+});
+
+check('the skill tree shows one tooltip, not two', ()=>{
+  if(/class="spec\$\{xc\}"[^`]*title=/.test(src)) throw new Error('the column div still carries a native title= that stacks on the custom tooltip');
+  if(src.indexOf('specRole')<0) throw new Error('the role text has nowhere to live now');
+  return 'native title removed; role + lanes shown in the column header';
+});
+
 console.log(R.join('\n'));
 console.log('\n=== '+(fails?('FAILURES: '+fails):'ALL CHECKS PASSED')+' ===');
 process.exit(fails?1:0);
