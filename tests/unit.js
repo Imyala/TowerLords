@@ -673,6 +673,57 @@ check('the skill tree shows one tooltip, not two', ()=>{
   return 'native title removed; role + lanes shown in the column header';
 });
 
+
+check('the quest readout has room for the quest and never clips it', ()=>{
+  const html=require('fs').readFileSync(require('path').join(__dirname,'..','towerlords.html'),'utf8');
+  const ti=html.match(/#towerInfo\{[^}]*\}/); if(!ti) throw new Error('#towerInfo rule missing');
+  if(ti[0].indexOf('overflow:hidden')>=0) throw new Error('the readout still clips its own contents');
+  if(ti[0].indexOf('resize:')>=0 && ti[0].indexOf('resize:none')<0) throw new Error('the readout is still a resizable box');
+  if(!/width:min\(/.test(ti[0])) throw new Error('the readout has no default width — it will shrink to its shortest line');
+  const bt=html.match(/#bountyTxt:not\(:empty\)\{[^}]*\}/); if(!bt) throw new Error('quest card rule missing');
+  if(bt[0].indexOf('display:block')<0) throw new Error('the quest card is still shrink-to-fit');
+  if(bt[0].indexOf('white-space:normal')<0) throw new Error('the quest card cannot wrap');
+  for(const cls of ['qLbl','qNm','qPg']) if(html.indexOf('#bountyTxt .'+cls)<0) throw new Error('missing quest line style: '+cls);
+  return 'fixed-width readout, block quest card, label / name / progress on their own lines';
+});
+
+
+check('top-centre HUD elements never sit on each other', ()=>{
+  const html=require('fs').readFileSync(require('path').join(__dirname,'..','towerlords.html'),'utf8');
+  const topOf=(sel,scope)=>{
+    const esc=s=>s.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+    const m=html.match(new RegExp(esc((scope||'')+sel)+'\\{[^}]*top:(\\d+)px'));
+    if(!m) throw new Error('no top: found for '+(scope||'')+sel);
+    return +m[1];
+  };
+  const H={dirHud:42, floorBanner:56, bossBar:74};   // generous estimates of each painted box
+  const plain={ dirHud:topOf('#dirHud',''), floorBanner:topOf('#floorBanner',''),
+                bossBar:topOf('#bossBar',''), bossSpeech:topOf('#bossSpeech','') };
+  const on={ floorBanner:topOf('#floorBanner','body.dirhud-on '),
+             bossBar:topOf('#bossBar','body.dirhud-on '),
+             bossSpeech:topOf('#bossSpeech','body.dirhud-on ') };
+  if(plain.floorBanner+H.floorBanner > plain.bossBar) throw new Error('boss bar overlaps the floor banner');
+  if(plain.bossBar+H.bossBar > plain.bossSpeech) throw new Error('boss subtitle overlaps the boss bar');
+  if(plain.dirHud+H.dirHud > on.floorBanner) throw new Error('the compass overlaps the floor banner');
+  if(on.floorBanner+H.floorBanner > on.bossBar) throw new Error('boss bar overlaps the banner with the compass on');
+  if(on.bossBar+H.bossBar > on.bossSpeech) throw new Error('boss subtitle overlaps the boss bar with the compass on');
+  return 'compass '+plain.dirHud+' → banner '+on.floorBanner+' → boss bar '+on.bossBar+' → subtitle '+on.bossSpeech;
+});
+
+check('the direction arrow is drawn, not a text glyph', ()=>{
+  const html=require('fs').readFileSync(require('path').join(__dirname,'..','towerlords.html'),'utf8');
+  if(html.indexOf('<span class="dhArrow">➤</span>')>=0) throw new Error('still a text glyph — it vanishes against bright scenery');
+  if(html.indexOf('class="dhArw"')<0) throw new Error('no drawn arrow svg');
+  const head=html.match(/\.dhArw \.hd\{[^}]*\}/);
+  if(!head) throw new Error('arrow head has no style');
+  if(head[0].indexOf('stroke:rgba(0,0,0')<0) throw new Error('the arrow head has no dark outline to survive light backgrounds');
+  const w=html.match(/\.dhArrow\{[^}]*width:(\d+)px/);
+  if(!w || +w[1]<24) throw new Error('the arrow is still small: '+(w?w[1]:'?')+'px');
+  const chip=html.match(/\.dhChip\{[^}]*\}/);
+  if(!/background:rgba\(3,6,13,\.9/.test(chip[0])) throw new Error('the chip is still translucent enough to disappear');
+  return 'drawn arrow '+w[1]+'px, dark outline, glow, near-opaque chip';
+});
+
 console.log(R.join('\n'));
 console.log('\n=== '+(fails?('FAILURES: '+fails):'ALL CHECKS PASSED')+' ===');
 process.exit(fails?1:0);

@@ -22,7 +22,7 @@
   .hidden{display:none!important;}
 
   /* top banner */
-  #floorBanner{top:12px;left:50%;transform:translateX(-50%);text-align:center;}
+  #floorBanner{top:12px;left:50%;transform:translateX(-50%);text-align:center;transition:top .18s ease;}
   #floorTitle{font-size:28px;letter-spacing:4px;font-weight:bold;text-shadow:0 0 18px rgba(86,224,255,.5);}
   #floorType{font-size:11px;letter-spacing:3px;opacity:.7;text-transform:uppercase;margin-top:2px;}
 
@@ -47,18 +47,22 @@
   .pip.on{opacity:1;}
 
   /* top-right */
-  #towerInfo{top:12px;right:14px;text-align:right;z-index:20;
-    resize:both;overflow:hidden;pointer-events:auto;min-width:170px;min-height:74px;max-width:460px;max-height:60vh;padding:4px 2px;}
+  #towerInfo{top:12px;right:14px;text-align:right;z-index:20;pointer-events:none;
+    width:min(380px,30vw);overflow:visible;padding:4px 2px;}
   #towerInfo .big{font-size:26px;font-weight:bold;color:var(--neon);}
   #towerInfo .sm{font-size:13px;opacity:.8;letter-spacing:1px;}
   /* the QUEST/bounty line is the one piece of top-right text you are meant to act on — it gets its
      own card so it reads as an objective rather than as more ambient flavour */
-  #bountyTxt:not(:empty){display:inline-block;margin-top:7px;padding:7px 12px;border-radius:10px;
-    font-size:14px;font-weight:700;letter-spacing:.8px;opacity:1;color:var(--gold);
+  #bountyTxt:not(:empty){display:block;width:100%;box-sizing:border-box;white-space:normal;
+    margin-top:7px;padding:8px 12px 9px;border-radius:10px;line-height:1.4;
+    font-size:14px;font-weight:700;letter-spacing:.6px;opacity:1;color:var(--gold);
     background:linear-gradient(180deg,rgba(255,206,77,.16),rgba(255,206,77,.05));
     border:1.5px solid rgba(255,206,77,.55);box-shadow:0 0 20px rgba(255,206,77,.22),0 3px 12px rgba(0,0,0,.5);
     text-shadow:0 0 12px rgba(255,206,77,.5);animation:questPulse 2.4s ease-in-out infinite;}
-  #bountyTxt .qLbl{display:block;font-size:10px;letter-spacing:2.5px;opacity:.7;font-weight:800;margin-bottom:2px;}
+  #bountyTxt .qLbl{display:block;font-size:10px;letter-spacing:2.5px;opacity:.72;font-weight:800;margin-bottom:3px;
+    padding-bottom:3px;border-bottom:1px solid rgba(255,206,77,.28);}
+  #bountyTxt .qNm{display:block;color:#fff6dd;font-size:14.5px;}
+  #bountyTxt .qPg{display:block;margin-top:2px;font-size:13px;opacity:.95;}
   @keyframes questPulse{0%,100%{box-shadow:0 0 20px rgba(255,206,77,.22),0 3px 12px rgba(0,0,0,.5);}
     50%{box-shadow:0 0 30px rgba(255,206,77,.4),0 3px 12px rgba(0,0,0,.5);}}
 
@@ -1244,7 +1248,7 @@
   #vignette.hit{box-shadow:inset 0 0 220px rgba(0,0,0,.7),inset 0 0 120px rgba(255,30,60,.5);}
   #vignette.hitBig{box-shadow:inset 0 0 220px rgba(0,0,0,.7),inset 0 0 200px rgba(255,20,50,.7);}
   /* ---- boss health bar (top of screen) ---- */
-  #bossBar{position:absolute;top:16px;left:50%;transform:translateX(-50%);width:min(560px,64vw);z-index:20;pointer-events:none;
+  #bossBar{position:absolute;top:72px;left:50%;transform:translateX(-50%);width:min(560px,64vw);z-index:20;pointer-events:none;transition:top .18s ease;
     background:linear-gradient(180deg,rgba(12,8,14,.9),rgba(20,8,12,.82));border:1px solid rgba(255,80,110,.45);
     border-radius:11px;padding:8px 14px 9px;box-shadow:0 6px 26px rgba(0,0,0,.55),0 0 24px rgba(255,60,90,.18);}
   #bossBar.roam{border-color:rgba(255,170,60,.6);box-shadow:0 6px 26px rgba(0,0,0,.55),0 0 26px rgba(255,150,40,.3);}
@@ -1258,25 +1262,32 @@
   #dirHud{position:absolute;top:10px;left:50%;transform:translateX(-50%);z-index:22;pointer-events:none;
     display:flex;gap:10px;align-items:center;justify-content:center;flex-wrap:wrap;max-width:92vw;}
   #dirHud.hidden{display:none;}
-  .dhChip{display:flex;align-items:center;gap:7px;padding:6px 13px 6px 10px;border-radius:20px;
-    font:bold 12.5px/1 system-ui,sans-serif;letter-spacing:1.2px;white-space:nowrap;
-    background:rgba(4,8,16,.86);backdrop-filter:blur(3px);}
+  .dhChip{display:flex;align-items:center;gap:9px;padding:7px 16px 7px 11px;border-radius:22px;
+    font:bold 13.5px/1 system-ui,sans-serif;letter-spacing:1.4px;white-space:nowrap;
+    background:rgba(3,6,13,.93);backdrop-filter:blur(4px);}
   .dhChip.hidden{display:none;}
-  .dhArrow{display:inline-block;font-size:17px;line-height:1;transform:rotate(0deg);
+  .dhArrow{display:block;width:27px;height:27px;transform:rotate(0deg);
     transition:transform .09s linear;will-change:transform;}
-  .dhD{opacity:.62;font-weight:600;letter-spacing:.5px;}
-  #dhPortal{border:1.5px solid rgba(90,175,255,.78);color:#a8d8ff;box-shadow:0 0 18px rgba(70,150,255,.38),0 3px 14px rgba(0,0,0,.5);}
-  #dhPortal .dhArrow{color:#4aa8ff;text-shadow:0 0 12px rgba(74,168,255,.95);}
+  .dhArw{width:100%;height:100%;display:block;overflow:visible;animation:dhArwPulse 1.5s ease-in-out infinite;}
+  .dhArw .sh{fill:none;stroke:currentColor;stroke-width:3.6;stroke-linecap:round;}
+  .dhArw .hd{fill:currentColor;stroke:rgba(0,0,0,.65);stroke-width:1.3;stroke-linejoin:round;}
+  @keyframes dhArwPulse{0%,100%{transform:scale(1);}50%{transform:scale(1.17);}}
+  .dhD{opacity:.72;font-weight:700;letter-spacing:.5px;}
+  #dhPortal{border:2px solid rgba(110,190,255,.9);color:#e2f2ff;
+    box-shadow:0 0 26px rgba(70,150,255,.5),0 4px 16px rgba(0,0,0,.65),inset 0 0 18px rgba(70,150,255,.14);}
+  #dhPortal .dhArrow{color:#6cc4ff;filter:drop-shadow(0 0 7px rgba(108,196,255,.95)) drop-shadow(0 1px 2px rgba(0,0,0,.8));}
   #dhPortal.near{animation:dhPulse 1.05s ease-in-out infinite;}
-  #dhBoss{border:1.5px solid rgba(255,80,110,.8);color:#ffc0cb;box-shadow:0 0 18px rgba(255,60,90,.42),0 3px 14px rgba(0,0,0,.5);
+  #dhBoss{border:2px solid rgba(255,90,120,.92);color:#ffe1e7;
+    box-shadow:0 0 26px rgba(255,60,90,.55),0 4px 16px rgba(0,0,0,.65),inset 0 0 18px rgba(255,60,90,.16);
     animation:dhPulse 1.25s ease-in-out infinite;}
-  #dhBoss .dhArrow{color:#ff2d55;text-shadow:0 0 12px rgba(255,45,85,.95);}
+  #dhBoss .dhArrow{color:#ff4d6d;filter:drop-shadow(0 0 7px rgba(255,77,109,.95)) drop-shadow(0 1px 2px rgba(0,0,0,.85));}
   @keyframes dhPulse{0%,100%{opacity:.86;}50%{opacity:1;}}
-  /* the compass owns the very top — slide the boss bar & subtitles down under it */
-  body.dirhud-on #bossBar{top:56px;}
-  body.dirhud-on #bossSpeech{top:118px;}
-  body.touch-on .dhChip{font-size:9.5px;padding:4px 9px 4px 7px;gap:5px;}
-  body.touch-on .dhArrow{font-size:14px;}
+  /* the compass owns the very top — everything else in the centre column slides down under it */
+  body.dirhud-on #floorBanner{top:54px;}
+  body.dirhud-on #bossBar{top:114px;}
+  body.dirhud-on #bossSpeech{top:194px;}
+  body.touch-on .dhChip{font-size:11px;padding:5px 11px 5px 8px;gap:6px;}
+  body.touch-on .dhArrow{width:20px;height:20px;}
   /* ---- off-screen roaming-lord indicator ---- */
   #bossArrow{position:absolute;z-index:20;pointer-events:none;transform:translate(-50%,-50%);
     display:flex;align-items:center;gap:5px;padding:5px 10px;border-radius:20px;
@@ -1286,7 +1297,7 @@
   #bossArrow .baIc{font-size:14px;}
   @keyframes baPulse{0%,100%{opacity:.8;transform:translate(-50%,-50%) scale(1);}50%{opacity:1;transform:translate(-50%,-50%) scale(1.08);}}
   /* ---- boss speech subtitle ---- */
-  #bossSpeech{position:absolute;top:74px;left:50%;transform:translateX(-50%);z-index:20;pointer-events:none;
+  #bossSpeech{position:absolute;top:152px;left:50%;transform:translateX(-50%);z-index:20;pointer-events:none;transition:top .18s ease;
     max-width:min(680px,80vw);text-align:center;padding:10px 20px;border-radius:12px;
     background:linear-gradient(180deg,rgba(12,10,20,.9),rgba(8,6,14,.86));border:1px solid rgba(255,206,77,.4);
     box-shadow:0 8px 30px rgba(0,0,0,.6);opacity:0;}
@@ -1386,8 +1397,8 @@
   <div id="bossBar" class="hidden"><div class="bbTop"><span class="bbName" id="bbName">GUARDIAN</span><span class="bbTag" id="bbTag"></span></div><div class="bbTrack"><div class="bbFill" id="bbFill"></div></div><div class="bbHp" id="bbHp"></div></div>
   <div id="bossArrow" class="hidden"><span class="baIc">⚠</span><span class="baTx">ROAMING LORD</span></div>
   <div id="dirHud" class="hidden">
-    <div class="dhChip hidden" id="dhPortal"><span class="dhArrow">➤</span><span class="dhTx">PORTAL</span><span class="dhD"></span></div>
-    <div class="dhChip hidden" id="dhBoss"><span class="dhArrow">➤</span><span class="dhTx">BOSS</span><span class="dhD"></span></div>
+    <div class="dhChip hidden" id="dhPortal"><span class="dhArrow"><svg class="dhArw" viewBox="0 0 24 24"><path class="sh" d="M2.6 12 H12.4"/><path class="hd" d="M11 5 L21.4 12 L11 19 Z"/></svg></span><span class="dhTx">PORTAL</span><span class="dhD"></span></div>
+    <div class="dhChip hidden" id="dhBoss"><span class="dhArrow"><svg class="dhArw" viewBox="0 0 24 24"><path class="sh" d="M2.6 12 H12.4"/><path class="hd" d="M11 5 L21.4 12 L11 19 Z"/></svg></span><span class="dhTx">BOSS</span><span class="dhD"></span></div>
   </div>
   <div id="bossSpeech" class="hidden"></div>
   <div id="coach" class="hidden"><div class="coach-ic" id="coachIc">💡</div><div class="coach-body"><div class="coach-t" id="coachT"></div><div class="coach-d" id="coachD"></div></div><div class="coach-x" id="coachX">✕</div></div>
@@ -13310,7 +13321,10 @@ function updateHUD(){
   else { sx.textContent=''; sx.classList.remove('urgent'); }
   $('petChip').textContent = G.petErrand ? `Sell-run ${Math.ceil(G.petErrand.t)}s` : G.pet ? `${PET_FAMILIES[G.pet.family].ic} Lv ${G.pet.level}${(G.pets&&G.pets.length>1)?' ·'+G.pets.length:''}` : 'Pet Yard —';
   const bt=$('bountyTxt'); if(bt){ const b=G.bounty;
-    bt.innerHTML = b ? `<span class="qLbl">◈ QUEST</span>${b.nm} — ${b.failed?'<span style="color:var(--hp)">FAILED</span>':b.done?'<span style="color:var(--xp)">✓ COMPLETE</span>':b.id==='kills'?`<b>${b.have}/${b.need}</b>`:b.descTxt}` : ''; }
+    bt.innerHTML = b ? `<span class="qLbl">◈ QUEST</span><span class="qNm">${b.nm}</span>`
+      +`<span class="qPg">${b.failed?'<span style="color:var(--hp)">✕ FAILED</span>'
+        :b.done?'<span style="color:var(--xp)">✓ COMPLETE</span>'
+        :b.id==='kills'?`<b>${b.have} / ${b.need}</b>`:b.descTxt}</span>` : ''; }
   updateBossBar();
   updateDirHud();     // top-of-screen compass: BLUE arrow → portal, RED arrow → boss
   updatePartyHud();   // online: show every player's hp/mp (draggable)
