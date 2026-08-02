@@ -4159,7 +4159,7 @@ $('shareDeathBtn').onclick=()=>shareCard('death');
 $('shareVictBtn').onclick=()=>shareCard('victory');
 // ---- main menu navigation ----
 function showMenu(){ try{ closeGameModal(); }catch(_){} _G.legacyOpen=false; ['hud','tutorial','deathlog','death','legacyScreen'].forEach(id=>$(id).classList.add('hidden')); PANELS.forEach(p=>$(p).classList.add('hidden'));
-  $('start').classList.remove('hidden'); $('menuShell').classList.remove('hidden'); $('climbScreen').classList.add('hidden'); $('coopLobby').classList.add('hidden'); $('onlineLobby').classList.add('hidden'); coopLobbyOpen=false; G.running=false; G.practice=false; G.tutorial=false; loadMeta(); refreshDailyBtn(); refreshContinueBtn(); refreshMenuRank(); refreshMenuSummary(); syncPause(); }
+  $('start').classList.remove('hidden'); $('menuShell').classList.remove('hidden'); $('climbScreen').classList.add('hidden'); $('coopLobby').classList.add('hidden'); $('onlineLobby').classList.add('hidden'); coopLobbyOpen=false; G.running=false; G.practice=false; G.tutorial=false; clearScreenFx(); loadMeta(); refreshDailyBtn(); refreshContinueBtn(); refreshMenuRank(); refreshMenuSummary(); syncPause(); }
 // ESC while playing (no panels open) → confirm a return to the main menu, auto-saving first
 function promptExitToMenu(){ if(!G.running) return;
   gameConfirm('Return to the main menu?', 'Your progress is auto-saved — pick <b class="gm-hl">▶ Continue</b> on the menu to resume this run.', ()=>{
@@ -4917,7 +4917,7 @@ function generateTown(){ G._vendRefreshes=0;   // vendor restocks (3 per visit) 
 function enterTower(){ const f=(_G.returnFloor|0)>1?(_G.returnFloor|0):1; _G.returnFloor=0;   // a recall remembers your depth → the portal drops you back there, not floor 1
   G.inTown=false; G.floor=f; G.run.floorTime=0; PANELS.forEach(p=>$(p).classList.add('hidden')); syncPause(); sfx.dash(); log(f>1?('Returning to the Tower — Floor '+f+'…'):'Descending into the Tower…'); dailyScoreTick(); generateFloor();
   coach('move','🎮','Climbing begins','Move with <b>WASD</b>, aim with the <b>mouse</b>, hold <b>click</b> to attack. Press <b>Space to dash</b> — you\'re invulnerable mid-dash, your best defence.'); }
-function returnToTown(){ _G.running=true; _G.paused=false;
+function returnToTown(){ _G.running=true; _G.paused=false; clearScreenFx();   // you arrive home whole — no leftover damage/low-health red from the run that killed you
   for(const pl of joinedPlayers()){ withPlayer(pl.id,()=>{ G.dead=false; G.downed=false; G.downT=0; G.hp=G.maxhp; G.mana=G.maxmana; G.invuln=1; G.fervor=0; G.charge=0; G.swiftT=0; G.recallT=0; G.petErrand=null; refillFlasks(100); if(G.petMesh)G.petMesh.visible=true; }); }
   _G.cur=0; if(G.run) G.run.hungerFloors=0;   // the sanctuary resets Tower Hunger
   clock.getDelta(); renderActionbar(); updatePips(); generateTown(); }
@@ -10604,6 +10604,7 @@ function die(){ if(G.dead)return;
   if(G.practice){ G.hp=G.maxhp; G.invuln=1; return; }   // no death in the practice arena
   if(_G.victoryPending||G.victoryOpen){ G.hp=Math.max(1,G.hp); G.invuln=2; return; }   // the tower fell first — victory outranks a stray bullet
   G.dead=true; G.running=false; G.recallT=0; _G.returnFloor=0;   // death ends the descent — no recalled depth to return to
+  clearScreenFx();   // the loop stops here — wipe the low-health red now or it stays burned on for the whole death screen
   if(G.dailyRun) dailyScoreTick();   // FAST-DEATH FIX: score today's daily even on an instant death
   PANELS.forEach(p=>$(p).classList.add('hidden'));
   setMusicSet('grief');   // a death — the grief music plays
@@ -11111,7 +11112,7 @@ function renderScore(){
   }
   $('scoreBody').innerHTML=`<div class="scoreCols"><div class="scoreColMain">${left}</div><div class="scoreColSide">${right}</div></div>`;
 }
-function respawn(){ G.dead=false; G.hp=G.maxhp; G.mana=G.maxmana; G.invuln=1.4; G.running=true; G.fervor=0; G.charge=0; G.swiftT=0; G.petErrand=null; refillFlasks(100); if(G.petMesh)G.petMesh.visible=true; clock.getDelta(); generateFloor(); }
+function respawn(){ clearScreenFx(); G.dead=false; G.hp=G.maxhp; G.mana=G.maxmana; G.invuln=1.4; G.running=true; G.fervor=0; G.charge=0; G.swiftT=0; G.petErrand=null; refillFlasks(100); if(G.petMesh)G.petMesh.visible=true; clock.getDelta(); generateFloor(); }
 
 // ============================================================ PLAYER
 function createPlayer(){ const grp=new THREE.Group();
@@ -12609,6 +12610,10 @@ function applyEnemyCounter(e, tp){ const S=tp.S; if(!S||!S.adaptKind)return; con
 }
 let _hurtFlashT;
 function hurtFlash(strong){ const v=$('vignette'); if(!v)return; v.classList.remove('hit','hitBig'); void v.offsetWidth; v.classList.add(strong?'hitBig':'hit'); clearTimeout(_hurtFlashT); _hurtFlashT=setTimeout(()=>v.classList.remove('hit','hitBig'), strong?360:220); }
+// The red screen edge is driven from updateHUD(), which only ticks while the sim loop runs — death
+// stops the loop, so whatever the vignette looked like at the moment you died stays frozen on screen.
+// Every state change that ends a fight clears it outright instead of waiting for the next HUD tick.
+function clearScreenFx(){ const v=$('vignette'); if(!v)return; clearTimeout(_hurtFlashT); v.classList.remove('low','rage','hit','hitBig'); }
 function hurtPlayer(dmg, opts){ if(G.invuln>0)return;
   if(G.S.dodgePct>0 && Math.random()*100<G.S.dodgePct){ perfectDodge(); return; }   // passive evasion — a clean dodge, same reward language as a perfect dash-dodge
   opts=opts||{}; const heavy=!!opts.heavy; bountyFail();
@@ -12754,7 +12759,11 @@ function updateHUD(){
   const sc=$('sigChg'); if(sc){ sc.style.height=(G.charge/G.chargeMax*100)+'%'; $('sigSlot').classList.toggle('ready', G.charge>=G.chargeMax); }
   const rmp=$('rampage'), st=fervorStacks();
   if(G.fervor>0){ rmp.classList.add('show'); $('rampFill').style.width=clamp(G.fervor,0,100)+'%'; $('rampLabel').textContent='RAMPAGE x'+(1+st)+'  (+'+Math.round(Math.min(G.fervor,100)/100*60)+'% dmg/spd)'; } else rmp.classList.remove('show');
-  const v=$('vignette'); v.classList.toggle('low',G.hp/G.maxhp<0.3); v.classList.toggle('rage',st>=4);
+  const v=$('vignette');
+  const _alive = G.running && !G.dead && G.maxhp>0;          // no run, no corpse, no divide-by-zero
+  const _hpFrac = _alive ? (G.hp/G.maxhp) : 1;
+  v.classList.toggle('low',  _alive && _hpFrac<0.3);          // the red edge is a WARNING, not decor
+  v.classList.toggle('rage', _alive && st>=4);
   const cx2=$('clearTxt');
   if(cx2){ if(!G.practice && !G.inTown && floorType(G.floor)==='NORMAL'){
     if(G.portal&&G.portal.active){ cx2.innerHTML='<span style="color:var(--xp)">✓ PORTAL OPEN</span>'; }

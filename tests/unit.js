@@ -452,6 +452,50 @@ check('the red screen edge only appears while alive in a run', ()=>{
   return 'menu / dead / 0-max-hp / healthy = clear · 10% health = warning';
 });
 
+check('the damage flash schedules its own removal instead of throwing half-way through', ()=>{
+  // Regression: `_hurtFlashT` was never declared, so hurtFlash() painted the red edge, then threw a
+  // ReferenceError on clearTimeout(_hurtFlashT) BEFORE scheduling the timeout that takes it back off.
+  // The frame loop swallowed the throw, so the first hit of a run left the red stuck on for good.
+  const v=g("document.getElementById('vignette')");
+  v.classList.remove('hit','hitBig');
+  run('_hurtFlashT=undefined;');
+  g('hurtFlash(true)');                                     // must not throw — a throw here is the bug
+  if(!v.classList.contains('hitBig')) throw new Error('no damage flash painted');
+  if(g('_hurtFlashT')===undefined) throw new Error('no removal timer scheduled — the flash would never clear');
+  g('hurtFlash(false)');                                    // and again, re-arming cleanly
+  if(!v.classList.contains('hit')) throw new Error('second flash did not paint');
+  if(g('_hurtFlashT')===undefined) throw new Error('second flash scheduled no removal timer');
+  try{ g('clearTimeout(_hurtFlashT)'); }catch(e){}
+  v.classList.remove('hit','hitBig');
+  return 'flash paints and always arms its own clear-down timer';
+});
+
+check('the red screen edge is wiped at death, not left frozen on the death screen', ()=>{
+  // updateHUD() only runs while the sim loop ticks, and death stops the loop — so the vignette has to
+  // be cleared by the transitions themselves, or the red stays burned on all the way to the sanctuary.
+  const v=g("document.getElementById('vignette')");
+  const red=()=>['low','rage','hit','hitBig'].filter(c=>v.classList.contains(c));
+  run(`G.running=true; G.dead=false; G.maxhp=100; G.hp=8; G.fervor=0; G.inTown=false; G.practice=false; G.floor=5;`);
+  try{ g('hurtFlash(true)'); }catch(e){}
+  try{ g('updateHUD()'); }catch(e){}
+  if(!v.classList.contains('low')) throw new Error('setup failed — no red edge at 8% health');
+  // die() must clear it on the spot: nothing repaints the HUD again until the player leaves this screen
+  try{ g('die()'); }catch(e){ throw new Error('die() threw: '+e.message); }
+  let r=red(); if(r.length) throw new Error('red left on the death screen: '+r.join('+'));
+  // …and the trip home must not reintroduce it, even if the HUD never gets a clean tick
+  run(`G.running=true; G.dead=false; G.hp=8; G.maxhp=100;`);   // pretend the HUD is mid-repaint with stale vitals
+  try{ g('updateHUD()'); }catch(e){}
+  try{ g('returnToTown()'); }catch(e){ throw new Error('returnToTown() threw: '+e.message); }
+  r=red(); if(r.length) throw new Error('red followed you into the sanctuary: '+r.join('+'));
+  // a fresh respawn starts clean too
+  run(`G.running=true; G.dead=false; G.hp=8; G.maxhp=100;`);
+  try{ g('updateHUD()'); }catch(e){}
+  try{ g('respawn()'); }catch(e){}
+  r=red(); if(r.length) throw new Error('red survived a respawn: '+r.join('+'));
+  run(`G.running=false; G.dead=false; G.hp=100; G.maxhp=100;`);
+  return 'die() / returnToTown() / respawn() each clear low+rage+hit';
+});
+
 check('panels open at their default size, then keep whatever size you drag them to', ()=>{
   const mk=()=>{ const e=g("document.createElement('div')"); e.style.width=''; e.style.height=''; return e; };
   run("localStorage.removeItem(PANELSIZE_KEY);");

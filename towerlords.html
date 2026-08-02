@@ -4183,7 +4183,7 @@ $('shareDeathBtn').onclick=()=>shareCard('death');
 $('shareVictBtn').onclick=()=>shareCard('victory');
 // ---- main menu navigation ----
 function showMenu(){ try{ closeGameModal(); }catch(_){} _G.legacyOpen=false; ['hud','tutorial','deathlog','death','legacyScreen'].forEach(id=>$(id).classList.add('hidden')); PANELS.forEach(p=>$(p).classList.add('hidden'));
-  $('start').classList.remove('hidden'); $('menuShell').classList.remove('hidden'); $('climbScreen').classList.add('hidden'); $('coopLobby').classList.add('hidden'); $('onlineLobby').classList.add('hidden'); coopLobbyOpen=false; G.running=false; G.practice=false; G.tutorial=false; loadMeta(); refreshDailyBtn(); refreshContinueBtn(); refreshMenuRank(); refreshMenuSummary(); syncPause(); }
+  $('start').classList.remove('hidden'); $('menuShell').classList.remove('hidden'); $('climbScreen').classList.add('hidden'); $('coopLobby').classList.add('hidden'); $('onlineLobby').classList.add('hidden'); coopLobbyOpen=false; G.running=false; G.practice=false; G.tutorial=false; clearScreenFx(); loadMeta(); refreshDailyBtn(); refreshContinueBtn(); refreshMenuRank(); refreshMenuSummary(); syncPause(); }
 // ESC while playing (no panels open) → confirm a return to the main menu, auto-saving first
 function promptExitToMenu(){ if(!G.running) return;
   gameConfirm('Return to the main menu?', 'Your progress is auto-saved — pick <b class="gm-hl">▶ Continue</b> on the menu to resume this run.', ()=>{
@@ -4969,6 +4969,7 @@ function enterTower(){ const f=(_G.returnFloor|0)>1?(_G.returnFloor|0):1; _G.ret
 function returnToTown(){ _G.running=true; _G.paused=false;
   for(const pl of joinedPlayers()){ withPlayer(pl.id,()=>{ G.dead=false; G.downed=false; G.downT=0; G.hp=G.maxhp; G.mana=G.maxmana; G.invuln=1; G.fervor=0; G.charge=0; G.swiftT=0; G.recallT=0; G.petErrand=null; refillFlasks(100); if(G.petMesh)G.petMesh.visible=true; }); }
   _G.cur=0; if(G.run) G.run.hungerFloors=0;   // the sanctuary resets Tower Hunger
+  clearScreenFx();   // you arrive home whole — no leftover damage/low-health red from the run that killed you
   clock.getDelta(); renderActionbar(); updatePips(); generateTown(); }
 // ---- QUICK RECALL: a short channel then teleport to the sanctuary (RotMG-nexus style); NON-interruptable — once you start it, taking hits won't cancel it, so it always gets you home ----
 const RECALL_TIME=2.6;
@@ -11146,6 +11147,7 @@ function die(){ if(G.dead)return;
   if(G.practice){ G.hp=G.maxhp; G.invuln=1; return; }   // no death in the practice arena
   if(_G.victoryPending||G.victoryOpen){ G.hp=Math.max(1,G.hp); G.invuln=2; return; }   // the tower fell first — victory outranks a stray bullet
   G.dead=true; G.running=false; G.recallT=0; _G.returnFloor=0;   // death ends the descent — no recalled depth to return to
+  clearScreenFx();   // the loop stops here — wipe the low-health red now or it stays burned on for the whole death screen
   shatterSeals();   // ASCENDANT SEALS: proof does not survive the grave — every seal you held is lost
   if(G.dailyRun) dailyScoreTick();   // FAST-DEATH FIX: score today's daily even on an instant death
   PANELS.forEach(p=>$(p).classList.add('hidden'));
@@ -11239,6 +11241,7 @@ function die(){ if(G.dead)return;
 // ============================================================ VICTORY — the floor-50 summit falls
 function victoryScreen(){ if(G.victoryOpen) return; G.victoryOpen=true; _G.victoryPending=false;
   _G.running=false; PANELS.forEach(p=>$(p).classList.add('hidden'));
+  clearScreenFx();   // the loop stops on the victory screen too — don't freeze a low-health red over it
   $('death').classList.add('hidden');   // victory outranks any death that slipped in during the kill FX
   for(const pl of joinedPlayers()){ withPlayer(pl.id,()=>{ G.dead=false; G.downed=false; G.downT=0; G.hp=Math.max(G.hp,G.maxhp*0.5); G.invuln=2; }); }
   const ng=ngLevel(G.floor), cycle=ng+1;
@@ -11661,7 +11664,7 @@ function renderScore(){
   }
   $('scoreBody').innerHTML=`<div class="scoreCols"><div class="scoreColMain">${left}</div><div class="scoreColSide">${right}</div></div>`;
 }
-function respawn(){ G.dead=false; G.hp=G.maxhp; G.mana=G.maxmana; G.invuln=1.4; G.running=true; G.fervor=0; G.charge=0; G.swiftT=0; G.petErrand=null; refillFlasks(100); if(G.petMesh)G.petMesh.visible=true; clock.getDelta(); generateFloor(); }
+function respawn(){ clearScreenFx(); G.dead=false; G.hp=G.maxhp; G.mana=G.maxmana; G.invuln=1.4; G.running=true; G.fervor=0; G.charge=0; G.swiftT=0; G.petErrand=null; refillFlasks(100); if(G.petMesh)G.petMesh.visible=true; clock.getDelta(); generateFloor(); }
 
 // ============================================================ PLAYER
 function createPlayer(){ const grp=new THREE.Group();
@@ -13160,7 +13163,16 @@ function addHot(g,amt,dur){ g.hots=g.hots||[];
 }
 function adaptTick(dt){ if(G.stunT>0)G.stunT-=dt; if(G.slowT>0)G.slowT-=dt; if(G.weakT>0)G.weakT-=dt; if(G.healCutT>0)G.healCutT-=dt; }
 // (the build-countering system was removed — see the ARCHETYPE COUNTERS note in recompute())
+// NOTE: this declaration is load-bearing. Without it, reading `_hurtFlashT` throws a ReferenceError
+// *after* hurtFlash() has already painted the red damage edge but *before* it schedules the timeout
+// that removes it — so the very first hit of a run leaves the red stuck on screen permanently.
+let _hurtFlashT;
 function hurtFlash(strong){ const v=$('vignette'); if(!v)return; v.classList.remove('hit','hitBig'); void v.offsetWidth; v.classList.add(strong?'hitBig':'hit'); clearTimeout(_hurtFlashT); _hurtFlashT=setTimeout(()=>v.classList.remove('hit','hitBig'), strong?360:220); }
+// The red screen edge is driven from updateHUD(), which only ticks while the sim loop runs — death
+// stops the loop, so whatever the vignette looked like at the moment you died stays frozen on screen
+// (through the death panel and, if the HUD ever throws or the loop is paused, into the sanctuary too).
+// Every state change that ends a fight clears it outright instead of waiting for the next HUD tick.
+function clearScreenFx(){ const v=$('vignette'); if(!v)return; clearTimeout(_hurtFlashT); v.classList.remove('low','rage','hit','hitBig'); }
 function hurtPlayer(dmg, opts){ if(G.invuln>0)return;
   if(G.S.dodgePct>0 && Math.random()*100<G.S.dodgePct){ perfectDodge(); return; }   // passive evasion — a clean dodge, same reward language as a perfect dash-dodge
   opts=opts||{}; const heavy=!!opts.heavy; bountyFail();
