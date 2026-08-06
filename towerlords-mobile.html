@@ -385,9 +385,11 @@
   .cs-bar.fame>i{background:linear-gradient(90deg,#ff8a2e,var(--gold));box-shadow:0 0 8px rgba(255,206,77,.5);}
   .cs-barlbl{display:flex;justify-content:space-between;font-size:10px;opacity:.72;margin:4px 0 9px;letter-spacing:.4px;}
   .cs-barlbl:last-child{margin-bottom:0;} .cs-barlbl b{color:var(--ink);opacity:1;font-variant-numeric:tabular-nums;}
-  /* section heads */
+  /* section heads — same grammar as .statGrp .gh below (bottom-border divider) so the whole sheet
+     reads as one consistent system instead of attributes and derived stats using two different header styles */
   .csSec{margin:11px 16px 0;}
-  .csSecHd{font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--neon);opacity:.9;margin:0 0 8px;display:flex;align-items:center;}
+  .csSecHd{font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--neon);opacity:.9;margin:0 0 8px;
+    padding-bottom:5px;border-bottom:1px solid rgba(86,224,255,.16);display:flex;align-items:center;}
   .csSecHd .pts{margin-left:auto;font-size:10px;color:var(--gold);font-weight:bold;letter-spacing:.5px;text-transform:none;}
   /* attribute cards */
   .attr{display:flex;align-items:center;gap:11px;padding:8px 11px;margin-bottom:6px;border-radius:9px;
@@ -408,18 +410,26 @@
   .statGrp .gh{font-size:11px;letter-spacing:1.5px;text-transform:uppercase;font-weight:bold;margin-bottom:7px;display:flex;align-items:center;gap:7px;
     padding-bottom:5px;border-bottom:1px solid rgba(255,255,255,.1);}
   .statGrid{display:grid;grid-template-columns:1fr 1fr;gap:3px 18px;}
-  .statGrid .sr{display:flex;justify-content:space-between;align-items:baseline;font-size:12px;padding:2px 0;gap:8px;}
+  .statGrid .sr{display:flex;justify-content:space-between;align-items:baseline;font-size:12px;padding:2px 5px;margin:0 -5px;border-radius:4px;gap:8px;transition:background .1s;}
+  .statGrid .sr:hover{background:rgba(255,255,255,.045);}
   .statGrid .sr .l{opacity:.6;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
   .statGrid .sr .v{font-weight:bold;color:var(--ink);font-variant-numeric:tabular-nums;white-space:nowrap;}
+  .bodyRow{display:flex;align-items:center;gap:8px;margin:5px 0;font-size:12px;}
+  .bodyRow .bIc{font-size:18px;} .bodyRow .bNm{min-width:56px;font-weight:bold;}
+  .bodyRow .bPips{letter-spacing:2px;color:#ff8c42;} .bodyRow .bDs{opacity:.7;flex:1;}
 
   /* skill tree — SWTOR-style specialisation columns */
   #treePanel{position:fixed!important;inset:0!important;width:100vw!important;height:100vh!important;height:100dvh!important;transform:none!important;margin:0!important;
     display:flex;flex-direction:column;border-radius:0;max-width:100vw;max-height:100vh;max-height:100dvh;}
-  #treeHead{display:flex;align-items:center;justify-content:center;gap:16px;padding:14px 56px;border-bottom:1px solid rgba(255,255,255,.1);
+  #treeHead{display:flex;align-items:center;justify-content:center;gap:16px;flex-wrap:wrap;row-gap:8px;padding:14px 56px;border-bottom:1px solid rgba(255,255,255,.1);
     background:linear-gradient(180deg,rgba(20,26,44,.7),rgba(8,11,20,.5));box-shadow:0 4px 18px -6px rgba(0,0,0,.5);}
   #treeHead h3{padding:0;font-size:16px;letter-spacing:2px;text-shadow:0 0 14px color-mix(in srgb,var(--neon) 55%,transparent);}
   #treeHead .sp{font-size:13px;opacity:.85;} #treeHead .sp b{color:var(--gold);font-size:19px;text-shadow:0 0 10px color-mix(in srgb,var(--gold) 50%,transparent);}
-  #treeHead .treeHint{font-size:10.5px;opacity:.5;letter-spacing:.3px;}
+  /* legend as discrete chips instead of one dense run-on sentence — each rule reads as its own scannable unit */
+  .treeHint{display:flex;flex-wrap:wrap;gap:5px;justify-content:center;flex-basis:100%;}
+  .legChip{font-size:10px;letter-spacing:.3px;padding:3px 9px;border-radius:20px;border:1px solid rgba(255,255,255,.14);
+    background:rgba(255,255,255,.03);color:var(--ink);opacity:.85;white-space:nowrap;}
+  .legChip b{font-weight:bold;}
   /* quick-build bar: one-click "build me toward [role]" for newcomers facing the big tree
      — the button ROW mirrors #treeCols exactly (same padding/gap/centering trick) so each button sits directly above its own tree column */
   #quickBuild{display:flex;flex-direction:column;gap:6px;padding:11px 18px;border-bottom:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.02);}
@@ -486,7 +496,7 @@
     .talent.rar5 .tbox{width:68px;height:68px;} .talent.rar5 .tic{font-size:32px;}
     .talent.skillnode .tbox{width:62px;height:62px;} .talent.skillnode .tic{font-size:30px;}
     .trow{min-height:52px;gap:8px;} .specGrid{gap:11px;}
-    .treeHint{font-size:9.5px;}
+    .legChip{font-size:9px;padding:2px 7px;}
     #treeHead{flex-wrap:wrap;row-gap:6px;padding:14px 40px;}
     #petPanel{width:96vw;}
     [data-body]{min-height:40px;font-size:13px;padding:6px 14px!important;}
@@ -531,8 +541,10 @@
   /* rarity → size + glow (the deeper you go, the rarer & bigger the node) */
   .talent.rar0 .tbox{width:48px;height:48px;} .talent.rar0 .tic{font-size:22px;}
   .talent.rar1 .tbox{box-shadow:0 0 7px -3px var(--sc);}
-  .talent.rar2 .tbox{width:58px;height:58px;box-shadow:0 0 10px -2px var(--sc);} .talent.rar2 .tic{font-size:27px;}
-  .talent.rar3 .tbox{width:64px;height:64px;box-shadow:0 0 13px -1px var(--sc);} .talent.rar3 .tic{font-size:30px;}
+  /* outline width steps up with rarity (1→4) instead of jumping straight from "no outline" at rar1-3 to
+     an outlined ring at rar4 — a node's tier now reads at a glance, not just from its size */
+  .talent.rar2 .tbox{width:58px;height:58px;box-shadow:0 0 10px -2px var(--sc);outline:1px solid color-mix(in srgb,var(--sc) 28%,transparent);outline-offset:1px;} .talent.rar2 .tic{font-size:27px;}
+  .talent.rar3 .tbox{width:64px;height:64px;box-shadow:0 0 13px -1px var(--sc);outline:1px solid color-mix(in srgb,var(--sc) 42%,transparent);outline-offset:1.5px;} .talent.rar3 .tic{font-size:30px;}
   .talent.rar4 .tbox{width:68px;height:68px;box-shadow:0 0 17px 0 var(--sc);outline:1px solid color-mix(in srgb,var(--sc) 55%,transparent);outline-offset:2px;} .talent.rar4 .tic{font-size:32px;}
   .talent.rar5 .tbox{width:80px;height:80px;box-shadow:0 0 24px 1px var(--gold);outline:2px solid var(--gold);outline-offset:2px;} .talent.rar5 .tic{font-size:38px;}
   /* skill-grant nodes: unmistakable diamond-ish badge with a cyan/gold pulse so you can spot learnable skills in the tree */
@@ -554,7 +566,8 @@
   @keyframes talPulse{0%,100%{filter:drop-shadow(0 0 1px transparent);}50%{filter:drop-shadow(0 0 7px var(--sc));}}
   /* tooltip */
   #treeTip{position:absolute;pointer-events:none;background:rgba(4,7,16,.98);border:1px solid var(--neon);
-    border-radius:9px;padding:9px 12px;font-size:12px;max-width:232px;z-index:9;display:none;box-shadow:0 6px 22px rgba(0,0,0,.6);}
+    border-radius:9px;padding:9px 12px;font-size:12px;max-width:232px;z-index:9;display:none;box-shadow:0 6px 22px rgba(0,0,0,.6);
+    opacity:1;transition:opacity .12s ease;}
   /* shared instant cursor tooltip (matches the menus — replaces slow native title=) */
   #gtip{position:fixed;z-index:200;display:none;pointer-events:none;max-width:248px;
     background:linear-gradient(180deg,rgba(14,19,34,.98),rgba(8,11,22,.98));border:1px solid rgba(120,150,200,.42);
@@ -574,6 +587,12 @@
     border:1px solid rgba(86,224,255,.3);color:var(--neon);background:rgba(86,224,255,.06);}
   .bindBtn:hover{background:var(--neon);color:#04111a;}
   .bindBtn.act{background:var(--neon);color:#04111a;}
+  /* semantic variants so a button's hover state matches its own meaning instead of always flashing neon
+     (a red "Sell" or gold "Fuse" button turning cyan on hover reads as a mistake, not feedback) */
+  .bindBtn.gold{border-color:var(--gold);color:var(--gold);background:rgba(255,206,77,.08);}
+  .bindBtn.gold:hover{background:var(--gold);color:#1a1204;}
+  .bindBtn.danger{border-color:rgba(255,120,140,.5);color:#ff8a9c;background:rgba(255,120,140,.06);}
+  .bindBtn.danger:hover{background:#ff5c78;color:#1a0508;}
 
   /* stash panel */
   /* ---- STASH: its own full-size panel (bag ⇄ vault, side by side) ---- */
@@ -854,15 +873,15 @@
   .petSecHd h4{font-size:11px;letter-spacing:1.6px;text-transform:uppercase;color:#ffc56b;margin:0;padding-left:9px;border-left:3px solid #ffae3d;line-height:1.1;}
   .petSecHd #petFeedTools{margin-left:auto;}
   /* active-pet hero card */
-  .petHero{display:flex;gap:18px;margin:14px 18px 0;padding:18px;border-radius:15px;
-    border:1px solid color-mix(in srgb,var(--rc,#ffae3d) 55%,transparent);
-    background:linear-gradient(135deg,color-mix(in srgb,var(--rc,#ffae3d) 16%,rgba(10,14,24,.6)),rgba(8,12,22,.7));
-    box-shadow:0 0 36px -12px color-mix(in srgb,var(--rc,#ffae3d) 60%,transparent),inset 0 0 60px -34px color-mix(in srgb,var(--rc,#ffae3d) 100%,transparent);}
-  .petPortrait{position:relative;width:122px;flex:none;border-radius:14px;border:1px solid color-mix(in srgb,var(--rc,#ffae3d) 60%,transparent);
+  .petHero{display:flex;gap:18px;margin:14px 18px 0;padding:18px;border-radius:18px;
+    border:1px solid color-mix(in srgb,var(--rc,#ffae3d) 40%,transparent);
+    background:linear-gradient(165deg,color-mix(in srgb,var(--rc,#ffae3d) 12%,rgba(12,9,5,.92)),rgba(7,6,12,.94));
+    box-shadow:0 0 34px -10px color-mix(in srgb,var(--rc,#ffae3d) 60%,transparent),inset 0 0 50px -30px color-mix(in srgb,var(--rc,#ffae3d) 80%,transparent);}
+  .petPortrait{position:relative;width:122px;min-width:120px;flex:none;border-radius:16px;border:1px solid color-mix(in srgb,var(--rc,#ffae3d) 45%,transparent);
     display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;
-    background:radial-gradient(circle at 50% 36%,color-mix(in srgb,var(--rc,#ffae3d) 30%,transparent),rgba(0,0,0,.6));
+    background:radial-gradient(circle at 50% 38%,color-mix(in srgb,var(--rc,#ffae3d) 26%,transparent),rgba(0,0,0,.35) 72%);
     box-shadow:inset 0 0 30px -8px color-mix(in srgb,var(--rc,#ffae3d) 90%,transparent);}
-  .petPortrait .pIc{font-size:60px;filter:drop-shadow(0 0 14px color-mix(in srgb,var(--rc,#ffae3d) 70%,transparent));}
+  .petPortrait .pIc{font-size:52px;filter:drop-shadow(0 0 12px color-mix(in srgb,var(--rc,#ffae3d) 75%,transparent));}
   .petPortrait .pFam{font-size:9px;letter-spacing:2px;text-transform:uppercase;opacity:.65;}
   .petPortrait .pLvB{position:absolute;bottom:-11px;left:50%;transform:translateX(-50%);font-size:10px;font-weight:bold;letter-spacing:.5px;
     color:#1a1405;background:var(--gold);border-radius:9px;padding:3px 11px;box-shadow:0 0 12px -2px var(--gold);white-space:nowrap;}
@@ -877,32 +896,26 @@
   .pbar>i{display:block;height:100%;border-radius:5px;transition:width .2s;}
   .pbar.xp>i{background:linear-gradient(90deg,#ffae3d,#ffe14d);box-shadow:0 0 10px rgba(255,206,77,.6);}
   .pbar.hp>i{background:linear-gradient(90deg,#ff5c78,#c11f3a);box-shadow:0 0 10px rgba(255,92,120,.4);}
-  /* ability slots */
+  /* ability slots — border-left is tinted by the pet's own rarity (--rc) so slots read as belonging to this pet, not generic chrome */
   .petSlots{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-top:14px;}
-  .petAbSlot{display:flex;align-items:center;gap:9px;padding:8px 10px;border-radius:10px;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.035);}
+  .petAbSlot{display:flex;align-items:center;gap:9px;padding:8px 10px;border-radius:11px;border:1px solid rgba(255,255,255,.1);
+    border-left:3px solid color-mix(in srgb,var(--rc,#ffae3d) 65%,transparent);
+    background:linear-gradient(160deg,rgba(255,255,255,.05),rgba(0,0,0,.25));}
   .petAbSlot .abic{width:30px;height:30px;flex:none;display:flex;align-items:center;justify-content:center;font-size:17px;border-radius:8px;
     border:1px solid var(--ac,rgba(255,255,255,.2));background:color-mix(in srgb,var(--ac,#888) 16%,rgba(0,0,0,.4));}
   .petAbSlot .abtx{min-width:0;} .petAbSlot .abtx b{font-size:12px;} .petAbSlot .abtx span{display:block;font-size:9.5px;opacity:.6;line-height:1.3;margin-top:1px;}
-  .petAbSlot.lk{opacity:.45;border-style:dashed;} .petAbSlot.lk .abic{filter:grayscale(1);border-style:dashed;}
+  .petAbSlot.lk{opacity:.55;border-style:dashed;border-left-style:dashed;} .petAbSlot.lk .abic{filter:grayscale(1);border-style:dashed;}
   .petCapHint{font-size:11px;line-height:1.5;margin-top:13px;padding-top:11px;border-top:1px solid rgba(255,255,255,.08);}
   /* empty / incubator state */
+  .petHeroEmpty{--rc:#ffd479;}
   .petHeroEmpty .petPortrait .pIc{animation:eggBob 2.6s ease-in-out infinite;}
   .petHeroEmpty .petPortrait{animation:eggGlow 2.6s ease-in-out infinite;}
   .petHeroEmpty .pLvB{background:rgba(255,255,255,.14);color:var(--ink);box-shadow:none;}
   .petHeroEmpty .pbar>i{box-shadow:none;}
   /* ---- pet panel polish: richer card, glowing portrait, clear sections ---- */
-  #petPanel{width:640px;}
   #petPanel h3{background:linear-gradient(180deg,rgba(255,174,61,.12),transparent);border-bottom-color:rgba(255,174,61,.25);color:#ffae3d;}
-  .petHero{border-radius:18px;border:1px solid color-mix(in srgb,var(--rc,#ffae3d) 40%,transparent);
-    background:linear-gradient(165deg,color-mix(in srgb,var(--rc,#ffae3d) 12%,rgba(12,9,5,.92)),rgba(7,6,12,.94));
-    box-shadow:0 0 34px -10px color-mix(in srgb,var(--rc,#ffae3d) 60%,transparent),inset 0 0 50px -30px color-mix(in srgb,var(--rc,#ffae3d) 80%,transparent);}
-  .petPortrait{min-width:120px;border-radius:16px;background:radial-gradient(circle at 50% 38%,color-mix(in srgb,var(--rc,#ffae3d) 26%,transparent),rgba(0,0,0,.35) 72%);
-    border:1px solid color-mix(in srgb,var(--rc,#ffae3d) 45%,transparent);}
-  .petPortrait .pIc{font-size:52px;filter:drop-shadow(0 0 12px color-mix(in srgb,var(--rc,#ffae3d) 75%,transparent));}
   .petSec{border:1px solid rgba(255,174,61,.16);border-radius:14px;padding:12px 14px 14px;background:rgba(12,9,5,.35);}
   .petSecHd h4{color:#ffae3d;letter-spacing:1px;}
-  .petAbSlot{border-radius:11px;background:linear-gradient(160deg,rgba(255,255,255,.05),rgba(0,0,0,.25));border:1px solid rgba(255,255,255,.1);}
-  .petAbSlot.lk{opacity:.55;}
   .petEmpty .peIc{font-size:40px;filter:drop-shadow(0 0 10px rgba(255,174,61,.5));}
   .petEmpty .peTtl{color:#ffae3d;letter-spacing:.5px;}
   #openYardBtn{border-radius:12px;background:linear-gradient(90deg,rgba(255,206,77,.12),rgba(255,174,61,.05));letter-spacing:1px;}
@@ -930,14 +943,23 @@
   /* yard grid of pet cards */
   .petGrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(202px,1fr));gap:11px;}
   .petCard{position:relative;border-radius:13px;padding:13px;border:1px solid color-mix(in srgb,var(--rc,#5a6478) 50%,transparent);
-    background:linear-gradient(160deg,color-mix(in srgb,var(--rc,#5a6478) 20%,transparent),rgba(8,12,22,.72));}
+    background:linear-gradient(160deg,color-mix(in srgb,var(--rc,#5a6478) 20%,transparent),rgba(8,12,22,.72));
+    transition:transform .14s ease,box-shadow .14s ease,border-color .14s ease;
+    animation:petCardIn .22s cubic-bezier(.2,.9,.3,1.2) backwards;}
+  .petCard:hover{transform:translateY(-3px);border-color:color-mix(in srgb,var(--rc,#fff) 65%,transparent);
+    box-shadow:0 10px 26px rgba(0,0,0,.5),0 0 20px -4px color-mix(in srgb,var(--rc,#5a6478) 55%,transparent);}
+  @keyframes petCardIn{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:none;}}
   .petCard.active{border-color:var(--gold);box-shadow:0 0 0 1px var(--gold),0 0 18px -4px var(--gold);}
   .petCard .pcTop{display:flex;align-items:center;gap:11px;}
   .petCard .pcPort{width:48px;height:48px;flex:none;border-radius:11px;border:1px solid color-mix(in srgb,var(--rc,#fff) 35%,transparent);
     display:flex;align-items:center;justify-content:center;font-size:27px;filter:drop-shadow(0 0 8px color-mix(in srgb,var(--rc,#000) 50%,transparent));
     background:radial-gradient(circle at 50% 40%,color-mix(in srgb,var(--rc,#888) 26%,transparent),rgba(0,0,0,.5));}
-  .petCard .pcNm{font-size:13.5px;font-weight:bold;line-height:1.15;}
-  .petCard .pcMeta{font-size:10px;opacity:.6;margin-top:2px;text-transform:uppercase;letter-spacing:.5px;}
+  .petCard .pcNm{font-size:13.5px;font-weight:bold;line-height:1.15;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .petCard .pcHd{flex:1;min-width:0;}
+  .petCard .pcMeta{font-size:10px;margin-top:3px;text-transform:uppercase;letter-spacing:.5px;display:flex;flex-wrap:wrap;align-items:center;gap:2px 6px;}
+  .petCard .pcLvTxt{opacity:.6;white-space:nowrap;}
+  .petCard .pcRar{font-size:8.5px;font-weight:bold;letter-spacing:1px;text-transform:uppercase;color:var(--rc,#ffae3d);
+    border:1px solid color-mix(in srgb,var(--rc,#ffae3d) 60%,transparent);border-radius:20px;padding:1px 7px;background:color-mix(in srgb,var(--rc,#ffae3d) 14%,transparent);}
   .pcLv{height:5px;background:rgba(0,0,0,.45);border-radius:3px;overflow:hidden;margin-top:10px;}
   .pcLv>i{display:block;height:100%;background:color-mix(in srgb,var(--rc,#ffae3d) 80%,#fff);}
   .petCard .pcAbs{font-size:16px;margin-top:9px;letter-spacing:4px;min-height:20px;}
@@ -1471,7 +1493,14 @@
       <h3>✦ SPECIALISATIONS</h3>
       <div class="sp">Skill points: <b id="spNum">0</b> <span id="spBudget" style="opacity:.5;font-weight:400"></span></div>
       <button id="respec">↺ Respec</button>
-      <div class="treeHint"><b style="color:var(--gold)">SHIFT+click = fill a node to max in one click</b> · left-click +1 · right-click −1 · each column is a ROLE and each column has <b>4 sub-role lanes</b> running down it — follow one lane for a clean archetype · ⇄ invest ~10 to diverge into a neighbouring role · <b style="color:#ff6ad5">◆ = RULE-BREAKERS</b> (hover them!) · <b style="color:var(--gold)">dashed gold = learnable SKILLS</b></div>
+      <div class="treeHint">
+        <span class="legChip"><b style="color:var(--gold)">SHIFT+click</b> = fill to max</span>
+        <span class="legChip">left-click +1 · right-click −1</span>
+        <span class="legChip">4 sub-role <b>lanes</b> per column — follow one for a clean build</span>
+        <span class="legChip">⇄ ~10 points to diverge into a neighbour</span>
+        <span class="legChip"><b style="color:#ff6ad5">◆ RULE-BREAKERS</b> — hover them</span>
+        <span class="legChip"><b style="color:var(--gold)">dashed gold</b> = learnable skill</span>
+      </div>
       <div class="closeX" data-close="treePanel">✕ <span style="font-size:11px;opacity:.6">(T)</span></div>
     </div>
     <div id="quickBuild"></div>
@@ -2195,6 +2224,16 @@ const BIOMES = [
   {name:'Gilded Halls',  ground:0x322a18, accent:0xffce4d, fog:0x161104, wall:0x4a3e22, wallRough:.3,  wallMetal:.6},
   {name:'Bone Crypt',    ground:0x2b2b30, accent:0xd8d2c0, fog:0x101013, wall:0x44444a, wallRough:.92, wallFlat:true},
 ];
+// every floor previously reused one flat, identical white sun + fixed hemi tint regardless of biome — a lava
+// foundry and a void sanctum lit exactly the same way. Tint both lights toward the biome's own accent colour
+// (already authored per-biome for UI/fog) so each biome actually has its own mood, not just a wall recolour.
+function applyBiomeAtmosphere(biome){
+  scene.background=new THREE.Color(biome.fog);
+  scene.fog=new THREE.Fog(biome.fog,46,150);
+  const accent=new THREE.Color(biome.accent);
+  if(hemi){ hemi.groundColor.setHex(biome.fog); hemi.color.setHex(0xbfd4ff).lerp(accent,0.16); }
+  if(dir){ dir.color.setHex(0xffffff).lerp(accent,0.18); }
+}
 // ---------------- THE CLIMB: five 10-floor ACTS, each locked to one biome, ending at the
 // floor-50 summit where THE TOWER LORD waits. Beyond 50 the tower rebuilds (Endless Ascent /
 // NG+) and the acts repeat, deadlier each cycle. Gilded Halls stays the sanctuary's biome.
@@ -4907,9 +4946,7 @@ function generateFloor(anchor){
     log('⌖ Act '+act.num+' — '+biome.name+': '+act.sub+'.');
     actBeat(act); actBeatRun(act); }   // once-ever authored line + a fresh ADAPTIVE line EVERY run (species rolled for this climb)
   if(G.floor%SUMMIT_FLOOR===0) log('👑 The summit. THE TOWER LORD holds this floor.');
-  scene.background=new THREE.Color(biome.fog);
-  scene.fog=new THREE.Fog(biome.fog, 46, 150);
-  hemi.groundColor.setHex(biome.fog);
+  applyBiomeAtmosphere(biome);
 
   const W = type==='SAFE'?100 : 210; G.bounds=W;
   const rects=[], rooms=[];
@@ -5040,7 +5077,7 @@ function generateTown(){ G._vendRefreshes=0;   // vendor restocks (3 per visit) 
     G.stash=G.stash.filter(x=>x!==_it); G.gold+=_gld; log('🧌 Your stash goblin munched '+_it.name+' → +'+_gld+'g. It looks pleased with itself.'); } }
   G.floorMod=null; G.bounty=null; G.obj=null; G.objProps=[]; G.shiftT=999; G.shiftWarned=false;   // the sanctuary is a rest area — drop any mods/bounty/reshuffle clock carried in from the run
   biome=BIOMES[4];                                   // Gilded Halls — the sanctuary
-  scene.background=new THREE.Color(biome.fog); scene.fog=new THREE.Fog(biome.fog,46,150); hemi.groundColor.setHex(biome.fog);
+  applyBiomeAtmosphere(biome);
   const room={cx:0,cz:0,rw:56,rh:46,x0:-28,x1:28,z0:-23,z1:23}; G.bounds=70;
   G.rooms=[room]; G.rects=[{x0:room.x0,x1:room.x1,z0:room.z0,z1:room.z1}];
   buildFloorMeshes(); buildWalls();
@@ -5570,7 +5607,9 @@ function buildProps(type){
 function buildBiomeDeco(){
   const bi=BIOMES.indexOf(biome); G.hazPools=[];
   const M2=(c,o)=>new THREE.MeshStandardMaterial(Object.assign({color:c,roughness:.9},o||{}));
-  const add=(m,x,z)=>{ m.position.set(x,m.position.y,z); scene.add(m); G.scenery.push(m); };
+  // shadows on every prop (single/whole-Group), not just walls/pillars — flat un-shadowed decoration next
+  // to shadow-mapped structural geometry is what made scenery read as pasted-on rather than part of the room
+  const add=(m,x,z)=>{ m.position.set(x,m.position.y,z); m.traverse(o=>{ if(o.isMesh){ o.castShadow=true; o.receiveShadow=true; } }); scene.add(m); G.scenery.push(m); };
   const solid=(x,z,r)=>G.obstacles.push({x,z,r,h:3});   // solid props block movement & shots, like pillars
   for(const r of G.rooms){ const n=randi(2,4);
     for(let i=0;i<n;i++){ const p=randPtInRoom(r,3); if(nearAnyPlayer&&nearAnyPlayer(p.x,p.z,4)) continue;
@@ -5588,7 +5627,8 @@ function buildBiomeDeco(){
         else { const rk=new THREE.Mesh(new THREE.DodecahedronGeometry(rand(.6,1.1),0), M2(0x3a4a3e,{flatShading:true})); rk.position.y=.45; rk.rotation.set(Math.random(),Math.random(),0); add(rk,p.x,p.z); solid(p.x,p.z,.85); } }
       else if(bi===1){ // EMBER FOUNDRY — lava pools (they BURN) · volcanic rock · ember vents
         if(roll<0.35){ const R=rand(1.5,2.4); const d=new THREE.Mesh(new THREE.CircleGeometry(R,20), M2(0xff5a1a,{emissive:0xff7a20,emissiveIntensity:1.1,roughness:.6}));
-          d.rotation.x=-Math.PI/2; d.position.y=.06; add(d,p.x,p.z); G.hazPools.push({x:p.x,z:p.z,r:R,type:'lava'}); }
+          d.rotation.x=-Math.PI/2; d.position.y=.06; add(d,p.x,p.z); G.hazPools.push({x:p.x,z:p.z,r:R,type:'lava'});
+          const lt=new THREE.PointLight(0xff6a20,1.3,R*3.4,2); lt.position.y=1.1; add(lt,p.x,p.z); }   // lava should actually light the room around it, not just be a bright flat disc
         else if(roll<0.7){ const rk=new THREE.Mesh(new THREE.DodecahedronGeometry(rand(.7,1.3),0), M2(0x2a1a14,{emissive:0x5a1a08,emissiveIntensity:.35,flatShading:true})); rk.position.y=.5; rk.rotation.set(Math.random(),Math.random(),0); add(rk,p.x,p.z); solid(p.x,p.z,.9); }
         else { const g=new THREE.Group(); const v=new THREE.Mesh(new THREE.CylinderGeometry(.34,.5,rand(.8,1.4),6), M2(0x3a241c,{flatShading:true})); v.position.y=.5;
           const gl=new THREE.Mesh(new THREE.SphereGeometry(.24,8,8), M2(0xffae3d,{emissive:0xff9a20,emissiveIntensity:1.4})); gl.position.y=rand(1.0,1.4); g.add(v,gl); add(g,p.x,p.z); solid(p.x,p.z,.55); } }
@@ -9960,7 +10000,7 @@ function renderPet(){
   if(G.pet) ensurePetAbilities(G.pet); G.pets.forEach(p=>ensurePetAbilities(p));   // repair legacy pets to exactly 3 abilities
   const ft=$('petFeedTools'); if(ft) ft.innerHTML='';
   if(!G.pet && !G.pets.length){
-    body.innerHTML=`<div class="petHero petHeroEmpty" style="--rc:#ffd479">
+    body.innerHTML=`<div class="petHero petHeroEmpty">
       <div class="petPortrait"><span class="pIc">🥚</span><span class="pFam">Incubator</span><span class="pLvB">LV —</span></div>
       <div class="petHinfo">
         <div class="petHtop"><span class="petName" style="opacity:.9">Awaiting a companion</span><span class="petRar">Empty</span></div>
@@ -10045,7 +10085,8 @@ function renderPetYard(){
     const lvPct=Math.round(pt.level/petLevelCap(pt)*100), actN=petActiveCount(pt);
     const abs=pt.abilities.map((a,i)=>`<span class="pcAb${i<actN?'':' lk'}" title="${PET_ABILITIES[a.type].nm}${i<actN?'':' — unlocks at '+PET_RARITY[PET_SLOT_UNLOCK[i]].nm}">${PET_ABILITIES[a.type].ic}</span>`).join('');
     card.innerHTML=`<div class="pcTop"><div class="pcPort">${PET_FAMILIES[pt.family].ic}</div>`+
-      `<div style="min-width:0"><div class="pcNm" style="color:var(--${rr.css})">${petName(pt)}</div><div class="pcMeta">Lv ${pt.level}/${petLevelCap(pt)} · ${rr.nm}</div></div></div>`+
+      `<div class="pcHd"><div class="pcNm" style="color:var(--${rr.css})">${petName(pt)}</div>`+
+      `<div class="pcMeta"><span class="pcLvTxt">Lv ${pt.level}/${petLevelCap(pt)}</span><span class="pcRar">${rr.nm}</span></div></div></div>`+
       `<div class="pcLv"><i style="width:${lvPct}%"></i></div>`+
       `<div class="pcAbs">${abs}</div>`;
     const btns=document.createElement('div'); btns.className='pcBtns';
@@ -10053,11 +10094,11 @@ function renderPetYard(){
     else {
       const sa=document.createElement('div'); sa.className='bindBtn'; sa.textContent='Equip'; sa.title='Set this pet as your active companion'; sa.onclick=()=>setActivePet(pt); btns.appendChild(sa);
       const sameRank = G.pet && pt.rarity===G.pet.rarity && G.pet.rarity<PET_RARITY.length-1;
-      if(sameRank){ const fb=document.createElement('div'); fb.className='bindBtn'; fb.style.borderColor='var(--gold)'; fb.style.color='var(--gold)';
+      if(sameRank){ const fb=document.createElement('div'); fb.className='bindBtn gold';
         fb.textContent='Fuse ▸ '+PET_RARITY[G.pet.rarity+1].nm;
         fb.title='Fuse this '+PET_RARITY[pt.rarity].nm+' into your active '+PET_RARITY[G.pet.rarity].nm+' → rank up to '+PET_RARITY[G.pet.rarity+1].nm+'. Level BOTH pets to their cap first for the full level cap.';
         fb.onclick=()=>fusePet(pt); btns.appendChild(fb); }
-      const se=document.createElement('div'); se.className='bindBtn'; se.style.borderColor='rgba(255,120,140,.5)'; se.style.color='#ff8a9c'; se.textContent='Sell '+petSellValue(pt)+'g'; se.title='Sell this pet for gold'; se.onclick=()=>sellPet(pt); btns.appendChild(se);
+      const se=document.createElement('div'); se.className='bindBtn danger'; se.textContent='Sell '+petSellValue(pt)+'g'; se.title='Sell this pet for gold'; se.onclick=()=>sellPet(pt); btns.appendChild(se);
       card.appendChild(btns);
     }
     yard.appendChild(card); });
@@ -10225,7 +10266,7 @@ function enterPetYard(){
   clearWorld(); _G.inYard=true; G.inTown=false; setMusicSet('calm');
   G.floorMod=null; G.bounty=null; G.obj=null; G.objProps=[]; G.shiftT=999; G.shiftWarned=false;
   biome=BIOMES[4];
-  scene.background=new THREE.Color(biome.fog); scene.fog=new THREE.Fog(biome.fog,46,150); hemi.groundColor.setHex(biome.fog);
+  applyBiomeAtmosphere(biome);
   const room={cx:0,cz:0,rw:52,rh:46,x0:-26,x1:26,z0:-23,z1:23}; G.bounds=64;
   G.rooms=[room]; G.rects=[{x0:room.x0,x1:room.x1,z0:room.z0,z1:room.z1}];
   buildFloorMeshes(); buildWalls();
@@ -10417,7 +10458,9 @@ function talentTip(id){
   return h;
 }
 function moveTreeTip(ev){ const tip=$('treeTip'), wrap=$('treeCols'); if(!tip||!wrap)return; const wr=wrap.getBoundingClientRect();
-  let x=ev.clientX-wr.left+16; if(x>wr.width-228) x=ev.clientX-wr.left-224; tip.style.left=x+'px'; tip.style.top=(ev.clientY-wr.top+16)+'px'; }
+  let x=ev.clientX-wr.left+16; if(x>wr.width-228) x=ev.clientX-wr.left-224; tip.style.left=x+'px';
+  let y=ev.clientY-wr.top+16; const th=tip.offsetHeight||140; if(y+th>wr.height-6) y=Math.max(6,ev.clientY-wr.top-th-12);   // clamp vertically too — tall wrapped tree layouts can otherwise push the tooltip off the bottom of the screen
+  tip.style.top=y+'px'; }
 function talentCell(t){
   if(t.beastKey){ const un=!!(META.beasts&&META.beasts[t.beastKey]), on=META.beastOn===t.beastKey;   // Beast FORM cell: relic-unlocked, one active
     const cls='talent beastform rar'+(t.rar||0)+(on?' maxed':un?' avail':' lock');
@@ -10454,7 +10497,7 @@ function specInner(spec){
     //  already shows "⇄ row N". The row's purple tint is the cue.)
     return `<div class="trow w${n}${open?'':' gated'}${viaDiverge?' dvg':''}">${tier.map(talentCell).join('')}${lbl}</div>`;
   }).join('');
-  const dvgTag = reach>0 ? `<span class="spts dvgTag" title="Branch reach — your highest row reached in ANY tree. You can enter this tree at row ${reach} and climb upward without climbing its foundation. Rows below ${reach} still need the ground-up climb.">⇄ row ${reach}</span>` : '';
+  const dvgTag = reach>0 ? `<span class="spts dvgTag" data-tip="Branch reach — your highest row reached in ANY tree. You can enter this tree at row ${reach} and climb upward without climbing its foundation. Rows below ${reach} still need the ground-up climb.">⇄ row ${reach}</span>` : '';
   return `<div class="specHd"><span class="si">${spec.ic}</span><div class="sttl"><div class="snm">${spec.nm}</div><div class="ssub">${spec.sub}</div></div>${dvgTag}<div class="spts">${spent}</div></div>`
     +`<div class="specRole">${spec.role||''}</div><div class="specLanes">${spec.lanesTxt||''}</div>`
     +`<div class="specGrid">${rows}</div>`;
@@ -10495,8 +10538,18 @@ function renderTree(){
       const _lpEnd=()=>{ if(_lpT){ clearTimeout(_lpT); _lpT=null; } };
       cont.addEventListener('pointerup',_lpEnd); cont.addEventListener('pointercancel',_lpEnd);
       cont.addEventListener('pointermove', e=>{ if(_lpT && Math.hypot(e.clientX-_lpX,e.clientY-_lpY)>8) _lpEnd(); }); }
-    cont.addEventListener('mouseover', e=>{ const c=e.target.closest('.talent'); if(!c) return; const tip=$('treeTip'); tip.innerHTML=talentTip(c.dataset.tid); tip.style.display='block'; moveTreeTip(e); });
+    cont.addEventListener('mouseover', e=>{ const c=e.target.closest('.talent'); if(!c) return; const tip=$('treeTip'); const t=TALENTMAP[c.dataset.tid];
+      tip.innerHTML=talentTip(c.dataset.tid);
+      const col=(t&&t.spec&&t.spec.col)||'var(--neon)';   // tooltip chrome now matches the node's own column colour instead of always neon, so it visually belongs to what you're hovering
+      tip.style.borderColor=col; tip.style.boxShadow='0 6px 22px rgba(0,0,0,.6), 0 0 20px -6px '+col;
+      tip.style.display='block'; tip.style.opacity='0'; moveTreeTip(e);
+      requestAnimationFrame(()=>{ tip.style.opacity='1'; }); });
     cont.addEventListener('mousemove', e=>{ if($('treeTip').style.display==='block') moveTreeTip(e); });
+    // the "⇄ row N" divergence badge used a native title= (slow, unstyled) — route it through the
+    // same instant #gtip cursor tooltip every other bit of this UI uses
+    cont.addEventListener('mouseover', e=>{ const c=e.target.closest('.dvgTag'); if(c && c.dataset.tip) showTileTip(c.dataset.tip); });
+    cont.addEventListener('mousemove', e=>{ if(e.target.closest('.dvgTag')) moveTileTip(e); });
+    cont.addEventListener('mouseout', e=>{ const c=e.target.closest('.dvgTag'); if(c && !(e.relatedTarget&&e.relatedTarget.closest&&e.relatedTarget.closest('.dvgTag'))) hideTileTip(); });
     cont.addEventListener('mouseout', e=>{ const c=e.target.closest('.talent'); if(c && !(e.relatedTarget&&e.relatedTarget.closest&&e.relatedTarget.closest('.talent'))) $('treeTip').style.display='none'; });
     cont._built=true;
   } else { SPECS.forEach(refreshSpec); }   // reflect external changes (respec / new run) on re-open
@@ -10672,14 +10725,14 @@ function renderChar(){ if(_G.netApplying) return;
     ['Mutations', (G.run&&G.run.mutations)? Object.keys(G.run.mutations).length||'—' : '—'],
     ['Keystones', flagsOn.length?flagsOn.join(' · '):'— none taken'],
   ];
-  $('csStats').innerHTML = grp('⚔','#ff7a6b','Offense',offense)+grp('🛡','#7fd0ff','Defense',defense)+grp('✦','#c7b6ff','Resources',util)+grp('◈','#ffce4d','Build',build)
+  $('csStats').innerHTML = grp('⚔','var(--hp)','Offense',offense)+grp('🛡','var(--mana)','Defense',defense)+grp('✦','var(--xp)','Resources',util)+grp('◈','var(--gold)','Build',build)
     // ---- BODY MUTATIONS: five parts, three tiers, 2 skill points each — only TWO may fully evolve (§7) ----
     +`<div class="statGrp"><div class="gh" style="color:#ff8c42">🧬 Body — mutate the flesh (${bodyEvolved()}/2 evolutions)</div><div style="padding:4px 2px">`
     +BODYPARTS.map(bp=>{ const t=bodyTier(bp.id);
-      return `<div style="display:flex;align-items:center;gap:8px;margin:5px 0;font-size:12px">
-        <span style="font-size:18px">${bp.ic}</span><b style="min-width:56px">${bp.nm}</b>
-        <span style="letter-spacing:2px;color:#ff8c42">${'●'.repeat(t)}${'○'.repeat(3-t)}</span>
-        <span style="opacity:.7;flex:1">${t<3?bp.t[t]:bp.t[2]}</span>
+      return `<div class="bodyRow">
+        <span class="bIc">${bp.ic}</span><b class="bNm">${bp.nm}</b>
+        <span class="bPips">${'●'.repeat(t)}${'○'.repeat(3-t)}</span>
+        <span class="bDs">${t<3?bp.t[t]:bp.t[2]}</span>
         <button class="vbtn" data-body="${bp.id}" style="padding:3px 10px;${t>=3?'opacity:.3':''}">${t>=3?'MAX':'+2pts'}</button></div>`; }).join('')
     +`</div></div>`;
   $('csStats').querySelectorAll('[data-body]').forEach(b=>b.onclick=()=>spendBody(b.dataset.body));
@@ -11627,7 +11680,7 @@ function enterPractice(){
 function buildPracticeArena(){
   clearWorld();
   biome=BIOMES[4];
-  scene.background=new THREE.Color(biome.fog); scene.fog=new THREE.Fog(biome.fog,46,150); hemi.groundColor.setHex(biome.fog);
+  applyBiomeAtmosphere(biome);
   const room={cx:0,cz:0,rw:60,rh:50,x0:-30,x1:30,z0:-25,z1:25}; G.bounds=72;
   G.rooms=[room]; G.rects=[{x0:room.x0,x1:room.x1,z0:room.z0,z1:room.z1}];
   buildFloorMeshes(); buildWalls();
@@ -12272,7 +12325,7 @@ function netBuildProp(pr){ if(!pr) return; const x=pr.x, z=pr.z; let m=null;
 }
 function netPeerBuildFloor(L){
   biome = BIOMES[L.bi % BIOMES.length];
-  scene.background=new THREE.Color(biome.fog); scene.fog=new THREE.Fog(biome.fog,46,150); if(typeof hemi!=='undefined'&&hemi) hemi.groundColor.setHex(biome.fog);
+  applyBiomeAtmosphere(biome);
   clearWorld();                                  // drop the previous floor's geometry (peer enemies/bullets are separate ghost pools)
   G.rects=L.rects; G.rooms=L.rooms; G.bounds=L.bounds; G.inTown=!!L.town;
   buildFloorMeshes(); buildWalls();              // reuse the real builders — they read G.rects/G.rooms/biome
@@ -12979,7 +13032,7 @@ function enterTutorialFloor(){
 }
 function buildTutorialFloor(){
   clearWorld(); biome=BIOMES[4];
-  scene.background=new THREE.Color(biome.fog); scene.fog=new THREE.Fog(biome.fog,46,150); hemi.groundColor.setHex(biome.fog);
+  applyBiomeAtmosphere(biome);
   const room={cx:0,cz:0,rw:56,rh:50,x0:-28,x1:28,z0:-25,z1:25}; G.bounds=68;
   G.rooms=[room]; G.rects=[{x0:room.x0,x1:room.x1,z0:room.z0,z1:room.z1}];
   buildFloorMeshes(); buildWalls();
