@@ -6777,6 +6777,8 @@ function playCutscene(slides, onDone, opts){ opts=opts||{}; if(!slides||!slides.
 function showChapterBanner(ai){ const n=narrFor(ai);
   let el=document.getElementById('chapterCard'); if(!el){ el=document.createElement('div'); el.id='chapterCard'; document.body.appendChild(el); }
   el.innerHTML='<div class="chp-eyebrow">ACT '+chapNum(ai)+' \u00b7 '+n.role+'</div><div class="chp-line">'+narrLine(ai)+'</div>';
+  const cch=document.getElementById('coach');
+  el.style.top=(cch && !cch.classList.contains('hidden')) ? (Math.round(cch.getBoundingClientRect().bottom+14)+'px') : '';
   el.classList.remove('show'); void el.offsetWidth; el.classList.add('show');
   clearTimeout(el._t); el._t=setTimeout(()=>el.classList.remove('show'), 7500); if(sfx.memoir)sfx.memoir(); }
 // ===== BOSS CINEMATICS: a COMBINATORIAL, conversational monologue — recomposed every single time =====
@@ -9632,7 +9634,9 @@ let _coachTimer;
 function showCoach(ic,title,body){ try{ chatPush('<b>'+(ic||'')+' '+(title||'')+'</b>'+(body?' \u2014 '+body:''),'chatCoach'); }catch(_){}
   if(SETTINGS.popups===false) return;   // pop-up cards off -> logged only
   $('coachIc').textContent=ic||'💡'; $('coachT').textContent=title; $('coachD').innerHTML=body;
-  $('coach').classList.remove('hidden'); clearTimeout(_coachTimer); _coachTimer=setTimeout(dismissCoach,10000); if(sfx.pickup)sfx.pickup(); }
+  const cEl=$('coach'); const chp=document.getElementById('chapterCard');
+  cEl.style.top=(chp && chp.classList.contains('show')) ? (Math.round(chp.getBoundingClientRect().bottom+14)+'px') : '';
+  cEl.classList.remove('hidden'); clearTimeout(_coachTimer); _coachTimer=setTimeout(dismissCoach,10000); if(sfx.pickup)sfx.pickup(); }
 function dismissCoach(){ clearTimeout(_coachTimer); $('coach').classList.add('hidden'); }
 function coach(id,ic,title,body){   // shows once ever (persisted in META.tips); honours the Tips setting
   if(!SETTINGS.tips || G.practice) return;
