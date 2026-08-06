@@ -809,26 +809,25 @@
   .lgFame b{font-size:19px;}
   .lgFame .lgNote{display:block;font-size:10px;opacity:.55;letter-spacing:1px;color:#9fb0c8;margin-top:2px;font-weight:normal;}
   .lgSec{background:#0d1320cc;border:1px solid #2a3550;border-radius:12px;padding:12px 14px;margin-bottom:14px;}
-  .lgHd{font-size:12px;letter-spacing:2px;font-weight:bold;color:#bfe9ff;margin-bottom:8px;}
+  .lgHd{font-size:12px;letter-spacing:2px;font-weight:bold;color:var(--neon);margin-bottom:8px;}
   .lgHd2{font-size:11px;letter-spacing:2px;font-weight:bold;opacity:.75;margin:12px 0 8px;}
   .lgRow{display:flex;align-items:center;gap:12px;justify-content:space-between;padding:9px 0;border-top:1px solid #ffffff11;}
   .lgRow:first-of-type{border-top:none;}
   .lgInfo{display:flex;flex-direction:column;gap:3px;min-width:0;}
   .lgInfo b{font-size:13px;}
   .lgInfo>span{font-size:11px;opacity:.72;line-height:1.45;}
-  .lgBuy{background:linear-gradient(180deg,#25406a,#16263f);border:1px solid #3a6ea5;color:#cfe6ff;border-radius:8px;padding:7px 13px;font-size:12px;font-weight:bold;cursor:pointer;white-space:nowrap;}
+  .lgBuy{background:linear-gradient(180deg,color-mix(in srgb,var(--neon) 20%,transparent),color-mix(in srgb,var(--neon) 6%,transparent));border:1px solid var(--neon);color:var(--ink);border-radius:8px;padding:7px 13px;font-size:12px;font-weight:bold;cursor:pointer;white-space:nowrap;}
   .lgBuy:hover{filter:brightness(1.22);}
   .lgBuy.cant{opacity:.4;cursor:not-allowed;filter:grayscale(.6);}
-  .lgOwned{color:#6dff8c;font-size:12px;font-weight:bold;white-space:nowrap;}
+  .lgOwned{color:var(--good);font-size:12px;font-weight:bold;white-space:nowrap;}
   .lgCost{color:var(--gold);font-size:12px;white-space:nowrap;}
   .lgTitles{display:flex;flex-wrap:wrap;gap:6px;}
   .lgTitle{font-size:11.5px;padding:5px 11px;border-radius:14px;border:1px solid #2a3550;background:#111a2b;cursor:pointer;}
   .lgTitle:hover{border-color:#4a628c;}
   .lgTitle.on{border-color:var(--gold);color:var(--gold);box-shadow:0 0 10px rgba(255,206,77,.25);}
   .lgTitle.locked{opacity:.5;cursor:default;}
-  .lgTitle.locked:hover{border-color:#2a3550;}
   .lgStats{display:inline-flex;gap:4px;margin-left:4px;flex-wrap:wrap;}
-  .lgStat{background:#1a2740;border:1px solid #35507e;color:#cfe6ff;border-radius:6px;padding:3px 7px;font-size:10px;cursor:pointer;}
+  .lgStat{background:color-mix(in srgb,var(--mana) 16%,#0a1420);border:1px solid color-mix(in srgb,var(--mana) 55%,transparent);color:var(--ink);border-radius:6px;padding:3px 7px;font-size:10px;cursor:pointer;}
   .lgStat:hover{filter:brightness(1.3);}
   .lgNote2{font-size:11.5px;opacity:.7;line-height:1.5;}
   /* vendor: compact carried grid + action bar (no inner scroll) */
@@ -975,13 +974,20 @@
   #codexBody{padding:4px 14px 8px;overflow-y:auto;}
   .cdxSec{font-size:12px;letter-spacing:2px;color:var(--neon);text-transform:uppercase;margin:12px 2px 8px;opacity:.85;}
   .cdxGrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(128px,1fr));gap:8px;}
-  .cdxCard{border:1px solid rgba(255,255,255,.12);border-radius:9px;padding:9px 8px;background:linear-gradient(180deg,rgba(255,255,255,.04),rgba(0,0,0,.25));text-align:center;}
-  .cdxCard.boss{border-color:rgba(255,206,77,.4);background:linear-gradient(180deg,rgba(255,206,77,.08),rgba(0,0,0,.3));}
+  .cdxCard{border:1px solid rgba(255,255,255,.12);border-radius:9px;padding:9px 8px;background:linear-gradient(180deg,rgba(255,255,255,.04),rgba(0,0,0,.25));text-align:center;
+    transition:transform .12s,box-shadow .12s,border-color .12s;}
+  .cdxCard:hover{transform:translateY(-2px);border-color:rgba(255,255,255,.28);box-shadow:0 6px 16px rgba(0,0,0,.4);}
+  .cdxCard.boss{border-color:color-mix(in srgb,var(--gold) 40%,transparent);background:linear-gradient(180deg,color-mix(in srgb,var(--gold) 8%,transparent),rgba(0,0,0,.3));}
   .cdxCard.locked{opacity:.45;border-style:dashed;}
   .cdxIc{font-size:26px;line-height:1;margin-bottom:4px;}
   .cdxNm{font-size:12.5px;font-weight:bold;margin-bottom:3px;}
-  .cdxTag{font-size:10px;opacity:.75;line-height:1.35;min-height:26px;}
+  .cdxTag{font-size:10px;opacity:.75;line-height:1.35;min-height:26px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
   .cdxStat{font-size:9.5px;opacity:.55;margin-top:4px;letter-spacing:.3px;}
+  /* RIVALS list reuses the same card language as FOES/GUARDIANS/RESCUED instead of one-off inline styles */
+  .cdxRow{display:flex;align-items:center;gap:10px;border:1px solid rgba(255,255,255,.12);border-radius:9px;padding:8px 12px;margin-bottom:6px;
+    background:linear-gradient(180deg,rgba(255,255,255,.04),rgba(0,0,0,.25));transition:transform .12s,box-shadow .12s,border-color .12s;}
+  .cdxRow:hover{transform:translateY(-1px);border-color:rgba(255,255,255,.28);box-shadow:0 6px 16px rgba(0,0,0,.4);}
+  .cdxRow.locked{opacity:.45;border-style:dashed;}
   #scoreBody{overflow-y:auto;max-height:78vh;padding-right:4px;}
   #scoreBody::-webkit-scrollbar{width:8px;} #scoreBody::-webkit-scrollbar-thumb{background:rgba(255,206,77,.3);border-radius:4px;}
   #settingsPanel{top:50%;left:50%;transform:translate(-50%,-50%);width:372px;padding-bottom:14px;z-index:60;}
@@ -1010,16 +1016,17 @@
   .scoreColMain{flex:1;min-width:0;} .scoreColSide{width:184px;flex:none;}
   .scoreHd{letter-spacing:1px;margin:0 0 5px;font-size:12px;text-transform:uppercase;}
   .scoreHd.neon{color:var(--neon);} .scoreHd.gold{color:var(--gold);}
+  .scoreHd.center{font-size:13px;font-weight:bold;letter-spacing:1.5px;text-align:center;}   /* the Best Run card's centered title reuses .scoreHd instead of its own near-identical .bestHd rule */
+  .scoreRow:hover{background:rgba(255,255,255,.04);}
   .scoreSect{margin-top:13px;border-top:1px solid rgba(255,255,255,.12);padding-top:11px;}
   .scoreBest{position:sticky;top:0;background:linear-gradient(180deg,rgba(255,206,77,.1),rgba(8,12,22,.5));border:1px solid rgba(255,206,77,.32);border-radius:13px;padding:14px 13px 14px;box-shadow:0 0 30px -12px rgba(255,206,77,.55);}
-  .scoreBest .bestHd{font-size:13px;font-weight:bold;letter-spacing:1.5px;color:var(--gold);text-align:center;}
   .scoreBest .bestSub{font-size:9.5px;opacity:.55;text-align:center;letter-spacing:.5px;margin-top:3px;}
   .scoreBest .bestBig{font-size:27px;font-weight:bold;color:#fff;text-align:center;margin:9px 0 11px;text-shadow:0 0 16px rgba(255,206,77,.65);}
   .bestRowHd,.bestRow{display:grid;grid-template-columns:1fr 48px 48px;gap:7px;align-items:center;font-size:12.5px;padding:5px 0;border-bottom:1px solid rgba(255,255,255,.06);}
   .bestRowHd{font-size:9px;text-transform:uppercase;letter-spacing:1px;opacity:.5;border-bottom:1px solid rgba(255,255,255,.16);}
   .bestRowHd b,.bestRowHd i{font-style:normal;text-align:right;}
   .bestRow span{opacity:.72;} .bestRow b{text-align:right;font-weight:bold;} .bestRow i{text-align:right;font-style:normal;opacity:.5;}
-  .bestRow b.win{color:var(--xp);} .bestRow b.lose{color:#9fb0d0;}
+  .bestRow b.win{color:var(--good);} .bestRow b.lose{color:var(--ink);opacity:.5;}
   .bestMeta{font-size:10.5px;opacity:.72;line-height:1.8;margin-top:11px;text-align:center;border-top:1px solid rgba(255,255,255,.1);padding-top:9px;}
   .scoreBest.empty .bestSub{margin-top:12px;line-height:1.55;}
 
@@ -1125,11 +1132,14 @@
   #tutDots .dot.on{background:var(--neon);box-shadow:0 0 8px var(--neon);}
   /* death log */
   #deathlogBody{width:540px;max-width:88vw;max-height:60vh;overflow-y:auto;text-align:left;}
-  .dlRow{display:flex;justify-content:space-between;align-items:center;gap:12px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.1);border-left:3px solid var(--neon);border-radius:8px;padding:9px 13px;margin:7px 0;}
+  .dlRow{display:flex;justify-content:space-between;align-items:center;gap:12px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.1);border-left:3px solid var(--neon);border-radius:8px;padding:9px 13px;margin:7px 0;cursor:pointer;transition:background .12s,border-color .12s;}
+  .dlRow:hover{background:rgba(255,255,255,.06);border-color:rgba(255,255,255,.2);}
   .dlRow.hc{border-left-color:var(--hp);}
+  .dlRow.perma{border-left-color:var(--legend);}
   .dlRow .dl-main{font-size:13px;} .dlRow .dl-main b{color:var(--gold);}
   .dlRow .dl-sub{font-size:10.5px;opacity:.55;margin-top:3px;}
   .dlRow .dl-when{font-size:10px;opacity:.45;text-align:right;white-space:nowrap;}
+  .dl-danger{color:var(--hp);}
   .help{margin-top:28px;font-size:12px;opacity:.55;line-height:2;}
   .help kbd{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);border-radius:4px;padding:1px 7px;font-family:inherit;font-size:11px;}
   .modeSel{display:flex;flex-wrap:wrap;justify-content:center;gap:14px;margin:6px 0 26px;max-width:100%;}
@@ -1249,9 +1259,9 @@
   .bankBtn.take:hover{background:var(--neon);color:#04111a;box-shadow:0 2px 6px rgba(0,0,0,.3),0 0 10px rgba(86,224,255,.4);}
   .stashDrop{min-height:46px;border:1px dashed rgba(255,255,255,.2);border-radius:8px;padding:6px;display:flex;flex-direction:column;gap:6px;}
   .stashDrop.dragover{border-color:var(--gold);background:rgba(255,206,77,.07);}
-  .dlRow{cursor:pointer;}
   .dlDetail{margin-top:6px;border-top:1px solid rgba(255,255,255,.1);padding-top:6px;}
   .dlGrid{display:grid;grid-template-columns:auto auto;gap:2px 16px;font-size:12px;margin-top:4px;}
+  .dlGrid span{opacity:.55;}
   .dlGrid b{color:var(--gold);text-align:right;}
   #worldLabels{position:absolute;inset:0;pointer-events:none;z-index:5;}
   .worldLabel{position:absolute;transform:translate(-50%,-100%);white-space:nowrap;font-size:11px;font-weight:bold;letter-spacing:1px;padding:3px 8px;border-radius:7px;background:rgba(6,9,18,.72);border:1px solid rgba(255,255,255,.2);color:#dfe7ff;text-shadow:0 0 6px #000;}
@@ -1263,9 +1273,13 @@
   .coMenuHint{position:absolute;bottom:8px;left:50%;transform:translateX(-50%);font-size:11px;letter-spacing:1px;opacity:.7;
     background:rgba(6,9,18,.8);border:1px solid rgba(255,255,255,.15);border-radius:8px;padding:5px 12px;pointer-events:none;}
   /* ---- local co-op lobby ---- */
-  #coopSlots{display:flex;gap:12px;}
+  .lobbyHd{font-size:13px;letter-spacing:3px;opacity:.7;margin-bottom:4px;}
+  .lobbyHint{font-size:12px;opacity:.7;margin:4px 0;}
+  .roomCodeText{color:var(--good);}
+  #coopSlots{display:flex;flex-wrap:wrap;justify-content:center;gap:12px;}
   .coopSlot{width:122px;padding:14px 8px;border-radius:12px;border:1.5px solid rgba(255,255,255,.14);background:rgba(255,255,255,.03);text-align:center;transition:.15s;}
   .coopSlot.on{border-color:var(--pc);background:rgba(86,224,255,.07);box-shadow:0 0 18px color-mix(in srgb,var(--pc) 45%,transparent);}
+  .coopSlot.clickable{cursor:pointer;} .coopSlot.clickable:hover{border-color:var(--neon);box-shadow:0 0 14px rgba(86,224,255,.35);}
   .coopSlot .cs-p{font-size:17px;font-weight:bold;letter-spacing:1px;}
   .coopSlot .cs-i{font-size:22px;margin:4px 0;}
   .coopSlot .cs-d{font-size:10px;opacity:.6;line-height:1.4;}
@@ -1677,7 +1691,7 @@
       <button class="btn ghost small" id="climbBack">← Back to menu</button>
     </div>
     <div id="coopLobby" class="menuCol hidden">
-      <div style="font-size:13px;letter-spacing:3px;opacity:.7;margin-bottom:2px">🎮 LOCAL CO-OP · UP TO 4 PLAYERS</div>
+      <div class="lobbyHd">🎮 LOCAL CO-OP · UP TO 4 PLAYERS</div>
       <div id="coopSlots"></div>
       <div class="modeSel" style="margin-top:18px">
         <div class="modeBtn" id="coModeCasual"><b>CASUAL</b><span>easiest · keep gear &amp; items on death · no permadeath</span></div>
@@ -1690,43 +1704,43 @@
         Player 1 plays on <b>keyboard &amp; mouse</b>. Plug in controllers and press <b>START</b> (or A) on each to claim a slot — you can also drop in mid-run anytime. Everyone shares a split-screen view and each player manages their own build &amp; menus in-game (press <b>Back/Select</b> on your controller).</div>
     </div>
     <div id="onlineLobby" class="menuCol hidden">
-      <div style="font-size:13px;letter-spacing:3px;opacity:.7;margin-bottom:4px">🌐 ONLINE CO-OP · room codes, serverless P2P</div>
+      <div class="lobbyHd">🌐 ONLINE CO-OP · room codes, serverless P2P</div>
       <div id="onlineChoose">
         <button class="btn" id="onHostBtn">🖥 Host a Game</button>
         <button class="btn" id="onJoinBtn">🔌 Join a Game</button>
         <button class="btn ghost small" id="onlineBack">← Back to menu</button>
       </div>
       <div id="onlineHost" class="hidden" style="max-width:520px">
-        <div style="font-size:12px;opacity:.7;margin:4px 0">Share this <b>room code</b> — friends pick <i>Join a Game</i> and type it in:</div>
-        <div id="onRoomCode" style="font-size:44px;letter-spacing:12px;font-weight:700;color:#8effd9;margin:10px 0;user-select:all">·····</div>
+        <div class="lobbyHint">Share this <b>room code</b> — friends pick <i>Join a Game</i> and type it in:</div>
+        <div id="onRoomCode" class="roomCodeText" style="font-size:44px;letter-spacing:12px;font-weight:700;margin:10px 0;user-select:all">·····</div>
         <button class="btn ghost small" id="onCopyCode">📋 Copy code</button>
-        <div style="font-size:12px;opacity:.7;margin:12px 0 4px">…or send this <b>one-click join link</b>:</div>
-        <div id="onRoomLink" style="font-size:12px;color:#67c4ff;margin:4px 0;word-break:break-all;user-select:all">—</div>
+        <div class="lobbyHint" style="margin:12px 0 4px">…or send this <b>one-click join link</b>:</div>
+        <div id="onRoomLink" style="font-size:12px;color:var(--neon);margin:4px 0;word-break:break-all;user-select:all">—</div>
         <button class="btn ghost small" id="onCopyLink" style="display:none">🔗 Copy join link</button>
         <div id="onHostStatus" style="font-size:11px;opacity:.6;margin-top:8px"></div>
-        <div id="onHostPeers" style="font-size:12px;margin-top:6px;color:#8effd9"></div>
+        <div id="onHostPeers" class="roomCodeText" style="font-size:12px;margin-top:6px"></div>
         <details style="margin-top:14px;font-size:11px;opacity:.75"><summary style="cursor:pointer">Manual connect (fallback — no broker needed)</summary>
-          <div style="font-size:12px;opacity:.7;margin:4px 0">1 · Send this <b>invite code</b> to your friend:</div>
+          <div class="lobbyHint">1 · Send this <b>invite code</b> to your friend:</div>
           <textarea id="onOfferOut" readonly style="width:100%;height:74px;font-size:10px"></textarea>
           <button class="btn ghost small" id="onGenOffer">⚙ Generate invite</button>
           <button class="btn ghost small" id="onCopyOffer">📋 Copy invite</button>
-          <div style="font-size:12px;opacity:.7;margin:8px 0 4px">2 · Paste their <b>answer code</b> back here:</div>
+          <div class="lobbyHint" style="margin:8px 0 4px">2 · Paste their <b>answer code</b> back here:</div>
           <textarea id="onAnsIn" style="width:100%;height:74px;font-size:10px" placeholder="paste friend's answer code…"></textarea>
           <button class="btn" id="onConnectBtn">✔ Connect Friend</button>
         </details>
         <button class="btn ghost small" id="onHostBack">← Back</button>
       </div>
       <div id="onlineJoin" class="hidden" style="max-width:520px">
-        <div style="font-size:12px;opacity:.7;margin:4px 0">Type the host's <b>room code</b>:</div>
+        <div class="lobbyHint">Type the host's <b>room code</b>:</div>
         <input id="onCodeIn" maxlength="5" placeholder="K7Q2M" autocomplete="off" spellcheck="false"
-          style="width:240px;font-size:32px;letter-spacing:10px;text-align:center;text-transform:uppercase;background:#0d1320;color:#8effd9;border:1px solid #2a3550;border-radius:8px;padding:8px 4px">
+          class="roomCodeText" style="width:240px;font-size:32px;letter-spacing:10px;text-align:center;text-transform:uppercase;background:#0d1320;border:1px solid #2a3550;border-radius:8px;padding:8px 4px">
         <button class="btn" id="onCodeJoinBtn">🔌 Join Room</button>
         <div id="onJoinStatus" style="font-size:11px;opacity:.6;margin-top:8px"></div>
         <details style="margin-top:14px;font-size:11px;opacity:.75"><summary style="cursor:pointer">Manual connect (fallback — no broker needed)</summary>
-          <div style="font-size:12px;opacity:.7;margin:4px 0">1 · Paste the host's <b>invite code</b>:</div>
+          <div class="lobbyHint">1 · Paste the host's <b>invite code</b>:</div>
           <textarea id="onOfferIn" style="width:100%;height:74px;font-size:10px" placeholder="paste host's invite code…"></textarea>
           <button class="btn" id="onGenAnsBtn">↪ Generate Answer</button>
-          <div style="font-size:12px;opacity:.7;margin:8px 0 4px">2 · Send this <b>answer code</b> back to the host:</div>
+          <div class="lobbyHint" style="margin:8px 0 4px">2 · Send this <b>answer code</b> back to the host:</div>
           <textarea id="onAnsOut" readonly style="width:100%;height:74px;font-size:10px"></textarea>
           <button class="btn ghost small" id="onCopyAns">📋 Copy answer</button>
         </details>
@@ -4385,8 +4399,8 @@ function renderCoopLobby(){ const host=$('coopSlots'); if(!host) return; host.in
   while(idx<4){ slots.push({on:false,p:'P'+(idx+1),i:'➕',d:'controller START · or click for AI ally',col:'#7a8499',kind:'empty'}); idx++; }
   for(const s of slots){ const d=document.createElement('div'); d.className='coopSlot'+(s.on?' on':''); d.style.setProperty('--pc',s.col);
     d.innerHTML=`<div class="cs-p" style="color:${s.col}">${s.p}</div><div class="cs-i">${s.i}</div><div class="cs-d">${s.d}</div>`;
-    if(s.kind==='empty'){ d.style.cursor='pointer'; d.onclick=()=>{ if(lobbyPads.length+lobbyBots<3){ lobbyBots++; renderCoopLobby(); if(sfx.tick)sfx.tick(); } }; }
-    else if(s.kind==='bot'){ d.style.cursor='pointer'; d.title='Click to remove this AI ally'; d.onclick=()=>{ if(lobbyBots>0){ lobbyBots--; renderCoopLobby(); if(sfx.tick)sfx.tick(); } }; }
+    if(s.kind==='empty'){ d.classList.add('clickable'); d.onclick=()=>{ if(lobbyPads.length+lobbyBots<3){ lobbyBots++; renderCoopLobby(); if(sfx.tick)sfx.tick(); } }; }
+    else if(s.kind==='bot'){ d.classList.add('clickable','has-gtip'); d.dataset.tip='Click to remove this AI ally'; d.onclick=()=>{ if(lobbyBots>0){ lobbyBots--; renderCoopLobby(); if(sfx.tick)sfx.tick(); } }; }
     host.appendChild(d); } }
 function pollLobbyJoins(){ if(!coopLobbyOpen) return; const pads=navigator.getGamepads?navigator.getGamepads():[]; let changed=false;
   for(let i=0;i<pads.length;i++){ const gp=pads[i]; if(!gp)continue;
@@ -10177,7 +10191,7 @@ function renderLegacy(){ const b=$('legacyBody'); if(!b) return; loadMeta();
   h+=`<div class="lgHd2">🎖 Titles — permanent · pick one to display</div><div class="lgTitles">`;
   h+=`<div class="lgTitle${!META.title?' on':''}" data-title="">— none —</div>`;
   for(const t of LEGACY_TITLES){ const unlocked=META.titles.includes(t.id);
-    h+=`<div class="lgTitle${META.title===t.id?' on':''}${unlocked?'':' locked'}" data-title="${unlocked?t.id:''}" title="${unlocked?'Display this title':(t.story?'Earned by a choice at the summit':'Reach '+t.fame.toLocaleString()+' fame to unlock')}">${unlocked?'':'🔒 '}${t.story&&!unlocked?'? ? ?':t.nm}${unlocked||t.story?'':' · '+t.fame.toLocaleString()+'✦'}</div>`; }
+    h+=`<div class="lgTitle has-gtip${META.title===t.id?' on':''}${unlocked?'':' locked'}" data-title="${unlocked?t.id:''}" data-tip="${unlocked?'Display this title':(t.story?'Earned by a choice at the summit':'Reach '+t.fame.toLocaleString()+' fame to unlock')}">${unlocked?'':'🔒 '}${t.story&&!unlocked?'? ? ?':t.nm}${unlocked||t.story?'':' · '+t.fame.toLocaleString()+'✦'}</div>`; }
   h+=`</div></div>`;
   // ---- this character (lost on death) ----
   if(_G.running && G.level){
@@ -10636,9 +10650,9 @@ function renderChar(){ if(_G.netApplying) return;
     const atCap = G.level>=LEVEL_CAP;
     const st=sealState(), held=sealsHeld(), cost=evolveCost();
     // seal chips — the ONLY route to another star
-    const chip=(ok,ic,nm,txt)=>`<span title="${nm} — ${txt}" style="display:inline-flex;align-items:center;gap:4px;font-size:10px;letter-spacing:.4px;`
-      +`padding:3px 8px;border-radius:12px;border:1px solid ${ok?'rgba(109,255,140,.55)':'rgba(160,180,215,.25)'};`
-      +`color:${ok?'#6dff8c':'#8d99ae'};background:${ok?'rgba(109,255,140,.1)':'rgba(255,255,255,.03)'}">${ic} ${txt}</span>`;
+    const chip=(ok,ic,nm,txt)=>`<span class="has-gtip" data-tip="${nm} — ${txt}" style="display:inline-flex;align-items:center;gap:4px;font-size:10px;letter-spacing:.4px;`
+      +`padding:3px 8px;border-radius:12px;border:1px solid ${ok?'color-mix(in srgb,var(--good) 55%,transparent)':'rgba(160,180,215,.25)'};`
+      +`color:${ok?'var(--good)':'#8d99ae'};background:${ok?'color-mix(in srgb,var(--good) 10%,transparent)':'rgba(255,255,255,.03)'}">${ic} ${txt}</span>`;
     const sealRow=`<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;justify-content:center">`
       +chip(st.blood,'🩸','Seal of Blood',   `${Math.min(st.have.blood,st.need.blood)}/${st.need.blood} guardians`)
       +chip(st.depth,'⛰','Seal of Depth',   `floor ${st.have.depth||0}/${st.need.depth}`)
@@ -11663,12 +11677,12 @@ function renderDeathLog(){ const a=loadDeathLog().slice().reverse(), b=$('deathl
   b.innerHTML=a.map((r,i)=>{ let when=''; try{ when=new Date(r.when).toLocaleString(); }catch(e){}
     const run=r.run||{};
     const detail=`<div class="dlDetail" id="dlD${i}" style="display:none">
-      <div class="dl-sub" style="margin-top:4px">☠ Felled by <b style="color:var(--hp)">${r.killer||'the Tower'}</b></div>
+      <div class="dl-sub" style="margin-top:4px">☠ Felled by <b class="dl-danger">${r.killer||'the Tower'}</b></div>
       <div class="dlGrid"><span>Floors cleared</span><b>${run.floorsCleared!=null?run.floorsCleared:'—'}</b>
         <span>Kills</span><b>${r.kills}</b><span>Gold</span><b>${r.gold}g</b>
         <span>XP gained</span><b>${Math.round(run.xp||0)}</b><span>Healing</span><b>${Math.round(run.healSelf||0)}</b>
         <span>Run time</span><b>${fmtTime(r.time)}</b><span>Fame earned</span><b>+${r.fame||0}</b></div></div>`;
-    return `<div class="dlRow${r.hardcore?' hc':''}" data-i="${i}"><div style="flex:1"><div class="dl-main">Reached <b>Floor ${r.floor}</b> · Level ${r.level}${r.permadead?' · <span style="color:var(--hp)">PERMADEATH</span>':''}</div>
+    return `<div class="dlRow${r.hardcore?' hc':''}${r.permadead?' perma':''}" data-i="${i}"><div style="flex:1"><div class="dl-main">Reached <b>Floor ${r.floor}</b> · Level ${r.level}${r.permadead?' · <span class="dl-danger">PERMADEATH</span>':''}</div>
       <div class="dl-sub">${r.kills} kills · ${r.gold}g · ${fmtTime(r.time)}${r.hardcore?' · Hardcore':''} · +${r.fame||0} fame · <span style="opacity:.7">▾ details</span></div>${detail}</div>
       <div class="dl-when">${when}</div></div>`; }).join('');
   b.querySelectorAll('.dlRow').forEach(row=>{ row.onclick=()=>{ const d=$('dlD'+row.dataset.i); if(d) d.style.display = d.style.display==='none'?'block':'none'; }; });
@@ -11730,8 +11744,8 @@ function cdxBehaviour(t){ const g=[];
 // ---- RIVALS: the nemesis ledger — who you are feuding with, this climb and across every run ----
 function rivalStatus(key){ const n=nemOf(key);
   if(!n) return {txt:'the lords sleep between climbs', col:'#8aa0c0'};
-  if(n.dead) return {txt:'☠ SLAIN FOREVER this climb', col:'#ff5470'};
-  if(n.kills>=2) return {txt:'⚔ broken — waiting on a last stand', col:'#ff9a3d'};
+  if(n.dead) return {txt:'☠ SLAIN FOREVER this climb', col:'var(--hp)'};
+  if(n.kills>=2) return {txt:'⚔ broken — waiting on a last stand', col:'var(--legend)'};
   if(n.kills===1) return {txt:'⚠ REFORGED — he will return stronger', col:'#ffe14d'};
   if(n.roamed) return {txt:'👣 crossed paths while roaming', col:'#8effd9'};
   return {txt:'unmet this climb', col:'#8aa0c0'}; }
@@ -11740,19 +11754,19 @@ function renderRivals(cx,hx){
   for(const d of BOSSES){
     const seen=cx['boss:'+d.key]; const gr=(META.grudges&&META.grudges[d.key])||{k:0,d:0};
     const n=nemOf(d.key); const st=rivalStatus(d.key);
-    if(!seen){ h+=`<div style="display:flex;gap:10px;align-items:center;background:#0d1320;border:1px solid #1c2740;border-radius:8px;padding:8px 12px;opacity:.55">
+    if(!seen){ h+=`<div class="cdxRow locked">
       <span style="font-size:20px">❔</span><div><b>??? — an unmet lord</b><div style="font-size:11px;opacity:.6">climb higher to make an enemy</div></div></div>`; continue; }
     const nm = n ? nemName(d,n) : bossFullName(d);
     const traits = n ? [n.trait,n.trait2].filter(Boolean).map(t=>t.nm).join(' · ') : '';
     const learned = n&&n.learned&&(n.learned.el||n.learned.dash) ? ('🧠 knows your '+[n.learned.el,n.learned.dash?'dashing':null].filter(Boolean).join(' & ')) : '';
-    h+=`<div style="display:flex;gap:10px;align-items:center;background:#0d1320;border:1px solid ${gr.k>0?'#4a1626':'#1c2740'};border-radius:8px;padding:8px 12px">
+    h+=`<div class="cdxRow" style="${gr.k>0?'border-color:color-mix(in srgb,var(--hp) 35%,transparent)':''}">
       <span style="font-size:20px;color:${hx(d.color)}">${CDX_SHAPE[d.shape]||'🔴'}</span>
       <div style="flex:1;text-align:left">
         <b style="color:${hx(d.color)}">${nm}</b>${traits?` <span style="font-size:11px;opacity:.75">· ${traits}</span>`:''}
-        <div style="font-size:11px"><span style="color:${st.col}">${st.txt}</span>${learned?` · <span style="color:#b06bff">${learned}</span>`:''}</div>
+        <div style="font-size:11px"><span style="color:${st.col}">${st.txt}</span>${learned?` · <span style="color:var(--epic)">${learned}</span>`:''}</div>
       </div>
       <div style="text-align:right;font-size:11px;line-height:1.7">
-        <span style="color:#ff5470">☠ slain you ×${gr.k||0}</span><br><span style="color:#8effd9">⚔ slain by you ×${gr.d||0}</span>
+        <span style="color:var(--hp)">☠ slain you ×${gr.k||0}</span><br><span style="color:var(--good)">⚔ slain by you ×${gr.d||0}</span>
       </div></div>`;
   }
   return h+'</div>';
@@ -11808,7 +11822,7 @@ function renderScore(){
   const pct=rankProgressPct();
   const _sst=sealState(), _sh=sealsHeld();
   const _sc=(ok,ic,txt)=>`<span style="display:inline-flex;align-items:center;gap:4px;font-size:10px;padding:3px 8px;border-radius:12px;`
-    +`border:1px solid ${ok?'rgba(109,255,140,.55)':'rgba(160,180,215,.25)'};color:${ok?'#6dff8c':'#8d99ae'};background:${ok?'rgba(109,255,140,.1)':'rgba(255,255,255,.03)'}">${ic} ${txt}</span>`;
+    +`border:1px solid ${ok?'color-mix(in srgb,var(--good) 55%,transparent)':'rgba(160,180,215,.25)'};color:${ok?'var(--good)':'#8d99ae'};background:${ok?'color-mix(in srgb,var(--good) 10%,transparent)':'rgba(255,255,255,.03)'}">${ic} ${txt}</span>`;
   left+=`<div class="scoreSect">
     <h4 class="scoreHd gold">✦ Ascendant Rank</h4>
     <div style="text-align:center;margin-bottom:8px">
@@ -11826,7 +11840,7 @@ function renderScore(){
   </div>`;
   left+=`<div class="scoreSect"><h4 class="scoreHd neon">Feats — ${META.feats.length}/${FEATS.length}</h4>`;
   for(const f of FEATS){ const got=META.feats.includes(f.id);
-    left+=`<div class="scoreRow" style="${got?'':'opacity:.4'}"><span>${got?'★':'☆'} ${got?f.nm:'???'} <span style="opacity:.6;font-size:10px">${got?f.ds:'hidden feat'}</span></span><b style="color:var(--gold)">+${f.fame} fame</b></div>`; }
+    left+=`<div class="scoreRow${got?'':' has-gtip'}" style="${got?'':'opacity:.4'}"${got?'':' data-tip="Hidden — this feat\'s condition is a surprise. Keep climbing to discover it."'}><span>${got?'★':'☆'} ${got?f.nm:'???'} <span style="opacity:.6;font-size:10px">${got?f.ds:'hidden feat'}</span></span><b style="color:var(--gold)">+${f.fame} fame</b></div>`; }
   left+=`</div>`;
   // ---------- RIGHT COLUMN: all-time best run ----------
   let right;
@@ -11834,7 +11848,7 @@ function renderScore(){
     const bRow=(label,cur,bv)=>`<div class="bestRow"><span>${label}</span><b class="${cur>=bv?'win':'lose'}">${fmt(cur)}</b><i>${fmt(bv)}</i></div>`;
     const when = best.when ? new Date(best.when).toLocaleDateString() : '';
     right=`<div class="scoreBest">
-      <div class="bestHd">★ BEST RUN</div>
+      <div class="scoreHd gold center">★ BEST RUN</div>
       <div class="bestSub">all-time · any character</div>
       <div class="bestBig">Floor ${best.floor}</div>
       <div class="bestRowHd"><span></span><b>now</b><i>best</i></div>
@@ -11845,7 +11859,7 @@ function renderScore(){
       <div class="bestMeta">⏱ ${fmtTime(best.time||0)}${best.hardcore?' · ☠ HC':''}<br>felled by ${best.killer||'?'}${when?'<br><span style="opacity:.7">'+when+'</span>':''}</div>
     </div>`;
   } else {
-    right=`<div class="scoreBest empty"><div class="bestHd">★ BEST RUN</div><div class="bestSub">No best run yet — finish a run to set the bar. It persists across every character.</div></div>`;
+    right=`<div class="scoreBest empty"><div class="scoreHd gold center">★ BEST RUN</div><div class="bestSub">No best run yet — finish a run to set the bar. It persists across every character.</div></div>`;
   }
   $('scoreBody').innerHTML=`<div class="scoreCols"><div class="scoreColMain">${left}</div><div class="scoreColSide">${right}</div></div>`;
 }
