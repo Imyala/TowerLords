@@ -2758,6 +2758,10 @@ const FEATS=[
   {id:'ascend',    nm:'Ascendant',    ds:'Ascend a piece of equipment',        fame:2000},
   {id:'infuse',    nm:'Infused',      ds:'Socket an infusion',                 fame:500},
   {id:'container', nm:'Cache Cracker',ds:'Open a container',                  fame:200},
+  {id:'vista',     nm:'Sightseer',    ds:'Discover a vista',                   fame:150},
+  {id:'herochallenge', nm:'Champion', ds:'Complete a hero challenge',          fame:200},
+  {id:'poi',       nm:'Cartographer', ds:'Discover a point of interest',       fame:100},
+  {id:'defiance',  nm:'Breaker',      ds:"Break a guardian's defiance bar",    fame:400},
 ];
 // ---- ACHIEVEMENT POINTS: a secondary account-wide ladder alongside fame (GW2 parity §6) ----
 // Every feat also pays achievement points (roughly fame/100); points themselves ladder into
@@ -5111,8 +5115,12 @@ function clearWorld(){
   if(G.decoys)G.decoys.forEach(d=>d.mesh&&scene.remove(d.mesh)); G.decoys=[];
   if(G.trail)G.trail.forEach(t=>t.mesh&&scene.remove(t.mesh)); G.trail=[];
   if(G.shrines)G.shrines.forEach(s=>s.mesh&&scene.remove(s.mesh)); G.shrines=[];
+  if(G.vistas)G.vistas.forEach(v=>{ if(v.mesh)scene.remove(v.mesh); if(v.scroll)scene.remove(v.scroll); }); G.vistas=[];
+  if(G.heroChallenges)G.heroChallenges.forEach(h=>h.mesh&&scene.remove(h.mesh)); G.heroChallenges=[];
+  if(G.pois)G.pois.forEach(p=>p.mesh&&scene.remove(p.mesh)); G.pois=[]; G._poiTotal=0; G._poiFound=0;
   if(G.lootGoblin){ scene.remove(G.lootGoblin.mesh); G.lootGoblin=null; }
-  G.wager=null; G.nearShrine=null; G.nearTrap=null; G.sleeping=false; G._stillT=0; G._curseE=null;
+  G.wager=null; G.nearShrine=null; G.nearVista=null; G.nearHeroChallenge=null; G.nearTrap=null; G.sleeping=false; G._stillT=0; G._curseE=null;
+  G.vistaCam=null; _G.paused=false;
   { const _ovS=document.getElementById('ovSleep'); if(_ovS)_ovS.style.display='none'; }
   if(G._puzzleActive) finishGlyphPuzzle(false);
   G.obstacles=[];G.camps=[];G.respawns=[];G.traps=[];
@@ -5244,6 +5252,7 @@ function generateFloor(anchor){
     for(let i=0;i<7;i++){ const pt=pick(G.camps); for(let k=0;k<randi(3,5);k++) spawnEnemy(G.floor, pt, ETYPES[1]); }
     if(Math.random()<0.32+(G.S&&G.S.greed?0.25:0)) spawnGoblin(G.floor, pick(rooms));   // Greed: goblins can't resist you either
     spawnFloorPuzzles(rooms);   // glyph shrines & wager altars (Raw Potential / Altar of Hubris)
+    spawnVista(rooms); spawnHeroChallenge(rooms); spawnPOI(rooms);   // GW2 parity: vistas, hero challenges, points of interest
     if(Math.random()<0.15+(G.S&&G.S.greed?0.1:0)) spawnLootGoblin(rooms.length>1?pick(rooms.slice(1)):rooms[0]);   // the loot-guzzler skulks in
     if(META.scav && !META.scav.boss){ if(G.floor===META.scav.floor) spawnScavElite();   // the thing that looted your corpse
       else if(G.floor>META.scav.floor){ META.scav.boss=true; saveMeta(); log('🦴 You passed the scavenger by — it has fled upward to serve a lord.'); } }
@@ -8237,6 +8246,59 @@ function useShrine(s){
   if(s.type==='altar') return runHubrisAltar(s);
   if(s.type==='lever') return pullLever(s);
 }
+// ============================================================ VISTA (GW2 parity) — a column of light with a
+// floating scroll; interacting orbits the camera around it for a few seconds (see the G.vistaCam block in the
+// render loop), then pays a one-time fame bonus the first time this exact vista is ever found (META.codex).
+function spawnVista(rooms){
+  G.vistas=[];
+  if(rooms.length<2 || Math.random()<0.45) return;   // a scenic treat, not on every floor
+  const rm=pick(rooms.slice(1)), pt=safePt(rm,3);
+  const beam=new THREE.Mesh(new THREE.CylinderGeometry(.5,.75,9,10,1,true), new THREE.MeshBasicMaterial({color:0x9fefff,transparent:true,opacity:.4,side:THREE.DoubleSide}));
+  beam.position.set(pt.x,4.5,pt.z); scene.add(beam);
+  const scroll=new THREE.Mesh(new THREE.CylinderGeometry(.32,.32,.16,10), new THREE.MeshStandardMaterial({color:0xffe14d,emissive:0xffe14d,emissiveIntensity:1}));
+  scroll.position.set(pt.x,.55,pt.z); scene.add(scroll);
+  G.vistas.push({x:pt.x,z:pt.z,mesh:beam,scroll,used:false,id:'vista:'+G.floor+':0'});
+}
+function triggerVista(v){
+  if(!v||v.used) return; v.used=true;
+  const key=v.id, firstTime=!(META.codex&&META.codex[key]); discover(key);
+  _G.paused=true; _G.modalOpen=true; if(typeof acquireInvulnLock==='function') acquireInvulnLock();
+  G.vistaCam={x:v.x,y:14,z:v.z,ly:2,dist:11,a0:0,a1:Math.PI*1.3,t:0,dur:4.5};
+  banner('🏛 VISTA','a column of light — the view opens');
+  if(firstTime){ const fm=150+G.floor*8; META.fame+=fm; saveMeta(); log('🏛 Vista discovered — +'+fm+' fame.'); unlockFeat('vista'); }
+  else log('🏛 Vista revisited.');
+}
+function endVistaCam(){ G.vistaCam=null; _G.paused=false; _G.modalOpen=false; if(typeof releaseInvulnLock==='function') releaseInvulnLock(); }
+// ============================================================ HERO CHALLENGE (GW2 parity) — a communing-style
+// prop that banks biome Insight (the Mastery currency from a previous pass) instead of skill points, since the
+// skill-tree budget is deliberately fixed at exactly one tree's worth (SKILL_BUDGET) and must never inflate.
+function spawnHeroChallenge(rooms){
+  G.heroChallenges=[];
+  if(rooms.length<2 || Math.random()<0.5) return;
+  const rm=pick(rooms.slice(1)), pt=safePt(rm,3);
+  const m=new THREE.Mesh(new THREE.TorusKnotGeometry(.7,.22,64,8), new THREE.MeshStandardMaterial({color:0x3ad18a,emissive:0x3ad18a,emissiveIntensity:.8,flatShading:true}));
+  m.position.set(pt.x,1.6,pt.z); scene.add(m);
+  G.heroChallenges.push({x:pt.x,z:pt.z,mesh:m,used:false,id:'hc:'+G.floor+':0'});
+}
+function useHeroChallenge(hc){
+  if(!hc||hc.used) return; hc.used=true;
+  const act=actOf(G.floor), n=Math.round(20+G.floor*1.2);
+  gainInsight(act?act.biome:null, n);
+  banner('⛰ HERO CHALLENGE','+'+n+' Insight banked'); log('⛰ Hero challenge complete — +'+n+' Insight.');
+  sfx.evolve&&sfx.evolve(); if(hc.mesh) ringFx(hc.x,hc.z,3,0x3ad18a); unlockFeat('herochallenge');
+}
+// ============================================================ POINT OF INTEREST (GW2 parity) — passive
+// landmark discovery: walking near one grants first-visit XP and counts toward this floor's discovery tally.
+function spawnPOI(rooms){
+  G.pois=[]; G._poiTotal=0; G._poiFound=0;
+  const n=Math.min(rooms.length, randi(1,3));
+  const chosen=shuffleInPlace(rooms.slice()).slice(0,n);
+  chosen.forEach((rm,i)=>{ const pt=safePt(rm,3);
+    const m=new THREE.Mesh(new THREE.ConeGeometry(.5,1.4,4), new THREE.MeshStandardMaterial({color:0xffce4d,emissive:0xffce4d,emissiveIntensity:.7,flatShading:true}));
+    m.position.set(pt.x,.9,pt.z); m.rotation.y=Math.PI/4; scene.add(m);
+    G.pois.push({x:pt.x,z:pt.z,mesh:m,found:false,id:'poi:'+G.floor+':'+i}); });
+  G._poiTotal=G.pois.length;
+}
 function runGlyphPuzzle(s){
   if(G._puzzleActive) return; s.used=true; G._puzzleActive=true; G._puzzleHurt=false;
   const GLYPHS=['🌑','🔥','❄️','⚡','🌿','💧','⭐','🕳️']; const seq=[]; for(let i=0;i<4;i++) seq.push(pick(GLYPHS));
@@ -8387,6 +8449,21 @@ function updateOverhaul(dt){
   if(G.shrines) for(const s of G.shrines){ if(s.used)continue; if(s.mesh)s.mesh.rotation.y+=dt;
     if(Math.hypot(p.x-s.x,p.z-s.z)<3){ G.nearShrine=s;
       if(!s._hint){ s._hint=true; log(s.type==='puzzle'?'🧩 A GLYPH SHRINE hums — press F to attempt it (stat points for the sharp-minded).':s.type==='altar'?'⚖ An ALTAR OF HUBRIS — press F to wager unspent stat points on a kill-count.':'🎚 The SABOTAGE LEVER — press F to pull.'); } } }
+  // vista / hero challenge proximity (GW2 parity)
+  G.nearVista=null;
+  if(G.vistas) for(const v of G.vistas){ if(v.used)continue; if(v.mesh)v.mesh.rotation.y+=dt*0.6; if(v.scroll)v.scroll.rotation.y+=dt*1.4;
+    if(Math.hypot(p.x-v.x,p.z-v.z)<3.2){ G.nearVista=v; if(!v._hint){ v._hint=true; log('🏛 A VISTA — press F to take in the view.'); } } }
+  G.nearHeroChallenge=null;
+  if(G.heroChallenges) for(const hc of G.heroChallenges){ if(hc.used)continue; if(hc.mesh)hc.mesh.rotation.y+=dt*1.2;
+    if(Math.hypot(p.x-hc.x,p.z-hc.z)<3){ G.nearHeroChallenge=hc; if(!hc._hint){ hc._hint=true; log('⛰ A HERO CHALLENGE — press F to commune with it.'); } } }
+  // point of interest — passive discovery, no interact needed (GW2 parity)
+  if(G.pois) for(const poi of G.pois){ if(poi.found) continue;
+    if(Math.hypot(p.x-poi.x,p.z-poi.z)<3.5){ poi.found=true; G._poiFound=(G._poiFound||0)+1;
+      const firstTime=!(META.codex&&META.codex[poi.id]); discover(poi.id);
+      const xp=Math.round(20+G.floor*2); gainXP(xp);
+      floatText(poi.x,poi.z,'✦ POINT OF INTEREST — +'+xp+' XP','heal',3);
+      log('✦ Point of Interest discovered — +'+xp+' XP. ('+G._poiFound+'/'+G._poiTotal+' this floor)');
+      if(firstTime) unlockFeat('poi'); } }
   // trap dismantling (Trap Scavenger): crouch over a dormant trap and rip it out
   G.nearTrap=null;
   if(G.traps) for(const t of G.traps){ if(Math.hypot(p.x-t.x,p.z-t.z)<2.0 && t.cd<=0){ G.nearTrap=t; break; } }
@@ -8814,6 +8891,7 @@ function spawnBoss(floor,room,opts){
     roaming:!!opts.roaming, assist:!!opts.assist, nemTraits:trs.length?trs:null,
     moveCd:moves.map(m=>rand(m.cd[0]*0.5,m.cd[1])), moves,   // stagger the first cast of each move
     res};
+  e.defianceMax=Math.round(hp*0.22); e.defiance=e.defianceMax; e.defianceBroken=false; e.defianceBrokenT=0;   // DEFIANCE BAR (GW2 parity) — depleted by knockback via hitRadius, see applyDefianceDamage
   if(castT!==1) e.castRate=castT;                       // Tireless lords cast without pause
   for(const t of trs){ if(t.flag) e[t.flag]=true; }     // behaviour flags reuse the proven elite machinery (vampiric/volatile/blink/shield/toxic/arcane/enrage)
   e.mesh=makeEnemyMesh(def.shape,def.color,e.scale);
@@ -9276,7 +9354,9 @@ function castBarrage(pwr){ const p=G.player.position, base=Math.atan2(aimPoint.x
 function castHeal(pwr){ if(G.run) G.run.pactBroken=true;   // Momentum Pact: healing breaks it
   const p=G.player.position; const h=Math.min(G.maxhp*(0.24+0.05*((pwr||1)-1))*healScale(), G.maxhp-G.hp); G.hp+=h; G.run.healSelf+=h;
   ringFx(p.x,p.z,areaR(4),0x6dff8c); ringFx(p.x,p.z,areaR(2.5),0xbfffd0); floatText(p.x,p.z,'+'+Math.round(h),'heal',2.9); }
-function castShield(pwr){ const p=G.player.position; G.invuln=Math.max(G.invuln, 1.3+0.4*((pwr||1)-1)); ringFx(p.x,p.z,areaR(3.6),0x56e0ff); ringFx(p.x,p.z,areaR(2.6),0xffce4d); floatText(p.x,p.z,'⛨ SHIELD','heal',2.9); }
+function castShield(pwr){ const p=G.player.position; G.invuln=Math.max(G.invuln, 1.3+0.4*((pwr||1)-1));
+  comboField(p.x,p.z,areaR(3),'smoke',2.5);   // COMBO FIELD §2: the defensive burst doubles as a smoke field
+  ringFx(p.x,p.z,areaR(3.6),0x56e0ff); ringFx(p.x,p.z,areaR(2.6),0xffce4d); floatText(p.x,p.z,'⛨ SHIELD','heal',2.9); }
 function castVortex(pwr){ const tx=aimPoint.x, tz=aimPoint.z, R=areaR(8.5); ringFx(tx,tz,R,0xb06bff);
   for(const e of G.enemies){ const dx=tx-e.mesh.position.x, dz=tz-e.mesh.position.z, d=Math.hypot(dx,dz); if(d<R+e.r && d>0.1){ const pull=Math.min(d-0.5, 4.5); e.mesh.position.x+=dx/d*pull; e.mesh.position.z+=dz/d*pull; } }
   G.timed.push({t:0.16, fn:()=>{ ringFx(tx,tz,areaR(5),0xb06bff); burst(tx,tz,0xb06bff); hitRadius(tx,tz,areaR(5),skillDmg(2.3,pwr),200); shakeCam(.5); G.hitstop=Math.max(G.hitstop||0,.05); }}); }
@@ -9333,13 +9413,14 @@ function castTaunt(pwr){ const p=G.player.position, myId=_G.cur;
 // Aegis's full invulnerability window. Bulwark of Faith (gives:'wardMaster') makes it bigger and longer-lasting.
 function castWard(pwr){ const p=G.player.position, wm=!!(G.S&&G.S.wardMaster);
   const amt=G.maxhp*(wm?0.30:0.20)*(1+0.06*((pwr||1)-1));
-  G.ward=(G.ward||0)+amt;
+  grantBarrier(amt);
+  comboField(p.x,p.z,areaR(4),'water',3);   // COMBO FIELD §2: a support cast leaves a water field, matching GW2's healing-skill fields
   ringFx(p.x,p.z,areaR(3.4),0x6bd6ff); ringFx(p.x,p.z,areaR(2.2),0xbfeeff); floatText(p.x,p.z,'🔷 WARD +'+Math.round(amt),'heal',2.9);
   if(joinedPlayers().length>1){   // co-op: smaller wards for nearby allies too — the shield-healer's aura moment
     const R=areaR(9), share=amt*0.55;
     for(const pl of joinedPlayers()){ if(pl.id===_G.cur || !pl.player) continue;
       const d=Math.hypot(pl.player.position.x-p.x, pl.player.position.z-p.z); if(d>R) continue;
-      withPlayer(pl.id, ()=>{ G.ward=(G.ward||0)+share; floatText(pl.player.position.x,pl.player.position.z,'🔷 WARD +'+Math.round(share),'heal',2.6); }); }
+      withPlayer(pl.id, ()=>{ grantBarrier(share); floatText(pl.player.position.x,pl.player.position.z,'🔷 WARD +'+Math.round(share),'heal',2.6); }); }
   }
 }
 // Regeneration signature: a stacking HEAL-OVER-TIME (G.hots), distinct from the flat continuous G.S.lifeRegen stat.
@@ -9427,8 +9508,20 @@ function fxNapalm(P){ const tx=aimPoint.x, tz=aimPoint.z, R=areaR(6);   // Morta
   for(let k=0;k<8;k++) G.timed.push({t:k*0.5, fn:()=>{ ringFx(tx,tz,R,0xff7a3d); for(const e of G.enemies){ if(!e.dead && Math.hypot(e.mesh.position.x-tx,e.mesh.position.z-tz)<R+e.r){ hurtEnemy(e,skillDmg(0.7,P),false,'fire'); if(!e.dead) applyAilment(e,'ignite',skillDmg(0.6,P)); } } }}); }
 function fxBastion(P){ const p=G.player.position; const h=Math.min(G.maxhp*0.30,G.maxhp-G.hp); if(h>0){G.hp+=h;G.run.healSelf+=h;} G.invuln=Math.max(G.invuln,2.4); ringFx(p.x,p.z,areaR(4),0x56e0ff); ringFx(p.x,p.z,areaR(2.6),0xffce4d); floatText(p.x,p.z,'⛨ BASTION','heal',3); }   // Stoneskin+Aegis: big heal + long shield
 
+// ============================================================ DEFIANCE BAR (GW2 parity) — a break bar on
+// bosses, depleted by knockback strength rather than raw damage (GW2: "damage = 100 * effect duration").
+// hitRadius's own knock→velocity conversion is knock*0.02, so this reuses that same scale to translate the
+// existing 60-520 knock range already used across the file into a sensible number of hits to break a bar
+// sized at ~22% of the boss's max HP.
+function applyDefianceDamage(e,knock){
+  if(!e||!e.boss||e.defianceBroken||e.defiance==null||!knock) return;
+  e.defiance=Math.max(0,e.defiance-knock*0.5);
+  if(e.defiance<=0){ e.defianceBroken=true; e.defianceBrokenT=4;
+    floatText(e.mesh.position.x,e.mesh.position.z,'💥 DEFIANCE BROKEN','crit',e.r+3); ringFx(e.mesh.position.x,e.mesh.position.z,e.r+3,0xffe14d); shakeCam(.6);
+    unlockFeat('defiance'); }
+}
 function hitRadius(x,z,R,dmg,knock,element,finisherKind){ element=element||G.S.element;
-  for(const e of G.enemies){ const d=Math.hypot(e.mesh.position.x-x,e.mesh.position.z-z); if(d<R+e.r){ const fdmg=finisherKind?comboOnHit(e,dmg,finisherKind):dmg; hurtEnemy(e,fdmg,false,element); if(knock){ const dx=(e.mesh.position.x-x)/(d||1),dz=(e.mesh.position.z-z)/(d||1); e.kx=dx*knock*0.02; e.kz=dz*knock*0.02; } } }
+  for(const e of G.enemies){ const d=Math.hypot(e.mesh.position.x-x,e.mesh.position.z-z); if(d<R+e.r){ const fdmg=finisherKind?comboOnHit(e,dmg,finisherKind):dmg; hurtEnemy(e,fdmg,false,element); if(knock){ const dx=(e.mesh.position.x-x)/(d||1),dz=(e.mesh.position.z-z)/(d||1); e.kx=dx*knock*0.02; e.kz=dz*knock*0.02; applyDefianceDamage(e,knock); } } }
   if(G.goblin){ const d=Math.hypot(G.goblin.mesh.position.x-x,G.goblin.mesh.position.z-z); if(d<R+1) hurtGoblin(dmg,false,element); }
 }
 // ---- soulbound loot: who earned a roll off this enemy ----
@@ -9463,6 +9556,7 @@ function hurtEnemy(e,dmg,crit,element,src,owner){
     else if(Math.random()<0.15){ dmg*=3; floatText(e.mesh.position.x,e.mesh.position.z,'⚂ FATE','crit',e.r+2.6); } }
   if(isPlayerSrc && G.S.beast1 && e.hp<e.maxhp*0.5) dmg*=1.20;                       // Form of the Wolf: the wounded smell different
   if(isPlayerSrc && G.S.giantSlayer && (e.boss||e.elite)) dmg*=1.2;                  // Giant Slayer quirk
+  if(isPlayerSrc && e.defianceBroken) dmg*=1.5;                                      // DEFIANCE BAR: the vulnerability window after a break
   if(isPlayerSrc && G.S.hubris && (e.boss||e.elite)) dmg*=1.3;                       // Hubris: the mighty fall harder (you also bleed easier)
   if(isPlayerSrc && G.S.firstStrike && !e._struck){ e._struck=true; dmg*=1.35; }     // First Strike quirk
   if(isPlayerSrc && G.S.payback && G._payT>0){ G._payT=0; dmg*=1.4; floatText(e.mesh.position.x,e.mesh.position.z,'🔁 PAYBACK','crit',e.r+2.4); }
@@ -9543,18 +9637,29 @@ function checkReactions(e,dmg){
 // A layer on top of the elemental-reaction system above: a FIELD skill drops a lingering area
 // (registered in G.fields via comboField), and a FINISHER skill that lands a hit inside that area
 // triggers a bonus (COMBO_TABLE, keyed 'fieldType|finisherKind'). Up to COMBO_MAX_COMBATANTS unique
-// casters may combo off any one field before it stops paying out, same cap as GW2. Only 'fire' fields
-// exist today (Toxic Cloud / Napalm already drop lingering damage zones) — the table is written to
-// extend cleanly once cold/light fields are authored.
+// casters may combo off any one field before it stops paying out, same cap as GW2. 'fire' fields exist
+// from Toxic Cloud/Napalm; 'water' (Aegis Ward) and 'smoke' (Personal Shield) were added alongside the
+// Barrier/Defiance pass — the table extends cleanly to more field types as more skills are authored.
 const COMBO_MAX_COMBATANTS=5;
 function comboField(x,z,r,type,life){ (G.fields||(G.fields=[])).push({x,z,r,type,t:life,combatants:new Set()}); }
 function comboFieldAt(x,z){ const fs=G.fields; if(!fs) return null;
   for(const f of fs){ if(f.t>0 && Math.hypot(f.x-x,f.z-z)<=f.r) return f; } return null; }
+// BARRIER (GW2 parity): TowerLords already had a decaying pre-emptive absorb pool — G.ward, cast by Aegis
+// Ward and decaying 2%/s (see its own "Barrier signature" comment) — this is that exact mechanic under a
+// different name. grantBarrier() is the shared entry point so combo procs (Relic of the Founding: barrier
+// on a successful field+leap combo) top up the same pool instead of inventing a parallel one.
+function grantBarrier(amt){ if(amt>0) G.ward=(G.ward||0)+amt; }
 const COMBO_TABLE={
-  'fire|projectile': {nm:'Fire Volley',    ic:'🔥', mult:1.15, ail:0.6},
-  'fire|blast':      {nm:'Firestorm',      ic:'☄️', mult:1.3,  ail:0.9},
-  'fire|whirl':      {nm:'Whirling Flame', ic:'🌀', mult:1.1,  ail:0.5},
-  'fire|leap':       {nm:'Fire Leap',      ic:'🦵', mult:1.2,  ail:0.7},
+  'fire|projectile':  {nm:'Fire Volley',     ic:'🔥', mult:1.15, ail:0.6},
+  'fire|blast':       {nm:'Firestorm',       ic:'☄️', mult:1.3,  ail:0.9},
+  'fire|whirl':       {nm:'Whirling Flame',  ic:'🌀', mult:1.1,  ail:0.5},
+  'fire|leap':        {nm:'Fire Leap',       ic:'🦵', mult:1.2,  ail:0.7},
+  'water|projectile': {nm:'Healing Rain',    ic:'💧', mult:1.0,  heal:0.03},
+  'water|blast':      {nm:'Healing Burst',   ic:'💦', mult:1.0,  heal:0.06},
+  'water|whirl':      {nm:'Cleansing Wave',  ic:'🌊', mult:1.0,  heal:0.04},
+  'water|leap':       {nm:'Healing Splash',  ic:'🏊', mult:1.0,  heal:0.05, barrier:0.06},   // Relic of the Founding analog
+  'smoke|projectile': {nm:'Smoke Bolt',      ic:'💨', mult:1.1,  ail:0.3, ailType:'chill'},
+  'smoke|blast':      {nm:'Smoke Bomb',      ic:'☁️', mult:1.15, ail:0.4, ailType:'chill'},
 };
 // finisher hit inside a field → returns the (possibly boosted) damage; call BEFORE hurtEnemy so the bonus lands in one hit
 function comboOnHit(e,dmg,finisherKind){
@@ -9565,7 +9670,9 @@ function comboOnHit(e,dmg,finisherKind){
   f.combatants.add(_G.cur);
   if(!e._comboFlash || performance.now()-e._comboFlash>350){ e._comboFlash=performance.now();
     floatText(e.mesh.position.x,e.mesh.position.z, combo.ic+' '+combo.nm, 'crit', e.r+2.9); }
-  if(combo.ail>0) applyAilment(e,'ignite',dmg*combo.ail);
+  if(combo.ail>0) applyAilment(e,combo.ailType||'ignite',dmg*combo.ail);
+  if(combo.heal>0 && G.player){ const h=Math.min(G.maxhp*combo.heal*healScale(),G.maxhp-G.hp); if(h>0){ G.hp+=h; G.run.healSelf+=h; floatText(G.player.position.x,G.player.position.z,'+'+Math.round(h),'heal',2.6); } }
+  if(combo.barrier>0) grantBarrier(G.maxhp*combo.barrier);
   unlockFeat('combo');
   return dmg*combo.mult;
 }
@@ -9573,8 +9680,13 @@ function comboOnHit(e,dmg,finisherKind){
 function comboLeapAt(x,z){
   const f=comboFieldAt(x,z); if(!f) return;
   if(!f.combatants.has(_G.cur) && f.combatants.size>=COMBO_MAX_COMBATANTS) return;
+  const combo=COMBO_TABLE[f.type+'|leap']; if(!combo) return;
   f.combatants.add(_G.cur);
-  if(f.type==='fire'){ addFervor(15); addCharge(10); floatText(x,z,'🦵 FIRE LEAP','fire',2.6); unlockFeat('combo'); }
+  floatText(x,z, combo.ic+' '+combo.nm, combo.heal?'heal':'fire', 2.6);
+  if(combo.heal>0 && G.player){ const h=Math.min(G.maxhp*combo.heal*healScale(),G.maxhp-G.hp); if(h>0){ G.hp+=h; G.run.healSelf+=h; } }
+  if(combo.barrier>0) grantBarrier(G.maxhp*combo.barrier);
+  if(!combo.heal){ addFervor(15); addCharge(10); }   // non-healing fields (fire) keep the original Fire Leap reward
+  unlockFeat('combo');
 }
 // ---------------- boss-reward draft: slay a guardian → choose 1 of 3 build-defining blessings ----------------
 // Blessings reuse the existing stat/keystone vocabulary (folded into recompute via G.run.boons) so they
@@ -11609,6 +11721,8 @@ function interact(){
   if(G.tutorial){ if(G.nearChest) return openChest(G.nearChest); if(G.nearLoot) return grabAllLoot(); if(G.nearPortal) return finishTutorial(); return; }
   if(G.practice){ if(G.nearLoot) return grabAllLoot(); if(G.nearPortal) exitPractice(); return; }
   if(G.nearShrine){ return useShrine(G.nearShrine); }
+  if(G.nearVista){ return triggerVista(G.nearVista); }
+  if(G.nearHeroChallenge){ return useHeroChallenge(G.nearHeroChallenge); }
   if(G.nearTrap){ return dismantleTrap(G.nearTrap); }
   if(G.nearChest){ return openChest(G.nearChest); }
   if(G.nearLoot){ return grabAllLoot(); }
@@ -12822,8 +12936,16 @@ function frameBody(){
         camWobX += (tX-camWobX)*Math.min(1,dt*7); camWobZ += (tZ-camWobZ)*Math.min(1,dt*7);
       } else { camWobX*=0.85; camWobZ*=0.85; }
       pl._camPrevX=p.x; pl._camPrevZ=p.z;
-      camera.position.set(camFocus.x+sx+camWobX, 28+sy, camFocus.z+15+camWobZ);   // FIXED offset from the smoothed focus + sway lean (zoomed out ~15-20% from the original 24/13)
-      camera.lookAt(camFocus.x,1.2,camFocus.z); dir.position.set(camFocus.x+20,42,camFocus.z+14); dir.target.position.set(camFocus.x,0,camFocus.z); dir.target.updateMatrixWorld();
+      // VISTA §cinematic: orbit the camera around the vista point instead of the normal follow-cam while active
+      if(G.vistaCam){ const vc=G.vistaCam; vc.t+=dt; const prog=Math.min(1,vc.t/vc.dur);
+        const ease=prog<0.5 ? 2*prog*prog : 1-Math.pow(-2*prog+2,2)/2, ang=vc.a0+(vc.a1-vc.a0)*ease;
+        camera.position.set(vc.x+Math.sin(ang)*vc.dist, vc.y, vc.z+Math.cos(ang)*vc.dist); camera.lookAt(vc.x,vc.ly,vc.z);
+        if(vc.t>=vc.dur) endVistaCam();
+      } else {
+        camera.position.set(camFocus.x+sx+camWobX, 28+sy, camFocus.z+15+camWobZ);   // FIXED offset from the smoothed focus + sway lean (zoomed out ~15-20% from the original 24/13)
+        camera.lookAt(camFocus.x,1.2,camFocus.z);
+      }
+      dir.position.set(camFocus.x+20,42,camFocus.z+14); dir.target.position.set(camFocus.x,0,camFocus.z); dir.target.updateMatrixWorld();
     }
     renderer.setScissorTest(false); renderer.setViewport(0,0,innerWidth,innerHeight);
     renderer.render(scene,camera);
@@ -13600,6 +13722,7 @@ function updateWorld(dt){
     const tp=nearestPlayerTo(ex,ez,e); const p=tp.player.position;   // chase the nearest living player (Taunt marks can redirect this)
     let dx=p.x-ex, dz=p.z-ez; const d=Math.hypot(dx,dz)||1; dx/=d;dz/=d;
     e.hitFlash=Math.max(0,e.hitFlash-dt); e.kx=(e.kx||0)*0.85; e.kz=(e.kz||0)*0.85;
+    if(e.boss && e.defianceBroken){ e.defianceBrokenT-=dt; if(e.defianceBrokenT<=0){ e.defianceBroken=false; e.defiance=e.defianceMax; } }   // DEFIANCE BAR: the window closes, the bar refills
     const atkRange=e.r+2.0; const espd=(e.frozen>0?0:e.speed)*(e.chill>0?0.5:1)*(e.hasteT>0?1.4:1);   // Deep Rime: flash-frozen enemies stop moving entirely
     // separation — push apart so they don't phase through each other
     let sx=0,sz=0; for(let j=0;j<G.enemies.length;j++){ if(j===i)continue; const o=G.enemies[j]; const od=Math.hypot(ex-o.mesh.position.x,ez-o.mesh.position.z), min=e.r+o.r;
@@ -13626,6 +13749,14 @@ function updateWorld(dt){
     else if(mode==='wander') wanderEnemy(e, ex, ez, espd, dt);
     // apply knockback / dash through collision so they don't pass walls
     if(Math.abs(e.kx)>0.001||Math.abs(e.kz)>0.001) moveEntity(e.mesh.position, e.mesh.position.x+e.kx, e.mesh.position.z+e.kz, e.r*0.55);
+    // HAZARD-KNOCKBACK SYNERGY (GW2 parity): a hard shove into a lava pool burns the target — "forcing
+    // opponents to fall" adapted to TowerLords' actual environmental hazard (no cliffs, but plenty of lava)
+    if(!e.boss && (Math.abs(e.kx)>0.5||Math.abs(e.kz)>0.5) && G.hazPools && G.hazPools.length){
+      for(const hz of G.hazPools){ if(hz.type==='lava' && Math.hypot(e.mesh.position.x-hz.x,e.mesh.position.z-hz.z)<hz.r){
+        if(!e._lavaHit || performance.now()-e._lavaHit>600){ e._lavaHit=performance.now();
+          reactHit(e, e.maxhp*0.12, 'fire'); floatText(e.mesh.position.x,e.mesh.position.z,'🔥 SHOVED IN','fire',e.r+2.2); }
+        break; } }
+    }
     // charger lunge (only when awake)
     if(e.dash && e.aggro){ e.dashCd-=dt; if(e.dashCd<=0 && d<15 && d>3.5){ e.dashCd=rand(3,5); e.kx=dx*6; e.kz=dz*6; floatText(cx,cz,'CHARGE!','hurt',e.scale*1.5+1.2); } }
     // warden: periodically heals nearby wounded foes
@@ -14004,7 +14135,7 @@ function updateBossBar(){
   $('bbFill').style.width=clamp(boss.hp/boss.maxhp*100,0,100)+'%';
   $('bbName').textContent=(boss.name||'FLOOR GUARDIAN').toUpperCase();
   $('bbHp').textContent=Math.max(0,Math.ceil(boss.hp)).toLocaleString()+' / '+Math.ceil(boss.maxhp).toLocaleString();
-  $('bbTag').textContent = boss.roaming?'⚠ ROAMING · HUNTING YOU' : boss.ph3?'☠ DESPERATION' : boss.ph2?'⚠ ENRAGED':'';
+  $('bbTag').textContent = boss.defianceBroken?'💥 DEFIANCE BROKEN — VULNERABLE' : boss.roaming?'⚠ ROAMING · HUNTING YOU' : boss.ph3?'☠ DESPERATION' : boss.ph2?'⚠ ENRAGED':'';
   bar.classList.toggle('roam', !!boss.roaming);
   if(arrow){
     const bp=boss.mesh.position; _proj.set(bp.x, 2, bp.z).project(camera);
