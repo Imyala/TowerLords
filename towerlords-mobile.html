@@ -6,7 +6,7 @@
 <title>TOWERLORDS (Mobile) — Prototype v2</title>
 <style>
   :root{
-    --ink:#eef2ff; --neon:#56e0ff; --gold:#ffce4d; --hp:#ff4d6d; --mana:#4aa8ff; --xp:#9d7bff;
+    --ink:#eef2ff; --neon:#56e0ff; --gold:#ffce4d; --hp:#ff4d6d; --mana:#4aa8ff; --xp:#9d7bff; --good:#3ad18a;
     --rare:#4da6ff; --epic:#b06bff; --legend:#ff9a3d; --common:#cfd6e6; --unique:#ff6a3d; --mythos:#ff5ec7;
     --str:#ff6b6b; --dex:#6dff8c; --int:#56e0ff; --vit:#ff9a3d; --will:#b06bff;
   }
@@ -231,11 +231,13 @@
   .tog{width:46px;height:25px;border-radius:13px;background:rgba(255,255,255,.12);position:relative;cursor:pointer;border:1px solid rgba(255,255,255,.18);flex:0 0 auto;
     transition:background .16s ease,border-color .16s ease,box-shadow .16s ease;box-shadow:inset 0 1px 3px rgba(0,0,0,.4);}
   .tog:hover{border-color:rgba(255,255,255,.32);}
-  .tog.on{background:linear-gradient(90deg,#2a7fb8,#56e0ff);border-color:var(--neon);box-shadow:inset 0 1px 3px rgba(0,0,0,.25),0 0 10px rgba(86,224,255,.35);}
+  .tog.on{background:linear-gradient(90deg,color-mix(in srgb,var(--neon) 55%,#0a1a2e),var(--neon));border-color:var(--neon);box-shadow:inset 0 1px 3px rgba(0,0,0,.25),0 0 10px rgba(86,224,255,.35);}
   .tog .knob{position:absolute;top:2px;left:2px;width:19px;height:19px;border-radius:50%;background:#eef2ff;transition:left .16s ease;box-shadow:0 1px 3px rgba(0,0,0,.5);}
   .tog.on .knob{left:23px;}
-  .segBtn{flex:1;cursor:pointer;text-align:center;padding:9px 6px;border-radius:9px;border:1px solid rgba(255,255,255,.16);font-size:11px;font-weight:bold;background:rgba(255,255,255,.04);}
+  .segBtn{flex:1;cursor:pointer;text-align:center;padding:9px 6px;border-radius:9px;border:1px solid rgba(255,255,255,.16);font-size:11px;font-weight:bold;background:rgba(255,255,255,.04);transition:border-color .12s,background .12s;}
+  .segBtn:hover{border-color:rgba(255,255,255,.32);background:rgba(255,255,255,.08);}
   .segBtn.sel{border-color:var(--neon);background:rgba(86,224,255,.14);color:var(--neon);}
+  .setHead{margin:16px 16px 6px;font-size:11px;opacity:.6;letter-spacing:1px;text-transform:uppercase;}
   .segBtn small{display:block;font-size:9px;opacity:.55;font-weight:normal;margin-top:3px;line-height:1.3;}
 
   /* vignette */
@@ -628,6 +630,7 @@
     box-shadow:0 2px 8px rgba(0,0,0,.35),inset 0 1px 0 rgba(255,255,255,.06);transition:background .15s ease,color .15s ease,box-shadow .15s ease,transform .12s ease;}
   .sbtn:hover{background:var(--neon);color:#04111a;box-shadow:0 2px 8px rgba(0,0,0,.35),0 0 14px rgba(86,224,255,.45);transform:translateY(-1px);}
   .sbtn:active{transform:translateY(0) scale(.97);}
+  .sbtn.dim{opacity:.4;} .sbtn.dim:hover{opacity:.55;box-shadow:none;transform:none;}   /* still clickable — the button itself already logs why nothing happened — just visually reads as "won't do anything" before you click, and doesn't light up bright like a real hover */
 
   .hint{font-size:12.5px;opacity:.62;text-align:center;letter-spacing:.6px;margin-top:11px;line-height:1.5;}
 
@@ -689,7 +692,6 @@
     background:linear-gradient(180deg,rgba(0,0,0,.44),rgba(0,0,0,.24));box-shadow:inset 0 2px 10px rgba(0,0,0,.5);}
   .eqGrid{display:grid;grid-template-columns:1fr 1fr;gap:7px;}
   .slotRow{display:flex;gap:7px;} .slotRow .tile{flex:1;min-width:0;}
-  .r-common{--rc:var(--common);} .r-rare{--rc:var(--rare);} .r-epic{--rc:var(--epic);} .r-legend{--rc:var(--legend);} .r-unique{--rc:var(--unique);} .r-mythos{--rc:var(--mythos);}
   /* a square item slot-box */
   .tile{position:relative;aspect-ratio:1/1;border-radius:7px;border:1px solid var(--rc,rgba(255,255,255,.18));
     background:linear-gradient(155deg,color-mix(in srgb,var(--rc,#5a6478) 32%,transparent),rgba(6,10,18,.86));
@@ -736,8 +738,8 @@
   .invTools .st.on{border-color:var(--neon);background:rgba(86,224,255,.14);color:var(--neon);}
   /* fame-funded storage-row purchase chips (✦ = fame) */
   .buyRow{cursor:pointer;font-size:9.5px;font-weight:bold;letter-spacing:.4px;padding:4px 9px;border-radius:6px;pointer-events:auto;line-height:14px;box-sizing:border-box;display:inline-flex;align-items:center;flex-shrink:0;
-    border:1px solid rgba(157,123,255,.5);color:#c7b6ff;background:rgba(157,123,255,.12);text-transform:uppercase;white-space:nowrap;transition:.1s;}
-  .buyRow:hover{background:rgba(157,123,255,.26);color:#fff;border-color:#9d7bff;}
+    border:1px solid color-mix(in srgb,var(--xp) 50%,transparent);color:color-mix(in srgb,var(--xp) 65%,#fff);background:color-mix(in srgb,var(--xp) 12%,transparent);text-transform:uppercase;white-space:nowrap;transition:.1s;}
+  .buyRow:hover{background:color-mix(in srgb,var(--xp) 26%,transparent);color:#fff;border-color:var(--xp);}
   .buyRow.cant{border-color:rgba(255,122,138,.42);color:#ffabb6;background:rgba(255,122,138,.08);}
   .buyRow.maxed{opacity:.5;cursor:default;pointer-events:none;border-color:rgba(255,255,255,.18);color:#9aa3b8;background:rgba(255,255,255,.04);}
   /* equip-comparison verdict badge in the inspect pane */
@@ -832,10 +834,12 @@
   /* vendor: compact carried grid + action bar (no inner scroll) */
   .vendGrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(46px,1fr));gap:6px;margin-bottom:10px;}
   .vendAct{border-top:1px solid rgba(255,255,255,.09);padding-top:9px;min-height:62px;}
-  .vendAct .vaName{font-size:12.5px;margin-bottom:7px;color:#dfe7ff;}
+  .vendAct .vaName{font-size:12.5px;margin-bottom:7px;color:var(--rc,#dfe7ff);}
   .vendAct .vaName b{color:var(--rc,#fff);}
   .vendAct .vaHint{font-size:11.5px;opacity:.5;text-align:center;padding:12px 0;}
-  .vendGold{font-size:12px;margin:0 16px 10px;} .vendGold b{color:var(--gold);}
+  .vendGold{font-size:14px;font-weight:bold;margin:0 16px 10px;display:flex;align-items:center;gap:5px;}
+  .vendGold b{color:var(--gold);font-size:18px;text-shadow:0 0 10px rgba(255,206,77,.5);}
+  .vendHd{font-size:11px;opacity:.6;letter-spacing:1px;text-transform:uppercase;margin:0 4px 4px;}
   /* pet yard */
   #petPanel{top:50%;left:50%;transform:translate(-50%,-50%);width:680px;max-height:92vh;display:flex;flex-direction:column;padding-bottom:16px;border-color:rgba(255,174,61,.3);}
   #petPanel h3{color:#ffae3d;}
@@ -1111,12 +1115,13 @@
   #tutCard .tut-sub{font-size:11px;opacity:.5;letter-spacing:1px;text-transform:uppercase;margin-bottom:14px;}
   #tutCard p{font-size:13.5px;line-height:1.65;opacity:.9;margin:9px 0;}
   #tutCard .ti{display:flex;gap:11px;align-items:flex-start;margin:9px 0;}
-  #tutCard .ti .k{flex:0 0 auto;min-width:64px;text-align:center;font-weight:bold;color:var(--gold);background:rgba(255,206,77,.1);border:1px solid rgba(255,206,77,.25);border-radius:6px;padding:4px 6px;font-size:12px;}
+  #tutCard .ti .k{flex:0 0 auto;min-width:80px;white-space:nowrap;text-align:center;font-weight:bold;color:var(--gold);background:color-mix(in srgb,var(--gold) 10%,transparent);border:1px solid color-mix(in srgb,var(--gold) 25%,transparent);border-radius:6px;padding:4px 6px;font-size:11.5px;}
   #tutCard .ti .d{font-size:13px;line-height:1.5;opacity:.9;}
   #tutCard b.hl{color:var(--neon);}
   #tutNav{display:flex;align-items:center;gap:16px;margin-top:18px;}
   #tutDots{display:flex;gap:6px;}
-  #tutDots .dot{width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,.18);}
+  #tutDots .dot{width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,.18);cursor:pointer;transition:transform .1s,background .12s;}
+  #tutDots .dot:hover{background:rgba(255,255,255,.4);transform:scale(1.3);}
   #tutDots .dot.on{background:var(--neon);box-shadow:0 0 8px var(--neon);}
   /* death log */
   #deathlogBody{width:540px;max-width:88vw;max-height:60vh;overflow-y:auto;text-align:left;}
@@ -1521,9 +1526,9 @@
         <div class="bagGrid" id="stBagGrid"></div>
       </div>
       <div class="stashMid">
-        <div class="sbtn gold" id="depositAll" title="Bank everything you are carrying">DEPOSIT ALL »</div>
-        <div class="sbtn" id="depositGear" title="Bank only wearable gear — keep gems, flasks &amp; potions on you">GEAR ONLY »</div>
-        <div class="sbtn" id="retrieveAll" title="Pull the vault back into your bag">« RETRIEVE ALL</div>
+        <div class="sbtn gold" id="depositAll" data-tip="Bank everything you are carrying">DEPOSIT ALL »</div>
+        <div class="sbtn" id="depositGear" data-tip="Bank only wearable gear — keep gems, flasks &amp; potions on you">GEAR ONLY »</div>
+        <div class="sbtn" id="retrieveAll" data-tip="Pull the vault back into your bag">« RETRIEVE ALL</div>
       </div>
       <div class="stashSide vault">
         <div class="secHd"><h4>🗄 Vault</h4><div class="invTools" id="stTools"></div></div>
@@ -1560,9 +1565,8 @@
   <!-- Vendor -->
   <div id="vendorPanel" class="panel hidden">
     <h3>⚖ ADMINISTRATOR VENDOR</h3><div class="closeX" data-close="vendorPanel">✕</div>
-    <div class="vendGold">Gold: <b id="vendGoldNum">0</b></div>
+    <div class="vendGold">🪙 <b id="vendGoldNum">0</b></div>
     <div id="gambleRow"></div>
-    <h4 style="font-size:10px;opacity:.6;letter-spacing:1px;margin:0 16px 6px;text-transform:uppercase;">Carried — sell or reforge</h4>
     <div id="vendList" style="margin:0 16px;padding-bottom:2px;"></div>
     <div class="hint">walk away or press F to close</div>
   </div>
@@ -2769,12 +2773,12 @@ function stashPushMany(items){ let n=0; for(const it of items){ if(stashFull())b
 function rowBuyChip(id, maxed, cost){
   if(maxed) return `<span class="buyRow maxed">＋ Row · MAX</span>`;
   const can=META.fame>=cost;
-  return `<span class="buyRow${can?'':' cant'}" id="${id}" title="Your fame: ${Math.floor(META.fame).toLocaleString()} · costs ${cost.toLocaleString()} fame (spends rank)">＋ Row · ${cost.toLocaleString()} ✦</span>`;
+  return `<span class="buyRow has-gtip${can?'':' cant'}" id="${id}" data-tip="Your fame: ${Math.floor(META.fame).toLocaleString()} · costs ${cost.toLocaleString()} fame (spends rank)">＋ Row · ${cost.toLocaleString()} ✦</span>`;
 }
 function buyChip(id, maxed, cost, label){
   if(maxed) return `<span class="buyRow maxed">${label} · MAX</span>`;
   const can=META.fame>=cost;
-  return `<span class="buyRow${can?'':' cant'}" id="${id}" title="Your fame: ${Math.floor(META.fame).toLocaleString()} · costs ${cost.toLocaleString()} fame (spends rank)">${label} · ${cost.toLocaleString()} ✦</span>`;
+  return `<span class="buyRow has-gtip${can?'':' cant'}" id="${id}" data-tip="Your fame: ${Math.floor(META.fame).toLocaleString()} · costs ${cost.toLocaleString()} fame (spends rank)">${label} · ${cost.toLocaleString()} ✦</span>`;
 }
 function unlockFeat(id){ if(META.feats.includes(id))return; const f=FEATS.find(x=>x.id===id); if(!f)return;
   META.feats.push(id); META.fame+=f.fame; saveMeta(); banner('★ FEAT — '+f.nm, f.ds+'  ·  +'+f.fame+' fame'); sfx.evolve();
@@ -3893,7 +3897,7 @@ function kbKeyLabel(v){ if(v==null||v==='') return '—'; const mm=/^mouse(\d)$/
 function kbShort(v){ if(v==null||v==='')return '—'; const mm=/^mouse(\d)$/.exec(v); if(mm)return ['LMB','MMB','RMB','M4','M5'][+mm[1]]||('M'+mm[1]); if(v===' ')return 'Spc'; if(v==='shift')return '⇧'; if(v==='control'||v==='ctrl')return 'Ctl'; if(v==='arrowup')return '↑'; if(v==='arrowdown')return '↓'; if(v==='arrowleft')return '←'; if(v==='arrowright')return '→'; return v.length===1?v.toUpperCase():v.slice(0,3).toUpperCase(); }
 const KEYBIND_ROWS=[['Move up','up'],['Move down','down'],['Move left','left'],['Move right','right'],['Dash','dash'],['Signature ultimate','sig'],['Interact','interact'],['Recall to sanctuary','recall'],['Skill 1','slot1'],['Skill 2','slot2'],['Skill 3','slot3'],['Skill 4','slot4'],['Skill 5','slot5'],['Skill 6','slot6'],['Skill 7','slot7'],['Skill 8','slot8'],['Skill 9','slot9'],['Flask 1','flask1'],['Flask 2','flask2'],['Flask 3','flask3'],['Flask 4','flask4'],['Flask 5','flask5']];
 function keybindHTML(){ const kb=SETTINGS.keybinds||DEFAULT_KEYBINDS;
-  let h='<div style="margin:16px 16px 6px;font-size:11px;opacity:.6;letter-spacing:1px;text-transform:uppercase">Keybinds — click a button, then press any key or mouse button (Esc cancels)</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:6px 12px;margin:0 16px 10px">';
+  let h='<div class="setHead">Keybinds — click a button, then press any key or mouse button (Esc cancels)</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:6px 12px;margin:0 16px 10px">';
   for(const row of KEYBIND_ROWS){ h+='<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:12px"><span style="opacity:.85">'+row[0]+'</span><button class="segBtn kbBtn" data-kb="'+row[1]+'" style="flex:0 0 auto;min-width:74px;padding:4px 8px;font-size:11px;text-align:center">'+kbKeyLabel(kb[row[1]])+'</button></div>'; }
   h+='</div><div style="margin:0 16px 14px"><button class="segBtn" id="kbReset" style="padding:4px 10px;font-size:11px">↺ Reset to defaults</button> <span style="font-size:10px;opacity:.5">Movement accepts keyboard keys only.</span></div>';
   return h; }
@@ -10777,6 +10781,12 @@ function renderStashGrids(){
   const wn=$('stashWarn'); if(wn) wn.innerHTML = (G.stash.length && G.stashStrikes>=1)
     ? '⚠ One death already — a SECOND death without retrieving WIPES the vault.'
     : 'Banked loot survives one death. Retrieve or re-bank to reset the counter.';
+  // dim the quick-transfer buttons when they'd be a guaranteed no-op, matching .buyRow.maxed elsewhere
+  const _hasCarried=!!(G.inv&&G.inv.length), _hasVaulted=!!(G.stash&&G.stash.length);
+  const _hasGear=G.inv&&G.inv.some(it=>it.slotKey&&!it.isGem&&!it.isSkillGem&&!it.isFlask&&!it.isPot&&!it.isPet);
+  const _da=$('depositAll'); if(_da) _da.classList.toggle('dim',!_hasCarried);
+  const _dg=$('depositGear'); if(_dg) _dg.classList.toggle('dim',!_hasGear);
+  const _ra=$('retrieveAll'); if(_ra) _ra.classList.toggle('dim',!_hasVaulted);
   // ---- sort bars ----
   const bTools=$('stBagTools'); if(bTools){ bTools.innerHTML=sortChipsHTML(STASH_BAG_SORT); wireSortChips(bTools, m=>{ STASH_BAG_SORT=m; renderStashGrids(); }); }
   const sTools=$('stTools');    if(sTools){ sTools.innerHTML=sortChipsHTML(STASH_SORT);     wireSortChips(sTools, m=>{ STASH_SORT=m; renderStashGrids(); }); }
@@ -10908,9 +10918,12 @@ function itemTile(it, o){ o=o||{};
   if(o.bound) inner+=`<span class="tbound">${o.bound}</span>`;
   if(it.sockets){ let s=''; for(let i=0;i<it.sockets;i++){ const g=it.socketed&&it.socketed[i]; s+=`<i class="${g?'f':''}"></i>`; } inner+=`<span class="tsock">${s}</span>`; }
   if(o.badge) inner+=`<span class="tbadge">${o.badge}</span>`;
-  if(it.overheated) inner+=`<span class="tbadge" style="background:#e0431f;color:#fff" title="Overheated — repair at the crafting bench">🔥</span>`;
-  if(it.locked) inner+=`<span class="tlock" title="Locked — can't be fed or sold">🔒</span>`;
+  if(it.overheated) inner+=`<span class="tbadge" style="background:#e0431f;color:#fff" data-tip="Overheated — repair at the crafting bench">🔥</span>`;
+  if(it.locked) inner+=`<span class="tlock" data-tip="Locked — can't be fed or sold">🔒</span>`;
   d.innerHTML=inner;
+  // it.overheated/it.locked badges above carry their own [data-tip] — the generic delegated [data-tip]
+  // listener (near showTileTip below) handles them, so they show their own tip even over a tile that has
+  // no o.tip of its own, without needing per-badge wiring here.
   if(o.tip){ d.classList.add('has-gtip'); d.addEventListener('mouseenter',()=>showTileTip(o.tip)); d.addEventListener('mousemove',moveTileTip); d.addEventListener('mouseleave',hideTileTip); }
   else if(o.title) d.title=o.title;
   d._item=it;
@@ -10951,7 +10964,13 @@ function hideTileTip(){ if(_gtip) _gtip.style.display='none'; }
 // safety net: if the cursor isn't over a tip-owning tile, hide the tooltip. mouseleave can be missed when a
 // hovered tile is removed mid-hover (panel re-render/close), which left the tip stuck on screen; mousemove fires
 // continuously so this always clears it the moment the pointer is elsewhere.
-addEventListener('mousemove', e=>{ if(_gtip && _gtip.style.display!=='none' && !(e.target&&e.target.closest&&e.target.closest('.has-gtip'))) hideTileTip(); }, true);
+addEventListener('mousemove', e=>{ if(_gtip && _gtip.style.display!=='none' && !(e.target&&e.target.closest&&e.target.closest('.has-gtip,[data-tip]'))) hideTileTip(); }, true);
+// generic delegated tip for any [data-tip] element built from an HTML string rather than itemTile() (e.g. the
+// fame-cost "+Slot"/"+Row" buyRow chips, or a badge nested inside a tile) — one listener instead of re-wiring
+// hover at every render call site
+addEventListener('mouseover', e=>{ const c=e.target.closest('[data-tip]'); if(c) showTileTip(c.dataset.tip); });
+addEventListener('mousemove', e=>{ if(e.target.closest('[data-tip]')) moveTileTip(e); });
+addEventListener('mouseout', e=>{ const c=e.target.closest('[data-tip]'); if(c && !(e.relatedTarget&&e.relatedTarget.closest&&e.relatedTarget.closest('[data-tip]'))) hideTileTip(); });
 function emptyTile(label, icon){ const d=document.createElement('div'); d.className='tile empty'; d.innerHTML=`<span class="ic">${icon||'＋'}</span>`+(label?`<span class="tlabel">${label}</span>`:''); return d; }
 // a truly blank recessed cell — backpack/stash filler so the grid always reads as a full container
 function blankCell(){ const d=document.createElement('div'); d.className='tile empty'; return d; }
@@ -11158,17 +11177,17 @@ let _vendStock=[];
 function rollVendStock(){ _vendStock=[]; for(let i=0;i<4;i++){ const _rar=Math.random()<0.7?RARITY[0]:RARITY[1]; const it=makeItem(Math.max(1,G.floor||1),null,_rar); _vendStock.push({it:it, buy:Math.max(20,Math.round((it.value||20)*1.7)), sold:false}); } }   // LOW-TIER ONLY — epic/legendary/unique come from farming & gambling, never the shop
 function renderVendStock(list){ if(!_vendStock||!_vendStock.length) return; const avail=_vendStock.filter(s=>!s.sold); if(!avail.length) return;
   const wrap=document.createElement('div');
-  wrap.innerHTML='<div style="font-size:11px;opacity:.6;letter-spacing:1px;text-transform:uppercase;margin:2px 4px 6px">🛒 Wares — low-tier only · restocks up to 3\u00d7 per sanctuary visit</div>';
+  wrap.innerHTML='<div class="vendHd">🛒 Wares — low-tier only · restocks up to 3\u00d7 per sanctuary visit</div>';
   const sg=document.createElement('div'); sg.className='vendGrid';
   avail.forEach(s=>{ const it=s.it; const cell=document.createElement('div'); cell.style.cssText='display:flex;flex-direction:column;align-items:center;gap:3px';
-    const t=itemTile(it,{ctx:null}); t.title=it.name+(it.rarity?' · '+it.rarity.nm:''); cell.appendChild(t);
+    const t=itemTile(it,{ctx:null, tip:lootTip(it)}); cell.appendChild(t);   // hover to inspect full stats, same as everywhere else — buying used to be blind
     const buy=document.createElement('button'); buy.className='vbtn gold'; buy.style.cssText='font-size:10px;padding:2px 7px;min-width:44px'; buy.textContent='💰'+s.buy; buy.disabled=G.gold<s.buy;
     buy.onclick=()=>{ if(G.gold<s.buy){ log('Not enough gold.'); sfx.deny&&sfx.deny(); return; } if(G.inv.length>=G.invCap){ log('Inventory full — make room first.'); return; }
       G.gold-=s.buy; s.sold=true; G.inv.push(it); sfx.gold&&sfx.gold(); flashGold&&flashGold(); log('🛒 Bought '+it.name+'.'); renderVendor(); refreshItemPanels&&refreshItemPanels(); };
     cell.appendChild(buy); sg.appendChild(cell); });
   wrap.appendChild(sg);
   const hr=document.createElement('div'); hr.style.cssText='border-top:1px solid rgba(255,255,255,.08);margin:10px 4px 8px'; wrap.appendChild(hr);
-  const hd=document.createElement('div'); hd.style.cssText='font-size:11px;opacity:.6;letter-spacing:1px;text-transform:uppercase;margin:0 4px 4px'; hd.textContent='💰 Sell your carried gear'; wrap.appendChild(hd);
+  const hd=document.createElement('div'); hd.className='vendHd'; hd.textContent='💰 Sell your carried gear'; wrap.appendChild(hd);
   list.appendChild(wrap); }
 function renderVendor(){
   $('vendGoldNum').textContent=G.gold;
@@ -11183,7 +11202,7 @@ function renderVendor(){
     G.gold-=gambleCost(); const it=gambleItem(G.floor); G.inv.unshift(it); $('vendGoldNum').textContent=G.gold; sfx.drop&&sfx.drop(RARITY.indexOf(it.rarity)); log('🎲 Gambled — '+it.rarity.nm+' '+it.name);
     // spam-friendly: keep the button under the cursor — prepend the roll to the grid instead of re-rendering the whole panel
     const _grid=$('vendList')&&$('vendList').querySelector('.vendGrid');
-    if(_grid){ const t=itemTile(it,{ctx:null}); t.title=it.name+(it.rarity?' · '+it.rarity.nm:''); t.addEventListener('click',()=>{ _vendSel=it; renderVendor(); });
+    if(_grid){ const t=itemTile(it,{ctx:null, tip:lootTip(it)}); t.addEventListener('click',()=>{ _vendSel=it; renderVendor(); });
       t.addEventListener('contextmenu',e=>{ e.preventDefault(); if(it.locked){ log('🔒 Locked — unlock to sell.'); return; } const _sv=sellVal(it); G.gold+=_sv; G.inv=G.inv.filter(x=>x!==it); if(G.selGem===it)G.selGem=null; if(_vendSel===it)_vendSel=null; flashGold(); log('Sold '+it.name+' (+'+_sv+'g)'); renderVendor(); });
       _grid.insertBefore(t,_grid.firstChild); } else renderVendor(); };
   $('buySkillBtn').onclick=()=>{ if(G.gold<skillGemCost()){log('Not enough gold for a skill gem.');return;} if(G.inv.length>=G.invCap){log('Inventory full.');return;}
@@ -11204,15 +11223,14 @@ function renderVendor(){
   wireSortChips(sortBar, m=>{ VEND_SORT=m; renderVendor(); });
   list.appendChild(sortBar);
   const grid=document.createElement('div'); grid.className='vendGrid';
-  sortItems(G.inv, VEND_SORT).forEach(it=>{ const t=itemTile(it,{ctx:null,sel:_vendSel===it}); t.title=it.name+(it.rarity?' · '+it.rarity.nm:'');
+  sortItems(G.inv, VEND_SORT).forEach(it=>{ const t=itemTile(it,{ctx:null,sel:_vendSel===it, tip:lootTip(it)});
     t.addEventListener('click',()=>{ _vendSel=it; renderVendor(); });
     t.addEventListener('contextmenu',e=>{ e.preventDefault(); if(it.locked){ log('🔒 Locked — unlock to sell.'); return; } const _sv=sellVal(it); G.gold+=_sv; G.inv=G.inv.filter(x=>x!==it); if(G.selGem===it)G.selGem=null; if(_vendSel===it)_vendSel=null; flashGold(); log('Sold '+it.name+' (+'+_sv+'g'+(_sv>(it.value||0)?' · vintage':'')+')'); renderVendor(); });
     grid.appendChild(t); });
   list.appendChild(grid);
   const act=document.createElement('div'); act.className='vendAct';
   if(_vendSel){ const it=_vendSel; const canReforge = it.slotKey && !it.isGem && !it.unique && !it.isSkillGem && !it.isFlask && !it.isPet && !it.isPot;
-    const rc=it.rarity?('#'+(it.rarity.col>>>0).toString(16).padStart(6,'0')):'#fff';
-    act.innerHTML=`<div class="vaName" style="--rc:${rc}">${it.slotIc||it.ic||''} <b>${it.name}</b> · ${it.rarity?it.rarity.nm:''}</div>`
+    act.innerHTML=`<div class="vaName r-${it.rarity?it.rarity.css:'common'}">${it.slotIc||it.ic||''} <b>${it.name}</b> · ${it.rarity?it.rarity.nm:''}</div>`
       +`<div class="vendRow"><button class="vbtn gold" id="vaSell"${it.locked?' disabled':''}>${it.locked?'🔒 Locked':'Sell +'+it.value+'g'}</button>`
       +`${canReforge?`<button class="vbtn" id="vaReforge">Reforge ${reforgeCost()}g</button>`:''}`
       +`<button class="vbtn" id="vaLock">${it.locked?'🔓 Unlock':'🔒 Lock'}</button></div>`;
@@ -11547,18 +11565,18 @@ function renderSettings(){
       <div class="tog${SETTINGS.autoSalvage?' on':''}" id="togSalv"><div class="knob"></div></div></div>
     <div class="setRow"><div class="lbl">Music<small>Procedural mood loops — calm hub, tense climb, driving boss fights</small></div>
       <div class="tog${SETTINGS.music?' on':''}" id="togMusic"><div class="knob"></div></div></div>
-    <div class="setRow" id="musVolRow" style="${SETTINGS.music?'':'opacity:.45;pointer-events:none'}"><div class="lbl">Music volume<small>How loud the soundtrack plays</small></div>
+    <div class="setRow" id="musVolRow" style="${SETTINGS.music?'':'opacity:.45;pointer-events:none;cursor:not-allowed'}"><div class="lbl">Music volume<small>How loud the soundtrack plays</small></div>
       <div style="display:flex;align-items:center;gap:10px;min-width:150px">
-        <input type="range" min="0" max="100" step="1" value="${SETTINGS.musicVol}" id="musVol" style="flex:1;accent-color:#3ad18a">
+        <input type="range" min="0" max="100" step="1" value="${SETTINGS.musicVol}" id="musVol" style="flex:1;accent-color:var(--good)">
         <span id="musVolVal" style="width:38px;text-align:right;font-variant-numeric:tabular-nums;opacity:.8">${SETTINGS.musicVol}%</span></div></div>
     <div class="setRow"><div class="lbl">Camera sway<small>The view leans as you move &amp; springs on direction changes — more kinetic, less stiff</small></div>
       <div class="tog${SETTINGS.camSway?' on':''}" id="togSway"><div class="knob"></div></div></div>
-    <div style="margin:16px 16px 6px;font-size:11px;opacity:.6;letter-spacing:1px;text-transform:uppercase">Movement</div>
+    <div class="setHead">Movement</div>
     <div style="display:flex;gap:8px;margin:0 16px 14px;">
       <div class="segBtn${mm==='keyboard'?' sel':''}" data-mm="keyboard">⌨ Keyboard<small>WASD to move · cursor to aim · L-click attack</small></div>
       <div class="segBtn${mm==='mouse'?' sel':''}" data-mm="mouse">🖱 Mouse / Click-move<small>Hold L-click to move to cursor · R-click attack</small></div>
     </div>
-    <div style="margin:16px 16px 6px;font-size:11px;opacity:.6;letter-spacing:1px;text-transform:uppercase">Touch controls (mobile)</div>
+    <div class="setHead">Touch controls (mobile)</div>
     <div style="display:flex;gap:8px;margin:0 16px 10px;">
       <div class="segBtn${SETTINGS.touch==='auto'?' sel':''}" data-tc="auto">Auto<small>on for touchscreens</small></div>
       <div class="segBtn${SETTINGS.touch==='on'?' sel':''}" data-tc="on">On<small>always show</small></div>
@@ -11570,7 +11588,7 @@ function renderSettings(){
     </div>${keybindHTML()}`
     +(G.running && !_G.splitscreen && !NET.role && !G.dailyRun && !G.practice
       ? `<div style="margin:6px 16px 14px;border-top:1px solid rgba(255,255,255,.08);padding-top:14px">
-           <button class="btn" id="extractBtn" style="width:100%;background:linear-gradient(180deg,#1a3a2e,#0f241c);border-color:#3ad18a;color:#bfffdd">🚪 Save &amp; Leave to Menu</button>
+           <button class="btn" id="extractBtn" style="width:100%;background:linear-gradient(180deg,#1a3a2e,#0f241c);border-color:var(--good);color:#bfffdd">🚪 Save &amp; Leave to Menu</button>
            <div style="font-size:10px;opacity:.6;margin-top:7px;text-align:center">Your climb is saved automatically each floor — leave any time and press <b>▶ Continue</b> to return to Floor ${G.floor}.</div>
          </div>` : '');
   $('togBig').onclick=()=>{ SETTINGS.bigNumbers=!SETTINGS.bigNumbers; saveSettings(); renderSettings();
@@ -11628,13 +11646,14 @@ const TUT_PAGES=[
 let tutPage=0;
 function renderTut(){ const p=TUT_PAGES[tutPage], last=tutPage===TUT_PAGES.length-1;
   $('tutCard').innerHTML=`<div class="tut-ic">${p.ic}</div><h2>${p.t}</h2><div class="tut-sub">Page ${tutPage+1} of ${TUT_PAGES.length}</div>${p.h}`;
-  const dots=TUT_PAGES.map((_,i)=>`<div class="dot${i===tutPage?' on':''}"></div>`).join('');
+  const dots=TUT_PAGES.map((_,i)=>`<div class="dot${i===tutPage?' on':''}" data-page="${i}" title="Page ${i+1}"></div>`).join('');
   $('tutNav').innerHTML=`<button class="btn ghost small" id="tutBack"${tutPage===0?' style="opacity:.35"':''}>← Back</button>
     <div id="tutDots">${dots}</div>`+
     (last?`<button class="btn small" id="tutPractice" style="border-color:var(--gold);color:var(--gold)">🎯 Practice</button><button class="btn small" id="tutClimb">⛰ Climb</button>`
         :`<button class="btn small" id="tutNext">Next →</button>`)+
     `<button class="btn ghost small" id="tutMenu">✕ Menu</button>`;
   $('tutBack').onclick=()=>{ if(tutPage>0){ tutPage--; renderTut(); } };
+  $('tutDots').querySelectorAll('.dot').forEach(d=>d.onclick=()=>{ tutPage=+d.dataset.page; renderTut(); });   // jump straight to any page instead of only stepping sequentially
   $('tutMenu').onclick=showMenu;
   if(last){ $('tutPractice').onclick=enterPractice; $('tutClimb').onclick=()=>{ $('tutorial').classList.add('hidden'); showClimb(); }; }
   else $('tutNext').onclick=()=>{ if(tutPage<TUT_PAGES.length-1){ tutPage++; renderTut(); } };
