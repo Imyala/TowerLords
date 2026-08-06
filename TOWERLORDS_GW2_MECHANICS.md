@@ -168,6 +168,100 @@ trait-gated only (never on gear), matching the skill-tree roles.
 
 ---
 
+## 11. Crafting — discovery & production
+
+GW2 splits crafting into two phases: **discovery** (drag candidate materials into a mixing pane; the
+game narrows down which undiscovered recipes they could belong to, greying out combinations above your
+crafting level) and **production** (once discovered, queue up copies — each queued item crafts in half
+the time of the one before it, down to a floor). Raw materials are tiered (Tier 1 Bolt of Jute → Tier 7
+Bolt of Damask for cloth, and parallel tiers for leather/metal/wood/wool), and disciplines share a
+material vocabulary so a Weaponsmith and an Artificer both reach for the same ingots.
+
+TowerLords has no crafting discipline system at all today — gearing is loot/vendor/reforge-driven (see
+`reforgeCostFor()`, gem sockets). The closest existing hook is the **craft station** already referenced
+in the world (`G.craftStation`, `nearCraft`), which currently isn't backed by a recipe system.
+
+**Steal:** a real discovery-then-production loop hung off the existing craft station — tiered materials
+(reuse the FEATS-style flat unlock pattern: crafting tier gates recipes the way `tierGateNeed` gates
+skill-tree rows), a discovery pane that narrows candidate recipes as materials are added, and a
+production queue where the Nth queued item crafts faster than the (N-1)th, capped at some floor.
+
+## 12. Upgrade components — infusions, enrichments, glyphs
+
+GW2 upgrade components slot into equipment: **runes** (armor only, tiered bonuses that scale with how
+many of the same rune you're wearing), **universal upgrades/sigils** (weapons, trinkets), **infusions**
+(ascended/legendary gear + some back items, recoverable via a dedicated extraction tool), **enrichments**
+(ascended/legendary amulets only), and **glyphs** (gathering tools only, freely swappable with no
+destruction). Everything except glyphs destroys the previous upgrade when replaced, unless you have a
+high-tier salvage kit or extraction device.
+
+TowerLords already has the shape of this — `GEMS`/`makeGem()` gives 7 socketable gem types with tiered
+mods (`mods:{dmgPct:6}` scaling `×(1+(tier-1)*0.4)`), and equipment carries a `sockets`/`socketed` array
+read in `recompute()`. What's missing is the **tiered-destruction-vs-freely-swappable split**: today all
+socketing presumably behaves the same way regardless of gem type. GW2's rule is worth adopting almost
+verbatim — most upgrades are a one-way slot (replacing destroys the old gem, recoverable only via a
+dedicated high-tier tool), while ONE category (glyphs) is always free to swap.
+
+**Steal:** classify the 7 gem types into "destructive to replace" (the current default) vs a new
+freely-swappable subtype for gathering/utility-flavored gems (Emerald/Amethyst are decent candidates —
+utility stats rather than combat stats), plus a dedicated high-tier salvage/extraction item that recovers
+a socketed gem instead of destroying it (today's basic salvage presumably always destroys).
+
+## 13. Ascended equipment tier
+
+GW2 slots **Ascended** quality between Exotic and Legendary — same stats as Legendary, but bound and
+non-swappable-stat, unlocked at character level 255 (the level cap), account-bound, and salvageable with
+a dedicated tool for account-wide crafting materials used in *further* ascended/legendary crafting. It's
+explicitly the "long-term BiS grind" tier — a destination, not a random drop table entry.
+
+TowerLords' rarity ladder (`RARITY`: Common → ... → Uniques at `mult:9`) tops out at Uniques, and
+`LEVEL_CAP=255` already exists as a meaningful threshold (it's the evolution gate). There's no tier that
+specifically unlocks AT the level cap the way Ascended does.
+
+**Steal:** a rarity tier above Unique, unlockable only at `G.level>=LEVEL_CAP` (mirroring GW2's account
+level-255 gate), account-bound, with its own salvage-only material — dovetails naturally with the
+Evolution System's existing "hit 255, then something special happens" beat instead of duplicating it.
+
+## 14. Attribute prefix system (offense/defense/support percentage split)
+
+GW2 gear prefixes (Berserker's, Cleric's, Celestial, Trailblazer's, ...) are each a fixed percentage
+split of a stat budget across three buckets — offense (Power/Precision/Ferocity), defense
+(Toughness/Vitality), support (Healing Power/Concentration) — plus condition damage/expertise folded
+into offense or defense depending on the prefix. Over 40 named prefixes exist, from pure one-bucket
+(Berserker's: 100% offense) to even 4-way splits (Celestial: 33/22/22/22).
+
+TowerLords' `AFFIXES`/`AFFIXMAP` (15 affixes + specials) are rolled independently per gear slot rather
+than as a named, fixed-ratio bundle — closer to Diablo-style independent affix rolls than GW2's named
+prefix system. This is a legitimate different design choice (independent rolls give more build
+diversity per item), not obviously a gap to close, but a middle ground is easy to add without disrupting
+the existing affix roll table.
+
+**Steal (optional, lower priority than the others):** a small set of named "prefix bundles" — e.g. a
+Unique-tier item could roll a themed prefix (all offense, all defense, or a Celestial-style even split)
+instead of independent affixes, giving loot recognizable "builds in a box" the way GW2's prefixes do,
+without touching the core independent-affix system most gear already uses.
+
+## 15. Consumables taxonomy
+
+GW2 organizes single-use items into named categories: **Nourishment** (Food — flat/percentage stat
+buffs, contributes to the "All You Can Eat" achievement), **Enhancement** (Maintenance Oils/Potions/
+Sharpening Stones/Tuning Crystals/Writs — utility-slot consumables, usually proportional bonuses),
+**Boosts** (temporary account-wide benefits from the Gem Store or rewards), **Tonics** (cosmetic
+transformations), and **Containers** (open into other items). Food and Enhancement stack independently
+(one of each active at a time) rather than competing for the same buff slot.
+
+TowerLords already has this shape via `FLASKS` (3 belt-slotted flask types) and stat potions mentioned in
+`TOWERLORDS_ROADMAP.md`. What's not yet formalized is the **independent-stacking rule** — GW2's
+food-and-utility-consumable-don't-compete pattern is worth confirming/enforcing explicitly if flasks and
+potions currently share a single buff slot, plus a lightweight **container** consumable type (open →
+guaranteed contents) as a vendor/reward sink distinct from random drops.
+
+**Steal:** verify flasks (combat) and a hypothetical future "nourishment" (non-combat, sanctuary-bought)
+consumable don't fight for the same buff slot; add a `Container` item type that opens into fixed/weighted
+contents, reusing the existing loot-roll code path rather than inventing a new one.
+
+---
+
 ## Summary table
 
 | GW2 system | TowerLords equivalent today | Gap to fill |
@@ -182,3 +276,12 @@ trait-gated only (never on gear), matching the skill-tree roles.
 | Elite specializations | Beast forms (relic-unlocked) | reserved-slot, mechanic-altering framing |
 | Weapon vs. slot skills | 3 actives + ultimate | background cooldown ticking for future skill-swap |
 | Attribute taxonomy | 5 core attributes | primary/secondary/derived split + role-specific attribute |
+| Crafting discovery/production | none (loot/vendor/reforge only) | tiered materials + discovery pane + speed-up production queue off the existing craft station |
+| Upgrade components (infusions/enrichments/glyphs) | 7 gem types, socketable | destructive-vs-freely-swappable split; dedicated extraction tool |
+| Ascended equipment tier | Uniques (top of `RARITY`) | a level-255-gated, account-bound tier above Unique |
+| Attribute prefix bundles | independent affix rolls (`AFFIXES`) | optional named prefix bundles on Unique-tier drops |
+| Consumables taxonomy | Flasks + stat potions | confirm food/utility don't share a buff slot; add a Container item type |
+
+*Note: §11-15 lean on wiki text about crafting, upgrade components, ascended equipment, GW2's attribute-prefix
+percentage table, and the consumables taxonomy — same "worth stealing" framing as §1-10, not yet implemented
+in code.*
