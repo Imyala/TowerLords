@@ -7,7 +7,7 @@
 <style>
   :root{
     --ink:#eef2ff; --neon:#56e0ff; --gold:#ffce4d; --hp:#ff4d6d; --mana:#4aa8ff; --xp:#9d7bff; --good:#3ad18a;
-    --rare:#4da6ff; --epic:#b06bff; --legend:#ff9a3d; --common:#cfd6e6; --unique:#ff6a3d; --mythos:#ff5ec7;
+    --rare:#4da6ff; --epic:#b06bff; --legend:#ff9a3d; --common:#cfd6e6; --unique:#ff6a3d; --mythos:#ff5ec7; --ascended:#ffe873;
     --str:#ff6b6b; --dex:#6dff8c; --int:#56e0ff; --vit:#ff9a3d; --will:#b06bff;
   }
   *{box-sizing:border-box;margin:0;padding:0;}
@@ -644,7 +644,7 @@
   .equipCol{width:236px;} .bagCol{flex:1;min-width:0;}
   .invGrid h4{font-size:10px;opacity:.7;letter-spacing:1.5px;margin-bottom:8px;text-transform:uppercase;color:var(--neon);}
   /* ---- ARPG item cards: rarity glow + icon tile (Torchlight/Diablo-style) ---- */
-  .r-common{--rc:var(--common);} .r-rare{--rc:var(--rare);} .r-epic{--rc:var(--epic);} .r-legend{--rc:var(--legend);} .r-unique{--rc:var(--unique);} .r-mythos{--rc:var(--mythos);}
+  .r-common{--rc:var(--common);} .r-rare{--rc:var(--rare);} .r-epic{--rc:var(--epic);} .r-legend{--rc:var(--legend);} .r-unique{--rc:var(--unique);} .r-mythos{--rc:var(--mythos);} .r-ascended{--rc:var(--ascended);}
   .gearSlot,.bagItem{position:relative;border:1px solid var(--rc,rgba(255,255,255,.12));border-left:3px solid var(--rc,rgba(255,255,255,.22));
     border-radius:8px;padding:7px 9px 7px 11px;margin-bottom:7px;cursor:pointer;overflow:hidden;
     background:rgba(255,255,255,.03);
@@ -2402,6 +2402,8 @@ function rollAffixVal(a,floor){
 const SOCKETS_BY_RARITY={Common:0, Rare:1, Epic:2, Legendary:3};
 function makeItem(floor, slotKey, rarityForce, uniqueChance){
   if(!rarityForce && !slotKey){ const ab=maybeAbnormal(floor); if(ab) return ab; }   // rare chance at an abnormal-status drop
+  // ASCENDED §13: gated behind the level cap, exactly like GW2 gates Ascended behind account level 255 — never rolls for an undercapped character, however deep the floor
+  if(!rarityForce && !slotKey && G.level>=LEVEL_CAP && Math.random()<0.006) return makeAscended(floor);
   if(!rarityForce && !slotKey && Math.random() < (uniqueChance!=null?uniqueChance:(0.015+floor*0.0025))) return makeUnique(floor);
   const slot = slotKey?SLOTMAP[slotKey]:pick(SLOTS);
   let rar=rarityForce;
@@ -2444,13 +2446,40 @@ const GEMS = [
   {gemType:'onyx',     nm:'Onyx',     ic:'🖤', mods:{asPct:7}},
 ];
 const ROMAN=['','','II','III','IV','V'];
-function makeGem(floor){
-  const g=pick(GEMS), tier=clamp(1+Math.floor(floor/12),1,5), mods={};
+function makeGem(floor, gemTypeForce){
+  const g=gemTypeForce ? (GEMS.find(x=>x.gemType===gemTypeForce)||pick(GEMS)) : pick(GEMS), tier=clamp(1+Math.floor(floor/12),1,5), mods={};
   for(const k in g.mods) mods[k]=Math.round(g.mods[k]*(1+(tier-1)*0.4));
   const affixes=Object.keys(mods).map(k=>({key:k,name:AFFIXMAP[k]?AFFIXMAP[k].name:k,pct:AFFIXMAP[k]?AFFIXMAP[k].pct:false,val:mods[k]}));
   return {isGem:true, gemType:g.gemType, ic:g.ic, slotIc:g.ic, slotNm:'Gem', element:g.element, ailChance:(g.ailChance||0)+(tier-1)*3, tier, mods, affixes,
     rarity:RARITY[1], name:`${g.nm}${tier>1?' '+ROMAN[tier]:''}`, value:30+tier*25+floor*2};
 }
+// ---------------- infusions (Ascended-only sockets) ----------------
+const INFUSIONS=[
+  {infType:'power', nm:'Power Infusion',   ic:'💪', mods:{dmgPct:5}},
+  {infType:'vital',  nm:'Vitality Infusion',ic:'❤️', mods:{lifePct:5}},
+  {infType:'guard',  nm:'Guardian Infusion',ic:'🛡️', mods:{armor:14}},
+  {infType:'arcane', nm:'Arcane Infusion',  ic:'🔮', mods:{skillDmgPct:6}},
+];
+function makeInfusion(floor, infTypeForce){
+  const g=infTypeForce ? (INFUSIONS.find(x=>x.infType===infTypeForce)||pick(INFUSIONS)) : pick(INFUSIONS);
+  const affixes=Object.keys(g.mods).map(k=>({key:k,name:AFFIXMAP[k]?AFFIXMAP[k].name:k,pct:AFFIXMAP[k]?AFFIXMAP[k].pct:false,val:g.mods[k]}));
+  return {isInfusion:true, infType:g.infType, ic:g.ic, slotIc:g.ic, slotNm:'Infusion', mods:g.mods, affixes,
+    rarity:ASC_RAR, name:g.nm, value:200+(floor||1)*4};
+}
+function hasFreeInfusionSocket(it){ return !!(it && Array.isArray(it.infSocketed) && it.infSocketed.some((v,i)=>i<(it.infSockets||0) && !v)); }
+function firstInfusionSocketTarget(){ for(const sk in G.equip){ const it=G.equip[sk]; if(hasFreeInfusionSocket(it)) return it; } for(const it of G.inv){ if(hasFreeInfusionSocket(it)) return it; } return null; }
+function socketInfusionInto(inf, it){ if(!inf||!it||!hasFreeInfusionSocket(it)) return false;
+  const idx=it.infSocketed.findIndex((v,i)=>i<(it.infSockets||0) && !v); if(idx<0) return false;
+  it.infSocketed[idx]=inf; G.inv=G.inv.filter(x=>x!==inf); recompute(); sfx.evolve&&sfx.evolve();
+  log('✨ '+inf.name+' infused into '+it.name+'.'); unlockFeat('infuse'); refreshItemPanels&&refreshItemPanels(); return true; }
+// extraction is the ONLY way to recover an infusion — unlike a normal gem's free-click removal, this costs
+// materials at the bench, mirroring GW2's dedicated Infusion Extraction Device (§12)
+function extractInfusionCostFor(){ return {essence:3, core:2, gold:150}; }
+function extractInfusion(it, idx){ if(!it||!Array.isArray(it.infSocketed)) return false;
+  const inf=it.infSocketed[idx]; if(!inf) return false;
+  const cost=extractInfusionCostFor(); if(!payCost(cost)){ log('Not enough materials to extract — need '+costStr(cost)+'.'); sfx.deny&&sfx.deny(); return false; }
+  it.infSocketed[idx]=null; if(G.inv.length<G.invCap) G.inv.push(inf); else log('🎒 Bag full — the infusion is lost.');
+  recompute(); sfx.evolve&&sfx.evolve(); log('✨ Extracted '+inf.name+' from '+it.name+'.'); refreshItemPanels&&refreshItemPanels(); renderCraft&&renderCraft(); return true; }
 // ---------------- uniques ----------------
 const UNIQUE_RAR={nm:'Unique', col:0xff6a3d, css:'unique', mult:9, affixes:0};
 const UNIQUES = [
@@ -2490,6 +2519,55 @@ function makeUnique(floor, u){ u=u||pick(UNIQUES.filter(x=>!x.lord)); const slot
   return {slotKey:u.slotKey, slotIc:slot.ic, slotNm:slot.nm, rarity:UNIQUE_RAR, affixes, sockets:u.sockets||0, socketed:[],
     value:Math.round(UNIQUE_RAR.mult*(10+floor*2)), floor, name:u.name, element:u.element, special:u.special, unique:true, desc:u.desc, arch:u.arch};
 }
+// ============================================================ ASCENDED TIER (GW2 parity §13) — a rarity above
+// Unique, only obtainable once a character has reached the level cap (mirroring GW2's account-level-255 gate),
+// account-bound in spirit (it's the "you've maxed out, here's your reward" tier). Kept OUT of the RARITY[]
+// array on purpose — the same pattern UNIQUE_RAR and ABN_RAR already use, so every `RARITY.indexOf(rarity)===-1`
+// guard (isJunk, isBulkJunk, …) exempts it for free instead of needing an audit of every rarity-index site.
+const ASC_RAR={nm:'Ascended', col:0xffe873, css:'ascended', mult:14, affixes:4};
+// ---- ATTRIBUTE PREFIX BUNDLES (GW2 parity §14): named, weighted-bucket affix rolls, layered on top of the
+// existing independent-roll system in makeItem() — Common/Rare/Epic/Legendary keep rolling affixes uniformly;
+// only Ascended (and anything explicitly asked to) rolls a themed bundle instead. ----
+const AFFIX_BUCKET={   // which stat bucket each affix key leans into, for prefix-bundle weighting
+  dmgPct:'offense', skillDmgPct:'offense', asPct:'offense', crit:'offense', critMultPct:'offense', str:'offense', dex:'offense',
+  armor:'defense', lifeFlat:'defense', lifePct:'defense', vit:'defense',
+  lifeOnHit:'support', lifesteal:'support', movePct:'support', area:'support', manaFlat:'support', int:'support', will:'support',
+};
+const PREFIX_BUNDLES=[
+  {nm:"Berserker's", w:{offense:1}},
+  {nm:"Soldier's",   w:{offense:0.5, defense:0.5}},
+  {nm:"Cleric's",    w:{defense:0.35, support:0.65}},
+  {nm:'Celestial',   w:{offense:0.34, defense:0.33, support:0.33}},
+  {nm:"Sentinel's",  w:{offense:0.3, defense:0.7}},
+  {nm:"Wanderer's",  w:{offense:0.3, support:0.7}},
+];
+function pickAffixByBucket(pool,used,weights){
+  const cand=pool.filter(a=>!used.has(a.key)); if(!cand.length) return null;
+  const weighted=[]; for(const a of cand){ const bucket=AFFIX_BUCKET[a.key]||'offense'; const w=Math.max(0.05,weights[bucket]||0.05);
+    const n=Math.max(1,Math.round(w*10)); for(let i=0;i<n;i++) weighted.push(a); }
+  return pick(weighted);
+}
+// applies a random named prefix bundle's weighted affixes to `item` (mutates + returns it) — item.affixes/name already set
+function rollPrefixBundle(item, count, floor){
+  const bundle=pick(PREFIX_BUNDLES), pool=[...AFFIXES], used=new Set(item.affixes.map(a=>a.key));
+  for(let i=0;i<count;i++){ const a=pickAffixByBucket(pool,used,bundle.w); if(!a) break; used.add(a.key);
+    item.affixes.push({key:a.key,name:a.name,pct:a.pct,val:rollAffixVal(a,floor)}); }
+  item.prefix=bundle.nm; item.name=bundle.nm+' '+item.name;
+  return item;
+}
+function makeAscended(floor, base){
+  // base: an existing Unique/Legendary-tier item being promoted (doAscend), or omitted for a fresh drop off a weighted slot roll
+  const slot = base?SLOTMAP[base.slotKey]:pick(SLOTS);
+  const item = base ? {slotKey:base.slotKey, slotIc:slot.ic, slotNm:slot.nm, affixes:(base.affixes||[]).slice(0,1).map(a=>({...a})),
+      sockets:(base.sockets||0)+1, infSockets:1, infSocketed:[null], socketed:(base.socketed||[]).slice(), value:0, floor,
+      name:base.name, element:base.element, special:base.special, arch:base.arch}
+    : {slotKey:slot.k, slotIc:slot.ic, slotNm:slot.nm, affixes:[{key:AFFIXMAP[slot.primary].key,name:AFFIXMAP[slot.primary].name,pct:AFFIXMAP[slot.primary].pct,val:rollAffixVal(AFFIXMAP[slot.primary],floor)}],
+      sockets:1, infSockets:1, infSocketed:[null], socketed:[], value:0, floor, name:pick(slot.names), element:null, arch:null};
+  item.rarity=ASC_RAR;
+  rollPrefixBundle(item, ASC_RAR.affixes, floor);   // primary affix already in place; add ASC_RAR.affixes more via the bundle
+  item.value=Math.round(ASC_RAR.mult*(12+floor*2.2));
+  return item;
+}
 // ---------------- pet eggs (fodder/hatch) + stat potions ----------------
 function makeEgg(floor, lvl){ lvl=lvl||(Math.random()<0.12?randi(5,10):1); const trained=lvl>1;
   return {isPet:true, petLevel:lvl, ic:'🥚', slotIc:'🥚', slotNm:'Pet Egg', rarity:trained?RARITY[2]:RARITY[1],
@@ -2508,6 +2586,28 @@ function makeFlask(floor, idForce){ const id=idForce||pick(FLASK_IDS), f=FLASKS[
   return {isFlask:true, flaskId:id, ic:f.ic, slotIc:f.ic, slotNm:'Flask', rarity:grade>=4?RARITY[2]:RARITY[1],
     grade, chg:100, mx:100, name:`${f.nm}${grade>1?' '+ROMAN[grade]:''}`, value:f.cost+grade*8+(floor||0), affixes:[],
     desc:f.use==='heal'?`Restores ${Math.round((f.amt+grade*0.04)*100)}% life`:f.use==='mana'?`Restores ${Math.round((f.amt+grade*0.04)*100)}% mana`:`+${Math.round((f.amt+grade*0.04)*100)}% move & a small heal (3s)`}; }
+// ---------------- consumables taxonomy additions (GW2 parity §15) ----------------
+// CONTAINER: a bag item that "opens into other items" — reuses openChest()'s loot-spill pattern
+// (dropLoot at the player's own feet) rather than a world prop, so it can be picked up and carried.
+function makeContainer(floor){
+  return {isContainer:true, ic:'🎁', slotIc:'🎁', slotNm:'Container', rarity:RARITY[Math.min(2,1+Math.floor((floor||1)/20))],
+    name:'Supply Cache', value:0, floor:floor||1, affixes:[]};
+}
+// RATION: a Nourishment-style consumable — single-use, flat timed buff, and the actual point of adding it:
+// it stacks independently of flasks (per-item charge state) and stat potions (instant/permanent), proving
+// food-and-utility consumables don't fight over one shared buff slot.
+function makeRation(floor){ return {isRation:true, ic:'🍞', slotIc:'🍞', slotNm:'Ration', rarity:RARITY[0], name:"Traveler's Ration", value:15+(floor||1), affixes:[]}; }
+// open a carried Container → spill 1-3 items at the player's feet, same pattern openChest() uses for a world chest
+function openContainer(it){ if(!it||!it.isContainer) return false;
+  G.inv=G.inv.filter(x=>x!==it);
+  const p=G.player?G.player.position:{x:0,z:0}, n=randi(1,3);
+  for(let i=0;i<n;i++){ const a=(Math.PI*2*i/Math.max(1,n))+rand(0,1); dropLoot(p.x+Math.cos(a)*1.6, p.z+Math.sin(a)*1.6, undefined, _G.cur, null); }
+  const g=Math.round(20+(it.floor||1)*3); G.gold+=g; if(typeof flashGold==='function')flashGold();
+  sfx.evolve&&sfx.evolve(); log('🎁 Opened '+it.name+' → '+n+' item'+(n===1?'':'s')+', +'+g+' gold.'); unlockFeat('container'); refreshItemPanels&&refreshItemPanels(); return true; }
+function useRation(it){ if(!it||!it.isRation) return false;
+  G.inv=G.inv.filter(x=>x!==it); G.rationT=60; sfx.evolve&&sfx.evolve();
+  if(G.player) floatText(G.player.position.x,G.player.position.z,'🍞 +10% gold & XP (60s)','heal',2.8);
+  log("🍞 Traveler's Ration eaten — +10% gold & XP for 60s."); refreshItemPanels&&refreshItemPanels(); return true; }
 function makeSkillGem(floor, idForce){ const id=idForce||pick(SKILL_IDS), sk=SKILLS[id], tier=clamp(1+Math.floor(floor/14),1,5);
   return {isSkillGem:true, skillId:id, ic:sk.ic, slotIc:sk.ic, slotNm:'Skill Gem', tier, affixes:[],
     rarity: tier>=4?RARITY[3]:tier>=2?RARITY[2]:RARITY[1], name:`${sk.nm}${tier>1?' '+ROMAN[tier]:''}`,
@@ -2519,7 +2619,7 @@ const SETTINGS={ bigNumbers:true, moveMode:'keyboard', tips:true, autoSalvage:tr
 function loadSettings(){ try{ const s=localStorage.getItem(SETTINGS_KEY); if(s){ const o=JSON.parse(s); if(typeof o.bigNumbers==='boolean')SETTINGS.bigNumbers=o.bigNumbers; if(o.moveMode==='keyboard'||o.moveMode==='mouse')SETTINGS.moveMode=o.moveMode; if(typeof o.tips==='boolean')SETTINGS.tips=o.tips; if(typeof o.autoSalvage==='boolean')SETTINGS.autoSalvage=o.autoSalvage; if(typeof o.music==='boolean')SETTINGS.music=o.music; if(typeof o.musicVol==='number')SETTINGS.musicVol=clamp(o.musicVol|0,0,100); if(typeof o.junkMaxRarity==='number')SETTINGS.junkMaxRarity=clamp(o.junkMaxRarity|0,0,3); if(typeof o.camSway==='boolean')SETTINGS.camSway=o.camSway; if(o.touch==='auto'||o.touch==='on'||o.touch==='off')SETTINGS.touch=o.touch; if(o.touchAim==='auto'||o.touchAim==='twin')SETTINGS.touchAim=o.touchAim; if(typeof o.navCollapsed==='boolean')SETTINGS.navCollapsed=o.navCollapsed; if(typeof o.popups==='boolean')SETTINGS.popups=o.popups; if(o.keybinds&&typeof o.keybinds==='object'){ SETTINGS.keybinds=SETTINGS.keybinds||{...DEFAULT_KEYBINDS}; for(const a in DEFAULT_KEYBINDS){ if(typeof o.keybinds[a]==='string') SETTINGS.keybinds[a]=o.keybinds[a]; } } } }catch(e){} }
 // bulk feed/sell "junk" = anything at or below the chosen quality that isn't a special item or locked
 function junkThreshold(){ return clamp(SETTINGS.junkMaxRarity|0,0,4); }
-function isBulkJunk(it){ if(!it||it.isPet||it.isPot||it.isFlask||it.isSkillGem||it.locked||it.unique) return false; const _ri=RARITY.indexOf(it.rarity); return _ri>=0 && _ri<=junkThreshold(); }   // uniques & out-of-array rarities (mythos) are NEVER junk
+function isBulkJunk(it){ if(!it||it.isPet||it.isPot||it.isFlask||it.isSkillGem||it.isContainer||it.isRation||it.isInfusion||it.locked||it.unique) return false; const _ri=RARITY.indexOf(it.rarity); return _ri>=0 && _ri<=junkThreshold(); }   // uniques & out-of-array rarities (mythos) are NEVER junk — nor are containers/rations/infusions, which have real in-array rarities for visual tier only
 function saveSettings(){ try{ localStorage.setItem(SETTINGS_KEY, JSON.stringify(SETTINGS)); }catch(e){} }
 // ---- panel size memory: default open size (fits content) + remembers user-resized size across sessions ----
 const PANELSIZE_KEY='towerlords_panelsize_v1';
@@ -2623,6 +2723,11 @@ const FEATS=[
   {id:'truesummit', nm:'Hopebringer', ds:'Open the summit for the ones below', fame:30000},
   {id:'combo',     nm:'Combo Artist', ds:'Trigger a skill combo (field + finisher)', fame:400},
   {id:'stunbreak', nm:'Unshaken',     ds:'Break a stun with Dash',              fame:300},
+  {id:'discover',  nm:'Apprentice',   ds:'Discover a crafting recipe',         fame:400},
+  {id:'craft',     nm:'Artisan',      ds:'Craft an item at the bench',         fame:300},
+  {id:'ascend',    nm:'Ascendant',    ds:'Ascend a piece of equipment',        fame:2000},
+  {id:'infuse',    nm:'Infused',      ds:'Socket an infusion',                 fame:500},
+  {id:'container', nm:'Cache Cracker',ds:'Open a container',                  fame:200},
 ];
 // ---- ACHIEVEMENT POINTS: a secondary account-wide ladder alongside fame (GW2 parity §6) ----
 // Every feat also pays achievement points (roughly fame/100); points themselves ladder into
@@ -2651,9 +2756,9 @@ function checkMetaAchievements(){
       checkAchvRewards(); saveMeta(); } }
 }
 let META={fame:0, evolves:0, feats:[], invRows:0, stashSlots:0, petTier:0, petSlots:0, codex:{}, ascMax:0, tips:{}, victories:0, grudges:{}, daily:null, playerName:'', playerId:'', voiceSeen:{}, materials:{}, lastBonus:'', bonusStreak:0, fieldRespec:false, recallTier:0, titles:[], title:'', savedPets:null, lastRun:0, rescued:{}, chairChoice:'', trueSummit:false, ancestral:'', beasts:{}, beastOn:'', scav:null, cache:null, soulDebt:0, stashGob:false,
-  insight:{}, masteries:{}, apts:0, apRewardsClaimed:0, apTitleTier:0, metaAch:{}};   // MASTERY §5 (biome-scoped Insight + unlocked mastery ids) · ACHIEVEMENT POINTS §6 (ladder + meta-achievements) — all account-wide, never reset by death or evolution
+  insight:{}, masteries:{}, apts:0, apRewardsClaimed:0, apTitleTier:0, metaAch:{}, recipesKnown:{}};   // MASTERY §5 (biome-scoped Insight + unlocked mastery ids) · ACHIEVEMENT POINTS §6 (ladder + meta-achievements) · CRAFTING §11 (discovered recipes) — all account-wide, never reset by death or evolution
 function loadMeta(){ try{ const s=localStorage.getItem(META_KEY); if(s){ const m=JSON.parse(s); META={fame:m.fame||0, evolves:Math.min(49,m.evolves||0), feats:m.feats||[], invRows:Math.min(5,m.invRows||0), stashSlots:(m.stashSlots!=null?m.stashSlots:Math.min(25,(m.stashRows||0)*10)), petTier:m.petTier||0, petSlots:m.petSlots||0, codex:m.codex||{}, ascMax:m.ascMax||0, tips:m.tips||{}, victories:m.victories||0, grudges:m.grudges||{}, daily:m.daily||null, playerName:m.playerName||'', playerId:m.playerId||'', voiceSeen:m.voiceSeen||{}, materials:m.materials||{}, lastBonus:m.lastBonus||'', bonusStreak:m.bonusStreak||0, fieldRespec:!!m.fieldRespec, recallTier:m.recallTier||0, titles:m.titles||[], title:m.title||'', savedPets:m.savedPets||null, lastRun:m.lastRun||0, rescued:m.rescued||{}, chairChoice:m.chairChoice||'', trueSummit:!!m.trueSummit, ancestral:m.ancestral||'', beasts:m.beasts||{}, beastOn:m.beastOn||'', scav:m.scav||null, cache:m.cache||null, soulDebt:m.soulDebt||0, stashGob:!!m.stashGob,
-    insight:m.insight||{}, masteries:m.masteries||{}, apts:m.apts||0, apRewardsClaimed:m.apRewardsClaimed||0, apTitleTier:m.apTitleTier||0, metaAch:m.metaAch||{}}; } }catch(e){} }
+    insight:m.insight||{}, masteries:m.masteries||{}, apts:m.apts||0, apRewardsClaimed:m.apRewardsClaimed||0, apTitleTier:m.apTitleTier||0, metaAch:m.metaAch||{}, recipesKnown:m.recipesKnown||{}}; } }catch(e){} }
 // ---------------- GLOBAL LEADERBOARD (optional backend) ----------------
 // Set LEADERBOARD_URL to a deployed copy of leaderboard-worker.js (free Cloudflare Worker —
 // see LEADERBOARD_SETUP.md next to this file). Leave null for local-only boards: the game
@@ -3835,6 +3940,8 @@ function makePlayer(idx){ return {
   aim:new THREE.Vector3(),
   in:{mx:0,mz:0,ax:0,az:1,hasAim:false,atk:false,prev:{}},   // per-frame input snapshot (filled by input source)
   downed:false, downT:0, reviveT:0,                          // co-op: downed (revivable) + revive progress
+  craftQueue:[],                                             // CRAFTING §11: production queue — {rid, t} entries, per player
+  rationT:0,                                                 // CONSUMABLES §15: Traveler's Ration timer — independent of flasks/potions
 }; }
 // fields that belong to a player (everything else stays shared on _G)
 const PF = new Set(['id','name','input','cam','viewport','color','joined','player','gold','level','xp','xpNeed','xpMode',
@@ -3842,7 +3949,7 @@ const PF = new Set(['id','name','input','cam','viewport','color','joined','playe
   'stashStrikes','selGem','greed','run','pet','pets','petMesh','petMagnet','petErrand','belt','charge','chargeMax','sigSlot','sigCd',
   'swiftT','perfectT','dashRewarded','dashCd','dashCdMax','dashT','dashDir','flowT','attackCd','invuln','dead','rootT',
   'stunT','slowT','weakT','healCutT','adaptWarned','recallT','hots',
-  'fervor','fervorT','nearStash','nearVendor','nearPortal','nearScore','nearChest','nearLoot','nearCraft','nearYard','_ph','_sh','aim','in','downed','downT','reviveT']);
+  'fervor','fervorT','nearStash','nearVendor','nearPortal','nearScore','nearChest','nearLoot','nearCraft','nearYard','_ph','_sh','aim','in','downed','downT','reviveT','craftQueue','rationT']);
 const _G = {
   running:false, paused:false, floor:1, maxFloor:50, seed:0,
   enemies:[], projectiles:[], eProjectiles:[], pickups:[], decals:[], scenery:[], timed:[], netDeaths:[], netHits:[], chests:[], yardPets:[],
@@ -4742,6 +4849,11 @@ function recompute(){
       if(g.mods) for(const k in g.mods) addMod(k, g.mods[k]);
       if(g.element){ if(sk==='weapon') elem=g.element; else if(elem==='phys') elem=g.element; }
       ailBonus += (g.ailChance||0); }
+    // INFUSIONS §12: a second, Ascended-only socket row — unlike normal gems (freely popped out for free at any
+    // socket), an infusion can only be recovered via extractInfusion() at the crafting bench, mirroring GW2's
+    // dedicated Infusion Extraction Device instead of free removal.
+    if(Array.isArray(it.infSocketed)) for(let ii=0; ii<(it.infSockets||0) && ii<it.infSocketed.length; ii++){ const inf=it.infSocketed[ii]; if(!inf||!inf.mods) continue;
+      for(const k in inf.mods) addMod(k, inf.mods[k]); }
   }
   const runBlessingSources=[];
   if(G.run && G.run.destiny) runBlessingSources.push(G.run.destiny);
@@ -9494,7 +9606,7 @@ function killEnemy(e){
     if(e.elite){ G.run.eliteKills=(G.run.eliteKills||0)+1; checkPersona(); }   // personality: Dominion watches
     if(e.boss){ G.run.bossKills=(G.run.bossKills||0)+1; checkPersona(); }      // personality: Defiance watches
     gainXP(e.xp);
-    if(e.gold||e.boss){ const amt=Math.round((e.boss?200+G.floor*10:30+G.floor*4)*goldMult()*dlaRewardMultCur()); G.gold+=amt; flashGold(); floatText(ex,ez,'+'+amt+' gold','goldtxt',e.boss?5:3); }
+    if(e.gold||e.boss){ const amt=Math.round((e.boss?200+G.floor*10:30+G.floor*4)*goldMult()*dlaRewardMultCur()*((G.rationT||0)>0?1.10:1)); G.gold+=amt; flashGold(); floatText(ex,ez,'+'+amt+' gold','goldtxt',e.boss?5:3); }
     { const hv=G.S&&G.S.hollow;   // Hollow Victory keystone: trash drops nothing; elites & bosses shower you
       if(hv && !e.elite && !e.boss && !e.champion){ /* nothing — the hollow price */ }
       else if(Math.random() < (e.boss?1:base*lootMult()*(hv&&e.elite?1.6:1))) dropLoot(ex,ez, ((uChanceBase||0)+((hv&&(e.elite||e.boss))?0.25:0))||undefined, pid); }   // loot soulbound to this player
@@ -9582,7 +9694,10 @@ function dropLoot(x,z,uniqueChance,owner,themeKey,forceItem){
     if(r < 0.004 + G.floor*0.0006) item=makePot(G.floor);          // ULTRA-rare permanent stat potion
     else if(r < 0.065) item=makeSkillGem(G.floor);                  // skill gem (active skill)
     else if(r < 0.105) item=makeEgg(G.floor);                       // pet egg (fodder / hatch)
+    else if(r < 0.13) item=makeRation(G.floor);                     // CONSUMABLES §15: Traveler's Ration
     else if(r < 0.15) item=makeFlask(G.floor);                      // belt flask (active panic button)
+    else if(r < 0.155) item=makeContainer(G.floor);                 // CONSUMABLES §15: Supply Cache container
+    else if(G.level>=LEVEL_CAP && r<0.165) item=makeInfusion(G.floor);   // INFUSIONS §12: only once you've hit the level cap
     else item = Math.random()<0.16 ? makeGem(G.floor) : makeItem(G.floor,null,null,uniqueChance);
   }
   _stamp(item);
@@ -9594,7 +9709,7 @@ function dropLoot(x,z,uniqueChance,owner,themeKey,forceItem){
     if(th.element && item.slotKey==='weapon' && !item.element){ item.element=th.element; item.name=({fire:'Flaming ',cold:'Frozen ',light:'Shocking '}[th.element]||'')+item.name; }
     if(th.affix && !item.affixes.some(a=>a.key===th.affix.key)) item.affixes.push(Object.assign({},th.affix));
   }
-  const grp=new THREE.Group(), tier = item.isPot?5 : item.unique?4 : (item.isGem||item.isPet||item.isSkillGem)?3 : item.isFlask?2 : RARITY.indexOf(item.rarity);
+  const grp=new THREE.Group(), tier = item.isPot?5 : (item.rarity===ASC_RAR||item.isInfusion)?6 : item.unique?4 : (item.isGem||item.isPet||item.isSkillGem)?3 : item.isFlask?2 : RARITY.indexOf(item.rarity);
   const shape = item.isPot ? new THREE.ConeGeometry(.4,.9,6) : item.isPet ? new THREE.SphereGeometry(.5,10,8) : item.isSkillGem ? new THREE.IcosahedronGeometry(.5,0) : item.isFlask ? new THREE.CylinderGeometry(.28,.34,.9,8) : item.isGem ? new THREE.OctahedronGeometry(.5,0) : new THREE.TetrahedronGeometry(.55,0);
   const mesh=new THREE.Mesh(shape, new THREE.MeshStandardMaterial({color:item.rarity.col,emissive:item.rarity.col,emissiveIntensity:.8})); mesh.position.y=.1;
   const beam=new THREE.Mesh(new THREE.CylinderGeometry(.22+tier*.05,.22+tier*.05,7,14,1,true), new THREE.MeshBasicMaterial({color:item.rarity.col,transparent:true,opacity:.14+tier*.06,side:THREE.DoubleSide,depthWrite:false})); beam.position.y=3.4;
@@ -9607,6 +9722,10 @@ function dropLoot(x,z,uniqueChance,owner,themeKey,forceItem){
   else if(item.isSkillGem) floatText(x,z,'✦ SKILL: '+item.name,'crit',3.2);
   else if(item.isPet) floatText(x,z,'🥚 '+item.name,'goldtxt',3);
   else if(item.isFlask) floatText(x,z,item.ic+' '+item.name,'heal',3);
+  else if(item.isInfusion) floatText(x,z,'✨ '+item.name,'crit',3.2);
+  else if(item.isContainer) floatText(x,z,item.ic+' '+item.name,'goldtxt',3);
+  else if(item.isRation) floatText(x,z,item.ic+' '+item.name,'heal',2.6);
+  else if(item.rarity===ASC_RAR) floatText(x,z,'✦✦ ASCENDED ✦✦','big',3.6);
   else if(item.unique) floatText(x,z,'✦ UNIQUE ✦','big',3.2);
   else if(item.isGem) floatText(x,z,'💠 '+item.name,'goldtxt',3);
   else if(tier>=1) floatText(x,z,item.rarity.nm.toUpperCase()+'!',tier>=2?'crit':'goldtxt',3);
@@ -9647,6 +9766,7 @@ function floatText(x,z,txt,cls,yOff){ _proj.set(x,yOff||2,z).project(camera); if
 // ============================================================ XP / PROGRESSION
 function gainXP(n){
   n*=dlaRewardMultCur();   // DLA: farming far below your invested power pays out less (never below 35%) — GW2 parity §1
+  if((G.rationT||0)>0) n*=1.10;   // RATIONS §15: a Nourishment-style consumable, stacks independently of flasks/potions
   if((G.S.xpBonus||0)>0) n*=(1+G.S.xpBonus/100);
   if((META.soulDebt||0)>0 && n>0){ const _b=Math.round(n*0.5); if(_b>0){ n+=_b; META.soulDebt-=_b;   // SOUL DEBT: the next life earns half again until the ledger clears
     if(META.soulDebt<=0){ META.soulDebt=0; saveMeta(); banner('👻 SOUL DEBT REPAID','the tower’s ledger closes — XP returns to normal'); } } }
@@ -11002,6 +11122,9 @@ function quickUse(it){
   if(!it) return;
   if(NET.role==='peer') return netPeerCmd('quickUse',[it.uid]);
   if(it.isGem){ const tgt=firstSocketTarget(); if(tgt) socketGemInto(it,tgt); else log('No item has a free socket right now.'); }
+  else if(it.isInfusion){ const tgt=firstInfusionSocketTarget(); if(tgt) socketInfusionInto(it,tgt); else log('No Ascended item has a free infusion socket right now.'); }
+  else if(it.isContainer){ openContainer(it); }
+  else if(it.isRation){ useRation(it); }
   else if(it.isSkillGem){ if(G.slots.includes(it)||G.sigSlot===it) return; if(G.slots.indexOf(null)>=0){ autoBind(it); log('✦ Bound '+it.name); refreshItemPanels(); } else log('Skill bar full — unbind one first.'); }
   else if(it.isFlask){ if(G.belt.includes(it)) return; if(G.belt.indexOf(null)>=0){ autoBeltFlask(it); log('🧪 Equipped '+it.name); refreshItemPanels(); } else log('Belt full — unbind a flask first.'); }
   else if(it.isPot){ if(it._ambrosia){ if(G.pet){ feedPet(it); } else log('No active pet — equip one in the Pet Yard (P) first.'); } else { G.inv=G.inv.filter(x=>x!==it); applyStatPot(it); refreshItemPanels(); } }   // right-click a potion → drink it
@@ -11197,7 +11320,7 @@ function clearItemDetail(){ itemDetailEls().forEach(dp=>{ dp.className='detailPa
 // ---- shared item sorting: every grid (bag · stash · vendor) uses the SAME modes ----
 let BAG_SORT='type', STASH_SORT='type', STASH_BAG_SORT='type', VEND_SORT='type';
 let STASH_Q='';   // live text filter applied to BOTH columns of the stash panel
-const RARITY_RANK={common:0,rare:1,epic:2,legend:3,unique:4};
+const RARITY_RANK={common:0,rare:1,epic:2,legend:3,unique:4,ascended:5};
 const SORT_MODES=[
   {k:'type',   nm:'Type',   ti:'Group by slot & kind — weapon, armour, jewellery, then gems, skills, flasks, potions, eggs'},
   {k:'rarity', nm:'Rarity', ti:'Best rarity first (unique → legendary → epic → rare → common)'},
@@ -11207,7 +11330,7 @@ const SORT_MODES=[
 ];
 function itemSortKey(it){
   const slotIdx = it.slotKey ? SLOTS.findIndex(s=>s.k===it.slotKey) : 50;
-  const kind = it.isGem?60 : it.isSkillGem?61 : it.isFlask?62 : it.isPot?63 : it.isPet?64 : it.isTrophy?65 : it.isRelic?66 : slotIdx;
+  const kind = it.isGem?60 : it.isSkillGem?61 : it.isFlask?62 : it.isPot?63 : it.isPet?64 : it.isTrophy?65 : it.isRelic?66 : it.isInfusion?67 : it.isContainer?68 : it.isRation?69 : slotIdx;
   return {kind, rr:(it.rarity?RARITY_RANK[it.rarity.css]:-1)};
 }
 function _itemNm(it){ return String((it&&it.name)||''); }
@@ -12679,7 +12802,7 @@ function updatePlayerStep(dt){
   if(G.invuln>10 && _invulnLockDepth===0 && _G.running && !_G.paused) G.invuln=2;
   for(const k in G.cd) G.cd[k]=Math.max(0,G.cd[k]-dt);
   if(G.inv) for(const it of G.inv){ if(it._cd>0) it._cd=Math.max(0,it._cd-dt); }   // BACKGROUND COOLDOWN §9: an unbound skill gem keeps cooling down in your bag
-  G.sigCd=Math.max(0,(G.sigCd||0)-dt); if(G.swiftT>0)G.swiftT-=dt; if(G.perfectT>0)G.perfectT-=dt; if(G.rootT>0)G.rootT-=dt;
+  G.sigCd=Math.max(0,(G.sigCd||0)-dt); if(G.swiftT>0)G.swiftT-=dt; if(G.perfectT>0)G.perfectT-=dt; if(G.rootT>0)G.rootT-=dt; if(G.rationT>0)G.rationT-=dt;
   adaptTick(dt); const stunned=G.stunT>0;   // enemy stun-lock (counter to tank builds)
   tickRecall(dt);                            // quick-recall channel (H) → teleport to the sanctuary
   for(const fl of G.belt){ if(fl&&fl.cd>0) fl.cd-=dt; }
@@ -12871,6 +12994,7 @@ function updatePlayerStations(dt){
   // crafting bench (sanctuary)
   if(G.craftStation){ if(isP0) G.craftStation.mesh.children[1].rotation.y+=dt*0.9; const d=Math.hypot(p.x-G.craftStation.x,p.z-G.craftStation.z); G.nearCraft=d<4.2;
     if(isP0){ if(G.nearCraft){ if(!_G._crh){ log('⚒ Press F at the bench to craft.'); _G._crh=true; } } else _G._crh=false; } } else G.nearCraft=false;
+  tickCraftQueue(dt);   // CRAFTING §11: production keeps cooking even away from the bench, same as a queued item in GW2
   // pet yard gate (sanctuary)
   if(G.yardStation){ if(isP0) G.yardStation.mesh.children[1].rotation.y+=dt*0.9; const d=Math.hypot(p.x-G.yardStation.x,p.z-G.yardStation.z); G.nearYard=d<4.2;
     if(isP0){ if(G.nearYard){ if(!_G._pyg){ log('🏡 Press F to enter the Pet Yard.'); _G._pyg=true; } } else _G._pyg=false; } } else G.nearYard=false;
@@ -12920,6 +13044,7 @@ const MATERIALS=[
   {key:'shard',   nm:'Arcane Shard',  ic:'🔹', ds:'common crafting dust'},
   {key:'core',    nm:'Power Core',    ic:'🟠', ds:'raises an item rarity'},
   {key:'essence', nm:'Vital Essence', ic:'💧', ds:'reforges an item affixes'},
+  {key:'ambrosia',nm:'Ascended Ambrosia', ic:'✨', ds:'salvaged only from Ascended gear — ascension crafts'},
 ];
 function matDef(k){ return MATERIALS.find(m=>m.key===k); }
 function matName(k){ const m=matDef(k); return m?m.nm:k; }
@@ -12927,6 +13052,92 @@ function matIc(k){ const m=matDef(k); return m?m.ic:'◆'; }
 function matCount(k){ return (META.materials&&META.materials[k])||0; }
 function grantMaterials(k,n){ if(!META.materials)META.materials={}; META.materials[k]=(META.materials[k]||0)+n; saveMeta();
   if(G.player&&G.running){ const p=G.player.position; floatText(p.x,p.z,matIc(k)+' +'+n,'goldtxt',2.6); } }
+// ============================================================ CRAFTING: DISCOVERY & PRODUCTION (GW2 parity §11)
+// Two phases, same as GW2: DISCOVERY narrows a set of selected materials down to matching undiscovered recipes
+// (craftDiscoveryCandidates) until an exact match unlocks it permanently (discoverRecipe); PRODUCTION then lets
+// a known recipe be queued repeatedly, each queued copy crafting in half the time of the one before it, floored
+// at CRAFT_MIN_TIME so the halving series never hits zero (queueCraft/tickCraftQueue).
+const RECIPES=[
+  {id:'r_core',        nm:'Refine Power Core',    ic:'🟠', need:{shard:8},           gold:15,  lvl:1,          makes:()=>({kind:'materials',k:'core',n:1})},
+  {id:'r_essence',     nm:'Distill Vital Essence',ic:'💧', need:{shard:6,core:1},    gold:30,  lvl:10,         makes:()=>({kind:'materials',k:'essence',n:1})},
+  {id:'r_gem_ruby',    nm:'Cut Ruby',             ic:'🔥', need:{shard:10,core:2},   gold:70,  lvl:20,         makes:(floor)=>({kind:'gem',gemType:'ruby',floor})},
+  {id:'r_gem_sapphire',nm:'Cut Sapphire',         ic:'❄',  need:{shard:10,core:2},   gold:70,  lvl:20,         makes:(floor)=>({kind:'gem',gemType:'sapphire',floor})},
+  {id:'r_flask_life',  nm:'Bottle a Life Flask',  ic:'🧪', need:{shard:6,essence:1}, gold:50,  lvl:5,          makes:(floor)=>({kind:'flask',flaskId:'life',floor})},
+  {id:'r_catalyst',    nm:'Ascension Catalyst',   ic:'✨', need:{core:6,essence:4},  gold:400, lvl:LEVEL_CAP,  makes:()=>({kind:'materials',k:'ambrosia',n:1})},
+];
+function recipeDef(id){ return RECIPES.find(r=>r.id===id); }
+// discovery trigger for the bench UI: scans undiscovered recipes for the first one your CURRENT materials
+// already satisfy in full and discovers it. craftDiscoveryCandidates/craftDiscoveryMatch below remain the
+// narrowing engine (which recipes are still possible as ingredients are added) for a future mixing-pane UI.
+function attemptDiscovery(){
+  const candidate=RECIPES.find(r=>!isRecipeKnown(r.id) && Object.keys(r.need).every(k=>matCount(k)>=r.need[k]));
+  if(candidate){ discoverRecipe(candidate.id); return candidate; }
+  log('🔍 No new recipe found — gather more (or different) materials and try again.'); return null;
+}
+function isRecipeKnown(id){ return !!(META.recipesKnown && META.recipesKnown[id]); }
+// discovery: which undiscovered recipes remain possible given the materials selected so far (every selected
+// key must belong to the recipe — this is what "narrows the candidate list" as you add ingredients)
+function craftDiscoveryCandidates(selected){
+  selected=selected||{};
+  return RECIPES.filter(r=>{ if(isRecipeKnown(r.id)) return false;
+    for(const k in selected){ if(selected[k]>0 && !r.need[k]) return false; }
+    return true; });
+}
+// exact match (selected multiset equals the recipe's need exactly) → the recipe that would be discovered right now
+function craftDiscoveryMatch(selected){
+  selected=selected||{};
+  return craftDiscoveryCandidates(selected).find(r=>{
+    const needKeys=Object.keys(r.need), selKeys=Object.keys(selected).filter(k=>selected[k]>0);
+    if(needKeys.length!==selKeys.length) return false;
+    return needKeys.every(k=>(selected[k]||0)>=r.need[k]);
+  }) || null;
+}
+function discoverRecipe(id){
+  if(isRecipeKnown(id)) return false; const r=recipeDef(id); if(!r) return false;
+  META.recipesKnown=META.recipesKnown||{}; META.recipesKnown[id]=true; saveMeta();
+  banner('📜 RECIPE DISCOVERED — '+r.nm, 'now craftable at the bench'); log('📜 Recipe discovered: '+r.nm); unlockFeat('discover'); return true;
+}
+const CRAFT_MIN_TIME=0.35;   // floor so the per-item halving series never reaches zero
+function craftBaseTime(r){ return 1.2+(r.lvl||1)*0.03; }
+function craftQueueTime(r, indexInQueue){ return Math.max(CRAFT_MIN_TIME, craftBaseTime(r)*Math.pow(0.5, indexInQueue)); }
+// queues up to `count` copies of a known recipe, paying for each as it's queued — stops (rather than throws) the
+// moment materials/gold run out, so a partial queue is always a valid, affordable queue
+function queueCraft(id, count){
+  const r=recipeDef(id); if(!r || !isRecipeKnown(id) || (G.level||1)<r.lvl) return 0;
+  count=Math.max(1, count|0); G.craftQueue=G.craftQueue||[]; let queued=0;
+  for(let i=0;i<count;i++){ const cost=Object.assign({}, r.need); if(r.gold) cost.gold=r.gold;
+    if(!payCost(cost)) break;
+    G.craftQueue.push({rid:r.id, t:craftQueueTime(r, G.craftQueue.length)}); queued++; }
+  return queued;
+}
+function deliverCrafted(made){
+  if(!made) return;
+  if(made.kind==='materials') grantMaterials(made.k, made.n);
+  else if(made.kind==='gem'){ if(G.inv.length<G.invCap) G.inv.push(makeGem(made.floor||G.floor||1, made.gemType)); }
+  else if(made.kind==='flask'){ if(G.inv.length<G.invCap) G.inv.push(makeFlask(made.floor||G.floor||1, made.flaskId)); }
+}
+function tickCraftQueue(dt){
+  if(!G.craftQueue || !G.craftQueue.length) return;
+  const head=G.craftQueue[0]; head.t-=dt;
+  if(head.t<=0){ G.craftQueue.shift(); const r=recipeDef(head.rid); if(r){ deliverCrafted(r.makes(G.floor||1)); log('⚒ Crafted '+(r?r.nm:'an item')+'.'); unlockFeat('craft'); }
+    G.craftQueue.forEach((q,i)=>{ const rr=recipeDef(q.rid); if(rr) q.t=Math.min(q.t, craftQueueTime(rr,i)); });   // the new head is now "first in line" — its remaining time can only shrink
+    if(typeof renderCraft==='function' && G.nearCraft) renderCraft(); }
+}
+// Ascending a top-tier item into the Ascended rarity (§13) — a bench action distinct from doEnhance's
+// Common→Legendary ladder, since Uniques are bespoke, hand-authored items rather than random rolls.
+function canAscend(it){ return !!(it && (it.rarity===UNIQUE_RAR || (it.rarity && it.rarity.nm==='Legendary')) && (G.level||1)>=LEVEL_CAP); }
+function ascendCostFor(){ return {ambrosia:1, core:4, gold:600}; }
+function doAscend(it){ if(!canAscend(it)) return false;
+  const cost=ascendCostFor(); if(!payCost(cost)){ log('Not enough materials to ascend — need '+costStr(cost)+'.'); sfx.deny&&sfx.deny(); return false; }
+  const built=makeAscended(it.floor||G.floor||1, it);
+  // mutate `it` IN PLACE (same pattern as doReforge/doEnhance) rather than swapping object identity — keeps
+  // G.equip/G.inv/_craftSel all pointing at the same reference the player had selected
+  it.rarity=built.rarity; it.affixes=built.affixes; it.sockets=built.sockets; it.socketed=built.socketed;
+  it.infSockets=built.infSockets; it.infSocketed=built.infSocketed; it.value=built.value; it.name=built.name; it.prefix=built.prefix;
+  const asc=it;
+  recompute(); sfx.evolve&&sfx.evolve(); if(G.player) ringFx(G.player.position.x,G.player.position.z,3.5,ASC_RAR.col);
+  log('✨ ASCENDED — '+asc.name+'!'); banner('✨ ASCENDED', asc.name); unlockFeat('ascend'); refreshItemPanels&&refreshItemPanels(); return true;
+}
 
 // ---- daily login bonus (once per UTC day, on starting or continuing a run) ----
 function bonusToBag(it){ if(!it)return; if(G.inv&&G.inv.length<(G.invCap||24)){ G.inv.push(it); } else if(G.stash){ G.stash.push(it); } if(typeof refreshItemPanels==='function')refreshItemPanels(); }
@@ -13082,7 +13293,9 @@ function enhanceCostFor(it){ const tier=RARITY.indexOf(it.rarity); return {core:
 function canAfford(c){ for(const k in c){ if(k==='gold'){ if((G.gold||0)<c.gold) return false; } else if(matCount(k)<c[k]) return false; } return true; }
 function costStr(c){ const parts=[]; for(const k in c){ parts.push(k==='gold'?('💰'+c.gold):(matIc(k)+c[k])); } return parts.join('  '); }
 function repairCostFor(it){ const tier=Math.max(0,RARITY.indexOf(it.rarity)); return {shard:2+tier, gold:40+(it.floor||1)*6}; }
-function salvageYield(it){ const tier=Math.max(0,RARITY.indexOf(it.rarity)); const out=[{k:'shard',n:2+tier*2}]; if(tier>=1)out.push({k:'essence',n:tier}); if(tier>=2)out.push({k:'core',n:tier-1}); return out; }
+function salvageYield(it){
+  if(it && it.rarity===ASC_RAR) return [{k:'shard',n:10},{k:'core',n:3},{k:'essence',n:2},{k:'ambrosia',n:3}];   // Ascended §13: its own salvage-only material
+  const tier=Math.max(0,RARITY.indexOf(it.rarity)); const out=[{k:'shard',n:2+tier*2}]; if(tier>=1)out.push({k:'essence',n:tier}); if(tier>=2)out.push({k:'core',n:tier-1}); return out; }
 function doRepair(it){ if(!it||!it.overheated) return; const cost=repairCostFor(it); if(!payCost(cost)){ log('Not enough to repair — need '+costStr(cost)+'.'); sfx.deny&&sfx.deny(); return; }
   it.overheated=false; sfx.evolve&&sfx.evolve(); log('🛠 '+it.name+' repaired — re-equip it to fight.'); refreshItemPanels&&refreshItemPanels(); renderCraft(); }
 function doSalvage(it){ if(!it) return; if(it.locked){ log('🔒 Unlock it before salvaging.'); sfx.deny&&sfx.deny(); return; }
@@ -13112,13 +13325,30 @@ function renderCraft(){
     html+='<div class="craftOpt'+(canAfford(rf)?'':' dis')+'" id="craftReforge"><div class="co-ic">🔀</div><div><div class="co-nm">Reforge Affixes</div><div class="co-ds">Reroll this item affixes into a fresh set.</div></div><div class="co-cost">'+costStr(rf)+'</div></div>';
     html+='<div class="craftOpt'+((canEnh&&canAfford(en))?'':' dis')+'" id="craftEnhance"><div class="co-ic">⬆</div><div><div class="co-nm">Enhance Rarity</div><div class="co-ds">'+(canEnh?'Raise rarity one tier and add an affix.':'Already at max rarity.')+'</div></div><div class="co-cost">'+(canEnh?costStr(en):'—')+'</div></div>';
     if(it.overheated){ const rp=repairCostFor(it); html+='<div class="craftOpt'+(canAfford(rp)?'':' dis')+'" id="craftRepair"><div class="co-ic">🛠</div><div><div class="co-nm" style="color:#ff9a3d">Repair Overheat</div><div class="co-ds">Reforge the warped metal — makes this weapon usable again.</div></div><div class="co-cost">'+costStr(rp)+'</div></div>'; }
+    // ASCENDED §13: promote a Unique/Legendary item into the Ascended tier, once the level cap is reached
+    if(canAscend(it)){ const ac=ascendCostFor(); html+='<div class="craftOpt'+(canAfford(ac)?'':' dis')+'" id="craftAscend"><div class="co-ic">✨</div><div><div class="co-nm" style="color:#ffe873">Ascend</div><div class="co-ds">Promote to Ascended — a named prefix bundle, an extra socket and an infusion slot.</div></div><div class="co-cost">'+costStr(ac)+'</div></div>'; }
+    // INFUSIONS §12: extraction is the only way to recover one — unlike a normal gem's free click-to-remove
+    if(Array.isArray(it.infSocketed)) it.infSocketed.forEach((inf,idx)=>{ if(!inf) return; const ec=extractInfusionCostFor();
+      html+='<div class="craftOpt'+(canAfford(ec)?'':' dis')+'" data-inf="'+idx+'"><div class="co-ic">'+inf.ic+'</div><div><div class="co-nm">Extract '+inf.name+'</div><div class="co-ds">Recover the infusion instead of leaving it socketed.</div></div><div class="co-cost">'+costStr(ec)+'</div></div>'; });
     { const sv=salvageYield(it); html+='<div class="craftOpt" id="craftSalvage"><div class="co-ic">♻</div><div><div class="co-nm">Salvage for Components</div><div class="co-ds">Break it down into crafting materials. Destroys the item.</div></div><div class="co-cost">'+sv.map(g=>matIc(g.k)+g.n).join('  ')+'</div></div>'; }
   } else { html+='<div style="margin:14px 16px;font-size:12px;opacity:.6">Pick an item above to reforge or enhance it.</div>'; }
+  // CRAFTING §11: discovery + production, appended below the item-selection panel
+  html+='<div style="font-size:11px;opacity:.6;letter-spacing:1px;text-transform:uppercase;margin:16px 16px 6px">Recipes</div>';
+  const known=RECIPES.filter(r=>isRecipeKnown(r.id)), unknown=RECIPES.filter(r=>!isRecipeKnown(r.id));
+  for(const r of known){ const locked=(G.level||1)<r.lvl, cost=Object.assign({},r.need); if(r.gold)cost.gold=r.gold;
+    html+='<div class="craftOpt'+((!locked&&canAfford(cost))?'':' dis')+'" data-recipe="'+r.id+'"><div class="co-ic">'+r.ic+'</div><div><div class="co-nm">'+r.nm+'</div><div class="co-ds">'+(locked?('Requires level '+r.lvl):'Queue one — later copies craft faster.')+'</div></div><div class="co-cost">'+costStr(cost)+'</div></div>'; }
+  if(unknown.length){ html+='<div class="craftOpt" id="craftDiscover"><div class="co-ic">🔍</div><div><div class="co-nm">Attempt Discovery</div><div class="co-ds">'+unknown.length+' recipe'+(unknown.length===1?'':'s')+' still undiscovered — checks your materials against them.</div></div><div class="co-cost"></div></div>'; }
+  if(G.craftQueue && G.craftQueue.length){ html+='<div style="margin:10px 16px 4px;font-size:12px;color:#fff">Production queue ('+G.craftQueue.length+')</div>';
+    html+='<div style="margin:0 16px;font-size:11px;opacity:.7">Next: '+(recipeDef(G.craftQueue[0].rid)||{}).nm+' — '+G.craftQueue[0].t.toFixed(1)+'s</div>'; }
   body.innerHTML=html;
   const ig=$('craftItems'); if(ig){ if(!items.length){ ig.innerHTML='<div style="grid-column:1/-1;opacity:.5;font-size:11px;text-align:center;padding:8px">No craftable gear in your bag.</div>'; }
     else items.forEach(it=>{ const t=itemTile(it,{ctx:null,sel:_craftSel===it}); t.title=it.name; t.addEventListener('click',()=>{ _craftSel=it; renderCraft(); }); ig.appendChild(t); }); }
+  body.querySelectorAll('[data-recipe]').forEach(el=>{ el.onclick=()=>{ if(queueCraft(el.dataset.recipe,1)>0) renderCraft(); }; });
+  body.querySelectorAll('[data-inf]').forEach(el=>{ el.onclick=()=>{ if(extractInfusion(_craftSel, +el.dataset.inf)) renderCraft(); }; });
+  { const db=$('craftDiscover'); if(db) db.onclick=()=>{ attemptDiscovery(); renderCraft(); }; }
   if(_craftSel){ const rb=$('craftReforge'), eb=$('craftEnhance'); if(rb) rb.onclick=()=>doReforge(_craftSel); if(eb) eb.onclick=()=>doEnhance(_craftSel);
     const rpb=$('craftRepair'); if(rpb) rpb.onclick=()=>doRepair(_craftSel);
+    const asb=$('craftAscend'); if(asb) asb.onclick=()=>{ doAscend(_craftSel); renderCraft(); };
     const svb=$('craftSalvage'); if(svb) svb.onclick=()=>doSalvage(_craftSel); }
 }
 
