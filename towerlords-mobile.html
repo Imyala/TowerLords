@@ -1400,7 +1400,7 @@
     <div id="stats" class="ui">
       <div class="mHdr">
         <div id="navToggle" title="Menu">☰</div>
-        <span class="mLv">LV <b id="lvlNum">1</b><span class="xpmini" id="xpTxt">0/20</span></span>
+        <span class="mLv">LV <b id="lvlNum">1</b><span class="xpmini" id="xpTxt">0/20</span><span class="xpmini" id="dlaTxt" style="color:#8effd9"></span></span>
         <span class="mGold">🪙 <b id="goldNum">0</b></span>
       </div>
       <div id="rankHud" class="mRank" title="Your fame rank — earn stars to climb the ladder"></div>
@@ -2264,6 +2264,29 @@ const ACTS=[
 ];
 const SUMMIT_FLOOR=50;
 function actOf(f){ return ACTS[Math.floor((((f||1)-1)%SUMMIT_FLOOR)/10)]; }
+// ============================================================ MASTERY SYSTEM (GW2 parity §5)
+// A permanent, account-wide, non-resetting unlock track layered ON TOP OF the Evolution/Ascendant-Seal
+// rebirth loop (TOWERLORDS_EVOLUTION_SYSTEM.md) — evolving resets your level, but never touches this.
+// Each of the five ACT biomes has its own Insight currency (META.insight[biomeIndex]), earned a little
+// at a time on every floor cleared in that biome (see objComplete) and never spent back down — once a
+// mastery's threshold is banked it unlocks automatically and permanently, like a Feat.
+const MASTERIES=[
+  {id:'m_act1', biome:0, nm:'Vault Instinct',      ic:'🌿', need:500, eff:{movePct:3},     ds:'The Verdant Vault taught you its shortcuts — permanent +3% move speed.'},
+  {id:'m_act2', biome:1, nm:'Forge-Tempered Skin', ic:'🔥', need:500, eff:{armor:14},      ds:'The Ember Foundry’s heat toughened your hide — permanent +14 armour, and its lava bites 20% less.', hazardResist:0.20},
+  {id:'m_act3', biome:2, nm:'Archive Focus',       ic:'❄️', need:500, eff:{manaPct:6},     ds:'The Cryo Archive’s cold clarity — permanent +6% maximum mana.'},
+  {id:'m_act4', biome:5, nm:'Crypt Reach',         ic:'💀', need:500, eff:{goldPct:8},     ds:'You know exactly where the Bone Crypt hides its coin — permanent +8% gold find.'},
+  {id:'m_act5', biome:3, nm:'Sanctum Sight',       ic:'🔮', need:600, eff:{critMultPct:5}, ds:'The Void Sanctum sharpened your eye for the killing moment — permanent +5% critical damage.'},
+];
+function gainInsight(biome, n){ if(biome==null || !(n>0)) return; META.insight=META.insight||{}; META.insight[biome]=(META.insight[biome]||0)+n; checkMasteries(); }
+function checkMasteries(){
+  META.masteries=META.masteries||{}; let unlocked=false;
+  for(const ms of MASTERIES){ if(META.masteries[ms.id]) continue;
+    if((META.insight[ms.biome]||0)>=ms.need){ META.masteries[ms.id]=true; unlocked=true;
+      banner('⛰ MASTERY UNLOCKED — '+ms.nm, ms.ds); log('⛰ MASTERY — '+ms.nm+': '+ms.ds); if(sfx.evolve)sfx.evolve(); } }
+  if(unlocked){ try{ recompute(); }catch(_){} }
+  return unlocked;
+}
+function masteryHazardResist(){ let r=0; for(const ms of MASTERIES){ if(META.masteries&&META.masteries[ms.id]&&ms.hazardResist) r+=ms.hazardResist; } return Math.min(0.6,r); }
 
 // ---------------- rarity / items ----------------
 const RARITY = [
@@ -2628,9 +2651,39 @@ const FEATS=[
   {id:'rescue1',  nm:'Keeper No More', ds:'Free your first Kept One',     fame:1000},
   {id:'rescue9',  nm:'The Empty Cellar', ds:'Free every Kept One',        fame:8000},
   {id:'truesummit', nm:'Hopebringer', ds:'Open the summit for the ones below', fame:30000},
+  {id:'combo',     nm:'Combo Artist', ds:'Trigger a skill combo (field + finisher)', fame:400},
+  {id:'stunbreak', nm:'Unshaken',     ds:'Break a stun with Dash',              fame:300},
 ];
-let META={fame:0, evolves:0, feats:[], invRows:0, stashSlots:0, petTier:0, petSlots:0, codex:{}, ascMax:0, tips:{}, victories:0, grudges:{}, daily:null, playerName:'', playerId:'', voiceSeen:{}, materials:{}, lastBonus:'', bonusStreak:0, fieldRespec:false, recallTier:0, titles:[], title:'', savedPets:null, lastRun:0, rescued:{}, chairChoice:'', trueSummit:false, ancestral:'', beasts:{}, beastOn:'', scav:null, cache:null, soulDebt:0, stashGob:false};
-function loadMeta(){ try{ const s=localStorage.getItem(META_KEY); if(s){ const m=JSON.parse(s); META={fame:m.fame||0, evolves:Math.min(49,m.evolves||0), feats:m.feats||[], invRows:Math.min(5,m.invRows||0), stashSlots:(m.stashSlots!=null?m.stashSlots:Math.min(25,(m.stashRows||0)*10)), petTier:m.petTier||0, petSlots:m.petSlots||0, codex:m.codex||{}, ascMax:m.ascMax||0, tips:m.tips||{}, victories:m.victories||0, grudges:m.grudges||{}, daily:m.daily||null, playerName:m.playerName||'', playerId:m.playerId||'', voiceSeen:m.voiceSeen||{}, materials:m.materials||{}, lastBonus:m.lastBonus||'', bonusStreak:m.bonusStreak||0, fieldRespec:!!m.fieldRespec, recallTier:m.recallTier||0, titles:m.titles||[], title:m.title||'', savedPets:m.savedPets||null, lastRun:m.lastRun||0, rescued:m.rescued||{}, chairChoice:m.chairChoice||'', trueSummit:!!m.trueSummit, ancestral:m.ancestral||'', beasts:m.beasts||{}, beastOn:m.beastOn||'', scav:m.scav||null, cache:m.cache||null, soulDebt:m.soulDebt||0, stashGob:!!m.stashGob}; } }catch(e){} }
+// ---- ACHIEVEMENT POINTS: a secondary account-wide ladder alongside fame (GW2 parity §6) ----
+// Every feat also pays achievement points (roughly fame/100); points themselves ladder into
+// reward tiers (first at 100, then every 500) and a title-rank readout every 5000 — independent
+// of what each individual feat grants.
+const ACHV_FIRST_REWARD=100, ACHV_REWARD_STEP=500, ACHV_TITLE_STEP=5000;
+function achvRewardsEarned(pts){ return pts<ACHV_FIRST_REWARD ? 0 : 1+Math.floor((pts-ACHV_FIRST_REWARD)/ACHV_REWARD_STEP); }
+function checkAchvRewards(){
+  const pts=META.apts||0, earned=achvRewardsEarned(pts), had=META.apRewardsClaimed||0;
+  if(earned>had){ const gained=earned-had, bonus=gained*300; META.apRewardsClaimed=earned; META.fame=(META.fame||0)+bonus;
+    banner('🏆 ACHIEVEMENT REWARD','+'+bonus+' fame ('+earned+' tier'+(earned===1?'':'s')+' of '+ACHV_REWARD_STEP+' achievement points)'); }
+  const titleTier=Math.floor(pts/ACHV_TITLE_STEP);
+  if(titleTier>(META.apTitleTier||0)){ META.apTitleTier=titleTier;
+    banner('🏵 ACHIEVEMENT RANK','you have earned '+(titleTier*ACHV_TITLE_STEP)+' achievement points'); }
+}
+// ---- META-ACHIEVEMENTS: umbrella completions over a category of feats (GW2 parity §6) ----
+const META_ACHIEVEMENTS=[
+  {id:'meta_climb',  nm:'Tower Historian', ic:'🗻', need:['f10','f25','f50','f100'], fame:5000, pts:50, ds:'Reach every floor milestone.'},
+  {id:'meta_rescue', nm:'Empty the Cellar', ic:'🕊️', need:['rescue1','rescue9'],     fame:5000, pts:50, ds:'Free every Kept One and see the cellar empty.'},
+];
+function checkMetaAchievements(){
+  META.metaAch=META.metaAch||{};
+  for(const ma of META_ACHIEVEMENTS){ if(META.metaAch[ma.id]) continue;
+    if(ma.need.every(id=>META.feats.includes(id))){ META.metaAch[ma.id]=true; META.fame+=ma.fame; META.apts=(META.apts||0)+ma.pts;
+      banner('🏅 META-ACHIEVEMENT — '+ma.nm, ma.ds+'  ·  +'+ma.fame+' fame'); log('🏅 META-ACHIEVEMENT: '+ma.nm);
+      checkAchvRewards(); saveMeta(); } }
+}
+let META={fame:0, evolves:0, feats:[], invRows:0, stashSlots:0, petTier:0, petSlots:0, codex:{}, ascMax:0, tips:{}, victories:0, grudges:{}, daily:null, playerName:'', playerId:'', voiceSeen:{}, materials:{}, lastBonus:'', bonusStreak:0, fieldRespec:false, recallTier:0, titles:[], title:'', savedPets:null, lastRun:0, rescued:{}, chairChoice:'', trueSummit:false, ancestral:'', beasts:{}, beastOn:'', scav:null, cache:null, soulDebt:0, stashGob:false,
+  insight:{}, masteries:{}, apts:0, apRewardsClaimed:0, apTitleTier:0, metaAch:{}};   // MASTERY §5 (biome-scoped Insight + unlocked mastery ids) · ACHIEVEMENT POINTS §6 (ladder + meta-achievements) — all account-wide, never reset by death or evolution
+function loadMeta(){ try{ const s=localStorage.getItem(META_KEY); if(s){ const m=JSON.parse(s); META={fame:m.fame||0, evolves:Math.min(49,m.evolves||0), feats:m.feats||[], invRows:Math.min(5,m.invRows||0), stashSlots:(m.stashSlots!=null?m.stashSlots:Math.min(25,(m.stashRows||0)*10)), petTier:m.petTier||0, petSlots:m.petSlots||0, codex:m.codex||{}, ascMax:m.ascMax||0, tips:m.tips||{}, victories:m.victories||0, grudges:m.grudges||{}, daily:m.daily||null, playerName:m.playerName||'', playerId:m.playerId||'', voiceSeen:m.voiceSeen||{}, materials:m.materials||{}, lastBonus:m.lastBonus||'', bonusStreak:m.bonusStreak||0, fieldRespec:!!m.fieldRespec, recallTier:m.recallTier||0, titles:m.titles||[], title:m.title||'', savedPets:m.savedPets||null, lastRun:m.lastRun||0, rescued:m.rescued||{}, chairChoice:m.chairChoice||'', trueSummit:!!m.trueSummit, ancestral:m.ancestral||'', beasts:m.beasts||{}, beastOn:m.beastOn||'', scav:m.scav||null, cache:m.cache||null, soulDebt:m.soulDebt||0, stashGob:!!m.stashGob,
+    insight:m.insight||{}, masteries:m.masteries||{}, apts:m.apts||0, apRewardsClaimed:m.apRewardsClaimed||0, apTitleTier:m.apTitleTier||0, metaAch:m.metaAch||{}}; } }catch(e){} }
 // ---------------- GLOBAL LEADERBOARD (optional backend) ----------------
 // Set LEADERBOARD_URL to a deployed copy of leaderboard-worker.js (free Cloudflare Worker —
 // see LEADERBOARD_SETUP.md next to this file). Leave null for local-only boards: the game
@@ -2795,8 +2848,9 @@ function buyChip(id, maxed, cost, label){
   return `<span class="buyRow has-gtip${can?'':' cant'}" id="${id}" data-tip="Your fame: ${Math.floor(META.fame).toLocaleString()} · costs ${cost.toLocaleString()} fame (spends rank)">${label} · ${cost.toLocaleString()} ✦</span>`;
 }
 function unlockFeat(id){ if(META.feats.includes(id))return; const f=FEATS.find(x=>x.id===id); if(!f)return;
-  META.feats.push(id); META.fame+=f.fame; saveMeta(); banner('★ FEAT — '+f.nm, f.ds+'  ·  +'+f.fame+' fame'); sfx.evolve();
-  log('★ FEAT UNLOCKED: '+f.nm+' (+'+f.fame+' fame)'); if(!$('scorePanel').classList.contains('hidden'))renderScore(); }
+  META.feats.push(id); META.fame+=f.fame; META.apts=(META.apts||0)+Math.max(1,Math.round(f.fame/100)); saveMeta(); banner('★ FEAT — '+f.nm, f.ds+'  ·  +'+f.fame+' fame'); sfx.evolve();
+  log('★ FEAT UNLOCKED: '+f.nm+' (+'+f.fame+' fame)'); if(!$('scorePanel').classList.contains('hidden'))renderScore();
+  checkAchvRewards(); checkMetaAchievements(); }
 function checkFloorFeats(){ const f=G.floor; if(f>=10)unlockFeat('f10'); if(f>=25)unlockFeat('f25'); if(f>=50)unlockFeat('f50'); if(f>=100)unlockFeat('f100'); }
 // ---------------- floor modifiers (Sacred-style risk/reward rolls) ----------------
 const FLOOR_MODS=[
@@ -3853,6 +3907,22 @@ const ATTR_INFO=[
   {k:'vit', nm:'Vitality', col:'var(--vit)', ds:'life & regen'},
   {k:'will',nm:'Willpower', col:'var(--will)', ds:'mana & resistance'},
 ];
+// ============================================================ ATTRIBUTE TAXONOMY (GW2 parity §10)
+// PRIMARY   — str/dex/int/vit/will (ATTR_KEYS above): spent from level-up points, gear can roll bonuses.
+// SECONDARY — the gear/talent-only modifier keys living in recompute()'s `m` accumulator (dmgPct, critMultPct,
+//             cdrPct, lifesteal, …): base 0, never auto-granted by level.
+// DERIVED   — G.S.maxhp/armor/crit/critMult/… : computed FROM primary+secondary each recompute(), never itself
+//             spent or geared directly.
+// ROLE      — one profession-style stat per spec column, gated PURELY by skill-tree investment in that spec —
+//             never obtainable from gear, unlike the five primaries above. See ROLE_ATTR + recompute().
+const ROLE_ATTR={
+  tk:{k:'armor',       per:40, nm:'Bulwark Rating',    ds:'armour, scaling with Vanguard tree investment'},
+  mn:{k:'lifeRegen',   per:4,  nm:'Grace',              ds:'life regen, scaling with Mender tree investment'},
+  st:{k:'critMultPct', per:25, nm:'Killing Blow',       ds:'critical damage, scaling with Striker tree investment'},
+  rg:{k:'asPct',       per:20, nm:'Fleet Hands',        ds:'attack speed, scaling with Ranger tree investment'},
+  el:{k:'skillDmgPct', per:25, nm:'Attunement Mastery', ds:'skill damage, scaling with Elementalist tree investment'},
+  wd:{k:'cdrPct',      per:12, nm:'Weave',              ds:'cooldown reduction, scaling with Warden tree investment'},
+};
 
 // ---------------- input ----------------
 const keys={}; const mouse=new THREE.Vector2(); let mouseDown=false; let mouseR=false;
@@ -4722,6 +4792,21 @@ function recompute(){
   if(!G._btMigrated){ G._btMigrated=true; let _ref=0; for(const _id in G.alloc){ const _t=TALENTMAP[_id]; if(_t&&_t.beastKey&&(G.alloc[_id]||0)>0){ _ref+=G.alloc[_id]; delete G.alloc[_id]; } }   // old saves: Beast points → refunded (forms are relic-unlocked now)
     if(_ref>0){ G.skillPts=(G.skillPts||0)+_ref; log('🐺 The Beast now answers to RELICS, not points — '+_ref+' point'+(_ref===1?'':'s')+' refunded.'); } }
   for(const id in G.alloc){ const t=TALENTMAP[id], rank=G.alloc[id]||0; if(rank>0&&t&&!t.beastKey){ if(t.gives) flags[t.gives]=true; if(t.eff) for(const k in t.eff){ m[k]=(m[k]||0)+t.eff[k]*rank; if(k==='lifeRegen')talLifeRegen+=t.eff[k]*rank; else if(k==='manaRegen')talManaRegen+=t.eff[k]*rank; } } }
+  // ---- MASTERY EFFECTS: permanent, account-wide, unlocked via biome Insight — never gated by gear or the skill tree (§5) ----
+  for(const ms of MASTERIES){ if(META.masteries && META.masteries[ms.id] && ms.eff) for(const k in ms.eff) addMod(k, ms.eff[k]); }
+  // ---- MINOR LANE BONUS: the instant a single point sits anywhere in a sub-role lane, that lane's row-1
+  // opener effect is granted again FOR FREE, on top of whatever ranks you've actually bought — GW2's "minor
+  // traits are always active the moment the line is equipped," layered onto the existing point-bought majors (§7) ----
+  for(const _spec of SPECS){ if(_spec.relic) continue; const openers=_spec.tiers[1]||[];
+    for(const _op of openers){ if(!_op.lane || !_op.eff) continue;
+      const _hasPoint=_spec.tiers.some(_tier=>_tier.some(_t=>_t.lane===_op.lane && (G.alloc[_t.id]||0)>0));
+      if(_hasPoint) for(const k in _op.eff) addMod(k, _op.eff[k]); } }
+  // ---- ROLE ATTRIBUTE: one profession-style stat per role, gated PURELY by skill-tree investment in that
+  // spec — never obtainable from gear (unlike str/dex/int/vit/will, which gear can roll) — GW2 parity §10 ----
+  const S_roleAttr={};
+  for(const _spec of SPECS){ const _ra=ROLE_ATTR[_spec.kw]; if(!_ra) continue;
+    const _tot=specTotalRanks(_spec), _frac=_tot>0?Math.min(1,specSpent(_spec)/_tot):0; S_roleAttr[_spec.kw]=_frac;
+    if(_frac>0) addMod(_ra.k, _ra.per*_frac); }
   // ---- THE BEAST: the single ACTIVE form (unlocked by boss relics, chosen in the tree — only one prowls at a time) ----
   if(META.beastOn && META.beasts && META.beasts[META.beastOn]){ const bf=BEAST_FORMS.find(f=>f.key===META.beastOn);
     if(bf){ flags[bf.key]=true; if(bf.eff) for(const k in bf.eff){ m[k]=(m[k]||0)+bf.eff[k]; if(k==='lifeRegen')talLifeRegen+=bf.eff[k]; else if(k==='manaRegen')talManaRegen+=bf.eff[k]; } } }
@@ -4780,6 +4865,7 @@ function recompute(){
     if(b.shadow) m.movePct=(m.movePct||0)+b.shadow*5; }
   const S={};
   S.attrBase=A; S.attrItem=attrItem; S.attrEff=E;   // exposed so the Character screen can show base (+gear)
+  S.roleAttr=S_roleAttr;   // one profession-style stat per role, 0..1 = fraction of that spec's tree spent (§10)
   S.maxhp = Math.round((60 + E.vit*14 + E.str*2 + m.lifeFlat) * (1+m.lifePct/100));
   S.maxmana = Math.round((30 + E.int*6 + E.will*4 + m.manaFlat) * (1+m.manaPct/100));
   S.dmgBase = (6 + E.str*2.2) * (1+m.dmgPct/100);
@@ -4832,7 +4918,8 @@ function recompute(){
   { const b=(G.run&&G.run.body)||{}; S.eyes3=b.eyes>=3; S.heart2=b.heart>=2; S.heart3=b.heart>=3; S.hands2=b.hands>=2; S.spine3=b.spine>=3; S.shadow2=b.shadow>=2; S.shadow3=b.shadow>=3; }
   if(flags.towerDebt && !G._debtTaken){ G._debtTaken=true; G.skillPts=(G.skillPts||0)+2; G._debtLevels=3;   // Tower Debt: paid now, collected later
     log('🏦 TOWER DEBT — +2 skill points now. Your next 3 level-ups grant none. The tower collects.'); }
-  S.beast1=!!flags.beast1; S.beast3=!!flags.beast3; S.beast5=!!flags.beast5; S.beast6=!!flags.beast6;   // the Beast chain (beast2/4 are pure stats)
+  S.beast1=!!flags.beast1; S.beast3=!!flags.beast3; S.beast5=!!flags.beast5; S.beast6=!!flags.beast6;
+  S.beast2=!!flags.beast2; S.beast4=!!flags.beast4;   // exposed for beastDashProc (§8) — the Dash mechanic each form alters
   S.blinkEvo = flags.blinkVoid?'void' : flags.blinkEcho?'echo' : flags.blinkSacr?'sacr' : flags.blinkPred?'pred' : flags.blinkFrac?'frac' : null;
   if(flags.glassSoul){ S.critMult += S.armor*0.004; S.armor=0; }              // Glass Soul — armour is forbidden; it becomes crit damage
   S.igniteMult = igniteMult;
@@ -4907,7 +4994,7 @@ function clearWorld(){
   if(G.yardStation) scene.remove(G.yardStation.mesh);
   if(_G.yardPets) for(const yp of _G.yardPets){ if(yp.mesh) scene.remove(yp.mesh); } _G.yardPets=[];
   if(G.minions) for(const mn of G.minions){ if(mn.mesh) scene.remove(mn.mesh); } G.minions=[]; G._hist=[]; G._debtT=0; G._debt=0; G.formT=0;
-  G.enemies=[];G.projectiles=[];G.eProjectiles=[];G.pickups=[];G.decals=[];G.scenery=[];G.timed=[];G.chests=[];
+  G.enemies=[];G.projectiles=[];G.eProjectiles=[];G.pickups=[];G.decals=[];G.scenery=[];G.timed=[];G.chests=[];G.fields=[];
   if(G.coins)G.coins.forEach(c=>c.mesh&&scene.remove(c.mesh)); G.coins=[];
   if(G.decoys)G.decoys.forEach(d=>d.mesh&&scene.remove(d.mesh)); G.decoys=[];
   if(G.trail)G.trail.forEach(t=>t.mesh&&scene.remove(t.mesh)); G.trail=[];
@@ -5307,11 +5394,12 @@ function objComplete(){
   log('✦ '+o.ic+' '+o.nm+' complete — the portal is open and stays open.');
   if(sfx.evolve)sfx.evolve();
   if(G.player){ const p=G.player.position; floatText(p.x,p.z,'✦ FLOOR CLEARED!','big',5.2); ringFx(p.x,p.z,9,0x56e0ff); ringFx(p.x,p.z,5,0xffce4d); }
+  { const _act=actOf(G.floor); gainInsight(_act?_act.biome:null, Math.round(6+G.floor*0.6)); }   // MASTERY: every floor cleared banks a little biome Insight
   if(o.id!=='purge'){   // the odd objectives ask you to play differently — the tower pays for that
     const g=Math.round(60+G.floor*14); G.gold+=g; if(typeof flashGold==='function')flashGold();
     const fm=Math.floor(120+G.floor*10); META.fame+=fm; saveMeta();
     log('✦ The tower pays for the unusual: +'+g+' gold, +✦'+fm+' fame.');
-  }
+  } else { saveMeta(); }   // purge floors skip the bonus payout but Insight still needs to persist
   coach('portal','✦','Objective complete','Stand on the glowing <b>portal</b> and press <b>F</b> to ascend. It stays open — but the floor <b>reshuffles</b> if you linger, so loot up and move on.');
 }
 // a vow was broken — restart it, and after three breaks fall back to a plain purge so no floor
@@ -7174,14 +7262,25 @@ function partyLevel(){ let m=1; for(const p of _G.players){ if(p.joined && p.pla
 // specialisation instead of being quietly taxed for committing to it.
 // Gear bonuses are NOT counted, so finding good loot always makes you stronger, never even.
 function treeSpentOf(pl){ let n=0; const al=(pl&&pl.alloc)||{}; for(const id in al) n+=al[id]||0; return n; }
-function basePowerLvl(){ let best=1;
-  for(const pl of joinedPlayers()){ const A=pl.attr; if(!A)continue;
-    const attrPts=(A.str||0)+(A.dex||0)+(A.int||0)+(A.vit||0)+(A.will||0)-25;   // base attribute points (character screen)
-    const treePts=treeSpentOf(pl);                                              // every talent rank, whichever column it sits in
-    best=Math.max(best, 1 + Math.max(0,attrPts) + Math.max(0,treePts)); }
-  return best; }
+function playerPowerLvl(pl){ const A=(pl&&pl.attr)||{};
+  const attrPts=(A.str||0)+(A.dex||0)+(A.int||0)+(A.vit||0)+(A.will||0)-25;   // base attribute points (character screen)
+  const treePts=treeSpentOf(pl);                                              // every talent rank, whichever column it sits in
+  return Math.max(1, 1+Math.max(0,attrPts)+Math.max(0,treePts)); }
+function basePowerLvl(){ let best=1; for(const pl of joinedPlayers()) best=Math.max(best, playerPowerLvl(pl)); return best; }
 function scaleLvl(floor){ return Math.max(floor, basePowerLvl()); }   // HP scaling tracks your FULL investment (attrs + tree) → enemies get tankier as you grow
 function dmgScaleLvl(floor){ return Math.max(floor, Math.min(basePowerLvl(), floor*2+30)); }   // damage tracks depth (+ some leeway) so over-investing never lets foes one-shot you
+// ============================================================ DYNAMIC LEVEL ADJUSTMENT (GW2 parity §1)
+// scaleLvl/dmgScaleLvl above already do the OPPOSITE of GW2's DLA on purpose — the tower scales UP to
+// match your investment so specialising never feels "quietly taxed" (see the comment above basePowerLvl's
+// old body). True DLA — capping an overleveled character DOWN to a low floor's own band — would fight
+// that pillar directly, so instead of touching combat power we implement the other half of GW2's DLA:
+// the "effective level" readout, and the fact that farming far below your own power pays out less.
+function dlaFloorBand(floor){ return Math.max(1,(floor|0)+1); }              // GW2's "max level for the area + 1"
+function dlaEffectiveLevel(pl){ return Math.min(playerPowerLvl(pl), dlaFloorBand(G.floor)); }
+function dlaIsScaled(pl){ return playerPowerLvl(pl) > dlaFloorBand(G.floor); }
+function dlaRewardMult(pl){ const band=dlaFloorBand(G.floor), pwr=playerPowerLvl(pl);
+  return pwr<=band ? 1 : Math.max(0.35, band/pwr); }                          // soft floor — a tax, never a wall
+function dlaRewardMultCur(){ return dlaRewardMult(_G.players[_G.cur]); }
 // the strongest player's representative BIG hit (a ~3-coef skill, crit-weighted) — the unit tough foes are balanced against, so burst can't trivialise them
 function playerBigHit(){ let best=0; for(const pl of joinedPlayers()){ const S=pl.S; if(!S||!S.dmgBase)continue;
     const critF=1+(S.crit||0)*((S.critMult||1.5)-1); best=Math.max(best, S.dmgBase*3.0*(S.skillMult||1)*critF); } return best||12; }
@@ -8782,7 +8881,8 @@ function boltExplode(b){ if(b.dead)return; b.dead=true; const bx=b.mesh.position
 function fireBolt(x,z,dx,dz,dmg,crit,pierce,size,spd,element,life,o){
   element=element||'phys'; o=o||{};
   const m=new THREE.Mesh(boltGeo(o.shape,size),boltMat(element)); m.position.set(x,1.1,z); scene.add(m);
-  const b={mesh:m,vx:dx*spd,vz:dz*spd,dmg,life:life||1.2,crit,pierce:pierce||0,hit:null,element,owner:_G.cur};
+  const b={mesh:m,vx:dx*spd,vz:dz*spd,dmg,life:life||1.2,crit,pierce:pierce||0,hit:null,element,owner:_G.cur,
+    finisher:(o.finisher!==undefined?o.finisher:'projectile')};   // COMBO FINISHERS §2: virtually every bolt is a projectile finisher by default (GW2 parity) — pass o.finisher:null to opt out
   // RotMG-style shot behaviours (opt-in; plain bolts are untouched)
   if(o.wave){ b.wave={amp:o.wave.amp||2, freq:o.wave.freq||14, t:0, hx:dx, hz:dz, spd, ox:x, oz:z}; }   // sine-weaving bolt
   if(o.boomerang){ b.boom={out:o.boomerang.out||0.4, spd, t:0}; b.pierce=Math.max(b.pierce,99); }       // flies out, returns, hits both ways
@@ -8934,6 +9034,11 @@ function doDash(){
   let dx=(_pin&&_pin.mx)||0, dz=(_pin&&_pin.mz)||0;
   if(!dx&&!dz){ const a=Math.atan2(aimPoint.x-p.x,aimPoint.z-p.z); dx=Math.sin(a); dz=Math.cos(a); }
   const l=Math.hypot(dx,dz)||1; G.dashDir={x:dx/l,z:dz/l};
+  // ---- CONTROL EFFECTS §3: stunT is a CONTROL effect, not a condition — GW2-style, it doesn't expire
+  // early on its own; Dash is now a stun-break skill that clears it outright, same as a stun-break skill
+  // clearing a control effect in GW2 (conditions/ailments still just run their timer or get cleansed).
+  const _brokeStun = G.stunT>0;
+  if(_brokeStun){ G.stunT=0; unlockFeat('stunbreak'); }
   G.dashT=0.16; G.dashCd=G.dashCdMax; G.invuln=Math.max(G.invuln,0.32); G.flowT=1.0; sfx.dash();
   if(G.S&&G.S.shadow3){ G.timed.push({t:0.22, fn:()=>{ const pp=G.player.position;   // SHADOW EVOLUTION: the dash-end shocks
     for(const e of G.enemies){ if(!e.dead && Math.hypot(e.mesh.position.x-pp.x,e.mesh.position.z-pp.z)<3){ e.shock=Math.max(e.shock||0,2.5); } }
@@ -8941,9 +9046,21 @@ function doDash(){
   for(const en of G.enemies){ if(en.boss&&!en.dead) en._dashSeen=(en._dashSeen||0)+1; }   // NEMESIS: the lords watch how you dodge
   G.perfectT=0.34; G.dashRewarded=false;   // perfect-dodge window opens
   ringFx(p.x,p.z,2.6,0x56e0ff);
+  if(_brokeStun) floatText(p.x,p.z,'⛓️‍💥 STUN BROKEN','crit',3.2);
   if(G.S.dashCrit) G._dashCritArm=true;   // Slipstream Edge quirk: the next strike rides the dash
   spawnDecoy(p.x,p.z,1.2);   // WASD AFTERIMAGE: every dash leaves a taunting ghost for a heartbeat
   fireProcs('dash',{pos:{x:p.x,z:p.z}});
+  if(META.beastOn) beastDashProc(p);   // ELITE-SPEC FRAMING §8: the active Beast Form changes what Dash DOES, not just its numbers
+}
+// ---- ELITE-SPEC FRAMING §8: the equipped Beast Form (relic-unlocked, one active at a time, exactly like a
+// GW2 elite spec's reserved slot) alters Dash's MECHANIC rather than just adding passive stats — the same
+// distinction GW2 draws between an elite spec and a plain trait line.
+function beastDashProc(p){
+  if(G.S.beast1){ const e=nearestEnemyTo(p.x,p.z,10); if(e){ e._markUntil=performance.now()+3000; floatText(e.mesh.position.x,e.mesh.position.z,'🐺 MARKED','crit',e.r+2.4); } }   // Wolf: dash marks the nearest prey
+  else if(G.S.beast2){ G.dashCd=Math.max(0,G.dashCd-G.dashCdMax*0.5); floatText(p.x,p.z,'🦌 SWIFT','heal',2.4); }             // Stag: half the dash comes right back
+  else if(G.S.beast3){ const h=Math.min(G.maxhp*0.04,G.maxhp-G.hp); if(h>0){ G.hp+=h; G.run.healSelf+=h; floatText(p.x,p.z,'🦇 +'+Math.round(h),'heal',2.4); } }   // Bat: dash sips life
+  else if(G.S.beast4){ G.invuln=Math.max(G.invuln,0.55); floatText(p.x,p.z,'🐗 BRACED','heal',2.2); }                        // Boar: dash also braces for the hit
+  else if(G.S.beast6){ hitRadius(p.x,p.z,areaR(3),G.S.dmgBase*0.6,80,'phys'); floatText(p.x,p.z,'🌑 ECHO','crit',2.6); }     // No Longer Human: the dash itself hits
 }
 // reward for dashing through an attack at the last instant (i-frames + open perfect window)
 function perfectDodge(){
@@ -8969,20 +9086,21 @@ function telegraphAoE(x,z,R,delay,dmg,color){
     for(const pl of livePlayers()){ const pp=pl.player.position; if(Math.hypot(pp.x-x,pp.z-z)<R){ withPlayer(pl.id,()=>{ if(G.invuln<=0){ setKiller('a ground blast'); hurtPlayer(dmg); } else if(G.perfectT>0) perfectDodge(); }); } } }});
 }
 
-function castNova(pwr){ const p=G.player.position, R=areaR(8); ringFx(p.x,p.z,R,0x56e0ff); hitRadius(p.x,p.z,R,skillDmg(2.0,pwr),420); shakeCam(.5); G.hitstop=Math.max(G.hitstop||0,.05); }
+function castNova(pwr){ const p=G.player.position, R=areaR(8); ringFx(p.x,p.z,R,0x56e0ff); hitRadius(p.x,p.z,R,skillDmg(2.0,pwr),420,undefined,'blast'); shakeCam(.5); G.hitstop=Math.max(G.hitstop||0,.05); }
 function castBlink(pwr){ const p=G.player.position, a=Math.atan2(aimPoint.x-p.x,aimPoint.z-p.z); ringFx(p.x,p.z,2,0x9d7bff);
   const ox=p.x, oz=p.z, evo=G.S&&G.S.blinkEvo;
   let nx=p.x,nz=p.z; for(let s=1;s<=9;s++){ const tx=p.x+Math.sin(a)*s, tz=p.z+Math.cos(a)*s; if(inAny(tx,tz,0.7)){nx=tx;nz=tz;} else break; }
   p.set(nx,1,nz); ringFx(nx,nz,2,0x9d7bff); G.invuln=Math.max(G.invuln,.45);
+  comboLeapAt(nx,nz);   // COMBO FINISHER §2: Blink is a leap finisher — landing inside a field is enough, no damage required
   // ---- BLINK EVOLUTIONS (tree keystones): the same skill, three different builds ----
   if(evo) sfx.blinkEvo&&sfx.blinkEvo();
   if(evo==='void'){ // departure point becomes a vacuum
     for(const e of G.enemies){ if(e.dead||e.boss)continue; const dx=ox-e.mesh.position.x, dz=oz-e.mesh.position.z, d=Math.hypot(dx,dz);
       if(d<9&&d>0.6){ const pull=Math.min(4,d-0.5); e.mesh.position.x+=dx/d*pull; e.mesh.position.z+=dz/d*pull; } }
-    ringFx(ox,oz,9,0x9d7bff); hitRadius(ox,oz,areaR(4),skillDmg(0.7,pwr),140); }
+    ringFx(ox,oz,9,0x9d7bff); hitRadius(ox,oz,areaR(4),skillDmg(0.7,pwr),140,undefined,'leap'); }
   else if(evo==='echo'){ // the afterimage detonates
     ringFx(ox,oz,2.4,0xc7b6ff);
-    G.timed.push({t:1, fn:()=>{ ringFx(ox,oz,areaR(5),0x9d7bff); burst(ox,oz,0x9d7bff); hitRadius(ox,oz,areaR(5),skillDmg(1.4,pwr),200); }}); }
+    G.timed.push({t:1, fn:()=>{ ringFx(ox,oz,areaR(5),0x9d7bff); burst(ox,oz,0x9d7bff); hitRadius(ox,oz,areaR(5),skillDmg(1.4,pwr),200,undefined,'leap'); }}); }
   else if(evo==='pred'){ // hunt the strongest: appear behind it, open its weak point
     let best=null,bh=0; for(const e of G.enemies){ if(e.dead)continue; const d=Math.hypot(e.mesh.position.x-p.x,e.mesh.position.z-p.z);
       if(d<16 && e.maxhp>bh){ bh=e.maxhp; best=e; } }
@@ -9001,9 +9119,9 @@ function castBlink(pwr){ const p=G.player.position, a=Math.atan2(aimPoint.x-p.x,
       ringFx(s3.x,s3.z,2.4,0x9d7bff); G.invuln=Math.max(G.invuln,.4); floatText(s3.x,s3.z,'🪞 THE SAFEST FUTURE','heal',2.4); }}); }
   else if(evo==='sacr'){ // life-fueled, explodes at both ends
     const cost=G.maxhp*0.06; if(G.hp>cost+1){ G.hp-=cost; G.mana=Math.min(G.maxmana,G.mana+(SKILLS.gBlink.mana||10)); }
-    hitRadius(ox,oz,areaR(4.5),skillDmg(1.2,pwr),200,'fire'); hitRadius(nx,nz,areaR(4.5),skillDmg(1.2,pwr),200,'fire');
+    hitRadius(ox,oz,areaR(4.5),skillDmg(1.2,pwr),200,'fire','leap'); hitRadius(nx,nz,areaR(4.5),skillDmg(1.2,pwr),200,'fire','leap');
     ringFx(ox,oz,4.5,0xff5470); ringFx(nx,nz,4.5,0xff5470); } }
-function castWhirl(pwr){ const p=G.player.position, R=areaR(4.2); ringFx(p.x,p.z,R,0xff9a3d); hitRadius(p.x,p.z,R,skillDmg(0.9,pwr),120); }
+function castWhirl(pwr){ const p=G.player.position, R=areaR(4.2); ringFx(p.x,p.z,R,0xff9a3d); hitRadius(p.x,p.z,R,skillDmg(0.9,pwr),120,undefined,'whirl'); }
 function castVolley(pwr){ const p=G.player.position, base=Math.atan2(aimPoint.x-p.x,aimPoint.z-p.z), n=9;
   for(let i=0;i<n;i++){ const ang=base+(i-(n-1)/2)*0.13, dx=Math.sin(ang), dz=Math.cos(ang); const crit=Math.random()<G.S.crit;
     fireBolt(p.x+dx,p.z+dz,dx,dz,skillDmg(0.55,pwr)*(crit?G.S.critMult:1),crit,G.S.pierce,0.3,50,G.S.element); } }
@@ -9013,7 +9131,7 @@ function castChain(pwr){ const p=G.player.position; let from={x:p.x,z:p.z}; cons
 function castMeteor(pwr){ const tx=aimPoint.x, tz=aimPoint.z, R=areaR(5.5);
   const tel=new THREE.Mesh(new THREE.RingGeometry(R-0.4,R,32), new THREE.MeshBasicMaterial({color:0xff5a2d,transparent:true,opacity:.5,side:THREE.DoubleSide}));
   tel.rotation.x=-Math.PI/2; tel.position.set(tx,.1,tz); scene.add(tel); G.decals.push({mesh:tel,ring:false,hold:0.55,life:0.55});
-  G.timed.push({t:0.55, fn:()=>{ ringFx(tx,tz,R,0xff7a3d); burst(tx,tz,0xff7a3d); hitRadius(tx,tz,R,skillDmg(3.4,pwr),300); shakeCam(.9); G.hitstop=Math.max(G.hitstop||0,.08); }}); }
+  G.timed.push({t:0.55, fn:()=>{ ringFx(tx,tz,R,0xff7a3d); burst(tx,tz,0xff7a3d); hitRadius(tx,tz,R,skillDmg(3.4,pwr),300,undefined,'blast'); shakeCam(.9); G.hitstop=Math.max(G.hitstop||0,.08); }}); }
 function castFrost(pwr){ const p=G.player.position, R=areaR(6.5); ringFx(p.x,p.z,R,0x67c4ff);
   for(const e of G.enemies){ if(Math.hypot(e.mesh.position.x-p.x,e.mesh.position.z-p.z)<R+e.r){ hurtEnemy(e,skillDmg(1.4,pwr),false,'cold'); e.chill=3; } }
   if(G.goblin && Math.hypot(G.goblin.mesh.position.x-p.x,G.goblin.mesh.position.z-p.z)<R+1) hurtGoblin(skillDmg(1.4,pwr),false,'cold');
@@ -9072,6 +9190,7 @@ function castBlades(pwr){ for(let i=0;i<5;i++){ G.timed.push({t:i*0.16, fn:()=>{
 // ---- more skills (scattered through the trees) ----
 function castPoison(pwr){ const tx=aimPoint.x, tz=aimPoint.z, R=areaR(5);
   const fill=new THREE.Mesh(new THREE.CircleGeometry(R,28), new THREE.MeshBasicMaterial({color:0x7dff5a,transparent:true,opacity:.16,side:THREE.DoubleSide})); fill.rotation.x=-Math.PI/2; fill.position.set(tx,.08,tz); scene.add(fill); G.decals.push({mesh:fill,hold:3,life:3});
+  comboField(tx,tz,R,'fire',3);   // COMBO FIELD §2: Toxic Cloud burns, so it counts as a fire field for finishers
   for(let k=0;k<6;k++) G.timed.push({t:k*0.5, fn:()=>{ ringFx(tx,tz,R,0x7dff5a); for(const e of G.enemies){ if(!e.dead && Math.hypot(e.mesh.position.x-tx,e.mesh.position.z-tz)<R+e.r){ hurtEnemy(e,skillDmg(0.55,pwr),false,'fire'); if(!e.dead) applyAilment(e,'ignite',skillDmg(0.4,pwr)); } } }}); }
 function castShock(pwr){ const p=G.player.position, R=areaR(7); ringFx(p.x,p.z,R,0xffe14d); burst(p.x,p.z,0xffe14d);
   for(const e of G.enemies){ if(Math.hypot(e.mesh.position.x-p.x,e.mesh.position.z-p.z)<R+e.r){ const dmg=skillDmg(1.5,pwr); hurtEnemy(e,dmg,false,'light'); if(!e.dead) applyAilment(e,'shock',dmg); } } shakeCam(.4); }
@@ -9080,7 +9199,7 @@ function castBeam(pwr){ const p=G.player.position, a=Math.atan2(aimPoint.x-p.x,a
 function castMortar(pwr){ const tx=aimPoint.x, tz=aimPoint.z, spots=[[0,0],[4,3],[-3,4]];
   spots.forEach((s,i)=>{ const mx=tx+s[0], mz=tz+s[1], R=areaR(4);
     const ring=new THREE.Mesh(new THREE.RingGeometry(R-0.3,R,24), new THREE.MeshBasicMaterial({color:0xffae3d,transparent:true,opacity:.5,side:THREE.DoubleSide})); ring.rotation.x=-Math.PI/2; ring.position.set(mx,.1,mz); scene.add(ring); G.decals.push({mesh:ring,hold:0.5+i*0.15,life:0.5+i*0.15});
-    G.timed.push({t:0.5+i*0.15, fn:()=>{ ringFx(mx,mz,R,0xffae3d); burst(mx,mz,0xffae3d); hitRadius(mx,mz,R,skillDmg(1.8,pwr),260); shakeCam(.4); }}); }); }
+    G.timed.push({t:0.5+i*0.15, fn:()=>{ ringFx(mx,mz,R,0xffae3d); burst(mx,mz,0xffae3d); hitRadius(mx,mz,R,skillDmg(1.8,pwr),260,undefined,'blast'); shakeCam(.4); }}); }); }
 function castReap(pwr){ const p=G.player.position, base=Math.atan2(aimPoint.x-p.x,aimPoint.z-p.z), R=areaR(6);
   ringFx(p.x+Math.sin(base)*2.5,p.z+Math.cos(base)*2.5,3.2,0xff6b6b);
   for(const e of G.enemies){ const ex=e.mesh.position.x-p.x, ez=e.mesh.position.z-p.z, d=Math.hypot(ex,ez); if(d>R+e.r)continue; let da=Math.atan2(ex,ez)-base; while(da>Math.PI)da-=6.283; while(da<-Math.PI)da+=6.283; if(Math.abs(da)<0.95) hurtEnemy(e,skillDmg(1.6,pwr),Math.random()<G.S.crit,G.S.element); } shakeCam(.4); }
@@ -9192,11 +9311,12 @@ function fxMeteorShower(P){ const tx=aimPoint.x, tz=aimPoint.z;   // Comet+Meteo
     G.timed.push({t:delay, fn:()=>{ ringFx(mx,mz,R,0xff7a3d); burst(mx,mz,0xff7a3d); hitRadius(mx,mz,R,skillDmg(2.0,P),240,'fire'); shakeCam(.5); }}); } }
 function fxNapalm(P){ const tx=aimPoint.x, tz=aimPoint.z, R=areaR(6);   // Mortar+Flame: a lingering fire field that keeps igniting
   const fill=new THREE.Mesh(new THREE.CircleGeometry(R,28), new THREE.MeshBasicMaterial({color:0xff6a2d,transparent:true,opacity:.2,side:THREE.DoubleSide})); fill.rotation.x=-Math.PI/2; fill.position.set(tx,.08,tz); scene.add(fill); G.decals.push({mesh:fill,hold:4,life:4});
+  comboField(tx,tz,R,'fire',4);   // COMBO FIELD §2
   for(let k=0;k<8;k++) G.timed.push({t:k*0.5, fn:()=>{ ringFx(tx,tz,R,0xff7a3d); for(const e of G.enemies){ if(!e.dead && Math.hypot(e.mesh.position.x-tx,e.mesh.position.z-tz)<R+e.r){ hurtEnemy(e,skillDmg(0.7,P),false,'fire'); if(!e.dead) applyAilment(e,'ignite',skillDmg(0.6,P)); } } }}); }
 function fxBastion(P){ const p=G.player.position; const h=Math.min(G.maxhp*0.30,G.maxhp-G.hp); if(h>0){G.hp+=h;G.run.healSelf+=h;} G.invuln=Math.max(G.invuln,2.4); ringFx(p.x,p.z,areaR(4),0x56e0ff); ringFx(p.x,p.z,areaR(2.6),0xffce4d); floatText(p.x,p.z,'⛨ BASTION','heal',3); }   // Stoneskin+Aegis: big heal + long shield
 
-function hitRadius(x,z,R,dmg,knock,element){ element=element||G.S.element;
-  for(const e of G.enemies){ const d=Math.hypot(e.mesh.position.x-x,e.mesh.position.z-z); if(d<R+e.r){ hurtEnemy(e,dmg,false,element); if(knock){ const dx=(e.mesh.position.x-x)/(d||1),dz=(e.mesh.position.z-z)/(d||1); e.kx=dx*knock*0.02; e.kz=dz*knock*0.02; } } }
+function hitRadius(x,z,R,dmg,knock,element,finisherKind){ element=element||G.S.element;
+  for(const e of G.enemies){ const d=Math.hypot(e.mesh.position.x-x,e.mesh.position.z-z); if(d<R+e.r){ const fdmg=finisherKind?comboOnHit(e,dmg,finisherKind):dmg; hurtEnemy(e,fdmg,false,element); if(knock){ const dx=(e.mesh.position.x-x)/(d||1),dz=(e.mesh.position.z-z)/(d||1); e.kx=dx*knock*0.02; e.kz=dz*knock*0.02; } } }
   if(G.goblin){ const d=Math.hypot(G.goblin.mesh.position.x-x,G.goblin.mesh.position.z-z); if(d<R+1) hurtGoblin(dmg,false,element); }
 }
 // ---- soulbound loot: who earned a roll off this enemy ----
@@ -9261,7 +9381,8 @@ function hurtEnemy(e,dmg,crit,element,src,owner){
   if(NET.role==='host' && _G.netHits.length<48) _G.netHits.push({x:Math.round(e.mesh.position.x*100)/100, z:Math.round(e.mesh.position.z*100)/100, d:Math.round(dmg), c:cls, y:e.r*0.9+1.7});   // peers show the same damage numbers
   if(crit) G.hitstop=Math.max(G.hitstop||0,.03);
   if(G.S.lifeOnHit>0 && G.hp<G.maxhp){ const h=Math.min(G.S.lifeOnHit*healScale(),G.maxhp-G.hp); G.hp+=h; G.run.healSelf+=h; }
-  if(G.S.lifesteal>0 && G.hp<G.maxhp){ const h=Math.min(dmg*G.S.lifesteal*healScale(),G.maxhp-G.hp); G.hp+=h; G.run.healSelf+=h; }
+  if(G.S.lifesteal>0 && G.hp<G.maxhp){ const lsBase=crit?dmg/Math.max(1.01,G.S.critMult||1.5):dmg;   // DAMAGE TYPE §4: lifesteal is its own math path — non-crit, so a crit hit doesn't over-heal
+    const h=Math.min(lsBase*G.S.lifesteal*healScale(),G.maxhp-G.hp); G.hp+=h; G.run.healSelf+=h; }
   if(G.S.ailment && element!=='phys' && Math.random()*100 < G.S.ailChance) applyAilment(e, G.S.ailment, dmg);
   if(isPlayerSrc && !e.dead){ fireProcs('hit',{e,pos:e.mesh.position}); if(crit) fireProcs('crit',{e,pos:e.mesh.position}); }
   if(isPlayerSrc && G.S.cull && !e.boss && e.hp>0 && e.hp<e.maxhp*0.08){ e.hp=0; floatText(e.mesh.position.x,e.mesh.position.z,'✂ CULLED','crit',e.r+2.2); }   // Culling Blade quirk
@@ -9305,6 +9426,43 @@ function checkReactions(e,dmg){
     for(const o of [...G.enemies]){ const d=Math.hypot(o.mesh.position.x-x,o.mesh.position.z-z); if(d<(cnd?9.5:6.5)){ reactHit(o, dmg*1.3*(cnd?1.25:1)*(o===e?1.4:0.7), 'fire'); if(o!==e&&!o.dead)o.shock=Math.max(o.shock,2); } } return; }
   if(ch && sh){ e.chill=0; e.shock=0; floatText(x,z,'❄ SUPERCONDUCT','cold',e.r+2.7); ringFx(x,z,cnd?9:6,0x9fefff); burst(x,z,0x9fefff); shakeCam(.4);
     for(const o of [...G.enemies]){ const d=Math.hypot(o.mesh.position.x-x,o.mesh.position.z-z); if(d<(cnd?9:6)){ reactHit(o, dmg*1.5*(cnd?1.25:1)*(o===e?1.5:0.6), 'cold'); if(o!==e&&!o.dead)o.chill=Math.max(o.chill,2); } } return; }
+}
+// ============================================================ COMBO FIELDS & FINISHERS (GW2 parity §2)
+// A layer on top of the elemental-reaction system above: a FIELD skill drops a lingering area
+// (registered in G.fields via comboField), and a FINISHER skill that lands a hit inside that area
+// triggers a bonus (COMBO_TABLE, keyed 'fieldType|finisherKind'). Up to COMBO_MAX_COMBATANTS unique
+// casters may combo off any one field before it stops paying out, same cap as GW2. Only 'fire' fields
+// exist today (Toxic Cloud / Napalm already drop lingering damage zones) — the table is written to
+// extend cleanly once cold/light fields are authored.
+const COMBO_MAX_COMBATANTS=5;
+function comboField(x,z,r,type,life){ (G.fields||(G.fields=[])).push({x,z,r,type,t:life,combatants:new Set()}); }
+function comboFieldAt(x,z){ const fs=G.fields; if(!fs) return null;
+  for(const f of fs){ if(f.t>0 && Math.hypot(f.x-x,f.z-z)<=f.r) return f; } return null; }
+const COMBO_TABLE={
+  'fire|projectile': {nm:'Fire Volley',    ic:'🔥', mult:1.15, ail:0.6},
+  'fire|blast':      {nm:'Firestorm',      ic:'☄️', mult:1.3,  ail:0.9},
+  'fire|whirl':      {nm:'Whirling Flame', ic:'🌀', mult:1.1,  ail:0.5},
+  'fire|leap':       {nm:'Fire Leap',      ic:'🦵', mult:1.2,  ail:0.7},
+};
+// finisher hit inside a field → returns the (possibly boosted) damage; call BEFORE hurtEnemy so the bonus lands in one hit
+function comboOnHit(e,dmg,finisherKind){
+  if(!finisherKind || !e || e.dead || !G.fields || !G.fields.length) return dmg;
+  const f=comboFieldAt(e.mesh.position.x,e.mesh.position.z); if(!f) return dmg;
+  const combo=COMBO_TABLE[f.type+'|'+finisherKind]; if(!combo) return dmg;
+  if(!f.combatants.has(_G.cur) && f.combatants.size>=COMBO_MAX_COMBATANTS) return dmg;   // field already has 5 unique comboers
+  f.combatants.add(_G.cur);
+  if(!e._comboFlash || performance.now()-e._comboFlash>350){ e._comboFlash=performance.now();
+    floatText(e.mesh.position.x,e.mesh.position.z, combo.ic+' '+combo.nm, 'crit', e.r+2.9); }
+  if(combo.ail>0) applyAilment(e,'ignite',dmg*combo.ail);
+  unlockFeat('combo');
+  return dmg*combo.mult;
+}
+// leap finishers don't need to deal damage to combo (GW2: leaping through a water field heals) — landing inside the field is enough
+function comboLeapAt(x,z){
+  const f=comboFieldAt(x,z); if(!f) return;
+  if(!f.combatants.has(_G.cur) && f.combatants.size>=COMBO_MAX_COMBATANTS) return;
+  f.combatants.add(_G.cur);
+  if(f.type==='fire'){ addFervor(15); addCharge(10); floatText(x,z,'🦵 FIRE LEAP','fire',2.6); unlockFeat('combo'); }
 }
 // ---------------- boss-reward draft: slay a guardian → choose 1 of 3 build-defining blessings ----------------
 // Blessings reuse the existing stat/keystone vocabulary (folded into recompute via G.run.boons) so they
@@ -9414,7 +9572,7 @@ function killEnemy(e){
     if(e.elite){ G.run.eliteKills=(G.run.eliteKills||0)+1; checkPersona(); }   // personality: Dominion watches
     if(e.boss){ G.run.bossKills=(G.run.bossKills||0)+1; checkPersona(); }      // personality: Defiance watches
     gainXP(e.xp);
-    if(e.gold||e.boss){ const amt=Math.round((e.boss?200+G.floor*10:30+G.floor*4)*goldMult()); G.gold+=amt; flashGold(); floatText(ex,ez,'+'+amt+' gold','goldtxt',e.boss?5:3); }
+    if(e.gold||e.boss){ const amt=Math.round((e.boss?200+G.floor*10:30+G.floor*4)*goldMult()*dlaRewardMultCur()); G.gold+=amt; flashGold(); floatText(ex,ez,'+'+amt+' gold','goldtxt',e.boss?5:3); }
     { const hv=G.S&&G.S.hollow;   // Hollow Victory keystone: trash drops nothing; elites & bosses shower you
       if(hv && !e.elite && !e.boss && !e.champion){ /* nothing — the hollow price */ }
       else if(Math.random() < (e.boss?1:base*lootMult()*(hv&&e.elite?1.6:1))) dropLoot(ex,ez, ((uChanceBase||0)+((hv&&(e.elite||e.boss))?0.25:0))||undefined, pid); }   // loot soulbound to this player
@@ -9566,6 +9724,7 @@ function floatText(x,z,txt,cls,yOff){ _proj.set(x,yOff||2,z).project(camera); if
 
 // ============================================================ XP / PROGRESSION
 function gainXP(n){
+  n*=dlaRewardMultCur();   // DLA: farming far below your invested power pays out less (never below 35%) — GW2 parity §1
   if((G.S.xpBonus||0)>0) n*=(1+G.S.xpBonus/100);
   if((META.soulDebt||0)>0 && n>0){ const _b=Math.round(n*0.5); if(_b>0){ n+=_b; META.soulDebt-=_b;   // SOUL DEBT: the next life earns half again until the ledger clears
     if(META.soulDebt<=0){ META.soulDebt=0; saveMeta(); banner('👻 SOUL DEBT REPAID','the tower’s ledger closes — XP returns to normal'); } } }
@@ -10576,14 +10735,25 @@ function renderTree(){
     cont._built=true;
   } else { SPECS.forEach(refreshSpec); }   // reflect external changes (respec / new run) on re-open
 }
+// ---- BACKGROUND COOLDOWN TICKING (GW2 parity §9) ----------------------------------------------
+// G.cd is keyed by SLOT INDEX, but a skill's remaining cooldown is a property of the SKILL, not
+// the bar position — swapping a fresh skill into a slot that still had time left on its old
+// occupant used to hand the new skill a free (or stolen) cooldown state. slotSwap() below carries
+// each item's own cooldown with it via item._cd, restoring it on bind and stashing it on unbind, so
+// a skill you've pulled off the bar keeps counting down in your inventory exactly like an unequipped
+// GW2 weapon-set skill does — see the G.inv cooldown tick alongside G.cd in updatePlayerStep.
+function slotSwap(outItem, inItem, i){   // outItem leaves slot i (its cd is remembered); inItem enters (its cd is restored)
+  if(outItem) outItem._cd=G.cd[i]||0;
+  G.cd[i]=(inItem&&inItem._cd)||0;
+}
 function autoBind(item){ if(NET.role==='peer') return netPeerCmd('autoBind',[item&&item.uid]); if(G.slots.includes(item))return; const tog=item.isSkillGem&&isToggleId(item.skillId); const lo=tog?4:0, hi=tog?9:4;
-  let i=-1; for(let s=lo;s<hi;s++){ if(!G.slots[s]){ i=s; break; } } if(i<0)return; G.inv=G.inv.filter(x=>x!==item); G.slots[i]=item; renderActionbar(); }
+  let i=-1; for(let s=lo;s<hi;s++){ if(!G.slots[s]){ i=s; break; } } if(i<0)return; G.inv=G.inv.filter(x=>x!==item); slotSwap(null,item,i); G.slots[i]=item; renderActionbar(); }
 function bindSkill(item,i){ if(NET.role==='peer') return netPeerCmd('bindSkill',[item&&item.uid,i]); if(!item.isSkillGem)return;
   const tog=isToggleId(item.skillId);
   if(tog && i<4){ log('🌀 Toggle auras go in slots 5–9 (passive, drain mana). Active skills use 1–4.'); return; }
   if(!tog && i>=4){ log('⚡ Active skills go in slots 1–4. Slots 5–9 are for toggle auras.'); return; }
-  G.inv=G.inv.filter(x=>x!==item); const ex=G.slots.indexOf(item); if(ex>=0)G.slots[ex]=null; if(G.sigSlot===item)G.sigSlot=null; if(G.slots[i])G.inv.push(G.slots[i]); G.slots[i]=item; renderActionbar(); refreshItemPanels(); }
-function unbindSkill(i){ if(NET.role==='peer') return netPeerCmd('unbindSkill',[i]); if(!G.slots[i])return; if(G.inv.length>=G.invCap){log('Inventory full.');return;} G.inv.push(G.slots[i]); G.slots[i]=null; renderActionbar(); refreshItemPanels(); }
+  G.inv=G.inv.filter(x=>x!==item); const ex=G.slots.indexOf(item); if(ex>=0)G.slots[ex]=null; if(G.sigSlot===item)G.sigSlot=null; if(G.slots[i])G.inv.push(G.slots[i]); slotSwap(G.slots[i],item,i); G.slots[i]=item; renderActionbar(); refreshItemPanels(); }
+function unbindSkill(i){ if(NET.role==='peer') return netPeerCmd('unbindSkill',[i]); if(!G.slots[i])return; if(G.inv.length>=G.invCap){log('Inventory full.');return;} slotSwap(G.slots[i],null,i); G.inv.push(G.slots[i]); G.slots[i]=null; renderActionbar(); refreshItemPanels(); }
 function bindSig(item){ if(NET.role==='peer') return netPeerCmd('bindSig',[item&&item.uid]); if(!item.isSkillGem)return; G.inv=G.inv.filter(x=>x!==item); const ex=G.slots.indexOf(item); if(ex>=0)G.slots[ex]=null; if(G.sigSlot)G.inv.push(G.sigSlot); G.sigSlot=item; renderActionbar(); refreshItemPanels(); }
 function unbindSig(){ if(NET.role==='peer') return netPeerCmd('unbindSig',[]); if(!G.sigSlot)return; if(G.inv.length>=G.invCap){log('Inventory full.');return;} G.inv.push(G.sigSlot); G.sigSlot=null; renderActionbar(); refreshItemPanels(); }
 function bindFlask(item,i){ if(NET.role==='peer') return netPeerCmd('bindFlask',[item&&item.uid,i]); if(!item.isFlask)return; G.inv=G.inv.filter(x=>x!==item); const ex=G.belt.indexOf(item); if(ex>=0)G.belt[ex]=null; if(G.belt[i])G.inv.push(G.belt[i]); G.belt[i]=item; renderActionbar(); refreshItemPanels(); }
@@ -12587,6 +12757,7 @@ function updatePlayerStep(dt){
   // watchdog/safety-net: if G.invuln is stuck absurdly high while no modal/cutscene lock is held and the game is actively running/unpaused, clamp it down (guards against any future open/close mismatch re-introducing the "Guarded" stuck-at-1e9 bug)
   if(G.invuln>10 && _invulnLockDepth===0 && _G.running && !_G.paused) G.invuln=2;
   for(const k in G.cd) G.cd[k]=Math.max(0,G.cd[k]-dt);
+  if(G.inv) for(const it of G.inv){ if(it._cd>0) it._cd=Math.max(0,it._cd-dt); }   // BACKGROUND COOLDOWN §9: an unbound skill gem keeps cooling down in your bag
   G.sigCd=Math.max(0,(G.sigCd||0)-dt); if(G.swiftT>0)G.swiftT-=dt; if(G.perfectT>0)G.perfectT-=dt; if(G.rootT>0)G.rootT-=dt;
   adaptTick(dt); const stunned=G.stunT>0;   // enemy stun-lock (counter to tank builds)
   tickRecall(dt);                            // quick-recall channel (H) → teleport to the sanctuary
@@ -12761,7 +12932,7 @@ function updatePlayerStations(dt){
   if(G.hazPools && G.hazPools.length){ let inLava=false, inWater=false;
     for(const hz of G.hazPools){ if(Math.hypot(p.x-hz.x,p.z-hz.z)<hz.r){ if(hz.type==='lava'){inLava=true;break;} inWater=true; } }
     if(inLava){ G._lavaT=(G._lavaT||0)+dt;
-      if(G._lavaT>0.45){ G._lavaT=0; hurtPlayer(8+G.floor*1.2,{}); floatText(p.x,p.z,'🔥 LAVA','fire',2.2); } }
+      if(G._lavaT>0.45){ G._lavaT=0; hurtPlayer((8+G.floor*1.2)*(1-masteryHazardResist()),{unmitigated:true}); floatText(p.x,p.z,'🔥 LAVA','fire',2.2); } }   // DAMAGE TYPE §4: hazard damage bypasses armour entirely, same as GW2 environmental damage
     else G._lavaT=0;
     if(inWater && G.mana>0){ G._wetT=(G._wetT||0)+dt;
       if(G._wetT>0.5){ G._wetT=0; G.mana=Math.max(0,G.mana-(3+G.maxmana*0.02)); floatText(p.x,p.z,'💧','cold',1.6); } }
@@ -13108,6 +13279,7 @@ function updateWorld(dt){
   // timed events (meteor etc)
   for(const t of G.timed){ t.t-=dt; if(t.t<=0){ t.fn(); t.done=true; } }
   G.timed=G.timed.filter(t=>!t.done);
+  if(G.fields && G.fields.length){ for(const f of G.fields) f.t-=dt; G.fields=G.fields.filter(f=>f.t>0); }   // COMBO FIELDS §2: lingering field areas decay like decals/timed events
   updateMinions(dt);   // allied spirits seek, strike, and fade
 
   // player projectiles
@@ -13148,7 +13320,7 @@ function updateWorld(dt){
         else if(b.fuse!=null){ boltExplode(b); continue; }   // shells detonate on the wall
         else { b.dead=true; continue; } } }
     for(const e of G.enemies){ if(b.hit&&b.hit.has(e))continue; const d=Math.hypot(e.mesh.position.x-b.mesh.position.x,e.mesh.position.z-b.mesh.position.z);
-      if(d<e.r+.4){ hurtEnemy(e,b.dmg,b.crit,b.element,b.src,b.owner); if(b.forceAil&&!e.dead) applyAilment(e,b.forceAil,b.dmg);
+      if(d<e.r+.4){ const _fdmg=b.finisher?comboOnHit(e,b.dmg,b.finisher):b.dmg; hurtEnemy(e,_fdmg,b.crit,b.element,b.src,b.owner); if(b.forceAil&&!e.dead) applyAilment(e,b.forceAil,_fdmg);
         if(b.imp){ const im=b.imp, ex=e.mesh.position.x, ez=e.mesh.position.z;   // per-weapon impact: cannons thump, daggers tick
           if(im.shake)shakeCam(im.shake); if(im.stop)G.hitstop=Math.max(G.hitstop||0,im.stop);
           if(im.pn)burst(ex,ez, (ELEMENTS[b.element]&&ELEMENTS[b.element].col)||0xffe8a8, im.pn, im.ps); if(im.thud)sfx.thud(); }
@@ -13378,10 +13550,14 @@ function hurtFlash(strong){ const v=$('vignette'); if(!v)return; v.classList.rem
 // Every state change that ends a fight clears it outright instead of waiting for the next HUD tick.
 function clearScreenFx(){ const v=$('vignette'); if(!v)return; clearTimeout(_hurtFlashT); v.classList.remove('low','rage','hit','hitBig'); }
 function hurtPlayer(dmg, opts){ if(G.invuln>0)return;
-  if(G.S.dodgePct>0 && Math.random()*100<G.S.dodgePct){ perfectDodge(); return; }   // passive evasion — a clean dodge, same reward language as a perfect dash-dodge
-  opts=opts||{}; const heavy=!!opts.heavy; bountyFail();
+  opts=opts||{};
+  if(!opts.unmitigated && G.S.dodgePct>0 && Math.random()*100<G.S.dodgePct){ perfectDodge(); return; }   // passive evasion — a clean dodge, same reward language as a perfect dash-dodge
+  const heavy=!!opts.heavy; bountyFail();
   // recall is non-interruptable — taking a hit no longer cancels the channel; ride it out and you still teleport home
-  let real=dmg*(1-dr())*ascEff().dmgTaken*diffCfg().dmgTaken;
+  let real;
+  if(opts.unmitigated){ real=dmg; }   // DAMAGE TYPE §4: unmitigated — bypasses armour, ascension/difficulty taken-multipliers and every reduction keystone below (hazard tiles, falling-style damage — GW2 draws the same line around environmental damage)
+  else {
+  real=dmg*(1-dr())*ascEff().dmgTaken*diffCfg().dmgTaken;
   if(G.S.hubris) real*=1.15;   // Hubris quirk: pride pays interest
   if(G._tauntBraceUntil && performance.now()<G._tauntBraceUntil) real*=0.6;   // Taunt: braced for the hit — 40% mitigation window
   // ---- Unbroken Step: advancing is armour, retreating is exposure ----
@@ -13403,6 +13579,7 @@ function hurtPlayer(dmg, opts){ if(G.invuln>0)return;
   { const _o={real}; abnTakeDamage(_o); real=Math.max(0,_o.real); }   // Aegis aura / thorns / abnormal damage-taken quirks
   if(G.S.perfectScar){ const _pn=performance.now(); const _st=(_pn-(G._scarT||0)<6000)?(G._scarN||0):0;   // Perfect Scar: repetition dulls the blade
     real*=(1-Math.min(0.4,_st*0.08)); G._scarN=_st+1; G._scarT=_pn; }
+  }
   G.hp-=real; G.invuln=heavy?0.62:0.5;
   if(G.S.adrenaline){ G.mana=Math.min(G.maxmana,G.mana+G.maxmana*0.04); }   // Adrenaline quirk: pain is fuel
   if(G.S.payback) G._payT=4;                                                // Payback quirk: arm the answer
@@ -13509,6 +13686,7 @@ function renderBuffs(){
 }
 function updateHUD(){
   $('lvlNum').textContent=G.level; $('xpTxt').textContent=Math.floor(G.xp)+'/'+G.xpNeed; $('goldNum').textContent=G.gold;
+  { const _dt=$('dlaTxt'); if(_dt){ const _pl=_G.players[_G.cur]; _dt.textContent = (_pl&&dlaIsScaled(_pl)) ? (' ↓'+dlaEffectiveLevel(_pl)) : ''; } }   // DLA: effective level shown next to actual level when overleveled for this floor (§1)
   { const rc=$('rankChip'); if(rc) rc.innerHTML=rankBadgeHTML(META.fame,true); }
   { const rh=$('rankHud'); if(rh) rh.innerHTML=rankHudHTML(); }
   $('hpFill').style.height=clamp(G.hp/G.maxhp*100,0,100)+'%'; $('hpTxt').innerHTML='<span class="num">'+Math.ceil(G.hp)+'</span><small>LIFE</small>';
