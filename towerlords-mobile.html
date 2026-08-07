@@ -1552,6 +1552,38 @@
     <div class="hint">🖱 <b>click an item to move it across</b> · right-click a carried item to equip/use it · hover for full stats · walk away or press F to close</div>
   </div>
 
+  <!-- Co-op trading: two climbers close enough to trade offer items from their own bag; the trade
+       only executes once BOTH sides confirm, and the Tower takes its toll either way (a flat gold
+       fee per side, taken only if the trade actually goes through). -->
+  <div id="tradePanel" class="panel hidden">
+    <h3>🤝 TRADE</h3><div class="closeX" data-close="tradePanel">✕</div>
+    <div class="hint" id="tradeFeeHint"></div>
+    <div class="stashCols">
+      <div class="stashSide">
+        <div class="secHd"><h4>🎒 Your items — click to offer</h4></div>
+        <div id="tradeMyBag" style="max-height:280px;overflow-y:auto;display:flex;flex-direction:column;gap:3px;padding:2px"></div>
+      </div>
+      <div class="stashMid">
+        <div class="sbtn gold" id="tradeConfirmBtn">CONFIRM</div>
+        <div class="sbtn" id="tradeCancelBtn">CANCEL TRADE</div>
+        <div id="tradeStatus" style="font-size:11px;opacity:.8;margin-top:10px;text-align:center;line-height:1.5"></div>
+      </div>
+      <div class="stashSide vault">
+        <div class="secHd"><h4>📤 Offers</h4></div>
+        <div id="tradeOffers" style="padding:2px"></div>
+      </div>
+    </div>
+    <div class="hint">🖱 click your own items to add/remove from your offer · both sides must confirm · changing either offer un-confirms both · walk away or press F to close</div>
+  </div>
+
+  <!-- Co-op Crew: a session-scoped guild-lite. Founded by any climber in the party for a flat toll;
+       membership is just whoever's currently in the run; a shared, donation-fed treasury unlocks
+       small party-wide bonuses for as long as the crew (and the run) lasts. -->
+  <div id="crewPanel" class="panel hidden">
+    <h3>⚑ CREW</h3><div class="closeX" data-close="crewPanel">✕ <span style="font-size:11px;opacity:.6">(U)</span></div>
+    <div id="crewBody" style="padding:4px 6px"></div>
+  </div>
+
   <!-- Inventory + Equipment: ONE panel again. Paper-doll gear, skills and belt on the left; the
        carried bag and the inspect/compare pane on the right. The stash lives in its own panel. -->
   <div id="invPanel" class="panel hidden">
@@ -2874,6 +2906,7 @@ function resumeSession(){
   _G.nemesis=makeNemesis();   // per-run nemesis isn't saved (has function refs) — a fresh cast greets your return; grudges (META) persist
   _G.players.length=1; const p=_G.players[0]; p.joined=true; p.color=PLAYER_COLORS[0]; p.input=p.input||makeKbmInput();
   _G.cur=0; _G.splitscreen=false; $('hud').classList.remove('cohide');
+  _G.trade=null; _G.tradeMirror=null; _G.crew=null; _G.crewMirror=null;
   // ---- restore the character ----
   p.name=s.name||'Player 1'; p.gold=s.gold||0; p.level=s.level||1; p.xp=s.xp||0; p.xpNeed=s.xpNeed||xpForLevel(p.level); p.xpMode=s.xpMode||'use';
   p.attrPts=s.attrPts||0; p.skillPts=s.skillPts||0; p.skillGranted=s.skillGranted||0; p.evolves=s.evolves||0;
@@ -2973,7 +3006,7 @@ const FLOOR_MODS=[
 const GREED_STEP=0.16, GREED_MAX=2.6;   // +0.16 per floor since last bank, up to ×2.6
 function greedMult(){ return clamp(G.greed||1, 1, GREED_MAX); }
 function lootMult(){ return fortuneMult() * (G.floorMod?.loot||1) * greedMult(); }
-function goldMult(){ return fortuneMult() * (G.floorMod?.gold||1) * greedMult() * (1+((G.S&&G.S.goldBonus)||0)/100) * (auraOn('tGreed')?1.3:1); }
+function goldMult(){ return fortuneMult() * (G.floorMod?.gold||1) * greedMult() * (1+((G.S&&G.S.goldBonus)||0)/100) * (auraOn('tGreed')?1.3:1) * (1+crewBonusPct('gold')/100); }
 // banking carried loot "cashes in" the greed you've built — a fame payout scaled by how far you pushed — then resets the stakes
 function bankCashIn(n){
   if(!((G.greed||1)>1.02) || !n || n<=0){ G.greed=1; return; }
@@ -4039,7 +4072,7 @@ const ROLE_ATTR={
 const keys={}; const mouse=new THREE.Vector2(); let mouseDown=false; let mouseR=false;
 const aimPoint=new THREE.Vector3(); const raycaster=new THREE.Raycaster();
 const groundPlane=new THREE.Plane(new THREE.Vector3(0,1,0),0);
-const PANELS=['charPanel','treePanel','stashPanel','invPanel','vendorPanel','petPanel','petYardPanel','scorePanel','codexPanel','settingsPanel','craftPanel'];
+const PANELS=['charPanel','treePanel','stashPanel','invPanel','vendorPanel','petPanel','petYardPanel','scorePanel','codexPanel','settingsPanel','craftPanel','tradePanel','crewPanel'];
 function anyPanelOpen(){ return _G.modalOpen || _G.legacyOpen || _G.draftOpen || PANELS.some(p=>!$(p).classList.contains('hidden')); }
 function syncPause(){ G.paused=false; }   // menus never pause gameplay — the world keeps running while you browse (mouse-attack stays suppressed via anyPanelOpen so clicking UI won't fire your weapon)
 
@@ -4049,7 +4082,7 @@ addEventListener('keydown',e=>{
   if(_G.modalOpen){ if(k==='escape'){ closeGameModal(); _gmOnOK=null; } return; }
   if(_G.legacyOpen){ if(k==='escape'||k==='l') closeLegacy(); return; }
   if(_G.netGuest){   // guest: open/close its OWN menus (rendered from the streamed build); movement/skills go up as input packets, not here
-    const gp={c:'charPanel',t:'treePanel',i:'invPanel',k:'invPanel',p:'petPanel',v:'scorePanel',b:'codexPanel',o:'settingsPanel'}[k];
+    const gp={c:'charPanel',t:'treePanel',i:'invPanel',k:'invPanel',p:'petPanel',v:'scorePanel',b:'codexPanel',o:'settingsPanel',u:'crewPanel'}[k];
     if(gp){ _G.menuOwner=0; _G.cur=0; togglePanel(gp); }
     else if(k==='escape'){ if(anyPanelOpen()){ PANELS.forEach(p=>$(p).classList.add('hidden')); refreshMenuState(); } }
     return;
@@ -4065,7 +4098,7 @@ addEventListener('keydown',e=>{
   }
   // ---- REBINDABLE combat keybinds: dash / signature / interact / recall / skills 1-9 / flasks (any key or mouse button) ----
   { const _act=actionForKey(k); if(_act){ doAction(_act); e.preventDefault(); return; } }
-  const pk={c:'charPanel',t:'treePanel',i:'invPanel',k:'invPanel',p:'petPanel',v:'scorePanel',b:'codexPanel',o:'settingsPanel'}[k];
+  const pk={c:'charPanel',t:'treePanel',i:'invPanel',k:'invPanel',p:'petPanel',v:'scorePanel',b:'codexPanel',o:'settingsPanel',u:'crewPanel'}[k];
   if(pk){ _G.menuOwner=0; _G.cur=0; togglePanel(pk); }   // P1's keyboard always manages P1
   else if(k==='m'){ toggleMute(); }
   else if(k==='g'){ if(!G.paused) throwGold(); }    // WEAPONIZED GOLD: throw a fistful of your purse
@@ -4137,6 +4170,177 @@ function nearestPlayerTo(x,z,e){   // e (optional): the enemy asking — lets a 
   let best=null,bd=Infinity; for(const p of _G.players){ if(!p.joined||p.downed||!p.player)continue;
   const dx=p.player.position.x-x, dz=p.player.position.z-z, d=dx*dx+dz*dz; if(d<bd){bd=d;best=p;} } return best || _G.players[0]; }
 function hurtPlayerObj(pl,dmg){ if(!pl) return; withPlayer(pl.id, ()=>hurtPlayer(dmg)); }
+
+// ============================================================ CO-OP TRADING (a cost, same as everything
+// else the Tower lets change hands — a flat toll per side, taken only if the trade actually completes)
+const TRADE_RANGE=6;
+function tradeFee(){ return 20+Math.round((G.floor||1)*4); }
+function nearestTeammate(pid){ const me=_G.players[pid]; if(!me||!me.player) return null;
+  let best=null,bd=TRADE_RANGE;
+  for(const p of _G.players){ if(!p.joined||p.id===pid||!p.player||p.downed) continue;
+    const d=Math.hypot(p.player.position.x-me.player.position.x, p.player.position.z-me.player.position.z);
+    if(d<bd){ bd=d; best=p; } }
+  return best; }
+function tradeSideOf(pid){ const t=_G.trade; if(!t) return null; if(t.a===pid) return 'A'; if(t.b===pid) return 'B'; return null; }
+function tradeOtherId(){ const t=_G.trade; return t?( t.a===_G.cur?t.b:t.a ):null; }
+// summary sent to peers (and used by the peer's own simplified panel) — names/rarity only, not live item refs
+function tradeOfferSummary(arr){ return (arr||[]).map(it=>({nm:it.name, col:(it.rarity&&it.rarity.col)||'#ccc'})); }
+function syncTradeToPeers(){ const h=NET.host; if(!h)return; const t=_G.trade;
+  const msg=t?{ a:t.a, b:t.b, offerA:tradeOfferSummary(t.offerA), offerB:tradeOfferSummary(t.offerB), confirmA:t.confirmA, confirmB:t.confirmB, fee:t.fee }:null;
+  for(const c of h.conns){ if(c.evt&&c.evt.readyState==='open'){ try{ c.evt.send(JSON.stringify({type:'trade',t:msg})); }catch(_){} } } }
+function refreshTradePanels(){ if(_G.netApplying) return; if(!$('tradePanel').classList.contains('hidden')) renderTrade(); }
+function proposeOrJoinTrade(pid){ if(NET.role==='peer') return netPeerCmd('proposeOrJoinTrade',[]);
+  if(_G.trade){ if(tradeSideOf(pid)){ openCoopMenu(pid,'tradePanel'); } else log('A trade is already underway between two other climbers.'); return; }
+  const mate=nearestTeammate(pid); if(!mate){ log('No teammate close enough to trade with.'); return; }
+  _stampPlayer(_G.players[pid]); _stampPlayer(mate);
+  _G.trade={ a:pid, b:mate.id, offerA:[], offerB:[], confirmA:false, confirmB:false, fee:tradeFee() };
+  log('🤝 Trade opened between Player '+(pid+1)+' and Player '+(mate.id+1)+' — a '+_G.trade.fee+'g toll each, taken only if it completes.');
+  banner('🤝 TRADE OPENED','toll: '+_G.trade.fee+'g per side');
+  syncTradeToPeers(); openCoopMenu(pid,'tradePanel');
+}
+function tradeToggleItem(pid,uid){ if(NET.role==='peer') return netPeerCmd('tradeToggleItem',[uid]);
+  const s=tradeSideOf(pid); if(!s) return; const t=_G.trade; const p=_G.players[pid]; if(!p||!p.inv) return;
+  _stampPlayer(p); const it=p.inv.find(x=>x&&x.uid===uid); if(!it) return;
+  const key='offer'+s, arr=t[key]; const i=arr.indexOf(it);
+  if(i>=0) arr.splice(i,1); else arr.push(it);
+  t.confirmA=false; t.confirmB=false;   // changing an offer un-confirms both sides — no agreeing to a bait-and-switch
+  syncTradeToPeers(); refreshTradePanels();
+}
+function tradeConfirm(pid){ if(NET.role==='peer') return netPeerCmd('tradeConfirm',[]);
+  const s=tradeSideOf(pid); if(!s) return; _G.trade['confirm'+s]=true;
+  if(_G.trade.confirmA && _G.trade.confirmB) executeTrade(); else { syncTradeToPeers(); refreshTradePanels(); }
+}
+function tradeCancel(pid){ if(NET.role==='peer') return netPeerCmd('tradeCancel',[]);
+  if(!tradeSideOf(pid)) return;
+  log('🤝 Trade cancelled — no items changed hands.'); banner('🤝 TRADE CANCELLED','');
+  _G.trade=null; syncTradeToPeers(); refreshTradePanels();
+  $('tradePanel').classList.add('hidden'); syncPause(); refreshMenuState();
+}
+function executeTrade(){
+  const t=_G.trade; if(!t) return;
+  const pa=_G.players[t.a], pb=_G.players[t.b];
+  if(!pa||!pb||!pa.joined||!pb.joined){ log('🤝 Trade fell through — a partner left.'); _G.trade=null; syncTradeToPeers(); refreshTradePanels(); return; }
+  // re-validate against CURRENT inventories: an item crafted away, equipped, sold, or consumed after being offered can't be traded
+  t.offerA=t.offerA.filter(it=>pa.inv&&pa.inv.includes(it));
+  t.offerB=t.offerB.filter(it=>pb.inv&&pb.inv.includes(it));
+  let goldA=0,goldB=0; withPlayer(t.a,()=>{goldA=G.gold;}); withPlayer(t.b,()=>{goldB=G.gold;});
+  if(goldA<t.fee || goldB<t.fee){ log('🤝 Trade cancelled — one side can\'t cover the '+t.fee+'g toll.'); banner('🤝 TRADE FAILED','insufficient gold for the toll');
+    _G.trade=null; syncTradeToPeers(); refreshTradePanels(); $('tradePanel').classList.add('hidden'); syncPause(); refreshMenuState(); return; }
+  withPlayer(t.a,()=>{ G.inv=G.inv.filter(it=>!t.offerA.includes(it)); G.inv.push(...t.offerB); G.gold-=t.fee; recompute(); });
+  withPlayer(t.b,()=>{ G.inv=G.inv.filter(it=>!t.offerB.includes(it)); G.inv.push(...t.offerA); G.gold-=t.fee; recompute(); });
+  banner('🤝 TRADE COMPLETE', t.offerA.length+' ⇄ '+t.offerB.length+' items — '+t.fee+'g toll paid each side');
+  log('🤝 Trade complete between Player '+(t.a+1)+' and Player '+(t.b+1)+' — '+t.fee+'g toll paid each.');
+  sfx.gold&&sfx.gold();
+  _G.trade=null; syncTradeToPeers(); refreshItemPanels();
+  $('tradePanel').classList.add('hidden'); syncPause(); refreshMenuState();
+}
+function renderTrade(){
+  if(_G.netApplying) return;
+  const bag=$('tradeMyBag'), off=$('tradeOffers'), status=$('tradeStatus'), hint=$('tradeFeeHint'); if(!bag) return;
+  const row=(nm,col)=>`<div style="padding:4px 8px;border-radius:6px;background:rgba(255,255,255,.05);border-left:3px solid ${col};font-size:12px">${nm}</div>`;
+  if(NET.role==='peer'){   // simplified guest view: my own bag is fully live/local; the other side is a synced summary
+    const t=_G.tradeMirror;
+    if(!t){ bag.innerHTML=''; off.innerHTML='<div class="petEmpty"><span class="peIc">🤝</span><span class="peTtl">No trade active</span></div>'; status.textContent=''; hint.textContent=''; return; }
+    const mySide = t.a===NET.localId?'A':t.b===NET.localId?'B':null; if(!mySide) return;
+    const myOffer = mySide==='A'?t.offerA:t.offerB, theirOffer = mySide==='A'?t.offerB:t.offerA;
+    hint.textContent='Toll: '+t.fee+'g per side, taken only if the trade completes.';
+    const p=_G.players[0];
+    bag.innerHTML=(p&&p.inv?p.inv:[]).map(it=>{ const col=(it.rarity&&it.rarity.col)||'#ccc';
+      return `<div class="tradeItRow" data-uid="${it.uid}" style="cursor:pointer;padding:4px 8px;border-radius:6px;background:rgba(255,255,255,.05);border-left:3px solid ${col};font-size:12px">${it.name}</div>`; }).join('')||'<div class="petEmpty"><span class="peTtl">Nothing to offer</span></div>';
+    bag.querySelectorAll('.tradeItRow').forEach(el=>el.onclick=()=>tradeToggleItem(0, +el.dataset.uid));
+    off.innerHTML='<div class="secHd"><h4>Your offer</h4></div>'+(myOffer.map(x=>row(x.nm,x.col)).join('')||row('(nothing yet)','#666'))
+      +'<div class="secHd"><h4>Their offer</h4></div>'+(theirOffer.map(x=>row(x.nm,x.col)).join('')||row('(nothing yet)','#666'));
+    status.textContent=(t.confirmA&&mySide==='A'||t.confirmB&&mySide==='B')?'✔ You confirmed — waiting on them':((mySide==='A'?t.confirmB:t.confirmA)?'They confirmed — waiting on you':'Neither side has confirmed yet');
+    return;
+  }
+  const t=_G.trade;
+  if(!t){ bag.innerHTML=''; off.innerHTML='<div class="petEmpty"><span class="peIc">🤝</span><span class="peTtl">No trade active</span></div>'; status.textContent=''; hint.textContent=''; return; }
+  const pid=_G.menuOwner, s=tradeSideOf(pid); if(!s){ bag.innerHTML=''; off.innerHTML=''; status.textContent='Not part of this trade.'; return; }
+  const other=s==='A'?t.b:t.a, mine=_G.players[pid], theirs=_G.players[other];
+  hint.textContent='Toll: '+t.fee+'g per side, taken only if the trade completes.';
+  _stampPlayer(mine);
+  bag.innerHTML=(mine.inv||[]).map(it=>{ const col=(it.rarity&&it.rarity.col)||'#ccc';
+    return `<div class="tradeItRow" data-uid="${it.uid}" style="cursor:pointer;padding:4px 8px;border-radius:6px;background:rgba(255,255,255,.05);border-left:3px solid ${col};font-size:12px">${it.name}</div>`; }).join('')||'<div class="petEmpty"><span class="peTtl">Nothing to offer</span></div>';
+  bag.querySelectorAll('.tradeItRow').forEach(el=>el.onclick=()=>tradeToggleItem(pid, +el.dataset.uid));
+  const myOffer=s==='A'?t.offerA:t.offerB, theirOffer=s==='A'?t.offerB:t.offerA;
+  off.innerHTML='<div class="secHd"><h4>Your offer</h4></div>'+(myOffer.map(it=>row(it.name,(it.rarity&&it.rarity.col)||'#ccc')).join('')||row('(nothing yet)','#666'))
+    +'<div class="secHd"><h4>'+(theirs?('Player '+(other+1)):'Their')+' offer</h4></div>'+(theirOffer.map(it=>row(it.name,(it.rarity&&it.rarity.col)||'#ccc')).join('')||row('(nothing yet)','#666'));
+  const myConf=s==='A'?t.confirmA:t.confirmB, theirConf=s==='A'?t.confirmB:t.confirmA;
+  status.textContent=myConf?'✔ You confirmed — waiting on Player '+(other+1):theirConf?'Player '+(other+1)+' confirmed — waiting on you':'Neither side has confirmed yet';
+}
+
+// ============================================================ CO-OP CREW — a session-scoped guild-lite.
+// The design this was adapted from (docs/... in a sister project) is a persistent, cross-run guild with
+// accounts, ranks, and invites. TowerLords has no account backend and no server between runs — a party is
+// whoever's in THIS climb, gone the moment the run ends — so "guild" becomes "Crew": founded by any climber
+// for a flat toll, membership is just "whoever's currently in the party" (no invites needed for a co-op
+// group that's already trusted enough to be sharing a run), and a shared treasury funded by donations
+// unlocks small party-wide bonuses for as long as the crew and its treasury last.
+const CREW_FOUND_COST=200;
+const CREW_TIERS=[
+  {need:500,  key:'gold', pct:5,  nm:'+5% gold from kills'},
+  {need:2000, key:'xp',   pct:8,  nm:'+8% XP from kills'},
+  {need:5000, key:'gold', pct:10, nm:'+10% more gold (stacks with the first tier)'},
+];
+function crewBonusPct(key){ if(!_G.crew) return 0; let pct=0; for(const t of CREW_TIERS){ if(t.key===key && _G.crew.treasury>=t.need) pct+=t.pct; } return pct; }
+function crewTiersUnlocked(){ return _G.crew?CREW_TIERS.filter(t=>_G.crew.treasury>=t.need).length:0; }
+function syncCrewToPeers(){ const h=NET.host; if(!h)return;
+  for(const c of h.conns){ if(c.evt&&c.evt.readyState==='open'){ try{ c.evt.send(JSON.stringify({type:'crew',c:_G.crew})); }catch(_){} } } }
+function refreshCrewPanel(){ if(_G.netApplying) return; if($('crewPanel') && !$('crewPanel').classList.contains('hidden')) renderCrew(); }
+function foundCrew(pid,name){ if(NET.role==='peer') return netPeerCmd('foundCrew',[name]);
+  if(_G.crew){ log('A crew already travels with this party.'); return; }
+  let gold=0; withPlayer(pid,()=>{ gold=G.gold; });
+  if(gold<CREW_FOUND_COST){ log('Founding a crew costs '+CREW_FOUND_COST+'g — you have '+gold+'g.'); return; }
+  withPlayer(pid,()=>{ G.gold-=CREW_FOUND_COST; recompute(); });
+  _G.crew={ name:(name||('Party '+(pid+1))).slice(0,24), leaderId:pid, treasury:0, members:{} };
+  _G.crew.members[pid]={ contrib:0, since:performance.now() };
+  banner('⚑ '+_G.crew.name.toUpperCase()+' FOUNDED', 'a crew travels with this climb now');
+  log('⚑ '+_G.crew.name+' founded by Player '+(pid+1)+' for '+CREW_FOUND_COST+'g.');
+  syncCrewToPeers(); refreshCrewPanel();
+}
+function donateCrew(pid,amt){ if(NET.role==='peer') return netPeerCmd('donateCrew',[amt]);
+  if(!_G.crew) return;
+  let gold=0; withPlayer(pid,()=>{ gold=G.gold; }); amt=Math.max(0,Math.min(amt|0,gold)); if(amt<=0) return;
+  withPlayer(pid,()=>{ G.gold-=amt; recompute(); flashGold&&flashGold(); });
+  const before=crewTiersUnlocked();
+  _G.crew.treasury+=amt;
+  const m=_G.crew.members[pid]||(_G.crew.members[pid]={contrib:0,since:performance.now()}); m.contrib+=amt;
+  const after=crewTiersUnlocked();
+  if(after>before){ const t=CREW_TIERS[after-1]; banner('⚑ CREW TIER UNLOCKED', t.nm+' — for everyone in the party'); log('⚑ The '+_G.crew.name+' treasury passes '+t.need+'g — '+t.nm+' for the whole party.'); }
+  log('⚑ Player '+(pid+1)+' donates '+amt+'g to '+_G.crew.name+' — treasury now '+_G.crew.treasury.toLocaleString()+'g.');
+  syncCrewToPeers(); refreshCrewPanel();
+}
+function disbandCrew(pid){ if(NET.role==='peer') return netPeerCmd('disbandCrew',[]);
+  if(!_G.crew || _G.crew.leaderId!==pid) return;
+  log('⚑ '+_G.crew.name+' disbands — its treasury is gone with it.'); banner('⚑ CREW DISBANDED','');
+  _G.crew=null; syncCrewToPeers(); refreshCrewPanel();
+}
+function renderCrew(){
+  if(_G.netApplying) return;
+  const body=$('crewBody'); if(!body) return;
+  const crew=(NET.role==='peer')?_G.crewMirror:_G.crew;
+  const myId=(NET.role==='peer')?NET.localId:_G.menuOwner;
+  if(!crew){
+    body.innerHTML=`<div class="petEmpty"><span class="peIc">⚑</span><span class="peTtl">No crew yet</span><span class="peSub">Found one for ${CREW_FOUND_COST}g — every climber currently in the party is automatically a member, and a shared treasury unlocks party-wide bonuses.</span></div>
+      <div class="sbtn gold" id="crewFoundBtn" style="margin:10px auto;max-width:220px">⚑ FOUND A CREW · ${CREW_FOUND_COST}g</div>`;
+    const fb=$('crewFoundBtn'); if(fb) fb.onclick=()=>foundCrew(myId, prompt('Name your crew:','Party '+((myId||0)+1))||undefined);
+    return;
+  }
+  const rows=joinedPlayers().map(p=>{ const m=crew.members[p.id]; const lead=p.id===crew.leaderId;
+    return `<div style="display:flex;justify-content:space-between;padding:4px 8px;border-radius:6px;background:rgba(255,255,255,.04);margin-bottom:3px;font-size:12px">
+      <span>${lead?'⭐ ':''}Player ${p.id+1}${p.id===myId?' (you)':''}</span><span style="opacity:.75">${(m?m.contrib:0).toLocaleString()}g contributed</span></div>`; }).join('');
+  const tierRows=CREW_TIERS.map(t=>`<div style="font-size:11px;opacity:${crew.treasury>=t.need?1:.45};padding:2px 0">${crew.treasury>=t.need?'✔':'○'} ${t.need.toLocaleString()}g — ${t.nm}</div>`).join('');
+  body.innerHTML=`<div style="text-align:center;margin-bottom:8px"><b style="font-size:16px">⚑ ${crew.name}</b><br><span style="opacity:.8">Treasury: ${crew.treasury.toLocaleString()}g</span></div>
+    ${rows}
+    <div class="secHd"><h4>Treasury tiers</h4></div>${tierRows}
+    <div style="display:flex;gap:6px;margin-top:10px;justify-content:center;flex-wrap:wrap">
+      <div class="sbtn gold" id="crewDon50">Donate 50g</div><div class="sbtn gold" id="crewDon200">Donate 200g</div><div class="sbtn gold" id="crewDon1000">Donate 1000g</div>
+      ${myId===crew.leaderId?'<div class="sbtn" id="crewDisbandBtn">Disband</div>':''}
+    </div>`;
+  const d=(id,amt)=>{ const el=$(id); if(el) el.onclick=()=>donateCrew(myId,amt); };
+  d('crewDon50',50); d('crewDon200',200); d('crewDon1000',1000);
+  const db=$('crewDisbandBtn'); if(db) db.onclick=()=>disbandCrew(myId);
+}
 
 // ---- input sources (fill p.in each frame) ----
 function ndcForViewport(p,outx,outy){ // returns NDC for this player's mouse pos within their viewport
@@ -4226,15 +4430,18 @@ function updateTouchInteract(){
   else if(G.practice){ if(G.nearPortal){ label='Leave'; ic='🚪'; } }
   else if(G.inTown){
     if(G.nearPortal){ label=((_G.returnFloor|0)>1?'Return':'Climb'); ic='⛰'; }
+    else if(G.nearNpc){ label=(G.companion&&G.companion.npc.id===G.nearNpc.id)?'Send Back':'Recruit'; ic='🤝'; }
     else if(G.nearYard){ label='Pet Yard'; ic='🏡'; }
     else if(G.nearCraft){ label='Craft'; ic='⚒'; }
     else if(G.nearVendor){ label='Vendor'; ic='💰'; }
     else if(G.nearStash){ label='Stash'; ic='🗄'; }
     else if(G.nearScore){ label='Record'; ic='📜'; }
+    else if(nearestTeammate(_G.cur)){ label='Trade'; ic='🤝'; }
   } else {
     if(G.nearPortal && G.portal && G.portal.active){ label='Ascend'; ic='⛰'; }
     else if(G.nearVendor){ label='Vendor'; ic='💰'; }
     else if(G.nearStash){ label='Stash'; ic='🗄'; }
+    else if(nearestTeammate(_G.cur)){ label='Trade'; ic='🤝'; }
   }
   if(label){ b.querySelector('.tIc').textContent=ic; b.querySelector('.tLbl').textContent=label; b.classList.add('show'); }
   else b.classList.remove('show');
@@ -4665,6 +4872,11 @@ function renderNetHost(){ const wrap=$('nhPeers'); if(!wrap) return; const h=NET
 // drop it from the sim, remove its mesh/pet from the scene, and re-settle the local view.
 function netReleasePlayer(rec){ const p=rec&&rec.player;
   if(p&&p.joined) log('☄ A hope departs — the song lets one go, for now.');   // drop-out is canon too (STORY_BIBLE §11)
+  if(p && _G.trade && (_G.trade.a===p.id||_G.trade.b===p.id)){ _G.trade=null; syncTradeToPeers(); refreshTradePanels(); }   // a mid-negotiation disconnect cancels the trade — no items changed hands
+  if(p && _G.crew && _G.crew.leaderId===p.id){   // leader leaves → the longest-tenured remaining member inherits the crew (never leaderless)
+    const rest=Object.keys(_G.crew.members).map(Number).filter(id=>id!==p.id && _G.players[id] && _G.players[id].joined);
+    if(rest.length){ rest.sort((x,y)=>(_G.crew.members[x].since||0)-(_G.crew.members[y].since||0)); _G.crew.leaderId=rest[0];
+      log('⚑ '+_G.crew.name+'\'s leader steps down — Player '+(rest[0]+1)+' takes up the banner.'); syncCrewToPeers(); refreshCrewPanel(); } }
   if(p){ p.joined=false; p.downed=false;
     if(p.player){ try{ scene.remove(p.player); }catch(_){} p.player=null; }
     if(p.petMesh){ try{ scene.remove(p.petMesh); }catch(_){} p.petMesh=null; }
@@ -4777,7 +4989,7 @@ function togglePanel(id){
   el.classList.toggle('hidden');
   clearPin();   // a fresh panel open/close starts with nothing selected (avoids a stale pin from a prior screen)
   if(willOpen){ if(id==='treePanel'){ const _tp=$(id); ['left','top','right','bottom','width','height','transform','margin'].forEach(k=>_tp.style[k]=''); }   // purge any stale inline sizing — the tree always opens fullscreen
-    if(id==='charPanel')renderChar(); else if(id==='treePanel')renderTree(); else if(id==='stashPanel')renderStash(); else if(id==='invPanel')renderInv(); else if(id==='vendorPanel'){ if((G._vendRefreshes||0)<3){ rollVendStock(); G._vendRefreshes=(G._vendRefreshes||0)+1; } renderVendor(); } else if(id==='petPanel')renderPet(); else if(id==='petYardPanel')renderPetYard(); else if(id==='scorePanel')renderScore(); else if(id==='codexPanel')renderCodex(); else if(id==='settingsPanel')renderSettings(); else if(id==='lootPanel')renderLoot(); else if(id==='craftPanel')renderCraft(); }
+    if(id==='charPanel')renderChar(); else if(id==='treePanel')renderTree(); else if(id==='stashPanel')renderStash(); else if(id==='invPanel')renderInv(); else if(id==='vendorPanel'){ if((G._vendRefreshes||0)<3){ rollVendStock(); G._vendRefreshes=(G._vendRefreshes||0)+1; } renderVendor(); } else if(id==='petPanel')renderPet(); else if(id==='petYardPanel')renderPetYard(); else if(id==='scorePanel')renderScore(); else if(id==='codexPanel')renderCodex(); else if(id==='settingsPanel')renderSettings(); else if(id==='lootPanel')renderLoot(); else if(id==='craftPanel')renderCraft(); else if(id==='tradePanel')renderTrade(); else if(id==='crewPanel')renderCrew(); }
   if(willOpen) applyPanelPos(id);   // reopen at last-dragged spot · off-centre by default (settings stays centred)
   if(willOpen){   // first open = full size · after that, whatever size the player dragged it to
     if(id==='invPanel')        persistPanelSize(el,'invPanel',   'min(1240px,94vw)');
@@ -5125,6 +5337,7 @@ function clearWorld(){
   if(G._puzzleActive) finishGlyphPuzzle(false);
   G.obstacles=[];G.camps=[];G.respawns=[];G.traps=[];
   G.portal=null;G.stashStation=null;G.vendorStation=null;G.scoreStation=null;G.goblin=null;G.grid=null;G.craftStation=null;G.yardStation=null;G.townNpcs=null;G.mural=null;G.waystation=null;G.hazPools=null;
+  G._worldEvent=null;   // leaving the floor forfeits an unclaimed WORLD EVENT the same as its own timeout would
 }
 // ---- unified walkable grid: collision AND walls both derive from this, so they always match
 // (fixes invisible-wall-stuck spots and messy overlapping wall corners) ----
@@ -5262,6 +5475,7 @@ function generateFloor(anchor){
       (G.coins||(G.coins=[])).push({x:_cpt.x,z:_cpt.z,t:99999,mesh:_cm2,worth:META.cache.gold,cache:true});
       log('🪙 Your DEAD DROP glints somewhere on this floor — '+META.cache.gold+'g crushed into the stone. Walk over it.'); }
     maybeSpawnKeptOne(rooms);      // rare: a cocoon from the Tower's cellar (STORY_BIBLE §7)
+    maybeSpawnWorldEvent(rooms);   // rare: THE UNCLAIMED — a roaming elite announced to the whole party
     maybeSpawnFragment(rooms);     // rare: a lore fragment (STORY_BIBLE §8)
     maybeSpawnPage(rooms);         // adaptive: a STORY PAGE for this act — reveals this run's plot (run journal)
     // NEMESIS: at most ONE lord may be roaming any floor, off his post and hunting (first meetings
@@ -7481,6 +7695,46 @@ function spawnEnemy(floor,home,forceType,forceElite){
   let px=e.home.x+rand(-2.5,2.5), pz=e.home.z+rand(-2.5,2.5); if(!inAny(px,pz,0.7)){ px=e.home.x; pz=e.home.z; }
   e.mesh.position.set(px,0,pz); e.room=roomAt(px,pz)||roomAt(e.home.x,e.home.z); e.leftRoom=false; e.wanderT=0; scene.add(e.mesh); G.enemies.push(e);
 }
+// ---- WORLD EVENT: a roaming rare, tougher than any ordinary elite, announced to every player in the run the
+// moment it appears — a reason for solo and co-op play to cross paths without ever forcing anyone to group up.
+// It's still just a NORMAL-floor elite under the hood (no new AI, no new rendering path); what makes it an
+// "event" is the announcement, the richer loot roll (killEnemy), and it wandering off if nobody claims it.
+const WORLD_EVENT_NM='THE UNCLAIMED', WORLD_EVENT_COL=0x9be7ff, WORLD_EVENT_LIFE=150;
+function maybeSpawnWorldEvent(rooms){
+  if(G._worldEvent || G.practice || G.tutorial) return;                 // one at a time; never in the sandbox floors
+  if((G.floor-(G._weLastFloor!=null?G._weLastFloor:-99))<4) return;     // spaced out — a rare sighting, not a fixture
+  if(Math.random()>=0.1) return;
+  const adv=ETYPES.filter(t=>t.minF>=4 && t.minF<=G.floor); const base=adv.length?pick(adv):pick(ETYPES);
+  const r=pick(rooms), pt=randPtInRoom(r,4);
+  spawnEnemy(G.floor, pt, base, true);
+  const e=G.enemies[G.enemies.length-1]; if(!e) return;
+  // anchored to the player's OWN gear (same trick spawnEnemy already uses to firm up trash) — tougher than
+  // any elite at any power level, sitting just under a real floor guardian rather than a fixed number
+  e.hp=e.maxhp=Math.max(e.hp, playerBigHit()*48);
+  e.dmg=Math.min(e.dmg*1.15, (76+dmgScaleLvl(G.floor)*4.2)*ngMult()*0.85);
+  e.scale*=1.2; e.r*=1.15; e.xp*=6; e.gold=true; e.color=WORLD_EVENT_COL;
+  const bb=e.mesh.userData.body; if(bb){ bb.material.color.setHex(WORLD_EVENT_COL); bb.material.emissive.setHex(WORLD_EVENT_COL); bb.material.emissiveIntensity=0.9; }
+  const ring=new THREE.Mesh(new THREE.TorusGeometry(e.scale*1.9,.15,8,24), new THREE.MeshStandardMaterial({color:WORLD_EVENT_COL,emissive:WORLD_EVENT_COL,emissiveIntensity:1.3})); ring.rotation.x=Math.PI/2; ring.position.y=e.scale*1.05; e.mesh.add(ring);
+  e.isWorldEvent=true; e.name=WORLD_EVENT_NM; e._weSpawnAt=performance.now();
+  G._worldEvent=e; G._weLastFloor=G.floor;
+  const msg='A climber who never said yes — rarer than any lord\'s ring. Hunt it before it wanders off.';
+  banner('⚡ '+WORLD_EVENT_NM, msg); log('⚡ '+WORLD_EVENT_NM+' has appeared on this floor — '+msg);
+  sfx.nemesis&&sfx.nemesis(); ringFx(pt.x,pt.z,e.scale*5,WORLD_EVENT_COL);
+  netBroadcastWorldEvent('sighted', msg);
+}
+// checked once per frame (not per local player — see the isP0 guard at the call site)
+function tickWorldEvent(){
+  const e=G._worldEvent; if(!e || e.dead) return;
+  if(performance.now()-e._weSpawnAt>WORLD_EVENT_LIFE*1000){
+    const msg=WORLD_EVENT_NM+' fades, unclaimed — the Tower keeps it a while longer.';
+    banner('⚡ FADED — '+WORLD_EVENT_NM, msg); log('⚡ '+msg); netBroadcastWorldEvent('faded',msg);
+    e.dead=true; scene.remove(e.mesh); G.enemies=G.enemies.filter(x=>x!==e); G._worldEvent=null;
+  }
+}
+// host → every connected peer: the sighting/claim/fade lines aren't in the per-tick snapshot (too rare to
+// justify a new field there), so they ride the same reliable 'evt' channel the host already streams builds on
+function netBroadcastWorldEvent(kind,msg){ const h=NET.host; if(!h)return;
+  for(const c of h.conns){ if(c.evt&&c.evt.readyState==='open'){ try{ c.evt.send(JSON.stringify({type:'wevent',kind,msg})); }catch(_){} } } }
 // ============================================================ GENERIC BULLET EMITTER
 // Every enemy/boss/trap pattern is a preset of ONE struct fed to emit(e, P). A pattern
 // fires `waves` volleys over time; each volley re-reads the emitter's LIVE position (so
@@ -7932,6 +8186,64 @@ function speakRescued(npc){
     line='She reads from the ledger: “Floor '+d.floor+'. '+(d.killer||'the Tower')+'.” The lantern dips, and steadies.'; } }
   if(!line) line=npc.idle[Math.floor(Math.random()*npc.idle.length)];
   showBossSpeech(npc.nm, line); log('💬 '+npc.nm+': '+line);
+}
+// ---- COMPANIONS: a freed Kept One can climb at your side (Fenn & Ferra's whole arc is this — "the stairs are
+// shorter with company"). One at a time, chosen from your own rescued roster, account-bound like the pet yard.
+// Same fighting/following shape as the pet (follow offset, ranged bolt, HP that can be worn down) but a person,
+// not a creature — a second, following copy while the original stays put in the sanctuary as a talkable NPC.
+function companionMaxHp(){ return 70 + G.floor*3; }
+function buildCompanionMesh(npc){
+  const grp=new THREE.Group();
+  const body=new THREE.Mesh(new THREE.CylinderGeometry(.5,.7,1.6,8), new THREE.MeshStandardMaterial({color:npc.color,emissive:npc.color,emissiveIntensity:.55,flatShading:true})); body.position.y=.8; body.castShadow=true;
+  const head=new THREE.Mesh(new THREE.SphereGeometry(.42,10,10), new THREE.MeshStandardMaterial({color:npc.color,emissive:npc.color,emissiveIntensity:.7})); head.position.y=1.95;
+  grp.add(body,head); grp.userData.body=body;
+  if(G.player) grp.position.set(G.player.position.x, 0, G.player.position.z-1.5);
+  return grp;
+}
+function recruitCompanion(npcId){ if(NET.role==='peer') return netPeerCmd('recruitCompanion',[npcId]);
+  const npc=RESCUED_NPCS.find(n=>n.id===npcId); if(!npc || !(META.rescued&&META.rescued[npc.id])){ log('They haven\'t been freed yet — crack their cocoon first.'); return; }
+  if(G.companion && G.companion.npc.id===npcId){ dismissCompanion(); return; }   // tap them again to send them back
+  if(G.companionMesh){ scene.remove(G.companionMesh); G.companionMesh=null; }
+  G.companion={ npc, hp:companionMaxHp(), maxhp:companionMaxHp(), atkCd:0, downT:0 };
+  G.companionMesh=buildCompanionMesh(npc); scene.add(G.companionMesh);
+  META.companion=npcId; saveMeta();
+  banner('🤝 '+npc.nm+' JOINS YOU', npc.role);
+  log('🤝 '+npc.nm+' climbs at your side now. Talk to them again to send them back to the sanctuary.');
+  sfx.rescue&&sfx.rescue();
+}
+function dismissCompanion(){ if(NET.role==='peer') return netPeerCmd('dismissCompanion',[]);
+  if(!G.companion) return; const nm=G.companion.npc.nm;
+  if(G.companionMesh){ scene.remove(G.companionMesh); G.companionMesh=null; } G.companion=null;
+  META.companion=null; saveMeta();
+  log('🤝 '+nm+' stays behind at the sanctuary.');
+}
+// a fallen companion is never lost — they retreat to the sanctuary and rejoin partway healed, same shape as the pet
+function companionFellBack(){ const c=G.companion; if(!c) return;
+  if(G.companionMesh){ scene.remove(G.companionMesh); G.companionMesh=null; }
+  floatText(G.player.position.x,G.player.position.z,c.npc.nm+' falls back!','hurt',2.0);
+  log('🤝 '+c.npc.nm+' is worn down and falls back to the sanctuary — they\'ll catch up once they\'ve caught their breath.');
+  c.hp=0; c.downT=45; G.companion=null; G._companionPending=c;   // kept alive off-screen; rejoins via updateCompanion below
+}
+function updateCompanion(dt){
+  const pend=G._companionPending;
+  if(pend){ pend.downT-=dt; if(pend.downT<=0){ G._companionPending=null; G.companion=pend; pend.hp=pend.maxhp*0.5;
+    G.companionMesh=buildCompanionMesh(pend.npc); scene.add(G.companionMesh);
+    log('🤝 '+pend.npc.nm+' catches up, a little worse for wear.'); } return; }
+  if(_G.inYard){ if(G.companionMesh)G.companionMesh.visible=false; return; }
+  if(!G.companion)return; const c=G.companion;
+  if(!G.companionMesh)return; G.companionMesh.visible=true; const p=G.player.position, cm=G.companionMesh;
+  const tx=p.x + Math.sin(G.player.rotation.y)*2.4, tz=p.z + Math.cos(G.player.rotation.y)*2.4;   // opposite offset from the pet so they don't overlap
+  cm.position.x+=(tx-cm.position.x)*Math.min(1,dt*4); cm.position.z+=(tz-cm.position.z)*Math.min(1,dt*4);
+  cm.userData.body.rotation.y+=dt*1.5;
+  let nearFoe=false; for(const e of G.enemies){ if(Math.hypot(e.mesh.position.x-cm.position.x,e.mesh.position.z-cm.position.z)<2){ nearFoe=true; break; } }
+  if(nearFoe) c.hp-=(2+G.floor*0.35)*dt;
+  if(c.hp<c.maxhp){ const h=Math.min((2.5+G.S.lifeRegen*0.4)*dt, c.maxhp-c.hp); c.hp+=h; }
+  if(c.hp<=0){ companionFellBack(); return; }
+  c.atkCd-=dt;
+  if(c.atkCd<=0){ let best=null,bd=15; for(const e of G.enemies){ const dd=Math.hypot(e.mesh.position.x-cm.position.x,e.mesh.position.z-cm.position.z); if(dd<bd){bd=dd;best=e;} }
+    if(best){ c.atkCd=1.05; const dx=best.mesh.position.x-cm.position.x, dz=best.mesh.position.z-cm.position.z, l=Math.hypot(dx,dz)||1;
+      const col=c.npc.color; const m=new THREE.Mesh(new THREE.SphereGeometry(.22,6,6), new THREE.MeshStandardMaterial({color:col,emissive:col,emissiveIntensity:1})); m.position.set(cm.position.x,1.2,cm.position.z); scene.add(m);
+      G.projectiles.push({mesh:m,vx:dx/l*36,vz:dz/l*36,dmg:(G.S.dmgBase*0.5)*(1+G.floor*0.03),life:1.0,crit:false,pierce:0,hit:null,element:'phys',src:'companion'}); } }
 }
 // the lords notice the thefts from the cellar
 const LARDER_LINES=[
@@ -9750,6 +10062,9 @@ function pickBoon(b){
   updateHUD();
 }
 function killEnemy(e){
+  if(e.isWorldEvent && G._worldEvent===e){ G._worldEvent=null;   // WORLD EVENT claimed — clear tracking so a new one can appear later
+    const msg=WORLD_EVENT_NM+' falls — the Tower keeps count of who claims one.';
+    banner('⚡ CLAIMED — '+WORLD_EVENT_NM, msg); log('⚡ '+msg); netBroadcastWorldEvent('slain',msg); }
   try{ abnKill(e); }catch(_){}   // abnormal on-kill quirks (explode/freeze/gold/heal/…)
   if(e.revive && !e.revived){ e.revived=true; e.dead=false; e.hp=e.maxhp*0.45; e.shieldT=1.2; ringFx(e.mesh.position.x,e.mesh.position.z,e.r+2,0xc0303a); floatText(e.mesh.position.x,e.mesh.position.z,'⟳ RISEN','hurt',e.r+2); const bb=e.mesh.userData.body; if(bb)bb.material.color.setHex(0x7a1a22); return; }   // revenant rises once
   if(e.volatile){ const x=e.mesh.position.x,z=e.mesh.position.z; telegraphAoE(x,z,5,0.4,e.dmg*1.8,0xff7a3d); ringFx(x,z,3,0xff7a3d); }   // volatile affix: explodes on death (brief dodge window)
@@ -9767,6 +10082,7 @@ function killEnemy(e){
   const ex=e.mesh.position.x, ez=e.mesh.position.z;
   const base=e.boss?1:e.elite?0.7:(0.15+(e.etype==='brute'?.18:0));
   let uChanceBase=(e.boss?0.5:e.elite?0.08:0)+(G.floorMod?.rare?0.06:0);
+  if(e.isWorldEvent) uChanceBase=Math.max(uChanceBase,0.4);   // WORLD EVENT: a rarer roll than any ordinary elite — worth converging on
   if(e.boss && G.S && G.S.soulContract) uChanceBase=1;   // Soul Contract: the guardian is BOUND to pay in uniques
   for(const pid of killContributors(e)){ withPlayer(pid, ()=>{
     addFervor(e.boss?40:e.elite?16:8); addCharge(e.boss?40:e.elite?11:5); refillFlasks(e.boss?60:e.elite?15:9);
@@ -9958,6 +10274,7 @@ function gainXP(n){
   n*=dlaRewardMultCur();   // DLA: farming far below your invested power pays out less (never below 35%) — GW2 parity §1
   if((G.rationT||0)>0) n*=1.10;   // RATIONS §15: a Nourishment-style consumable, stacks independently of flasks/potions
   if((G.S.xpBonus||0)>0) n*=(1+G.S.xpBonus/100);
+  n*=(1+crewBonusPct('xp')/100);
   if((META.soulDebt||0)>0 && n>0){ const _b=Math.round(n*0.5); if(_b>0){ n+=_b; META.soulDebt-=_b;   // SOUL DEBT: the next life earns half again until the ledger clears
     if(META.soulDebt<=0){ META.soulDebt=0; saveMeta(); banner('👻 SOUL DEBT REPAID','the tower’s ledger closes — XP returns to normal'); } } }
   G.xp+=n; G.run.xp+=n;
@@ -11726,8 +12043,8 @@ function interact(){
   if(G.nearTrap){ return dismantleTrap(G.nearTrap); }
   if(G.nearChest){ return openChest(G.nearChest); }
   if(G.nearLoot){ return grabAllLoot(); }
-  if(G.inTown){ if(G.nearPortal){ if(coopGateAtPortal()) enterTower(); } else if(G.nearYard) enterPetYard(); else if(G.nearCraft) togglePanel('craftPanel'); else if(G.nearVendor) togglePanel('vendorPanel'); else if(G.nearStash) togglePanel('stashPanel'); else if(G.nearScore) togglePanel('scorePanel'); return; }
-  if(G.nearPortal && G.portal.active){ if(coopGateAtPortal()) ascend(); } else if(G.nearVendor) togglePanel('vendorPanel'); else if(G.nearStash) togglePanel('stashPanel');
+  if(G.inTown){ if(G.nearPortal){ if(coopGateAtPortal()) enterTower(); } else if(G.nearNpc) recruitCompanion(G.nearNpc.id); else if(G.nearYard) enterPetYard(); else if(G.nearCraft) togglePanel('craftPanel'); else if(G.nearVendor) togglePanel('vendorPanel'); else if(G.nearStash) togglePanel('stashPanel'); else if(G.nearScore) togglePanel('scorePanel'); else if(nearestTeammate(_G.cur)) proposeOrJoinTrade(_G.cur); return; }
+  if(G.nearPortal && G.portal.active){ if(coopGateAtPortal()) ascend(); } else if(G.nearVendor) togglePanel('vendorPanel'); else if(G.nearStash) togglePanel('stashPanel'); else if(nearestTeammate(_G.cur)) proposeOrJoinTrade(_G.cur);
 }
 function ascend(){ bountyAscendCheck(); const prevNg=ngLevel(G.floor); G.floor++; const ng=ngLevel(G.floor);
   if(ng>prevNg){ unlockFeat('ng'); banner('⛰ ENDLESS ASCENT · NG+'+ng, 'the Tower rebuilds — deadlier & richer'); log('☠ ENDLESS ASCENT NG+'+ng+' — enemies far stronger, loot far richer.'); ngBeat(ng); }
@@ -11790,6 +12107,8 @@ function die(){ if(G.dead)return;
   // sole exception: a HARDCORE climb where you WAGERED your pet at the start (petHardDeath) — then it falls with you.
   if(G.hardcore && _G.petHardDeath){ G.pet=null; G.pets=[]; META.savedPets=null; saveMeta(); log('☠ Your companion fell with you — the Hardcore wager is paid in full.'); }
   else { if(G.pet){ G.pet.down=0; if(G.pet.maxhp!==undefined) G.pet.hp=G.pet.maxhp; } if(typeof backupPets==='function') backupPets(); }
+  // a Rescued companion is a person, not a pet — they walk out with you regardless of hardcore stakes and are simply waiting, whole, at the sanctuary
+  if(G.companion){ G.companion.hp=G.companion.maxhp; } if(G._companionPending){ G._companionPending=null; }
   recompute(); if(G.hp>G.maxhp)G.hp=G.maxhp; if(G.mana>G.maxmana)G.mana=G.maxmana;
   const greedLost = (!_soft && G.greed>1.05 && carried>0) ? G.greed : 0; if(!_soft) G.greed=1;   // dying forfeits the unbanked greed haul
   // fame is a skill rating now — earn a meaningful chunk per run (scales with depth, kills, level)
@@ -12110,9 +12429,11 @@ function enterPractice(){
   G.belt=[makeFlask(1,'life'),makeFlask(1,'mana'),makeFlask(1,'swift'),null,null]; G.charge=100; G.sigSlot=makeSkillGem(1,'gMeteor'); G.sigCd=0; G.swiftT=0; G.hots=[]; G.petErrand=null;
   G.floorMod=null; G.bounty=null; G.obj=null; G.objProps=[];
   if(G.petMesh){ scene.remove(G.petMesh); G.petMesh=null; } G.pet=null; G.pets=[]; G.petMagnet=0;
+  if(G.companionMesh){ scene.remove(G.companionMesh); G.companionMesh=null; } G.companion=null; G._companionPending=null;
   G.run={kills:0,assists:0,healSelf:0,healOthers:0,xp:0,floorTime:0,totalTime:0,floorsCleared:0,boons:[],destiny:null};
   G.practice=true; G.inTown=false; G.hardcore=false; G.diff='normal'; G.seed=randi(0,9999);
   _G.players.length=1; const _p0=_G.players[0]; _p0.joined=true; _p0.color=PLAYER_COLORS[0]; _p0.input=_p0.input||makeKbmInput(); _G.cur=0; _G.splitscreen=false;   // ensure P1 has an input source so the player can actually move
+  _G.trade=null; _G.tradeMirror=null; _G.crew=null; _G.crewMirror=null;
   _G.asc=0; _G.ascEff=ascEffects(0);   // the practice arena is never ascended
   initAudio(); startAmbient();
   recompute(); G.hp=G.maxhp; G.mana=G.maxmana;
@@ -12327,6 +12648,12 @@ function initPlayerChar(){
   if(G.petMesh){ scene.remove(G.petMesh); G.petMesh=null; } G.pet=null; G.pets=[]; G.petMagnet=0;
   // pets are account-bound: a fresh character inherits every companion you own (permanent across deaths)
   if(META.savedPets && META.savedPets.pets && META.savedPets.pets.length){ G.pets=META.savedPets.pets.map(x=>Object.assign({},x)); const _pi=(META.savedPets.idx!=null?META.savedPets.idx:-1); G.pet=(_pi>=0 && G.pets[_pi])?G.pets[_pi]:null; }
+  if(G.companionMesh){ scene.remove(G.companionMesh); G.companionMesh=null; } G.companion=null; G._companionPending=null;
+  // the Rescued companion is account-bound too — a fresh character picks up wherever you last left them
+  if(META.companion){ const cnpc=RESCUED_NPCS.find(n=>n.id===META.companion);
+    if(cnpc && META.rescued && META.rescued[cnpc.id]){ G.companion={ npc:cnpc, hp:companionMaxHp(), maxhp:companionMaxHp(), atkCd:0, downT:0 }; G.companionMesh=buildCompanionMesh(cnpc); scene.add(G.companionMesh); }
+    else META.companion=null; }
+  G._worldEvent=null; G._weLastFloor=-99;
   G.run={kills:0,assists:0,healSelf:0,healOthers:0,xp:0,floorTime:0,totalTime:0,floorsCleared:0,boons:[],destiny:null};
   recompute(); G.hp=G.maxhp; G.mana=G.maxmana;
   if(!G.player){ G.player=createPlayer(); tintPlayer(G.player, G.color); }
@@ -12358,6 +12685,7 @@ function startGameConfirmed(after){
   // start solo (co-op players drop-in by pressing START on a controller); rebuild P1's character
   _G.players.length=1; const p0=_G.players[0]; p0.joined=true; p0.color=PLAYER_COLORS[0]; p0.input=p0.input||makeKbmInput();
   _G.cur=0; _G.splitscreen=false; $('hud').classList.remove('cohide');
+  _G.trade=null; _G.tradeMirror=null; _G.crew=null; _G.crewMirror=null;
   initPlayerChar();
   const chosenDestiny=(!G.practice && !G.tutorial && selDestinyId)?destinyById(selDestinyId):null;
   if(chosenDestiny) G.run.destiny=(typeof structuredClone==='function') ? structuredClone(chosenDestiny) : { ...chosenDestiny, eff:{...(chosenDestiny.eff||{})}, procs:(chosenDestiny.procs||[]).map(p=>({ ...p })) };
@@ -12582,6 +12910,15 @@ function netHostRunCmd(rec,fn,a){ const p=rec&&rec.player; if(!p||!p.joined)retu
     case 'feedAllJunk':  if(typeof feedAllJunk==='function') feedAllJunk(); break;
     case 'sendPetErrand':if(typeof sendPetErrand==='function') sendPetErrand(); break;
     case 'hatchPet':     { const it=findItem(a[0]); if(it) hatchPet(it); break; }
+    case 'recruitCompanion': recruitCompanion(a[0]); break;
+    case 'dismissCompanion': dismissCompanion(); break;
+    case 'proposeOrJoinTrade': proposeOrJoinTrade(p.id); break;
+    case 'tradeToggleItem':    tradeToggleItem(p.id, a[0]); break;
+    case 'tradeConfirm':       tradeConfirm(p.id); break;
+    case 'tradeCancel':        tradeCancel(p.id); break;
+    case 'foundCrew':          foundCrew(p.id, a[0]); break;
+    case 'donateCrew':         donateCrew(p.id, a[0]); break;
+    case 'disbandCrew':        disbandCrew(p.id); break;
   } }); }catch(e){ console.error('[net] guest cmd failed',fn,e); }
   _G.netApplying=false;
   const c=NET.host&&NET.host.conns&&NET.host.conns.find(x=>x===rec); if(c) c._buildSig='';   // force an immediate build resend so the guest sees the result
@@ -12692,6 +13029,12 @@ function netPeerOnEvt(data){ const pr=NET.peer; if(!pr)return;   // 'evt' channe
     if(m.type==='hello'){ NET.localId=m.id; _G.seed=m.seed; netPeerEnter(); }
     else if(m.type==='floor'){ netPeerBuildFloor(m); }
     else if(m.type==='build'){ netPeerApplyBuild(m.b); }   // my full character (attr/tree/gear/skills/inventory)
+    else if(m.type==='wevent'){ banner((m.kind==='sighted'?'⚡ ':m.kind==='slain'?'⚡ CLAIMED — ':'⚡ FADED — ')+WORLD_EVENT_NM, m.msg); log('⚡ '+m.msg); }   // the host's world-event announcement, relayed to me
+    else if(m.type==='trade'){ const was=_G.tradeMirror; _G.tradeMirror=m.t;
+      if(m.t && !was){ _G.menuOwner=0; _G.cur=0; togglePanel('tradePanel'); }          // a trade opened involving me → pop the panel
+      else if(!m.t && was){ if(!$('tradePanel').classList.contains('hidden')){ $('tradePanel').classList.add('hidden'); } }   // it closed/completed
+      else refreshTradePanels(); }
+    else if(m.type==='crew'){ _G.crewMirror=m.c; refreshCrewPanel(); }
   }catch(_){}
 }
 function netPeerSendInput(){ const pr=NET.peer; if(!pr||!pr.ch||pr.ch.readyState!=='open')return;
@@ -13056,6 +13399,7 @@ function updatePlayerStep(dt){
     inp.prev = inp.btn?Object.assign({},inp.btn):{};
   }
   updatePet(dt);
+  updateCompanion(dt);
   updatePlayerPickups(dt);
   updatePlayerStations(dt);
 }
@@ -13204,6 +13548,7 @@ function updatePlayerStations(dt){
   if(G.chests) for(const c of G.chests){ if(c.opened)continue; if(isP0 && c.lid){ c.lid.rotation.x=Math.sin(performance.now()*0.002+c.x)*0.06; } const cd=Math.hypot(p.x-c.x,p.z-c.z); if(cd<_ncd){ _ncd=cd; _nc=c; } }
   G.nearChest=(_nc && _ncd<3.0)?_nc:null;
   if(isP0){ if(G.nearChest){ if(!_G._chh){ log('🧰 A chest! Press F to open it.'); _G._chh=true; } } else _G._chh=false; }
+  if(isP0 && NET.role!=='peer') tickWorldEvent();
   // ---- waystation campfire: the visiting Rescued NPC speaks & serves, once per floor (STORY_BIBLE §7) ----
   if(G.waystation && !G.waystation.used){ const wd=Math.hypot(p.x-G.waystation.x,p.z-G.waystation.z);
     if(wd<4.2){ G.waystation.used=true; const n=G.waystation.npc;
@@ -13211,11 +13556,15 @@ function updatePlayerStations(dt){
       log('💬 '+n.nm+': '+(WAYSTATION_LINES[n.id]||''));
       waystationService(n); } }
   // ---- sanctuary: the Rescued speak — one arc stage per visit, then reactive idles (STORY_BIBLE §7) ----
-  if(G.inTown && G.townNpcs){ for(const tn of G.townNpcs){
+  G.nearNpc=null;
+  if(G.inTown && G.townNpcs){ let _nnd=1e9;
+    for(const tn of G.townNpcs){
     if(isP0) tn.mesh.rotation.y+=dt*0.25;
     const td=Math.hypot(p.x-tn.x,p.z-tn.z);
     if(td<3.6 && !tn.spoken && (performance.now()-(_G._npcSpokeAt||0))>3800){   // one voice at a time — the bar stays readable
-      tn.spoken=true; _G._npcSpokeAt=performance.now(); speakRescued(tn.npc); } } }
+      tn.spoken=true; _G._npcSpokeAt=performance.now(); speakRescued(tn.npc); }
+    if(td<3.6 && td<_nnd){ _nnd=td; G.nearNpc=tn.npc; } }
+    if(isP0){ if(G.nearNpc){ if(!_G._npch){ _G._npch=true; log((G.companion&&G.companion.npc.id===G.nearNpc.id)?'▣ Press F to send '+G.nearNpc.nm+' back to the sanctuary.':'▣ Press F to bring '+G.nearNpc.nm+' along.'); } } else _G._npch=false; } }
   // ---- murals: read once when close (STORY_BIBLE §8) ----
   if(G.mural && !G.mural.seen){ const md=Math.hypot(p.x-G.mural.x,p.z-G.mural.z);
     if(md<4.5){ G.mural.seen=true; log('❖ MURAL — '+G.mural.line); floatText(G.mural.x,G.mural.z,'❖','big',2.6); discover('mural');
@@ -13578,9 +13927,11 @@ function enterTutorialFloor(){
   G.belt=[makeFlask(1,'life'),makeFlask(1,'mana'),null,null,null]; G.charge=100; G.sigSlot=null; G.sigCd=0; G.swiftT=0; G.hots=[]; G.petErrand=null;
   G.floorMod=null; G.bounty=null; G.obj=null; G.objProps=[];
   if(G.petMesh){ scene.remove(G.petMesh); G.petMesh=null; } G.pet=null; G.pets=[]; G.petMagnet=0;
+  if(G.companionMesh){ scene.remove(G.companionMesh); G.companionMesh=null; } G.companion=null; G._companionPending=null;
   G.run={kills:0,assists:0,healSelf:0,healOthers:0,xp:0,floorTime:0,totalTime:0,floorsCleared:0,boons:[],destiny:null};
   G.practice=true; G.tutorial=true; G.inTown=false; G.hardcore=false; G.diff='normal'; G.seed=randi(0,9999);
   _G.players.length=1; const _p0=_G.players[0]; _p0.joined=true; _p0.color=PLAYER_COLORS[0]; _p0.input=_p0.input||makeKbmInput(); _G.cur=0; _G.splitscreen=false;   // ensure P1 has an input source so the player can actually move
+  _G.trade=null; _G.tradeMirror=null; _G.crew=null; _G.crewMirror=null;
   _G.asc=0; _G.ascEff=ascEffects(0);
   initAudio(); startAmbient();
   recompute(); G.hp=G.maxhp; G.mana=G.maxmana;
@@ -13719,7 +14070,10 @@ function updateWorld(dt){
       const bb=e.mesh.userData.body; if(bb){ bb.rotation.y+=dt*3; bb.position.y=(e.scale*.95)+Math.sin(performance.now()*0.004+ex)*0.12; }
       continue;
     }
-    const tp=nearestPlayerTo(ex,ez,e); const p=tp.player.position;   // chase the nearest living player (Taunt marks can redirect this)
+    const tp=nearestPlayerTo(ex,ez,e); let p=tp.player.position;   // chase the nearest living player (Taunt marks can redirect this)
+    // a companion standing between its owner and a trash mob can pull it off — bosses stay locked onto real players (readable telegraphs)
+    if(!e.boss && G.companion && G.companionMesh && G.companionMesh.visible){ const co=G.companionMesh.position;
+      if(Math.hypot(co.x-ex,co.z-ez)<Math.hypot(p.x-ex,p.z-ez)) p=co; }
     let dx=p.x-ex, dz=p.z-ez; const d=Math.hypot(dx,dz)||1; dx/=d;dz/=d;
     e.hitFlash=Math.max(0,e.hitFlash-dt); e.kx=(e.kx||0)*0.85; e.kz=(e.kz||0)*0.85;
     if(e.boss && e.defianceBroken){ e.defianceBrokenT-=dt; if(e.defianceBrokenT<=0){ e.defianceBroken=false; e.defiance=e.defianceMax; } }   // DEFIANCE BAR: the window closes, the bar refills

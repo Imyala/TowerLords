@@ -134,6 +134,12 @@ Ordered by **impact-to-effort for retention**. The systems are strong; these are
 
 ### Pillar D — Social & co-op  *(your stated #1 — full plan in §6)*
 13. Local couch co-op → LAN → online, 1–8 players. Co-op is the strongest retention & word-of-mouth driver in this genre.
+14. ~~**Player-to-player social systems**~~ — built: recruitable Rescued companions, a persistent-per-run
+    roaming world event (THE UNCLAIMED), direct player trading (with a gold toll, re-validated at
+    execution, works local and online), and a session-scoped Crew with a donation-fed treasury and
+    party-wide bonus tiers. See `TOWERLORDS_COOP_SOCIAL_FEATURES.md` for what shipped vs. what was
+    deliberately scoped down from the source ideas (no cross-run persistence — that needs Pillar E's
+    accounts first).
 
 ### Pillar E — Retention / accounts / monetization
 14. **Accounts + cloud saves** — required for cross-device, co-op identity, leaderboards.
