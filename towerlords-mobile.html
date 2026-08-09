@@ -636,9 +636,8 @@
 
   /* inventory + equipment + vendor */
   #invPanel{top:50%;left:50%;transform:translate(-50%,-50%);width:min(860px,95vw);padding-bottom:14px;}
-  /* the bag shows EVERY row at once — no inner scrollbox. The panel itself is capped at 94vh and
-     only scrolls if a truly enormous bag runs past the bottom of the screen. */
-  #invPanel .bagGrid{max-height:none;overflow:visible;}
+  /* the bag keeps its own fixed-height scrollbox (see .bagGrid below) so only the item slots
+     scroll — the panel chrome (header, equipped gear, inspect pane) always stays put. */
   #vendorPanel{top:50%;left:50%;transform:translate(-50%,-50%);width:440px;padding-bottom:14px;border-color:rgba(255,206,77,.3);}
   #vendorPanel h3{color:var(--gold);}
   .invGrid{display:flex;gap:14px;padding:0 16px;}
@@ -750,9 +749,11 @@
   .dp-verdict .vd{font-weight:normal;opacity:.9;font-size:12px;letter-spacing:.2px;}
   @keyframes vpop{0%{transform:scale(.82);opacity:.4}60%{transform:scale(1.06)}100%{transform:scale(1);opacity:1}}
   /* inspect / compare pane (Torchlight-style item detail) */
-  .detailPane{min-height:258px;border:1px solid rgba(86,224,255,.2);border-radius:11px;padding:14px 16px;
+  /* fixed height (not min-height) so switching between items with more/less stat text never
+     resizes the panel — the inspect pane just scrolls internally if content runs long. */
+  .detailPane{height:258px;overflow-y:auto;border:1px solid rgba(86,224,255,.2);border-radius:11px;padding:14px 16px;
     background:linear-gradient(180deg,rgba(86,224,255,.05),rgba(8,12,22,.55));font-size:14.5px;line-height:1.55;}
-  .detailPane.blank{display:flex;align-items:center;justify-content:center;color:#7a8499;font-size:13.5px;text-align:center;min-height:258px;}
+  .detailPane.blank{display:flex;align-items:center;justify-content:center;color:#7a8499;font-size:13.5px;text-align:center;height:258px;}
   .dp-nm{font-size:20px;font-weight:bold;display:flex;align-items:center;gap:10px;margin-bottom:2px;color:var(--rc,#fff);text-shadow:0 0 12px color-mix(in srgb,var(--rc,transparent) 45%,transparent);}
   .dp-nm .dp-ic{font-size:28px;filter:drop-shadow(0 0 8px color-mix(in srgb,var(--rc,#000) 50%,transparent));}
   .dp-type{font-size:12px;opacity:.62;text-transform:uppercase;letter-spacing:1.5px;margin-bottom:11px;}
