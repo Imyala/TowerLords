@@ -752,7 +752,10 @@
      resizes the panel — the inspect pane just scrolls internally if content runs long. */
   .detailPane{height:258px;overflow-y:auto;border:1px solid rgba(86,224,255,.2);border-radius:11px;padding:14px 16px;
     background:linear-gradient(180deg,rgba(86,224,255,.05),rgba(8,12,22,.55));font-size:14.5px;line-height:1.55;}
-  .detailPane.blank{display:flex;align-items:center;justify-content:center;color:#7a8499;font-size:13.5px;text-align:center;height:258px;}
+  .detailPane.blank{display:flex;align-items:center;justify-content:center;color:#7a8499;font-size:13.5px;text-align:center;height:258px;padding:14px 34px;}
+  /* the Inspect section is permanently mounted (see clearItemDetail) so the CARRIED grid below it
+     never shifts — it reserves its space whether or not an item is currently selected. */
+  #inspectSec{min-height:258px;}
   .dp-nm{font-size:20px;font-weight:bold;display:flex;align-items:center;gap:10px;margin-bottom:2px;color:var(--rc,#fff);text-shadow:0 0 12px color-mix(in srgb,var(--rc,transparent) 45%,transparent);}
   .dp-nm .dp-ic{font-size:28px;filter:drop-shadow(0 0 8px color-mix(in srgb,var(--rc,#000) 50%,transparent));}
   .dp-type{font-size:12px;opacity:.62;text-transform:uppercase;letter-spacing:1.5px;margin-bottom:11px;}
@@ -1562,9 +1565,9 @@
         <h4>Belt Flasks · keys Q / E / R / Z / X</h4><div class="slotRow" id="beltRow"></div>
       </div>
       <div class="invRight">
-        <div id="inspectSec" class="hidden">
+        <div id="inspectSec">
           <h4>Inspect</h4>
-          <div class="detailPane" id="itemDetail"></div>
+          <div class="detailPane blank" id="itemDetail">Click an item to inspect it &mdash; its stats are compared against what you have equipped.</div>
         </div>
         <div class="secHd"><h4>Carried — <span id="bagCount">0</span>/<span id="bagCap">24</span></h4>
           <div class="invTools" id="bagTools"></div></div>
@@ -11393,7 +11396,6 @@ function blankCell(){ const d=document.createElement('div'); d.className='tile e
 function itemDetailEls(){ const a=document.getElementById('itemDetail'); return a?[a]:[]; }
 function showItemDetail(it, ctx){ ctx=ctx||{}; const dps=itemDetailEls(); if(!dps.length) return; dps.forEach(dp=>showItemDetailInto(dp,it,ctx)); }
 function showItemDetailInto(dp, it, ctx){ ctx=ctx||{}; if(!dp) return; dp.classList.remove('blank');
-  const _sec=document.getElementById('inspectSec'); if(_sec) _sec.classList.remove('hidden');   // Inspect only takes up room once something is actually selected
   const rc = it.rarity ? it.rarity.css : 'common';
   let h=`<div class="dp-nm r-${rc}"><span class="dp-ic">${it.slotIc||it.ic||'❔'}</span><span>${it.name}</span></div>`;
   h+=`<div class="dp-type">${(it.rarity?it.rarity.nm+' ':'')+(it.slotNm||'')}</div>`;
@@ -11494,8 +11496,11 @@ function showItemDetailInto(dp, it, ctx){ ctx=ctx||{}; if(!dp) return; dp.classL
     else if(a==='lock'){ it.locked=!it.locked; log(it.locked?'🔒 Locked '+it.name+' — safe from feeding & selling.':'🔓 Unlocked '+it.name+'.'); showItemDetail(it,ctx); refreshItemPanels(); }
   });
 }
-function clearItemDetail(){ itemDetailEls().forEach(dp=>{ dp.className='detailPane blank'; dp.textContent=''; });
-  const _sec=document.getElementById('inspectSec'); if(_sec) _sec.classList.add('hidden'); }
+// The Inspect pane is ALWAYS mounted at a fixed size. Hiding it when nothing was selected made the
+// whole CARRIED grid jump ~290px up and down every time you moved off an item, which made the bag
+// almost unusable. Empty state = placeholder copy in the same box, never a collapsed section.
+const INSPECT_EMPTY='Click an item to inspect it — its stats are compared against what you have equipped.';
+function clearItemDetail(){ itemDetailEls().forEach(dp=>{ dp.className='detailPane blank'; dp.textContent=INSPECT_EMPTY; }); }
 
 // ---- shared item sorting: every grid (bag · stash · vendor) uses the SAME modes ----
 let BAG_SORT='type', STASH_SORT='type', STASH_BAG_SORT='type', VEND_SORT='type';
