@@ -880,6 +880,32 @@ check('everything in the inspect pane is reachable without scrolling for it', ()
   return 'header + 2-col scrollable body + pinned footer';
 });
 
+check('an item too long for the pane says so instead of clipping silently', ()=>{
+  const html=fs.readFileSync(path.join(__dirname,'..','towerlords.html'),'utf8');
+  if(html.indexOf('function markInspectOverflow')<0) throw new Error('nothing measures whether the body overflowed');
+  if(html.indexOf('class="dp-more"')<0) throw new Error('no overflow cue is rendered');
+  if(html.indexOf('.detailPane.hasMore .dp-more{display:block}')<0 && html.indexOf('.detailPane.hasMore .dp-more{display:block;}')<0)
+    throw new Error('the cue is never revealed');
+  // the ONE place a scrollbar must stay visible — everywhere else they are hidden for looks
+  const hide=html.match(/\.panel,\.panelBody,\.bagGrid,\.detailPane,([^{]*)\{scrollbar-width:none/);
+  if(hide && hide[1].indexOf('.dp-body')>=0) throw new Error('.dp-body scrollbar is hidden — clipped stats would give no signal at all');
+  if(html.indexOf('.dp-body::-webkit-scrollbar{width:8px')<0) throw new Error('.dp-body has no visible scrollbar');
+  if(html.indexOf('.detailPane.hasMore .dp-body{mask-image')<0) throw new Error('no fade to show content continues below');
+  return 'measured on render + "scroll for more" cue + visible bar + fade';
+});
+
+check('the running build identifies itself', ()=>{
+  // a stale cached copy of a 1.3MB local file looks exactly like a fix that did not work
+  for(const f of BUILDS){
+    const html=readBuild(f);
+    if(html.indexOf("const BUILD_ID=")<0) throw new Error(f+': no build id');
+    if(html.indexOf("console.info('[TowerLords] build '+BUILD_ID)")<0) throw new Error(f+': build id never logged');
+    if(html.indexOf('class="buildStamp"')<0) throw new Error(f+': build id never shown on the menu');
+  }
+  const id=readBuild('towerlords.html').match(/const BUILD_ID='([^']+)'/)[1];
+  return 'stamped on the menu + console: '+id;
+});
+
 check('the action buttons render inside the footer, not the body', ()=>{
   const html=readBuild('towerlords.html');
   const i=html.indexOf('if(acts) h+=`<div class="dp-foot">');

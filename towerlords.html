@@ -718,10 +718,10 @@
   .eqGrid,.slotRow{align-items:start;}
   /* ---- NO VISIBLE SCROLLBARS ANYWHERE ---- the wheel still scrolls everything, the bars just
      never paint. They were eating layout width and looked like chrome bolted onto the game. */
-  .panel,.panelBody,.bagGrid,.detailPane,.dp-body,#treeBody,#treeCols,#petScroll,#csBody,#chatBody,#towerInfo,
+  .panel,.panelBody,.bagGrid,.detailPane,#treeBody,#treeCols,#petScroll,#csBody,#chatBody,#towerInfo,
   .stashSide,.specGrid,.overlay,.menuPanel{scrollbar-width:none;-ms-overflow-style:none;}
   .panel::-webkit-scrollbar,.panelBody::-webkit-scrollbar,.bagGrid::-webkit-scrollbar,
-  .detailPane::-webkit-scrollbar,.dp-body::-webkit-scrollbar,#treeBody::-webkit-scrollbar,#treeCols::-webkit-scrollbar,
+  .detailPane::-webkit-scrollbar,#treeBody::-webkit-scrollbar,#treeCols::-webkit-scrollbar,
   #petScroll::-webkit-scrollbar,#csBody::-webkit-scrollbar,#chatBody::-webkit-scrollbar,
   #towerInfo::-webkit-scrollbar,.stashSide::-webkit-scrollbar,.specGrid::-webkit-scrollbar,
   .overlay::-webkit-scrollbar,.menuPanel::-webkit-scrollbar{width:0;height:0;display:none;}
@@ -755,7 +755,7 @@
      roughly halves the stack height, and the footer guarantees the buttons are always on screen.
      --dpH is a single source of truth so the pane, its empty state and the reserved section space
      can never disagree and shunt the CARRIED grid around. */
-  #invPanel{--dpH:clamp(300px,40vh,460px);}
+  #invPanel{--dpH:clamp(320px,44vh,520px);}
   .detailPane{height:var(--dpH,340px);border:1px solid rgba(86,224,255,.2);border-radius:11px;padding:13px 15px;
     background:linear-gradient(180deg,rgba(86,224,255,.05),rgba(8,12,22,.55));font-size:14px;line-height:1.5;
     display:flex;flex-direction:column;gap:9px;overflow:hidden;}
@@ -765,7 +765,21 @@
   #inspectSec{min-height:var(--dpH,340px);}
   .dp-hd{flex:none;padding-bottom:8px;border-bottom:1px solid color-mix(in srgb,var(--rc,#8893a8) 32%,transparent);}
   .dp-body{flex:1 1 auto;min-height:0;display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,.95fr);
-    gap:8px 20px;align-content:start;overflow-y:auto;overflow-x:hidden;}
+    gap:8px 20px;align-content:start;overflow-y:auto;overflow-x:hidden;scrollbar-width:thin;scrollbar-color:rgba(86,224,255,.32) transparent;}
+  /* This is the ONE scroll region in the game that keeps a visible bar. Everywhere else a hidden bar
+     is cosmetic; here it is the only signal that an unusually long item has more to read, and silently
+     clipping stats is exactly the bug this layout exists to kill. */
+  .dp-body::-webkit-scrollbar{width:8px;height:0;display:block;}
+  .dp-body::-webkit-scrollbar-track{background:transparent;}
+  .dp-body::-webkit-scrollbar-thumb{background:rgba(86,224,255,.3);border-radius:4px;}
+  .dp-body::-webkit-scrollbar-thumb:hover{background:rgba(86,224,255,.5);}
+  /* …and when it does overflow, say so in words rather than relying on the bar alone */
+  .buildStamp{display:block;margin-top:5px;font-size:9px;letter-spacing:1px;opacity:.5;}
+  .dp-more{display:none;flex:none;font-size:10.5px;letter-spacing:1.4px;text-transform:uppercase;color:var(--neon);
+    opacity:.85;text-align:center;padding-top:2px;}
+  .detailPane.hasMore .dp-more{display:block;}
+  .detailPane.hasMore .dp-body{mask-image:linear-gradient(180deg,#000 calc(100% - 26px),transparent);
+    -webkit-mask-image:linear-gradient(180deg,#000 calc(100% - 26px),transparent);}
   .dp-body.solo{grid-template-columns:minmax(0,1fr);}
   .dp-col{min-width:0;}
   .dp-colB{border-left:1px solid rgba(255,255,255,.1);padding-left:18px;}
@@ -11493,8 +11507,10 @@ function showItemDetailInto(dp, it, ctx){ ctx=ctx||{}; if(!dp) return; dp.classL
   else if(ctx.kind==='stash') acts+=`<button class="vbtn" data-act="takeback">⇧ Take back</button>`;
   let h=`<div class="dp-hd r-${rc}">${hd}</div>`
        +`<div class="dp-body${B?'':' solo'}"><div class="dp-col">${A}</div>${B?`<div class="dp-col dp-colB">${B}</div>`:''}</div>`;
+  h+=`<div class="dp-more">▾ scroll for more</div>`;
   if(acts) h+=`<div class="dp-foot"><div class="dp-acts">${acts}</div></div>`;
   dp.innerHTML=h;
+  markInspectOverflow(dp);
   dp.querySelectorAll('.ds').forEach(ch=>{ const si=+ch.dataset.si;
     ch.onclick=()=>{ const g=it.socketed&&it.socketed[si];
       if(g){ if(unsocketFree(it,si)) showItemDetail(it,ctx); }   // click a filled socket → pop the gem back to your bag (free)
@@ -11532,6 +11548,16 @@ function showItemDetailInto(dp, it, ctx){ ctx=ctx||{}; if(!dp) return; dp.classL
 // almost unusable. Empty state = placeholder copy in the same box, never a collapsed section.
 const INSPECT_EMPTY='Click an item to inspect it — its stats are compared against what you have equipped.';
 function clearItemDetail(){ itemDetailEls().forEach(dp=>{ dp.className='detailPane blank'; dp.innerHTML=''; dp.textContent=INSPECT_EMPTY; }); }
+// The pane is deliberately a fixed size, so a rare monster of an item can still out-run it. When that
+// happens say so out loud — a clipped stat line with no cue is indistinguishable from a missing stat.
+function markInspectOverflow(dp){
+  if(!dp) return;
+  const bd=dp.querySelector && dp.querySelector('.dp-body'); if(!bd) return;
+  const measure=()=>{ if(!bd.clientHeight) return;   // panel closed / not laid out yet — nothing to measure
+    dp.classList.toggle('hasMore', bd.scrollHeight > bd.clientHeight + 2); };
+  measure();
+  if(typeof requestAnimationFrame==='function') requestAnimationFrame(measure);   // re-check once fonts//layout settle
+}
 
 // ---- shared item sorting: every grid (bag · stash · vendor) uses the SAME modes ----
 let BAG_SORT='type', STASH_SORT='type', STASH_BAG_SORT='type', VEND_SORT='type';
@@ -14177,6 +14203,13 @@ function updateBossBar(){
   }
 }
 
+// A visible build stamp. Reloading a 1.3MB local file can quietly serve a cached copy, and there is
+// no worse debugging loop than arguing about a fix that the page you are looking at does not contain.
+const BUILD_ID='2026-08-10 · inspect-pane';
+try{ const _bh=$('menuEnterHint');
+  if(_bh) _bh.innerHTML='ENTER to start<span class="buildStamp">build '+BUILD_ID+'</span>';
+  console.info('[TowerLords] build '+BUILD_ID);
+}catch(_){}
 window.__bootOK = true;   // module reached the end — the boot guard can stand down
 try { init(); }
 catch(err){ $('loadErr').style.display='flex'; $('loadErr').innerHTML='<div class="leInner">⚠ Failed to start the 3D engine.<br>'+(err&&err.message||err)+'<br><br>Your browser couldn\'t open a WebGL context. If you\'re testing co-op with two windows on one PC, the GPU may be out of contexts — close other 3D/game tabs and reload. (Three.js also loads from a CDN, so an internet connection is required.)</div>'; console.error(err); }
