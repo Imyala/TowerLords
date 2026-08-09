@@ -768,6 +768,127 @@ check('the direction arrow is drawn, not a text glyph', ()=>{
   return 'drawn arrow '+w[1]+'px, dark outline, glow, near-opaque chip';
 });
 
+console.log('\n=== BOOT & MENU LAYOUT ===');
+
+const BUILDS=['towerlords.html','towerlords-mobile.html','towerlords-offline.html'];
+const readBuild=f=>fs.readFileSync(path.join(__dirname,'..',f),'utf8');
+
+check('the game never depends on a CDN to start', ()=>{
+  // A blocked/unreachable cdn.jsdelivr.net used to kill the whole ES module before a single line
+  // ran: the menu still painted, but nothing was wired up and no error appeared anywhere.
+  const out=[];
+  for(const f of ['towerlords.html','towerlords-mobile.html']){
+    const html=readBuild(f);
+    const map=html.match(/<script type="importmap">([\s\S]*?)<\/script>/);
+    if(!map) throw new Error(f+': no import map');
+    if(/cdn\.jsdelivr|unpkg\.com/.test(map[1])) throw new Error(f+': three still resolves to a CDN');
+    if(map[1].indexOf('./vendor/three.module.js')<0) throw new Error(f+': three does not resolve to the local vendor copy');
+    out.push(f.replace('towerlords','').replace('.html','')||'desktop');
+  }
+  const three=path.join(__dirname,'..','vendor','three.module.js');
+  if(!fs.existsSync(three)) throw new Error('vendor/three.module.js is missing — the import map points at nothing');
+  const src=fs.readFileSync(three,'utf8');
+  if(!/const REVISION = '160'/.test(src)) throw new Error('vendor three is not the r160 the game was built against');
+  const off=readBuild('towerlords-offline.html');
+  if(/cdn\.jsdelivr|unpkg\.com/.test(off.match(/<script type="importmap">([\s\S]*?)<\/script>/)[1]))
+    throw new Error('the offline build reaches for a CDN');
+  return 'local three r160 ('+Math.round(fs.statSync(three).size/1024)+'KB), no CDN in any build';
+});
+
+check('a failed boot is reported instead of leaving a dead menu', ()=>{
+  for(const f of BUILDS){
+    const html=readBuild(f);
+    if(html.indexOf('window.__bootFail')<0) throw new Error(f+': no boot guard');
+    if(html.indexOf('window.__bootOK = true')<0) throw new Error(f+': the module never signals a successful boot');
+    if(html.indexOf('__bootFail')>html.indexOf('<script type="importmap">'))
+      throw new Error(f+': the guard is installed after the import map — it would miss the failure it exists to catch');
+    if(html.indexOf('var healer=setInterval')<0) throw new Error(f+': a slow-but-successful boot would stay buried under the error screen');
+  }
+  return 'guard + success flag + self-heal in all three builds';
+});
+
+check('the main menu is centred even though its last child is hidden', ()=>{
+  for(const f of BUILDS){
+    const html=readBuild(f);
+    if(/\.overlay > \*:last-child\{margin-bottom:auto/.test(html))
+      throw new Error(f+': auto margin on the last child — it is display:none, so the menu sinks to the bottom');
+    if(html.indexOf(".overlay::before,.overlay::after{content:''")<0) throw new Error(f+': no flex spacers to centre the overlay');
+    const sp=html.match(/\.overlay::before,\.overlay::after\{([^}]*)\}/)[1];
+    if(sp.indexOf('flex:1 1 0')<0) throw new Error(f+': spacers do not grow');
+    if(sp.indexOf('min-height:0')<0) throw new Error(f+': spacers cannot shrink — a tall menu would scroll past its own top');
+  }
+  // and the thing that made it bite: #start really does end on a hidden element
+  const start=readBuild('towerlords.html').match(/<div id="start" class="overlay">([\s\S]*?)\n  <\/div>/);
+  if(!start || !/id="onlineLobby" class="menuCol hidden"/.test(start[1]))
+    throw new Error('#start no longer ends on the hidden lobby — re-check this assumption');
+  return 'pseudo-element spacers, immune to hidden first/last children';
+});
+
+check('the menu scales up on large displays', ()=>{
+  const html=readBuild('towerlords.html');
+  for(const q of ['@media (min-width:1500px)','@media (min-width:2200px)'])
+    if(html.indexOf(q)<0) throw new Error('no '+q+' block — the menu stays a postage stamp on a wide monitor');
+  const wide=html.slice(html.indexOf('@media (min-width:2200px)'));
+  const w=wide.match(/\.menuShell\{width:min\((\d+)px/);
+  if(!w || +w[1]<=980) throw new Error('the menu shell is still capped near its 980px default: '+(w?w[1]:'?'));
+  return 'shell grows to '+w[1]+'px at 2200px+';
+});
+
+console.log('\n=== INSPECT PANE ===');
+
+check('the inspect pane is always mounted, so the bag never jumps', ()=>{
+  for(const f of BUILDS){
+    const html=readBuild(f);
+    if(/<div id="inspectSec" class="hidden">/.test(html))
+      throw new Error(f+': Inspect starts hidden — the CARRIED grid slides up and down as you click items');
+    if(/inspectSec[^\n]*classList\.(add|remove)\('hidden'\)/.test(html))
+      throw new Error(f+': something still shows/hides the Inspect section at runtime');
+    if(html.indexOf('const INSPECT_EMPTY=')<0) throw new Error(f+': no empty-state copy — the pane would be a blank box');
+    if(html.indexOf('#inspectSec{min-height:var(--dpH')<0) throw new Error(f+': the section does not reserve its height');
+  }
+  return 'permanently mounted with a placeholder empty state';
+});
+
+check('the inspect pane is a fixed size driven by one variable', ()=>{
+  const html=readBuild('towerlords.html');
+  const v=html.match(/#invPanel\{--dpH:([^;}]+)[;}]/);
+  if(!v) throw new Error('no --dpH custom property');
+  for(const sel of ['.detailPane{height:var(--dpH','.detailPane.blank','#inspectSec{min-height:var(--dpH'])
+    if(html.indexOf(sel)<0) throw new Error(sel+' does not follow --dpH — pane, empty state and reserved space could disagree');
+  const blank=html.match(/\.detailPane\.blank\{([^}]*)\}/)[1];
+  if(blank.indexOf('height:var(--dpH')<0) throw new Error('the empty state is a different height from the filled pane');
+  return '--dpH = '+v[1].trim();
+});
+
+check('everything in the inspect pane is reachable without scrolling for it', ()=>{
+  const html=readBuild('towerlords.html');
+  // header / two-column body / pinned footer — the actions must not be able to fall below a scroll line
+  for(const cls of ['dp-hd','dp-body','dp-col','dp-foot'])
+    if(html.indexOf('class="'+cls)<0 && html.indexOf('"dp-body${')<0) throw new Error('no .'+cls+' band in the rendered markup');
+  const pane=html.match(/\.detailPane\{([^}]*)\}/)[1];
+  if(pane.indexOf('display:flex')<0 || pane.indexOf('flex-direction:column')<0)
+    throw new Error('the pane is not a flex column — the footer cannot pin');
+  if(pane.indexOf('overflow:hidden')<0) throw new Error('the whole pane still scrolls, which is what buried the buttons');
+  const foot=html.match(/\.dp-foot\{([^}]*)\}/)[1];
+  if(foot.indexOf('flex:none')<0) throw new Error('the action footer can be squashed or scrolled away');
+  const body=html.match(/\.dp-body\{([^}]*)\}/)[1];
+  if(body.indexOf('flex:1 1 auto')<0 || body.indexOf('min-height:0')<0) throw new Error('the body does not absorb the leftover height');
+  if(body.indexOf('grid-template-columns')<0) throw new Error('the body is not two columns — the old single column is what overflowed');
+  if(html.indexOf('.dp-body.solo{grid-template-columns:minmax(0,1fr)')<0)
+    throw new Error('items with nothing to compare against would leave a dead empty column');
+  if(html.indexOf('@container (max-width:560px)')<0) throw new Error('a narrowed panel would squeeze both columns instead of stacking them');
+  return 'header + 2-col scrollable body + pinned footer';
+});
+
+check('the action buttons render inside the footer, not the body', ()=>{
+  const html=readBuild('towerlords.html');
+  const i=html.indexOf('if(acts) h+=`<div class="dp-foot">');
+  if(i<0) throw new Error('actions are not wrapped in the footer band');
+  if(html.indexOf('<div class="dp-foot"><div class="dp-acts">${acts}</div></div>')<0)
+    throw new Error('the footer does not contain the action row');
+  return 'Equip / Stash / Lock always on screen';
+});
+
 console.log(R.join('\n'));
 console.log('\n=== '+(fails?('FAILURES: '+fails):'ALL CHECKS PASSED')+' ===');
 process.exit(fails?1:0);

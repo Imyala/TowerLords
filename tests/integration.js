@@ -301,6 +301,88 @@ check('shift+click stops cleanly when points run out', ()=>{
   return 'one point available -> exactly one rank';
 });
 
+// ---------------------------------------------------------------- inspect / compare pane
+console.log('\n=== INSPECT PANE ===');
+
+// Every band the fixed-size pane promises must actually be emitted, for every kind of item, and the
+// action buttons must land in the pinned footer rather than somewhere down the scrollable body.
+// Build a dedicated bag first — the stash tests above shuffle items in and out of G.inv.
+check('stage a bag holding one of every item kind', ()=>{
+  run(`
+    G.inv=[]; G.invCap=24; G.equip={};
+    G._gear=makeItem(7); while(!G._gear.slotKey||G._gear.isGem||G._gear.isFlask||G._gear.isSkillGem) G._gear=makeItem(7);
+    G._gem=makeGem(7); G._flask=makeFlask(7); G._skill=makeSkillGem(7);
+    G.inv.push(G._gear, G._gem, G._flask, G._skill);
+    G._worn=makeItem(7); G._worn.slotKey=G._gear.slotKey; G.equip[G._gear.slotKey]=G._worn;
+    recompute(); renderInv();
+  `);
+  const G=g('G');
+  if(!G._gear||!G._gem||!G._flask||!G._skill||!G._worn) throw new Error('staging failed');
+  return 'gear ('+G._gear.slotKey+') · gem · flask · skill gem · one worn counterpart';
+});
+
+function inspect(expr, ctxObj){
+  run('showItemDetail('+expr+', '+JSON.stringify(ctxObj)+');');
+  return String(g("document.getElementById('itemDetail').innerHTML")||'');
+}
+
+check('inspecting a bag item lays out header / body / footer', ()=>{
+  const h=inspect('G._gear', {kind:'bag'});
+  for(const band of ['class="dp-hd','class="dp-body','class="dp-col','class="dp-foot'])
+    if(h.indexOf(band)<0) throw new Error('missing band '+band);
+  const foot=h.slice(h.indexOf('class="dp-foot'));
+  for(const act of ['data-act="equip"','data-act="stash"','data-act="lock"'])
+    if(foot.indexOf(act)<0) throw new Error(act+' is not in the pinned footer');
+  return 'header + body + footer, all 3 actions pinned';
+});
+
+check('an item with nothing to compare against collapses to one column', ()=>{
+  const h=inspect('G._gem', {kind:'bag'});
+  if(h.indexOf('dp-body solo')<0) throw new Error('no solo class — the pane would show a dead empty column');
+  if(h.indexOf('dp-colB')>=0) throw new Error('a comparison column was emitted for an item that has no equipped counterpart');
+  return 'single column, no empty gutter';
+});
+
+check('a comparable item gets a real comparison column', ()=>{
+  const h=inspect('G._gear', {kind:'bag'});
+  if(h.indexOf('dp-colB')<0) throw new Error('no comparison column');
+  if(h.indexOf('dp-body solo')>=0) throw new Error('still collapsed to one column despite having a comparison');
+  const B=h.slice(h.indexOf('dp-colB'));
+  if(B.indexOf('dp-cmp')<0) throw new Error('the comparison column has no equipped-item block');
+  if(h.slice(0,h.indexOf('dp-colB')).indexOf('dp-cmp')>=0) throw new Error('the comparison leaked into the left column');
+  if(h.slice(0,h.indexOf('dp-colB')).indexOf('dp-af')<0) throw new Error('the item own affixes left column A');
+  return 'facts in column A, verdict + worn gear in column B';
+});
+
+check('every item kind inspects without throwing', ()=>{
+  const kinds=[
+    ['G._gem',   {kind:'bag'},   'stat gem'],
+    ['G._flask', {kind:'bag'},   'flask'],
+    ['G._skill', {kind:'bag'},   'skill gem'],
+    ['G._gear',  {kind:'stash'}, 'stashed gear'],
+    ['G._worn',  {kind:'equip'}, 'equipped gear'],
+  ];
+  const done=[];
+  for(const [expr,c,label] of kinds){
+    const h=inspect(expr, c);
+    if(!h) throw new Error(label+': rendered nothing');
+    if(h.indexOf('class="dp-hd')<0) throw new Error(label+': no header band');
+    if(h.indexOf('class="dp-body')<0) throw new Error(label+': no body band');
+    done.push(label);
+  }
+  return done.join(' · ');
+});
+
+check('clearing the pane leaves readable placeholder copy, not an empty box', ()=>{
+  run('clearItemDetail();');
+  const dp=g("document.getElementById('itemDetail')");
+  if(String(dp.className||'').indexOf('blank')<0) throw new Error('the pane is not in its blank state');
+  const txt=String(dp.textContent||'').trim();
+  if(txt.length<20) throw new Error('blank pane has no placeholder copy — it reads as a broken empty box');
+  if(String(dp.innerHTML||'').indexOf('dp-foot')>=0) throw new Error('stale action buttons survived the clear');
+  return JSON.stringify(txt.slice(0,42)+'…');
+});
+
 console.log(R.join('\n'));
 console.log('\n=== '+(fails?('FAILURES: '+fails):'ALL CHECKS PASSED')+' ===');
 process.exit(fails?1:0);

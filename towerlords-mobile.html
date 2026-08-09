@@ -719,10 +719,10 @@
   .eqGrid,.slotRow{align-items:start;}
   /* ---- NO VISIBLE SCROLLBARS ANYWHERE ---- the wheel still scrolls everything, the bars just
      never paint. They were eating layout width and looked like chrome bolted onto the game. */
-  .panel,.panelBody,.bagGrid,.detailPane,#treeBody,#treeCols,#petScroll,#csBody,#chatBody,#towerInfo,
+  .panel,.panelBody,.bagGrid,.detailPane,.dp-body,#treeBody,#treeCols,#petScroll,#csBody,#chatBody,#towerInfo,
   .stashSide,.specGrid,.overlay,.menuPanel{scrollbar-width:none;-ms-overflow-style:none;}
   .panel::-webkit-scrollbar,.panelBody::-webkit-scrollbar,.bagGrid::-webkit-scrollbar,
-  .detailPane::-webkit-scrollbar,#treeBody::-webkit-scrollbar,#treeCols::-webkit-scrollbar,
+  .detailPane::-webkit-scrollbar,.dp-body::-webkit-scrollbar,#treeBody::-webkit-scrollbar,#treeCols::-webkit-scrollbar,
   #petScroll::-webkit-scrollbar,#csBody::-webkit-scrollbar,#chatBody::-webkit-scrollbar,
   #towerInfo::-webkit-scrollbar,.stashSide::-webkit-scrollbar,.specGrid::-webkit-scrollbar,
   .overlay::-webkit-scrollbar,.menuPanel::-webkit-scrollbar{width:0;height:0;display:none;}
@@ -742,31 +742,53 @@
   .buyRow.cant{border-color:rgba(255,122,138,.42);color:#ffabb6;background:rgba(255,122,138,.08);}
   .buyRow.maxed{opacity:.5;cursor:default;pointer-events:none;border-color:rgba(255,255,255,.18);color:#9aa3b8;background:rgba(255,255,255,.04);}
   /* equip-comparison verdict badge in the inspect pane */
-  .dp-verdict{display:inline-flex;align-items:center;gap:10px;margin-top:13px;padding:9px 15px;border-radius:9px;font-size:15px;font-weight:bold;letter-spacing:.5px;}
-  .dp-verdict.up{background:rgba(109,255,140,.2);border:1px solid rgba(109,255,140,.65);color:#bdffcb;font-size:18px;padding:11px 18px;box-shadow:0 0 22px -5px rgba(109,255,140,.6);animation:vpop .25s ease-out;}
+  .dp-verdict{display:inline-flex;align-items:center;gap:9px;flex-wrap:wrap;margin-top:0;padding:7px 12px;border-radius:9px;font-size:13.5px;font-weight:bold;letter-spacing:.5px;}
+  .dp-verdict.up{background:rgba(109,255,140,.2);border:1px solid rgba(109,255,140,.65);color:#bdffcb;font-size:15px;padding:8px 14px;box-shadow:0 0 22px -5px rgba(109,255,140,.6);animation:vpop .25s ease-out;}
   .dp-verdict.down{background:rgba(255,122,138,.14);border:1px solid rgba(255,122,138,.5);color:#ffb3bd;}
   .dp-verdict.side{background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.24);color:#dbe1ee;}
   .dp-verdict .vd{font-weight:normal;opacity:.9;font-size:12px;letter-spacing:.2px;}
   @keyframes vpop{0%{transform:scale(.82);opacity:.4}60%{transform:scale(1.06)}100%{transform:scale(1);opacity:1}}
-  /* inspect / compare pane (Torchlight-style item detail) */
-  /* fixed height (not min-height) so switching between items with more/less stat text never
-     resizes the panel — the inspect pane just scrolls internally if content runs long. */
-  .detailPane{height:258px;overflow-y:auto;border:1px solid rgba(86,224,255,.2);border-radius:11px;padding:14px 16px;
-    background:linear-gradient(180deg,rgba(86,224,255,.05),rgba(8,12,22,.55));font-size:14.5px;line-height:1.55;}
-  .detailPane.blank{display:flex;align-items:center;justify-content:center;color:#7a8499;font-size:13.5px;text-align:center;height:258px;padding:14px 34px;}
+  /* ===== inspect / compare pane (Torchlight-style item detail) =====
+     Three fixed bands: a header that never moves, a two-column body, and an action footer pinned to
+     the bottom edge. The old pane was one tall single column at 258px, so anything past the affix
+     list — sockets, the equipped comparison, and crucially the Equip/Stash/Lock buttons — fell below
+     a scroll line and had to be hunted for. Splitting item-facts (left) from the comparison (right)
+     roughly halves the stack height, and the footer guarantees the buttons are always on screen.
+     --dpH is a single source of truth so the pane, its empty state and the reserved section space
+     can never disagree and shunt the CARRIED grid around. */
+  #invPanel{--dpH:clamp(300px,40vh,460px);}
+  .detailPane{height:var(--dpH,340px);border:1px solid rgba(86,224,255,.2);border-radius:11px;padding:13px 15px;
+    background:linear-gradient(180deg,rgba(86,224,255,.05),rgba(8,12,22,.55));font-size:14px;line-height:1.5;
+    display:flex;flex-direction:column;gap:9px;overflow:hidden;}
+  .detailPane.blank{display:flex;flex-direction:row;align-items:center;justify-content:center;color:#7a8499;font-size:13.5px;text-align:center;height:var(--dpH,340px);padding:14px 34px;}
   /* the Inspect section is permanently mounted (see clearItemDetail) so the CARRIED grid below it
      never shifts — it reserves its space whether or not an item is currently selected. */
-  #inspectSec{min-height:258px;}
-  .dp-nm{font-size:20px;font-weight:bold;display:flex;align-items:center;gap:10px;margin-bottom:2px;color:var(--rc,#fff);text-shadow:0 0 12px color-mix(in srgb,var(--rc,transparent) 45%,transparent);}
-  .dp-nm .dp-ic{font-size:28px;filter:drop-shadow(0 0 8px color-mix(in srgb,var(--rc,#000) 50%,transparent));}
-  .dp-type{font-size:12px;opacity:.62;text-transform:uppercase;letter-spacing:1.5px;margin-bottom:11px;}
-  .dp-af{font-size:15.5px;line-height:1.9;}
-  .dp-elem{font-size:14px;font-weight:bold;margin-top:6px;}
-  .dp-uniq{font-size:14px;color:var(--unique);font-style:italic;margin-top:9px;line-height:1.55;}
-  .dp-socks{display:flex;gap:10px;margin-top:11px;align-items:center;flex-wrap:wrap;}
-  .dp-socksLbl{width:100%;font-size:11px;letter-spacing:1.2px;text-transform:uppercase;opacity:.6;margin-bottom:3px;}
+  #inspectSec{min-height:var(--dpH,340px);}
+  .dp-hd{flex:none;padding-bottom:8px;border-bottom:1px solid color-mix(in srgb,var(--rc,#8893a8) 32%,transparent);}
+  .dp-body{flex:1 1 auto;min-height:0;display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,.95fr);
+    gap:8px 20px;align-content:start;overflow-y:auto;overflow-x:hidden;}
+  .dp-body.solo{grid-template-columns:minmax(0,1fr);}
+  .dp-col{min-width:0;}
+  .dp-colB{border-left:1px solid rgba(255,255,255,.1);padding-left:18px;}
+  .dp-foot{flex:none;border-top:1px solid rgba(255,255,255,.1);padding-top:9px;}
+  .dp-foot .dp-acts{margin-top:0;}
+  /* narrow pane — either a phone or a panel the player has dragged narrow — stacks the two columns
+     rather than squeezing them. A container query tracks the resizable panel itself; the media query
+     is the fallback for browsers without container query support. */
+  .invRight{container-type:inline-size;}
+  @container (max-width:560px){ .dp-body{grid-template-columns:minmax(0,1fr);} .dp-colB{border-left:none;padding-left:0;border-top:1px solid rgba(255,255,255,.1);padding-top:9px;} }
+  @media (max-width:760px){ .dp-body{grid-template-columns:minmax(0,1fr);} .dp-colB{border-left:none;padding-left:0;border-top:1px solid rgba(255,255,255,.1);padding-top:9px;} }
+  .dp-nm{font-size:17px;font-weight:bold;display:flex;align-items:center;gap:9px;margin-bottom:1px;color:var(--rc,#fff);text-shadow:0 0 12px color-mix(in srgb,var(--rc,transparent) 45%,transparent);}
+  .dp-nm .dp-nmT{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .dp-nm .dp-ic{flex:none;font-size:24px;filter:drop-shadow(0 0 8px color-mix(in srgb,var(--rc,#000) 50%,transparent));}
+  .dp-type{font-size:11px;opacity:.62;text-transform:uppercase;letter-spacing:1.5px;}
+  .dp-af{font-size:13.5px;line-height:1.72;}
+  .dp-elem{font-size:12.5px;font-weight:bold;margin-top:5px;}
+  .dp-uniq{font-size:12.5px;color:var(--unique);font-style:italic;margin-top:7px;line-height:1.5;}
+  .dp-socks{display:flex;gap:8px;margin-top:9px;align-items:center;flex-wrap:wrap;}
+  .dp-socksLbl{width:100%;font-size:10px;letter-spacing:1.2px;text-transform:uppercase;opacity:.6;margin-bottom:3px;line-height:1.45;}
   .dp-socks.armed .dp-socksLbl{opacity:1;color:var(--neon);font-weight:bold;}
-  .dp-socks .ds{width:38px;height:38px;border-radius:50%;border:2px solid rgba(255,255,255,.32);background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;font-size:20px;cursor:pointer;transition:transform .1s,box-shadow .15s,border-color .15s,background .15s;}
+  .dp-socks .ds{width:32px;height:32px;border-radius:50%;border:2px solid rgba(255,255,255,.32);background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;font-size:20px;cursor:pointer;transition:transform .1s,box-shadow .15s,border-color .15s,background .15s;}
   .dp-socks .ds:hover{border-color:var(--neon);box-shadow:0 0 13px rgba(86,224,255,.6);transform:scale(1.1);}
   .dp-socks .ds.f{border-color:var(--gold);background:rgba(255,206,77,.2);box-shadow:0 0 9px rgba(255,206,77,.3);}
   .dp-socks .ds.f:hover{border-color:#ff7a8a;box-shadow:0 0 13px rgba(255,122,138,.6);}
@@ -782,12 +804,14 @@
   .dp-fuse .dfr{font-size:16.5px;margin:5px 0;}
   .dp-fuse .dfd{font-size:12px;opacity:.82;line-height:1.5;}
   .dp-fuse .dfcost{font-size:12.5px;margin-top:7px;color:var(--gold);font-weight:bold;} .dp-fuse .dfcost.no{color:var(--hp);}
-  .dp-cmp{margin-top:11px;padding-top:9px;border-top:1px solid rgba(255,255,255,.14);}
-  .dp-cmp .h{font-size:11px;letter-spacing:1.5px;text-transform:uppercase;opacity:.6;margin-bottom:6px;}
-  .dp-cmp .cn{font-size:14.5px;font-weight:bold;margin-bottom:4px;}
-  .dp-cmp .ca{font-size:13.5px;opacity:.85;line-height:1.7;}
-  .dp-acts{display:flex;gap:7px;flex-wrap:wrap;margin-top:14px;}
-  .dp-acts .vbtn{flex:1;min-width:84px;font-size:13.5px;padding:9px 6px;}
+  .dp-cmp{margin-top:10px;padding-top:0;border-top:none;}
+  .dp-cmp:first-child{margin-top:0;}
+  .dp-cmp .h{font-size:10px;letter-spacing:1.5px;text-transform:uppercase;opacity:.6;margin-bottom:5px;}
+  .dp-cmp .cn{font-size:13px;font-weight:bold;margin-bottom:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .dp-cmp .ca{font-size:12.5px;opacity:.85;line-height:1.62;}
+  .dp-acts{display:flex;gap:7px;flex-wrap:wrap;margin-top:12px;}
+  .dp-acts.inline{margin-top:9px;}
+  .dp-acts .vbtn{flex:1;min-width:84px;font-size:13px;padding:8px 6px;}
   .dp-bind{display:flex;gap:6px;margin-top:9px;align-items:center;flex-wrap:wrap;} .dp-bind .bl{font-size:11px;opacity:.6;margin-right:2px;}
   .vendRow{display:flex;gap:6px;align-items:center;flex-wrap:wrap;}
   .vbtn{cursor:pointer;font-size:10px;font-weight:bold;letter-spacing:.3px;padding:6px 10px;border-radius:6px;border:1px solid rgba(86,224,255,.3);
@@ -1884,17 +1908,14 @@
 })();
 </script>
 <script type="importmap">
-{ "imports": {
-  "three": "./vendor/three.module.js",
-  "three-cdn": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js"
-} }
+{ "imports": { "three": "./vendor/three.module.js" } }
 </script>
 <script type="module">
-// three.js resolves to the LOCAL vendor/ copy first, so the game runs with no internet at all.
-// The CDN is only a fallback for when this .html has been copied somewhere without vendor/.
-let THREE;
-try { THREE = await import('three'); }
-catch(_noLocalThree){ THREE = await import('three-cdn'); }
+// three.js is served from the LOCAL vendor/ copy, not a CDN. It used to load from
+// cdn.jsdelivr.net, which meant no internet (or any blocker sitting on that domain) took the
+// whole game down silently — the module never evaluated, so nothing was ever wired up.
+// Keep vendor/three.module.js next to this file; towerlords-offline.html has it inlined instead.
+import * as THREE from 'three';
 
 const $ = id => document.getElementById(id);
 // RNG is switchable: Math.random normally, a seeded mulberry32 stream while generating DAILY
@@ -11474,45 +11495,41 @@ function blankCell(){ const d=document.createElement('div'); d.className='tile e
 function itemDetailEls(){ const a=document.getElementById('itemDetail'); return a?[a]:[]; }
 function showItemDetail(it, ctx){ ctx=ctx||{}; const dps=itemDetailEls(); if(!dps.length) return; dps.forEach(dp=>showItemDetailInto(dp,it,ctx)); }
 function showItemDetailInto(dp, it, ctx){ ctx=ctx||{}; if(!dp) return; dp.classList.remove('blank');
+  // The pane is a FIXED-SIZE, three-band layout — header / two-column body / pinned action footer —
+  // rather than one long single column. Splitting "what this item is" (left) from "how it compares to
+  // what you're wearing" (right) roughly halves the height, so a full legendary with affixes, sockets
+  // and a comparison fits on screen at once instead of hiding its buttons below a scroll line.
   const rc = it.rarity ? it.rarity.css : 'common';
-  let h=`<div class="dp-nm r-${rc}"><span class="dp-ic">${it.slotIc||it.ic||'❔'}</span><span>${it.name}</span></div>`;
-  h+=`<div class="dp-type">${(it.rarity?it.rarity.nm+' ':'')+(it.slotNm||'')}</div>`;
-  if(it.slotKey==='weapon'){ const w=wpnArch(it); h+=`<div class="dp-elem" style="color:var(--neon)">${w.ic} ${w.nm} — ${w.style}</div>`; }
-  if(it.element) h+=`<div class="dp-elem" style="color:${eleColor(it.element)}">${ELEMENTS[it.element].nm} weapon</div>`;
+  let hd=`<div class="dp-nm r-${rc}"><span class="dp-ic">${it.slotIc||it.ic||'❔'}</span><span class="dp-nmT">${it.name}</span></div>`;
+  hd+=`<div class="dp-type">${(it.rarity?it.rarity.nm+' ':'')+(it.slotNm||'')}</div>`;
+  if(it.slotKey==='weapon'){ const w=wpnArch(it); hd+=`<div class="dp-elem" style="color:var(--neon)">${w.ic} ${w.nm} — ${w.style}</div>`; }
+  if(it.element) hd+=`<div class="dp-elem" style="color:${eleColor(it.element)}">${ELEMENTS[it.element].nm} weapon</div>`;
   const comparable = ctx.kind==='bag' && it.slotKey && !it.isGem && !it.isFlask && !it.isSkillGem && !it.isPet && !it.isPot;
   let eqMap=null, eqItem=null;
   if(comparable){ eqItem=G.equip[it.slotKey]; if(eqItem && eqItem!==it){ eqMap={}; for(const a of eqItem.affixes) eqMap[a.key]=(eqMap[a.key]||0)+a.val; } }
-  if(it.affixes && it.affixes.length) h+=`<div class="dp-af">${it.affixes.map(af=>affixLineCmp(af,eqMap)).join('<br>')}</div>`;
-  if(it.desc) h+=`<div class="dp-uniq">${it.desc}</div>`;
+  // ---- LEFT column: what the item itself is and does ----
+  let A='';
+  if(it.affixes && it.affixes.length) A+=`<div class="dp-af">${it.affixes.map(af=>affixLineCmp(af,eqMap)).join('<br>')}</div>`;
+  if(it.desc) A+=`<div class="dp-uniq">${it.desc}</div>`;
+  if(it.isSkillGem){ const sd=SKILLS[it.skillId];
+    if(sd) A+=`<div class="dp-elem" style="color:var(--mana)">🔵 ${sd.mana} mana · ${sd.cd.toFixed(2)}s cooldown</div>`;
+    if(sd&&sd.ds) A+=`<div class="dp-uniq" style="border-color:rgba(103,196,255,.3)">${sd.ds}</div>`;
+    if(it.fused && it.components) A+=`<div class="dp-uniq">⚛ Fused from ${it.components.length} skills — ${it.components.join(' + ')} (fused ${it.fuseCount}×)</div>`; }
   if(it.sockets){ const sel=G.selGem, filled=Array.isArray(it.socketed)?it.socketed.slice(0,it.sockets).filter(Boolean).length:0, hasEmpty=filled<it.sockets;
     const armed=!!sel && sel.isGem && hasEmpty;   // a stat gem is selected and this item has a free socket → show it as a live drop target
     let s=`<div class="dp-socksLbl">${armed?'▼ click a glowing socket to set '+(sel.ic||'💠')+' '+sel.name:'Sockets ('+filled+'/'+it.sockets+')'+(hasEmpty&&!sel?' — drag a gem here, or select one then click a socket':' — click a gem to remove it')}</div>`;
     for(let i=0;i<it.sockets;i++){ const g=it.socketed&&it.socketed[i];
       s+=`<div class="ds ${g?'f':'empty'}" data-si="${i}" title="${g?g.name+' — click to pop it out':(sel?'set '+sel.name+' here':'empty socket')}">${g?g.ic:(armed?'＋':'◯')}</div>`; }
-    h+=`<div class="dp-socks${armed?' armed':''}">${s}</div>`; }
-  if(comparable && eqItem){
-    let better=0,worse=0,fresh=0,lost=0;
-    for(const af of it.affixes){ const ev=eqMap[af.key]; if(ev===undefined){fresh++;continue;} const dv=af.val-ev; if(dv>0.05)better++; else if(dv<-0.05)worse++; }
-    for(const k in eqMap){ if(!it.affixes.some(a=>a.key===k)) lost++; }
-    const score=better+fresh-worse-lost, cls=score>0?'up':score<0?'down':'side';
-    const verdict=score>0?'▲ UPGRADE':score<0?'▼ DOWNGRADE':'＝ SIDEGRADE';
-    const parts=[]; if(better)parts.push('▲'+better+' better'); if(fresh)parts.push('★'+fresh+' new'); if(worse)parts.push('▼'+worse+' worse'); if(lost)parts.push('✕'+lost+' lost');
-    h+=`<div class="dp-verdict ${cls}">${verdict}${parts.length?`<span class="vd">${parts.join(' · ')}</span>`:''}</div>`;
-  }
-  if(comparable){ if(eqItem) h+=`<div class="dp-cmp"><div class="h">▼ currently equipped</div><div class="cn" style="color:var(--${eqItem.rarity.css})">${eqItem.slotIc} ${eqItem.name}</div><div class="ca">${eqItem.affixes.map(affixLine).join('<br>')}</div></div>`;
-    else h+=`<div class="dp-cmp"><div class="h">currently equipped</div><div class="ca" style="opacity:.5">— ${SLOTMAP[it.slotKey].nm} slot empty —</div></div>`; }
-  if(it.isSkillGem){ const sd=SKILLS[it.skillId];
-    if(sd) h+=`<div class="dp-elem" style="color:var(--mana)">🔵 ${sd.mana} mana · ${sd.cd.toFixed(2)}s cooldown</div>`;
-    if(sd&&sd.ds) h+=`<div class="dp-uniq" style="border-color:rgba(103,196,255,.3)">${sd.ds}</div>`;
-    if(it.fused && it.components) h+=`<div class="dp-uniq">⚛ Fused from ${it.components.length} skills — ${it.components.join(' + ')} (fused ${it.fuseCount}×)</div>`; }
+    A+=`<div class="dp-socks${armed?' armed':''}">${s}</div>`; }
   if(ctx.kind==='bag' && it.isSkillGem){
-    let b='<div class="dp-bind"><span class="bl">Bind:</span>'; for(let i=0;i<9;i++) b+=`<div class="bindBtn${G.slots[i]===it?' act':''}" data-bskill="${i}">${kbShort((SETTINGS.keybinds||DEFAULT_KEYBINDS)['slot'+(i+1)])}</div>`; b+=`<div class="bindBtn${G.sigSlot===it?' act':''}" data-bsig="1" title="Signature ultimate">⇧</div></div>`; h+=b;
+    let b='<div class="dp-bind"><span class="bl">Bind:</span>'; for(let i=0;i<9;i++) b+=`<div class="bindBtn${G.slots[i]===it?' act':''}" data-bskill="${i}">${kbShort((SETTINGS.keybinds||DEFAULT_KEYBINDS)['slot'+(i+1)])}</div>`; b+=`<div class="bindBtn${G.sigSlot===it?' act':''}" data-bsig="1" title="Signature ultimate">⇧</div></div>`; A+=b;
   }
+  if(ctx.kind==='bag' && it.isFlask){ let b='<div class="dp-bind"><span class="bl">Belt:</span>'; for(let i=0;i<5;i++) b+=`<div class="bindBtn${G.belt[i]===it?' act':''}" data-bflask="${i}">${kbShort((SETTINGS.keybinds||DEFAULT_KEYBINDS)['flask'+(i+1)])}</div>`; b+='</div>'; A+=b; }
   // ---- fusion controls (work whether the skill is loose in the bag OR bound to a slot/signature) ----
   if(it.isSkillGem){
     if(_fuseA && _fuseA!==it && _fuseA.isSkillGem){
       const pv=previewFuse(_fuseA,it), can=META.fame>=pv.fame;
-      h+=`<div class="dp-fuse${pv.syn?' syn':''}">
+      A+=`<div class="dp-fuse${pv.syn?' syn':''}">
           <div class="dfh">${pv.syn?'★ SYNERGY FUSION':'⚛ FUSION'}</div>
           <div class="dfn">${_fuseA.ic} ${_fuseA.name} &nbsp;＋&nbsp; ${it.ic} ${it.name}</div>
           <div class="dfr">→ <b>${pv.ic} ${pv.name}</b></div>
@@ -11521,12 +11538,24 @@ function showItemDetailInto(dp, it, ctx){ ctx=ctx||{}; if(!dp) return; dp.classL
           <div class="dp-acts"><button class="vbtn gold" data-act="fuseconfirm"${can?'':' disabled'}>${can?'⚛ Fuse them':'Not enough fame'}</button><button class="vbtn" data-act="fusecancel">Cancel</button></div>
         </div>`;
     } else if(_fuseA===it){
-      h+=`<div class="dp-fuse"><div class="dfh">⚛ FUSION BASE SELECTED</div><div class="dfd">Now click another skill gem to fuse it with this one.</div><div class="dp-acts"><button class="vbtn" data-act="fusecancel">Cancel fusion</button></div></div>`;
+      A+=`<div class="dp-fuse"><div class="dfh">⚛ FUSION BASE SELECTED</div><div class="dfd">Now click another skill gem to fuse it with this one.</div><div class="dp-acts"><button class="vbtn" data-act="fusecancel">Cancel fusion</button></div></div>`;
     } else {
-      h+=`<div class="dp-acts"><button class="vbtn" data-act="fusestart" title="Combine two skills into one stronger skill (costs fame; the originals are consumed)">⚛ Fuse this skill…</button></div>`;
+      A+=`<div class="dp-acts inline"><button class="vbtn" data-act="fusestart" title="Combine two skills into one stronger skill (costs fame; the originals are consumed)">⚛ Fuse this skill…</button></div>`;
     }
   }
-  if(ctx.kind==='bag' && it.isFlask){ let b='<div class="dp-bind"><span class="bl">Belt:</span>'; for(let i=0;i<5;i++) b+=`<div class="bindBtn${G.belt[i]===it?' act':''}" data-bflask="${i}">${kbShort((SETTINGS.keybinds||DEFAULT_KEYBINDS)['flask'+(i+1)])}</div>`; b+='</div>'; h+=b; }
+  // ---- RIGHT column: the upgrade verdict and the gear it would replace ----
+  let B='';
+  if(comparable && eqItem){
+    let better=0,worse=0,fresh=0,lost=0;
+    for(const af of it.affixes){ const ev=eqMap[af.key]; if(ev===undefined){fresh++;continue;} const dv=af.val-ev; if(dv>0.05)better++; else if(dv<-0.05)worse++; }
+    for(const k in eqMap){ if(!it.affixes.some(a=>a.key===k)) lost++; }
+    const score=better+fresh-worse-lost, cls=score>0?'up':score<0?'down':'side';
+    const verdict=score>0?'▲ UPGRADE':score<0?'▼ DOWNGRADE':'＝ SIDEGRADE';
+    const parts=[]; if(better)parts.push('▲'+better+' better'); if(fresh)parts.push('★'+fresh+' new'); if(worse)parts.push('▼'+worse+' worse'); if(lost)parts.push('✕'+lost+' lost');
+    B+=`<div class="dp-verdict ${cls}">${verdict}${parts.length?`<span class="vd">${parts.join(' · ')}</span>`:''}</div>`;
+  }
+  if(comparable){ if(eqItem) B+=`<div class="dp-cmp"><div class="h">▼ currently equipped</div><div class="cn" style="color:var(--${eqItem.rarity.css})">${eqItem.slotIc} ${eqItem.name}</div><div class="ca">${eqItem.affixes.map(affixLine).join('<br>')}</div></div>`;
+    else B+=`<div class="dp-cmp"><div class="h">currently equipped</div><div class="ca" style="opacity:.5">— ${SLOTMAP[it.slotKey].nm} slot empty —</div></div>`; }
   let acts='';
   if(ctx.kind==='bag'){
     if(it.isGem) acts+=`<button class="vbtn${G.selGem===it?' gold':''}" data-act="selgem">${G.selGem===it?'✓ click a socket ◯':'Select to socket'}</button>`;
@@ -11540,7 +11569,9 @@ function showItemDetailInto(dp, it, ctx){ ctx=ctx||{}; if(!dp) return; dp.classL
   else if(ctx.kind==='sigslot') acts+=`<button class="vbtn" data-act="unbindsig">Unbind</button>`;
   else if(ctx.kind==='beltslot') acts+=`<button class="vbtn" data-act="unbindflask">Unbind</button>`;
   else if(ctx.kind==='stash') acts+=`<button class="vbtn" data-act="takeback">⇧ Take back</button>`;
-  if(acts) h+=`<div class="dp-acts">${acts}</div>`;
+  let h=`<div class="dp-hd r-${rc}">${hd}</div>`
+       +`<div class="dp-body${B?'':' solo'}"><div class="dp-col">${A}</div>${B?`<div class="dp-col dp-colB">${B}</div>`:''}</div>`;
+  if(acts) h+=`<div class="dp-foot"><div class="dp-acts">${acts}</div></div>`;
   dp.innerHTML=h;
   dp.querySelectorAll('.ds').forEach(ch=>{ const si=+ch.dataset.si;
     ch.onclick=()=>{ const g=it.socketed&&it.socketed[si];
@@ -11578,7 +11609,7 @@ function showItemDetailInto(dp, it, ctx){ ctx=ctx||{}; if(!dp) return; dp.classL
 // whole CARRIED grid jump ~290px up and down every time you moved off an item, which made the bag
 // almost unusable. Empty state = placeholder copy in the same box, never a collapsed section.
 const INSPECT_EMPTY='Click an item to inspect it — its stats are compared against what you have equipped.';
-function clearItemDetail(){ itemDetailEls().forEach(dp=>{ dp.className='detailPane blank'; dp.textContent=INSPECT_EMPTY; }); }
+function clearItemDetail(){ itemDetailEls().forEach(dp=>{ dp.className='detailPane blank'; dp.innerHTML=''; dp.textContent=INSPECT_EMPTY; }); }
 
 // ---- shared item sorting: every grid (bag · stash · vendor) uses the SAME modes ----
 let BAG_SORT='type', STASH_SORT='type', STASH_BAG_SORT='type', VEND_SORT='type';
