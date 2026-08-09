@@ -1039,8 +1039,12 @@
     screens). Auto margins on the first/last child do the same visual centering when content fits, but — unlike
     justify-content — can never go negative, so once content overflows they simply collapse to 0 and the top item
     lands flush with the real scrollTop:0. Same technique #treeCols below already relies on. */
-  .overlay > *:first-child{margin-top:auto;}
-  .overlay > *:last-child{margin-bottom:auto;}
+  /* Vertical centering via flexible spacers instead of auto margins on the first/last CHILD:
+     every overlay ends with screens that are display:none (.hidden), and margin-bottom:auto on a
+     display:none element does nothing — so the whole menu sank to the bottom of the viewport.
+     Pseudo-element spacers always exist, share the free space evenly, and (because they can shrink
+     to 0) never push the top of a tall menu out of scroll reach — same guarantee auto margins gave. */
+  .overlay::before,.overlay::after{content:'';display:block;flex:1 1 0;min-height:0;width:100%;}
   h1{font-size:clamp(30px,10vw,58px);letter-spacing:clamp(3px,2vw,10px);max-width:100%;background:linear-gradient(90deg,#56e0ff,#b06bff,#ff9a3d);
     -webkit-background-clip:text;background-clip:text;color:transparent;text-shadow:0 0 50px rgba(176,107,255,.3);}
   .tag{opacity:.7;font-size:clamp(11px,3vw,14px);letter-spacing:clamp(2px,1vw,4px);margin:10px 0 28px;padding:0 12px;max-width:100%;}
@@ -1363,6 +1367,29 @@
   #bossSpeech .bsName{display:block;font-size:11px;font-weight:bold;letter-spacing:2px;color:var(--gold);text-transform:uppercase;margin-bottom:3px;}
   #bossSpeech .bsLine{font-size:16px;line-height:1.4;color:#ffeec4;font-style:italic;text-shadow:0 2px 6px #000;}
   @keyframes bsIn{from{opacity:0;transform:translate(-50%,10px);}to{opacity:1;transform:translate(-50%,0);}}
+
+  /* ---- large / ultrawide displays: the menu was a postage stamp in the middle of a 3000px screen ---- */
+  @media (min-width:1500px){
+    .menuShell{width:min(1200px,92vw);gap:32px;}
+    .menuPanel{width:400px;}
+    .menuCol{gap:16px;}
+    #start h1{font-size:70px;letter-spacing:13px;}
+    #start .tag{font-size:16px;letter-spacing:5px;margin-bottom:34px;}
+    #start .btn:not(.small){width:340px;font-size:20px;padding:15px 34px;}
+    #start .btn.ghost:not(.small){font-size:17px;padding:13px 30px;}
+  }
+  @media (min-width:2200px){
+    .menuShell{width:min(1520px,90vw);gap:44px;}
+    .menuPanel{width:520px;padding:24px 24px 20px;}
+    .menuCol{gap:20px;}
+    #start h1{font-size:92px;letter-spacing:18px;}
+    #start .tag{font-size:20px;letter-spacing:7px;margin-bottom:42px;}
+    #start .btn:not(.small){width:420px;font-size:24px;padding:18px 40px;}
+    #start .btn.ghost:not(.small){font-size:20px;padding:16px 34px;}
+    .menuPanelHd{font-size:14px;letter-spacing:4px;}
+    .menuStat b{font-size:19px;} .menuStat span{font-size:12px;}
+    .menuFeature .mfT{font-size:15px;} .menuFeature .mfD{font-size:13px;}
+  }
 </style>
 </head>
 <body>
@@ -1790,11 +1817,51 @@
   </div>
 </div>
 
+<script>
+/* ---- BOOT GUARD ----------------------------------------------------------------
+   The whole game is a single ES module. If that module never loads or throws before it
+   finishes (no internet, a blocked CDN, an ad-blocker eating the script, a browser with
+   no import-map support) the page still paints a complete-looking main menu — but every
+   button is dead, no panel ever fills in, and nothing is reported anywhere. That failure
+   mode is indistinguishable from "the game is broken", so surface it loudly instead. */
+(function(){
+  var shown=false;
+  function boom(msg){
+    if(shown||window.__bootOK) return; shown=true;
+    var le=document.getElementById('loadErr'); if(!le) return;
+    le.style.display='flex';
+    le.innerHTML='<div class="leInner">\u26a0 The game code never finished loading.<br><br>'+msg+
+      '<br><br>Reload to try again. If you are offline or three.js is being blocked, open '+
+      '<b>towerlords-offline.html</b> instead \u2014 that build has the 3D engine baked in.</div>';
+    try{ console.error('[TowerLords boot]', msg); }catch(_){}
+    // A slow connection can trip the timeout while the module is still on its way in — if the
+    // game does finish booting afterwards, take the error screen back down instead of covering it.
+    var healer=setInterval(function(){ if(window.__bootOK){ le.style.display='none'; clearInterval(healer); } },300);
+  }
+  window.__bootFail=boom;
+  window.addEventListener('error',function(e){
+    if(e && e.target && e.target!==window && /^(SCRIPT|LINK)$/.test(e.target.tagName||''))
+      boom('A script failed to load: '+(e.target.src||e.target.href||'unknown')+'.');
+    else if(e && e.message && !window.__bootOK) boom(String(e.message));
+  },true);
+  window.addEventListener('unhandledrejection',function(e){
+    if(!window.__bootOK) boom(String((e&&e.reason&&(e.reason.message||e.reason))||'startup promise rejected'));
+  });
+  document.addEventListener('DOMContentLoaded',function(){ setTimeout(function(){ boom('Startup timed out after 12s.'); },12000); });
+})();
+</script>
 <script type="importmap">
-{ "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js" } }
+{ "imports": {
+  "three": "./vendor/three.module.js",
+  "three-cdn": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js"
+} }
 </script>
 <script type="module">
-import * as THREE from 'three';
+// three.js resolves to the LOCAL vendor/ copy first, so the game runs with no internet at all.
+// The CDN is only a fallback for when this .html has been copied somewhere without vendor/.
+let THREE;
+try { THREE = await import('three'); }
+catch(_noLocalThree){ THREE = await import('three-cdn'); }
 
 const $ = id => document.getElementById(id);
 // RNG is switchable: Math.random normally, a seeded mulberry32 stream while generating DAILY
@@ -14074,6 +14141,7 @@ function updateBossBar(){
   }
 }
 
+window.__bootOK = true;   // module reached the end — the boot guard can stand down
 try { init(); }
 catch(err){ $('loadErr').style.display='flex'; $('loadErr').innerHTML='<div class="leInner">⚠ Failed to start the 3D engine.<br>'+(err&&err.message||err)+'<br><br>Your browser couldn\'t open a WebGL context. If you\'re testing co-op with two windows on one PC, the GPU may be out of contexts — close other 3D/game tabs and reload. (Three.js also loads from a CDN, so an internet connection is required.)</div>'; console.error(err); }
 </script>
