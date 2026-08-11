@@ -9,6 +9,67 @@
     --ink:#eef2ff; --neon:#56e0ff; --gold:#ffce4d; --hp:#ff4d6d; --mana:#4aa8ff; --xp:#9d7bff; --good:#3ad18a;
     --rare:#4da6ff; --epic:#b06bff; --legend:#ff9a3d; --common:#cfd6e6; --unique:#ff6a3d; --mythos:#ff5ec7; --ascended:#ffe873;
     --str:#ff6b6b; --dex:#6dff8c; --int:#56e0ff; --vit:#ff9a3d; --will:#b06bff;
+
+    /* ============================================================
+       DESIGN TOKENS
+       Everything below exists so two panels built months apart still
+       line up. Reach for a token before typing a literal — a one-off
+       value is how the UI drifts out of alignment one panel at a time.
+       ============================================================ */
+
+    /* Text — three weights of emphasis, nothing in between. */
+    --txt-1:#eef2ff;   /* headings, values, anything you read first */
+    --txt-2:#cdd6ea;   /* body copy, row labels */
+    --txt-3:#93a0bb;   /* captions, hints, units */
+    --txt-4:#66718c;   /* disabled / placeholder */
+
+    /* Surfaces — darkest at the back, lightest at the front. */
+    --surf-sunk:rgba(4,6,13,.72);      /* wells: inputs, tracks, grid backing */
+    --surf-base:rgba(7,10,20,.96);     /* panel body */
+    --surf-raise:rgba(16,22,38,.96);   /* header bars, cards on a panel */
+    --surf-hover:rgba(255,255,255,.06);
+    --surf-active:rgba(86,224,255,.13);
+
+    /* Lines */
+    --line-soft:rgba(255,255,255,.10);
+    --line:rgba(120,150,200,.22);
+    --line-neon:rgba(86,224,255,.25);
+    --line-strong:rgba(86,224,255,.5);
+
+    /* Spacing — a 4px rhythm. Use the step, not the pixel. */
+    --s1:4px; --s2:6px; --s3:8px; --s4:10px; --s5:12px;
+    --s6:16px; --s7:20px; --s8:24px; --s9:32px;
+
+    /* Radius */
+    --r-xs:5px; --r-sm:7px; --r-md:9px; --r-lg:11px; --r-xl:14px; --r-pill:999px;
+
+    /* Type scale */
+    --f-2xs:10px; --f-xs:11px; --f-sm:12.5px; --f-md:14px;
+    --f-lg:16px;  --f-xl:19px; --f-2xl:23px;  --f-3xl:28px; --f-4xl:40px;
+
+    /* Tracking — the wide letter-spacing is the game's voice; keep it consistent. */
+    --tr-tight:.3px; --tr-wide:1px; --tr-caps:2px; --tr-title:4px;
+
+    /* Elevation */
+    --sh-sm:0 2px 8px rgba(0,0,0,.5);
+    --sh-md:0 3px 12px rgba(0,0,0,.55);
+    --sh-lg:0 10px 34px rgba(0,0,0,.6);
+    --sh-panel:0 0 40px rgba(0,0,0,.7);
+    --glow-neon:0 0 14px rgba(86,224,255,.28);
+    --glow-gold:0 0 16px rgba(255,206,77,.4);
+
+    /* Motion — one duration for state, one for movement. */
+    --dur-fast:.12s; --dur:.16s; --dur-slow:.3s;
+    --ease:cubic-bezier(.2,.7,.3,1);
+
+    /* Stacking order, named so nothing invents a new number. */
+    --z-touch:2; --z-fx:6; --z-flash:9; --z-fct:14; --z-hud:20;
+    --z-coach:30; --z-panel:40; --z-overlay:50; --z-modal:200;
+
+    /* Controls */
+    --ctl-h:34px;        /* standard row control height */
+    --ctl-h-sm:26px;
+    --row-h:38px;        /* standard settings/list row height */
   }
   *{box-sizing:border-box;margin:0;padding:0;}
   /* never let a double-click / click-drag in the UI select & highlight text (this is a game, not a document) */
@@ -224,20 +285,94 @@
   @keyframes fctPop{0%{opacity:0;transform:translate(-50%,-30%) scale(.3);}
     12%{opacity:1;transform:translate(-50%,-90%) scale(1.45);}26%{transform:translate(-50%,-104%) scale(.95);}
     40%{transform:translate(-50%,-118%) scale(1.08);}100%{opacity:0;transform:translate(-50%,-235%) scale(1);}}
-  /* toggle switch */
-  .setRow{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:11px 16px;}
-  .setRow .lbl{font-size:12px;} .setRow .lbl small{display:block;font-size:10px;opacity:.5;margin-top:2px;letter-spacing:.3px;}
-  .tog{width:46px;height:25px;border-radius:13px;background:rgba(255,255,255,.12);position:relative;cursor:pointer;border:1px solid rgba(255,255,255,.18);flex:0 0 auto;
-    transition:background .16s ease,border-color .16s ease,box-shadow .16s ease;box-shadow:inset 0 1px 3px rgba(0,0,0,.4);}
+  /* ============================================================
+     SHARED ROW VOCABULARY
+     One way to write "label on the left, control on the right", so
+     Settings, Character, Codex and everything after them line up
+     without each screen reinventing its own spacing.
+     ============================================================ */
+
+  /* Section header: an uppercase gold label over a hairline, the way every
+     options screen worth copying separates groups. */
+  .setHead{display:flex;align-items:center;gap:var(--s3);
+    margin:var(--s7) var(--s6) var(--s3);padding-bottom:var(--s2);
+    font-size:var(--f-xs);font-weight:800;letter-spacing:var(--tr-caps);text-transform:uppercase;
+    color:var(--gold);opacity:.9;border-bottom:1px solid rgba(255,206,77,.22);}
+  .setHead::after{content:'';flex:1;}
+  .panelBody > .setHead:first-child,.setHead.first{margin-top:var(--s5);}
+
+  /* A settings row. Fixed height so a column of them reads as a list,
+     and a hover tint so it is obvious the whole row is the target. */
+  .setRow{display:flex;align-items:center;justify-content:space-between;gap:var(--s5);
+    min-height:var(--row-h);margin:0 var(--s3);padding:var(--s2) var(--s4);
+    border-radius:var(--r-sm);transition:background var(--dur-fast) ease;}
+  .setRow:hover{background:var(--surf-hover);}
+  .setRow .lbl{font-size:var(--f-sm);color:var(--txt-2);line-height:1.35;}
+  .setRow .lbl small{display:block;font-size:var(--f-2xs);color:var(--txt-4);
+    margin-top:1px;letter-spacing:var(--tr-tight);line-height:1.4;max-width:46ch;}
+  /* The control side of a row: everything right-aligned, consistent width. */
+  .setRow .ctl{flex:0 0 auto;display:flex;align-items:center;gap:var(--s3);justify-content:flex-end;}
+  .setRow.danger .lbl{color:var(--hp);}
+
+  /* Explanatory paragraph between groups — for the things a label cannot say. */
+  .setNote{margin:0 var(--s6) var(--s4);font-size:var(--f-xs);line-height:1.55;color:var(--txt-4);max-width:62ch;}
+
+  /* Toggle pill */
+  .tog{width:46px;height:25px;border-radius:var(--r-pill);background:rgba(255,255,255,.12);position:relative;cursor:pointer;
+    border:1px solid rgba(255,255,255,.18);flex:0 0 auto;
+    transition:background var(--dur) ease,border-color var(--dur) ease,box-shadow var(--dur) ease;
+    box-shadow:inset 0 1px 3px rgba(0,0,0,.4);}
   .tog:hover{border-color:rgba(255,255,255,.32);}
   .tog.on{background:linear-gradient(90deg,color-mix(in srgb,var(--neon) 55%,#0a1a2e),var(--neon));border-color:var(--neon);box-shadow:inset 0 1px 3px rgba(0,0,0,.25),0 0 10px rgba(86,224,255,.35);}
-  .tog .knob{position:absolute;top:2px;left:2px;width:19px;height:19px;border-radius:50%;background:#eef2ff;transition:left .16s ease;box-shadow:0 1px 3px rgba(0,0,0,.5);}
+  .tog .knob{position:absolute;top:2px;left:2px;width:19px;height:19px;border-radius:50%;background:#eef2ff;transition:left var(--dur) ease;box-shadow:0 1px 3px rgba(0,0,0,.5);}
   .tog.on .knob{left:23px;}
-  .segBtn{flex:1;cursor:pointer;text-align:center;padding:9px 6px;border-radius:9px;border:1px solid rgba(255,255,255,.16);font-size:11px;font-weight:bold;background:rgba(255,255,255,.04);transition:border-color .12s,background .12s;}
-  .segBtn:hover{border-color:rgba(255,255,255,.32);background:rgba(255,255,255,.08);}
-  .segBtn.sel{border-color:var(--neon);background:rgba(86,224,255,.14);color:var(--neon);}
-  .setHead{margin:16px 16px 6px;font-size:11px;opacity:.6;letter-spacing:1px;text-transform:uppercase;}
+
+  /* Segmented choice */
+  .segBtn{flex:1;cursor:pointer;text-align:center;padding:var(--s3) var(--s2);border-radius:var(--r-md);
+    border:1px solid rgba(255,255,255,.16);font-size:var(--f-xs);font-weight:bold;background:rgba(255,255,255,.04);
+    transition:border-color var(--dur-fast),background var(--dur-fast),color var(--dur-fast);}
+  .segBtn:hover{border-color:rgba(255,255,255,.32);background:var(--surf-hover);}
+  .segBtn.sel{border-color:var(--neon);background:var(--surf-active);color:var(--neon);}
   .segBtn small{display:block;font-size:9px;opacity:.55;font-weight:normal;margin-top:3px;line-height:1.3;}
+
+  /* Slider + live readout. Intensity beats on/off for anything that can be
+     "too much" — camera shake, motion blur, screen effects. */
+  .uiSlider{-webkit-appearance:none;appearance:none;width:170px;height:5px;border-radius:var(--r-pill);
+    background:var(--surf-sunk);border:1px solid var(--line-soft);outline:none;cursor:pointer;}
+  .uiSlider::-webkit-slider-thumb{-webkit-appearance:none;width:15px;height:15px;border-radius:50%;
+    background:var(--neon);border:2px solid #0a1420;cursor:pointer;box-shadow:0 0 8px rgba(86,224,255,.5);}
+  .uiSlider::-moz-range-thumb{width:15px;height:15px;border-radius:50%;background:var(--neon);
+    border:2px solid #0a1420;cursor:pointer;box-shadow:0 0 8px rgba(86,224,255,.5);}
+  .uiVal{min-width:44px;text-align:right;font-size:var(--f-xs);font-weight:bold;color:var(--neon);
+    font-variant-numeric:tabular-nums;}
+
+  /* Dropdown, styled to match the rest rather than the browser's default. */
+  .uiSel{height:var(--ctl-h);min-width:150px;padding:0 var(--s4);border-radius:var(--r-sm);
+    background:var(--surf-sunk);border:1px solid var(--line-soft);color:var(--txt-1);
+    font-family:inherit;font-size:var(--f-sm);cursor:pointer;outline:none;
+    transition:border-color var(--dur) ease;}
+  .uiSel:hover{border-color:var(--line-strong);}
+  .uiSel option{background:#0b1120;color:var(--txt-1);}
+
+  /* Tab strip — the pattern all three reference games converged on. */
+  .uiTabs{display:flex;gap:2px;margin:0 var(--s6) var(--s5);border-bottom:1px solid var(--line-soft);}
+  .uiTab{position:relative;flex:1;cursor:pointer;text-align:center;padding:var(--s4) var(--s2);
+    font-size:var(--f-xs);font-weight:bold;letter-spacing:var(--tr-wide);text-transform:uppercase;
+    color:var(--txt-3);background:none;border:none;font-family:inherit;
+    transition:color var(--dur-fast) ease,background var(--dur-fast) ease;}
+  .uiTab:hover{color:var(--txt-1);background:var(--surf-hover);}
+  .uiTab.sel{color:var(--neon);}
+  .uiTab.sel::after{content:'';position:absolute;left:0;right:0;bottom:-1px;height:2px;
+    background:var(--neon);box-shadow:0 0 10px rgba(86,224,255,.6);}
+
+  /* Keybind slot — click, then press. */
+  .uiBind{min-width:104px;height:var(--ctl-h);padding:0 var(--s4);border-radius:var(--r-sm);
+    background:var(--surf-sunk);border:1px solid var(--line-soft);color:var(--txt-1);
+    font-family:inherit;font-size:var(--f-xs);font-weight:bold;letter-spacing:var(--tr-tight);
+    cursor:pointer;transition:border-color var(--dur) ease,color var(--dur) ease;}
+  .uiBind:hover{border-color:var(--line-strong);}
+  .uiBind.listening{border-color:var(--gold);color:var(--gold);box-shadow:var(--glow-gold);}
+  .uiBind.unbound{color:var(--txt-4);}
 
   /* vignette */
   #vignette{position:absolute;inset:0;pointer-events:none;z-index:6;box-shadow:inset 0 0 220px rgba(0,0,0,.7);}
@@ -283,18 +418,21 @@
   /* Panels are a FLEX COLUMN: the title bar is a fixed header and only .panelBody scrolls, so the
      menu name and its ✕ stay put no matter how far down you scroll. (panelBody is wrapped around
      each panel's contents automatically at boot — see pinPanelHeaders().) */
-  .panel{position:absolute;pointer-events:auto;background:rgba(7,10,20,.96);
-    border:1px solid rgba(86,224,255,.25);border-radius:14px;box-shadow:0 0 40px rgba(0,0,0,.7);z-index:40;
+  .panel{position:absolute;pointer-events:auto;background:var(--surf-base);
+    border:1px solid var(--line-neon);border-radius:var(--r-xl);box-shadow:var(--sh-panel);z-index:var(--z-panel);
     max-width:96vw;max-height:94vh;overflow:hidden;display:flex;flex-direction:column;}
   .panel > h3, .panel > #treeHead{flex:0 0 auto;}
-  .panelBody{flex:1 1 auto;min-height:0;overflow-y:auto;overflow-x:hidden;}
-  .panel h3{font-size:16px;letter-spacing:2px;color:var(--neon);padding:15px 16px 11px;margin-bottom:0;
+  .panelBody{flex:1 1 auto;min-height:0;overflow-y:auto;overflow-x:hidden;padding-bottom:var(--s5);}
+  .panel h3{font-size:var(--f-lg);letter-spacing:var(--tr-caps);color:var(--neon);
+    padding:var(--s5) var(--s6) var(--s4);margin-bottom:0;
     border-bottom:1px solid rgba(86,224,255,.16);background:linear-gradient(180deg,rgba(20,30,50,.98),rgba(10,14,26,.98));
-    border-radius:14px 14px 0 0;text-shadow:0 0 12px rgba(86,224,255,.4);}
-  .panelBody > *:first-child{margin-top:10px;}
-  .closeX{position:absolute;top:12px;right:12px;z-index:8;cursor:pointer;font-size:18px;opacity:.7;width:30px;height:30px;border-radius:7px;
-    display:flex;align-items:center;justify-content:center;transition:opacity .15s ease,background .15s ease,transform .12s ease;}
-  .closeX:hover{opacity:1;background:rgba(255,255,255,.08);}
+    border-radius:var(--r-xl) var(--r-xl) 0 0;text-shadow:0 0 12px rgba(86,224,255,.4);}
+  .panelBody > *:first-child{margin-top:var(--s4);}
+  .closeX{position:absolute;top:var(--s5);right:var(--s5);z-index:8;cursor:pointer;font-size:18px;opacity:.7;
+    width:30px;height:30px;border-radius:var(--r-sm);
+    display:flex;align-items:center;justify-content:center;
+    transition:opacity var(--dur) ease,background var(--dur) ease,transform var(--dur-fast) ease;}
+  .closeX:hover{opacity:1;background:var(--surf-hover);}
   .closeX:active{transform:scale(.92);}
   /* ---- in-game styled modal (replaces the browser confirm) ---- */
   #gameModal{position:absolute;inset:0;z-index:200;display:none;align-items:center;justify-content:center;

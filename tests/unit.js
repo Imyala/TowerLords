@@ -578,13 +578,29 @@ check('scrollbars are hidden but scrolling still works', ()=>{
 
 check('panel body text is legible', ()=>{
   const html=require('fs').readFileSync(require('path').join(__dirname,'..','towerlords.html'),'utf8');
+  // Sizes may be written as a literal (14px) or as a design token (var(--f-md)).
+  // Resolve tokens against :root so this guard survives the token system instead
+  // of quietly passing on a NaN.
+  const root=html.match(/:root\{([\s\S]*?)\n  \}/);
+  if(!root) throw new Error('no :root token block to resolve var() against');
+  const tokens={};
+  for(const m of root[1].matchAll(/(--[\w-]+)\s*:\s*([^;]+);/g)) tokens[m[1]]=m[2].trim();
+  const px=raw=>{
+    const v=raw.trim();
+    const ref=v.match(/^var\((--[\w-]+)\)/);
+    if(ref){
+      if(!(ref[1] in tokens)) throw new Error('unknown token '+ref[1]);
+      return parseFloat(tokens[ref[1]]);
+    }
+    return parseFloat(v);
+  };
   const want=[['.hint{font-size:',12],['.invWrap h4,.invSec h4{font-size:',12],['.invTools .st{cursor:pointer;font-size:',10.5],['.panel h3{font-size:',15]];
   const got=[];
   for(const [needle,min] of want){
     const i=html.indexOf(needle); if(i<0) throw new Error('rule missing: '+needle);
-    const px=parseFloat(html.slice(i+needle.length));
-    if(!(px>=min)) throw new Error(needle+' is '+px+'px, wanted >= '+min);
-    got.push(px+'px');
+    const size=px(html.slice(i+needle.length, i+needle.length+40));
+    if(!(size>=min)) throw new Error(needle+' is '+size+'px, wanted >= '+min);
+    got.push(size+'px');
   }
   return 'hint/headings/chips/titles = '+got.join(' / ');
 });
