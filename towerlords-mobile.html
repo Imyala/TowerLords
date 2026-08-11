@@ -9,6 +9,67 @@
     --ink:#eef2ff; --neon:#56e0ff; --gold:#ffce4d; --hp:#ff4d6d; --mana:#4aa8ff; --xp:#9d7bff; --good:#3ad18a;
     --rare:#4da6ff; --epic:#b06bff; --legend:#ff9a3d; --common:#cfd6e6; --unique:#ff6a3d; --mythos:#ff5ec7; --ascended:#ffe873;
     --str:#ff6b6b; --dex:#6dff8c; --int:#56e0ff; --vit:#ff9a3d; --will:#b06bff;
+
+    /* ============================================================
+       DESIGN TOKENS
+       Everything below exists so two panels built months apart still
+       line up. Reach for a token before typing a literal — a one-off
+       value is how the UI drifts out of alignment one panel at a time.
+       ============================================================ */
+
+    /* Text — three weights of emphasis, nothing in between. */
+    --txt-1:#eef2ff;   /* headings, values, anything you read first */
+    --txt-2:#cdd6ea;   /* body copy, row labels */
+    --txt-3:#93a0bb;   /* captions, hints, units */
+    --txt-4:#66718c;   /* disabled / placeholder */
+
+    /* Surfaces — darkest at the back, lightest at the front. */
+    --surf-sunk:rgba(4,6,13,.72);      /* wells: inputs, tracks, grid backing */
+    --surf-base:rgba(7,10,20,.96);     /* panel body */
+    --surf-raise:rgba(16,22,38,.96);   /* header bars, cards on a panel */
+    --surf-hover:rgba(255,255,255,.06);
+    --surf-active:rgba(86,224,255,.13);
+
+    /* Lines */
+    --line-soft:rgba(255,255,255,.10);
+    --line:rgba(120,150,200,.22);
+    --line-neon:rgba(86,224,255,.25);
+    --line-strong:rgba(86,224,255,.5);
+
+    /* Spacing — a 4px rhythm. Use the step, not the pixel. */
+    --s1:4px; --s2:6px; --s3:8px; --s4:10px; --s5:12px;
+    --s6:16px; --s7:20px; --s8:24px; --s9:32px;
+
+    /* Radius */
+    --r-xs:5px; --r-sm:7px; --r-md:9px; --r-lg:11px; --r-xl:14px; --r-pill:999px;
+
+    /* Type scale */
+    --f-2xs:10px; --f-xs:11px; --f-sm:12.5px; --f-md:14px;
+    --f-lg:16px;  --f-xl:19px; --f-2xl:23px;  --f-3xl:28px; --f-4xl:40px;
+
+    /* Tracking — the wide letter-spacing is the game's voice; keep it consistent. */
+    --tr-tight:.3px; --tr-wide:1px; --tr-caps:2px; --tr-title:4px;
+
+    /* Elevation */
+    --sh-sm:0 2px 8px rgba(0,0,0,.5);
+    --sh-md:0 3px 12px rgba(0,0,0,.55);
+    --sh-lg:0 10px 34px rgba(0,0,0,.6);
+    --sh-panel:0 0 40px rgba(0,0,0,.7);
+    --glow-neon:0 0 14px rgba(86,224,255,.28);
+    --glow-gold:0 0 16px rgba(255,206,77,.4);
+
+    /* Motion — one duration for state, one for movement. */
+    --dur-fast:.12s; --dur:.16s; --dur-slow:.3s;
+    --ease:cubic-bezier(.2,.7,.3,1);
+
+    /* Stacking order, named so nothing invents a new number. */
+    --z-touch:2; --z-fx:6; --z-flash:9; --z-fct:14; --z-hud:20;
+    --z-coach:30; --z-panel:40; --z-overlay:50; --z-modal:200;
+
+    /* Controls */
+    --ctl-h:34px;        /* standard row control height */
+    --ctl-h-sm:26px;
+    --row-h:38px;        /* standard settings/list row height */
   }
   *{box-sizing:border-box;margin:0;padding:0;}
   /* never let a double-click / click-drag in the UI select & highlight text (this is a game, not a document) */
@@ -225,20 +286,94 @@
   @keyframes fctPop{0%{opacity:0;transform:translate(-50%,-30%) scale(.3);}
     12%{opacity:1;transform:translate(-50%,-90%) scale(1.45);}26%{transform:translate(-50%,-104%) scale(.95);}
     40%{transform:translate(-50%,-118%) scale(1.08);}100%{opacity:0;transform:translate(-50%,-235%) scale(1);}}
-  /* toggle switch */
-  .setRow{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:11px 16px;}
-  .setRow .lbl{font-size:12px;} .setRow .lbl small{display:block;font-size:10px;opacity:.5;margin-top:2px;letter-spacing:.3px;}
-  .tog{width:46px;height:25px;border-radius:13px;background:rgba(255,255,255,.12);position:relative;cursor:pointer;border:1px solid rgba(255,255,255,.18);flex:0 0 auto;
-    transition:background .16s ease,border-color .16s ease,box-shadow .16s ease;box-shadow:inset 0 1px 3px rgba(0,0,0,.4);}
+  /* ============================================================
+     SHARED ROW VOCABULARY
+     One way to write "label on the left, control on the right", so
+     Settings, Character, Codex and everything after them line up
+     without each screen reinventing its own spacing.
+     ============================================================ */
+
+  /* Section header: an uppercase gold label over a hairline, the way every
+     options screen worth copying separates groups. */
+  .setHead{display:flex;align-items:center;gap:var(--s3);
+    margin:var(--s7) var(--s6) var(--s3);padding-bottom:var(--s2);
+    font-size:var(--f-xs);font-weight:800;letter-spacing:var(--tr-caps);text-transform:uppercase;
+    color:var(--gold);opacity:.9;border-bottom:1px solid rgba(255,206,77,.22);}
+  .setHead::after{content:'';flex:1;}
+  .panelBody > .setHead:first-child,.setHead.first{margin-top:var(--s5);}
+
+  /* A settings row. Fixed height so a column of them reads as a list,
+     and a hover tint so it is obvious the whole row is the target. */
+  .setRow{display:flex;align-items:center;justify-content:space-between;gap:var(--s5);
+    min-height:var(--row-h);margin:0 var(--s3);padding:var(--s2) var(--s4);
+    border-radius:var(--r-sm);transition:background var(--dur-fast) ease;}
+  .setRow:hover{background:var(--surf-hover);}
+  .setRow .lbl{font-size:var(--f-sm);color:var(--txt-2);line-height:1.35;}
+  .setRow .lbl small{display:block;font-size:var(--f-2xs);color:var(--txt-4);
+    margin-top:1px;letter-spacing:var(--tr-tight);line-height:1.4;max-width:46ch;}
+  /* The control side of a row: everything right-aligned, consistent width. */
+  .setRow .ctl{flex:0 0 auto;display:flex;align-items:center;gap:var(--s3);justify-content:flex-end;}
+  .setRow.danger .lbl{color:var(--hp);}
+
+  /* Explanatory paragraph between groups — for the things a label cannot say. */
+  .setNote{margin:0 var(--s6) var(--s4);font-size:var(--f-xs);line-height:1.55;color:var(--txt-4);max-width:62ch;}
+
+  /* Toggle pill */
+  .tog{width:46px;height:25px;border-radius:var(--r-pill);background:rgba(255,255,255,.12);position:relative;cursor:pointer;
+    border:1px solid rgba(255,255,255,.18);flex:0 0 auto;
+    transition:background var(--dur) ease,border-color var(--dur) ease,box-shadow var(--dur) ease;
+    box-shadow:inset 0 1px 3px rgba(0,0,0,.4);}
   .tog:hover{border-color:rgba(255,255,255,.32);}
   .tog.on{background:linear-gradient(90deg,color-mix(in srgb,var(--neon) 55%,#0a1a2e),var(--neon));border-color:var(--neon);box-shadow:inset 0 1px 3px rgba(0,0,0,.25),0 0 10px rgba(86,224,255,.35);}
-  .tog .knob{position:absolute;top:2px;left:2px;width:19px;height:19px;border-radius:50%;background:#eef2ff;transition:left .16s ease;box-shadow:0 1px 3px rgba(0,0,0,.5);}
+  .tog .knob{position:absolute;top:2px;left:2px;width:19px;height:19px;border-radius:50%;background:#eef2ff;transition:left var(--dur) ease;box-shadow:0 1px 3px rgba(0,0,0,.5);}
   .tog.on .knob{left:23px;}
-  .segBtn{flex:1;cursor:pointer;text-align:center;padding:9px 6px;border-radius:9px;border:1px solid rgba(255,255,255,.16);font-size:11px;font-weight:bold;background:rgba(255,255,255,.04);transition:border-color .12s,background .12s;}
-  .segBtn:hover{border-color:rgba(255,255,255,.32);background:rgba(255,255,255,.08);}
-  .segBtn.sel{border-color:var(--neon);background:rgba(86,224,255,.14);color:var(--neon);}
-  .setHead{margin:16px 16px 6px;font-size:11px;opacity:.6;letter-spacing:1px;text-transform:uppercase;}
+
+  /* Segmented choice */
+  .segBtn{flex:1;cursor:pointer;text-align:center;padding:var(--s3) var(--s2);border-radius:var(--r-md);
+    border:1px solid rgba(255,255,255,.16);font-size:var(--f-xs);font-weight:bold;background:rgba(255,255,255,.04);
+    transition:border-color var(--dur-fast),background var(--dur-fast),color var(--dur-fast);}
+  .segBtn:hover{border-color:rgba(255,255,255,.32);background:var(--surf-hover);}
+  .segBtn.sel{border-color:var(--neon);background:var(--surf-active);color:var(--neon);}
   .segBtn small{display:block;font-size:9px;opacity:.55;font-weight:normal;margin-top:3px;line-height:1.3;}
+
+  /* Slider + live readout. Intensity beats on/off for anything that can be
+     "too much" — camera shake, motion blur, screen effects. */
+  .uiSlider{-webkit-appearance:none;appearance:none;width:170px;height:5px;border-radius:var(--r-pill);
+    background:var(--surf-sunk);border:1px solid var(--line-soft);outline:none;cursor:pointer;}
+  .uiSlider::-webkit-slider-thumb{-webkit-appearance:none;width:15px;height:15px;border-radius:50%;
+    background:var(--neon);border:2px solid #0a1420;cursor:pointer;box-shadow:0 0 8px rgba(86,224,255,.5);}
+  .uiSlider::-moz-range-thumb{width:15px;height:15px;border-radius:50%;background:var(--neon);
+    border:2px solid #0a1420;cursor:pointer;box-shadow:0 0 8px rgba(86,224,255,.5);}
+  .uiVal{min-width:44px;text-align:right;font-size:var(--f-xs);font-weight:bold;color:var(--neon);
+    font-variant-numeric:tabular-nums;}
+
+  /* Dropdown, styled to match the rest rather than the browser's default. */
+  .uiSel{height:var(--ctl-h);min-width:150px;padding:0 var(--s4);border-radius:var(--r-sm);
+    background:var(--surf-sunk);border:1px solid var(--line-soft);color:var(--txt-1);
+    font-family:inherit;font-size:var(--f-sm);cursor:pointer;outline:none;
+    transition:border-color var(--dur) ease;}
+  .uiSel:hover{border-color:var(--line-strong);}
+  .uiSel option{background:#0b1120;color:var(--txt-1);}
+
+  /* Tab strip — the pattern all three reference games converged on. */
+  .uiTabs{display:flex;gap:2px;margin:0 var(--s6) var(--s5);border-bottom:1px solid var(--line-soft);}
+  .uiTab{position:relative;flex:1;cursor:pointer;text-align:center;padding:var(--s4) var(--s2);
+    font-size:var(--f-xs);font-weight:bold;letter-spacing:var(--tr-wide);text-transform:uppercase;
+    color:var(--txt-3);background:none;border:none;font-family:inherit;
+    transition:color var(--dur-fast) ease,background var(--dur-fast) ease;}
+  .uiTab:hover{color:var(--txt-1);background:var(--surf-hover);}
+  .uiTab.sel{color:var(--neon);}
+  .uiTab.sel::after{content:'';position:absolute;left:0;right:0;bottom:-1px;height:2px;
+    background:var(--neon);box-shadow:0 0 10px rgba(86,224,255,.6);}
+
+  /* Keybind slot — click, then press. */
+  .uiBind{min-width:104px;height:var(--ctl-h);padding:0 var(--s4);border-radius:var(--r-sm);
+    background:var(--surf-sunk);border:1px solid var(--line-soft);color:var(--txt-1);
+    font-family:inherit;font-size:var(--f-xs);font-weight:bold;letter-spacing:var(--tr-tight);
+    cursor:pointer;transition:border-color var(--dur) ease,color var(--dur) ease;}
+  .uiBind:hover{border-color:var(--line-strong);}
+  .uiBind.listening{border-color:var(--gold);color:var(--gold);box-shadow:var(--glow-gold);}
+  .uiBind.unbound{color:var(--txt-4);}
 
   /* vignette */
   #vignette{position:absolute;inset:0;pointer-events:none;z-index:6;box-shadow:inset 0 0 220px rgba(0,0,0,.7);}
@@ -284,18 +419,21 @@
   /* Panels are a FLEX COLUMN: the title bar is a fixed header and only .panelBody scrolls, so the
      menu name and its ✕ stay put no matter how far down you scroll. (panelBody is wrapped around
      each panel's contents automatically at boot — see pinPanelHeaders().) */
-  .panel{position:absolute;pointer-events:auto;background:rgba(7,10,20,.96);
-    border:1px solid rgba(86,224,255,.25);border-radius:14px;box-shadow:0 0 40px rgba(0,0,0,.7);z-index:40;
+  .panel{position:absolute;pointer-events:auto;background:var(--surf-base);
+    border:1px solid var(--line-neon);border-radius:var(--r-xl);box-shadow:var(--sh-panel);z-index:var(--z-panel);
     max-width:96vw;max-height:94vh;overflow:hidden;display:flex;flex-direction:column;}
   .panel > h3, .panel > #treeHead{flex:0 0 auto;}
-  .panelBody{flex:1 1 auto;min-height:0;overflow-y:auto;overflow-x:hidden;}
-  .panel h3{font-size:16px;letter-spacing:2px;color:var(--neon);padding:15px 16px 11px;margin-bottom:0;
+  .panelBody{flex:1 1 auto;min-height:0;overflow-y:auto;overflow-x:hidden;padding-bottom:var(--s5);}
+  .panel h3{font-size:var(--f-lg);letter-spacing:var(--tr-caps);color:var(--neon);
+    padding:var(--s5) var(--s6) var(--s4);margin-bottom:0;
     border-bottom:1px solid rgba(86,224,255,.16);background:linear-gradient(180deg,rgba(20,30,50,.98),rgba(10,14,26,.98));
-    border-radius:14px 14px 0 0;text-shadow:0 0 12px rgba(86,224,255,.4);}
-  .panelBody > *:first-child{margin-top:10px;}
-  .closeX{position:absolute;top:12px;right:12px;z-index:8;cursor:pointer;font-size:18px;opacity:.7;width:30px;height:30px;border-radius:7px;
-    display:flex;align-items:center;justify-content:center;transition:opacity .15s ease,background .15s ease,transform .12s ease;}
-  .closeX:hover{opacity:1;background:rgba(255,255,255,.08);}
+    border-radius:var(--r-xl) var(--r-xl) 0 0;text-shadow:0 0 12px rgba(86,224,255,.4);}
+  .panelBody > *:first-child{margin-top:var(--s4);}
+  .closeX{position:absolute;top:var(--s5);right:var(--s5);z-index:8;cursor:pointer;font-size:18px;opacity:.7;
+    width:30px;height:30px;border-radius:var(--r-sm);
+    display:flex;align-items:center;justify-content:center;
+    transition:opacity var(--dur) ease,background var(--dur) ease,transform var(--dur-fast) ease;}
+  .closeX:hover{opacity:1;background:var(--surf-hover);}
   .closeX:active{transform:scale(.92);}
   /* ---- in-game styled modal (replaces the browser confirm) ---- */
   #gameModal{position:absolute;inset:0;z-index:200;display:none;align-items:center;justify-content:center;
@@ -2751,8 +2889,8 @@ function makeSkillGem(floor, idForce){ const id=idForce||pick(SKILL_IDS), sk=SKI
 // ---- user settings (persist across sessions) ----
 const SETTINGS_KEY='towerlords_settings_v1';
 const DEFAULT_KEYBINDS={ up:'w',down:'s',left:'a',right:'d', dash:' ', sig:'shift', interact:'f', recall:'h', slot1:'1',slot2:'2',slot3:'3',slot4:'4',slot5:'5',slot6:'6',slot7:'7',slot8:'8',slot9:'9', flask1:'q',flask2:'e',flask3:'r',flask4:'z',flask5:'x' };
-const SETTINGS={ bigNumbers:true, moveMode:'keyboard', tips:true, autoSalvage:true, music:true, musicVol:75, junkMaxRarity:1, camSway:true, touch:'auto', touchAim:'auto', navCollapsed:false, popups:true, keybinds:{...DEFAULT_KEYBINDS} };   // autoSalvage: grey/common drops auto-sell for gold · musicVol: music loudness 0-100 (player-set) · junkMaxRarity: highest rarity index eligible for bulk feed/sell · camSway: directional camera lean · touch: mobile on-screen controls (auto/on/off) · touchAim: auto-aim vs twin-stick
-function loadSettings(){ try{ const s=localStorage.getItem(SETTINGS_KEY); if(s){ const o=JSON.parse(s); if(typeof o.bigNumbers==='boolean')SETTINGS.bigNumbers=o.bigNumbers; if(o.moveMode==='keyboard'||o.moveMode==='mouse')SETTINGS.moveMode=o.moveMode; if(typeof o.tips==='boolean')SETTINGS.tips=o.tips; if(typeof o.autoSalvage==='boolean')SETTINGS.autoSalvage=o.autoSalvage; if(typeof o.music==='boolean')SETTINGS.music=o.music; if(typeof o.musicVol==='number')SETTINGS.musicVol=clamp(o.musicVol|0,0,100); if(typeof o.junkMaxRarity==='number')SETTINGS.junkMaxRarity=clamp(o.junkMaxRarity|0,0,3); if(typeof o.camSway==='boolean')SETTINGS.camSway=o.camSway; if(o.touch==='auto'||o.touch==='on'||o.touch==='off')SETTINGS.touch=o.touch; if(o.touchAim==='auto'||o.touchAim==='twin')SETTINGS.touchAim=o.touchAim; if(typeof o.navCollapsed==='boolean')SETTINGS.navCollapsed=o.navCollapsed; if(typeof o.popups==='boolean')SETTINGS.popups=o.popups; if(o.keybinds&&typeof o.keybinds==='object'){ SETTINGS.keybinds=SETTINGS.keybinds||{...DEFAULT_KEYBINDS}; for(const a in DEFAULT_KEYBINDS){ if(typeof o.keybinds[a]==='string') SETTINGS.keybinds[a]=o.keybinds[a]; } } } }catch(e){} }
+const SETTINGS={ bigNumbers:true, moveMode:'keyboard', tips:true, autoSalvage:true, music:true, musicVol:75, junkMaxRarity:1, camSway:true, camShake:100, touch:'auto', touchAim:'auto', navCollapsed:false, popups:true, fctDmg:true, fctHurt:true, fctHeal:true, fctGold:true, keybinds:{...DEFAULT_KEYBINDS} };   // autoSalvage: grey/common drops auto-sell for gold · musicVol: music loudness 0-100 (player-set) · junkMaxRarity: highest rarity index eligible for bulk feed/sell · camSway: directional camera lean · camShake: screen-shake strength 0-100 (an intensity, not an on/off — some players want less without losing the cue) · touch: mobile on-screen controls (auto/on/off) · touchAim: auto-aim vs twin-stick · fct*: which kinds of floating combat text appear (damage dealt / damage taken / healing & mana / gold)
+function loadSettings(){ try{ const s=localStorage.getItem(SETTINGS_KEY); if(s){ const o=JSON.parse(s); if(typeof o.bigNumbers==='boolean')SETTINGS.bigNumbers=o.bigNumbers; if(o.moveMode==='keyboard'||o.moveMode==='mouse')SETTINGS.moveMode=o.moveMode; if(typeof o.tips==='boolean')SETTINGS.tips=o.tips; if(typeof o.autoSalvage==='boolean')SETTINGS.autoSalvage=o.autoSalvage; if(typeof o.music==='boolean')SETTINGS.music=o.music; if(typeof o.musicVol==='number')SETTINGS.musicVol=clamp(o.musicVol|0,0,100); if(typeof o.junkMaxRarity==='number')SETTINGS.junkMaxRarity=clamp(o.junkMaxRarity|0,0,3); if(typeof o.camSway==='boolean')SETTINGS.camSway=o.camSway; if(typeof o.camShake==='number')SETTINGS.camShake=clamp(o.camShake|0,0,100); for(const k of ['fctDmg','fctHurt','fctHeal','fctGold']){ if(typeof o[k]==='boolean')SETTINGS[k]=o[k]; } if(o.touch==='auto'||o.touch==='on'||o.touch==='off')SETTINGS.touch=o.touch; if(o.touchAim==='auto'||o.touchAim==='twin')SETTINGS.touchAim=o.touchAim; if(typeof o.navCollapsed==='boolean')SETTINGS.navCollapsed=o.navCollapsed; if(typeof o.popups==='boolean')SETTINGS.popups=o.popups; if(o.keybinds&&typeof o.keybinds==='object'){ SETTINGS.keybinds=SETTINGS.keybinds||{...DEFAULT_KEYBINDS}; for(const a in DEFAULT_KEYBINDS){ if(typeof o.keybinds[a]==='string') SETTINGS.keybinds[a]=o.keybinds[a]; } } } }catch(e){} }
 // bulk feed/sell "junk" = anything at or below the chosen quality that isn't a special item or locked
 function junkThreshold(){ return clamp(SETTINGS.junkMaxRarity|0,0,4); }
 function isBulkJunk(it){ if(!it||it.isPet||it.isPot||it.isFlask||it.isSkillGem||it.isContainer||it.isRation||it.isInfusion||it.locked||it.unique) return false; const _ri=RARITY.indexOf(it.rarity); return _ri>=0 && _ri<=junkThreshold(); }   // uniques & out-of-array rarities (mythos) are NEVER junk — nor are containers/rations/infusions, which have real in-array rarities for visual tier only
@@ -10031,7 +10169,12 @@ function dropLoot(x,z,uniqueChance,owner,themeKey,forceItem){
 function ringFx(x,z,R,color){ const m=new THREE.Mesh(new THREE.RingGeometry(.2,.5,32), new THREE.MeshBasicMaterial({color,transparent:true,opacity:.9,side:THREE.DoubleSide})); m.rotation.x=-Math.PI/2; m.position.set(x,.12,z); scene.add(m); G.decals.push({mesh:m,ring:true,t:0,R,life:.5}); }
 function chainFx(x1,z1,x2,z2){ const g=new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(x1,1.1,z1),new THREE.Vector3(x2,1.1,z2)]); const l=new THREE.Line(g,new THREE.LineBasicMaterial({color:0x56e0ff,transparent:true,opacity:.9})); scene.add(l); G.decals.push({mesh:l,fade:true,life:.2,t:0}); }
 function burst(x,z,color,n,scale){ n=n||9; scale=scale||1; for(let i=0;i<n;i++){ const m=new THREE.Mesh(new THREE.SphereGeometry(.18*scale,6,6),new THREE.MeshBasicMaterial({color})); m.position.set(x,1,z); scene.add(m); const a=rand(0,Math.PI*2),s=rand(4,9)*scale; G.decals.push({mesh:m,part:true,vx:Math.cos(a)*s,vy:rand(3,7),vz:Math.sin(a)*s,life:.5}); } }
-let camShake=0; function shakeCam(v){ camShake=Math.max(camShake,v); }
+let camShake=0;
+// Every screen kick in the game funnels through here, so the player's strength
+// setting scales all of them at once. It is a slider rather than a switch: shake
+// is a real feedback cue, and someone who finds it nauseating at 100% is usually
+// fine at 30% — turning it off entirely costs them the information.
+function shakeCam(v){ const amt=(SETTINGS.camShake==null?100:SETTINGS.camShake)/100; if(amt<=0)return; camShake=Math.max(camShake,v*amt); }
 let camWobX=0, camWobZ=0;   // directional camera sway — the view leans opposite to your movement, springing on direction changes
 let camFocus=null;   // smoothed point the camera chases; the camera sits at a FIXED offset from it so the tilt never wobbles
 const _proj=new THREE.Vector3();
@@ -10043,7 +10186,13 @@ const _fctActive=[]; const FCT_CAP=56; let _fctRAF=false;
 function _fctSweep(){ const now=performance.now();
   for(let i=_fctActive.length-1;i>=0;i--){ if(now>=_fctActive[i].die){ _fctActive[i].el.remove(); _fctActive.splice(i,1); } }
   if(_fctActive.length) requestAnimationFrame(_fctSweep); else _fctRAF=false; }
-function floatText(x,z,txt,cls,yOff){ _proj.set(x,yOff||2,z).project(camera); if(_proj.z>1)return;
+// Which kinds of floating text each setting governs. Split by category rather
+// than one on/off switch, so a player can drop the damage-number spam in a big
+// pull while keeping the healing and gold cues they actually read.
+const FCT_KIND={ dmg:'fctDmg', crit:'fctDmg', big:'fctDmg', hurt:'fctHurt', heal:'fctHeal', mana:'fctHeal', goldtxt:'fctGold' };
+function floatText(x,z,txt,cls,yOff){
+  const gate=FCT_KIND[cls||'dmg']; if(gate && SETTINGS[gate]===false) return;
+  _proj.set(x,yOff||2,z).project(camera); if(_proj.z>1)return;
   const sx=(_proj.x*.5+.5)*innerWidth, sy=(-_proj.y*.5+.5)*innerHeight;
   if(sx<-90||sx>innerWidth+90||sy<-90||sy>innerHeight+90) return;   // off-screen → don't spawn a node nobody will see
   if(_fctActive.length>=FCT_CAP){ const old=_fctActive.shift(); if(old&&old.el) old.el.remove(); }   // bound the DOM so a damage burst can't stall the frame
@@ -12107,65 +12256,99 @@ function runWrapHTML(){
     <div class="wrapSub">${destiny?('Destiny chosen · '):''}${boons.length?(boons.length+' blessing'+(boons.length>1?'s':'')+' claimed'):'No blessings claimed yet'} · ${fmtTime(r.totalTime)} climbed</div>
     ${boonChips}<div class="wrapGrid">${cells.join('')}</div></div>`;
 }
+// Settings is tabbed rather than one long scroll. Four short screens you can read
+// at a glance beat one column of eleven unrelated switches — which is why every
+// options menu worth copying is built this way.
+const SET_TABS=[['play','Gameplay'],['ui','Interface'],['audio','Audio'],['keys','Controls']];
+let settingsTab='play';
+
+// Row builders, so every setting in every tab is written the same way.
+const _sTog=(id,on,label,hint)=>`<div class="setRow"><div class="lbl">${label}${hint?`<small>${hint}</small>`:''}</div>
+  <div class="ctl"><div class="tog${on?' on':''}" id="${id}"><div class="knob"></div></div></div></div>`;
+const _sSeg=(attr,cur,opts)=>`<div style="display:flex;gap:var(--s3);margin:0 var(--s6) var(--s5);">`+
+  opts.map(([v,t,s])=>`<div class="segBtn${cur===v?' sel':''}" data-${attr}="${v}">${t}${s?`<small>${s}</small>`:''}</div>`).join('')+`</div>`;
+
 function renderSettings(){
-  const b=$('settingsBody'); const mm=SETTINGS.moveMode;
-  b.innerHTML=`
-    <div class="setRow"><div class="lbl">Enhanced damage numbers<small>Warframe / PoE-style — numbers scale & pop with hit size</small></div>
-      <div class="tog${SETTINGS.bigNumbers?' on':''}" id="togBig"><div class="knob"></div></div></div>
-    <div class="setRow"><div class="lbl">Coaching tips<small>One-time hints that explain each system as you meet it</small></div>
-      <div class="tog${SETTINGS.tips?' on':''}" id="togTips"><div class="knob"></div></div></div>
-    <div class="setRow"><div class="lbl">Screen pop-ups<small>Toast messages &amp; tip cards on screen. Turn off for a clean view \u2014 everything still records to the Event Log</small></div>
-      <div class="tog${SETTINGS.popups!==false?' on':''}" id="togPopups"><div class="knob"></div></div></div>
-    <div class="setRow"><div class="lbl">Auto-salvage junk<small>Grey/common drops auto-sell for gold instead of filling your bag</small></div>
-      <div class="tog${SETTINGS.autoSalvage?' on':''}" id="togSalv"><div class="knob"></div></div></div>
-    <div class="setRow"><div class="lbl">Music<small>Procedural mood loops — calm hub, tense climb, driving boss fights</small></div>
-      <div class="tog${SETTINGS.music?' on':''}" id="togMusic"><div class="knob"></div></div></div>
-    <div class="setRow" id="musVolRow" style="${SETTINGS.music?'':'opacity:.45;pointer-events:none;cursor:not-allowed'}"><div class="lbl">Music volume<small>How loud the soundtrack plays</small></div>
-      <div style="display:flex;align-items:center;gap:10px;min-width:150px">
-        <input type="range" min="0" max="100" step="1" value="${SETTINGS.musicVol}" id="musVol" style="flex:1;accent-color:var(--good)">
-        <span id="musVolVal" style="width:38px;text-align:right;font-variant-numeric:tabular-nums;opacity:.8">${SETTINGS.musicVol}%</span></div></div>
-    <div class="setRow"><div class="lbl">Camera sway<small>The view leans as you move &amp; springs on direction changes — more kinetic, less stiff</small></div>
-      <div class="tog${SETTINGS.camSway?' on':''}" id="togSway"><div class="knob"></div></div></div>
-    <div class="setHead">Movement</div>
-    <div style="display:flex;gap:8px;margin:0 16px 14px;">
-      <div class="segBtn${mm==='keyboard'?' sel':''}" data-mm="keyboard">⌨ Keyboard<small>WASD to move · cursor to aim · L-click attack</small></div>
-      <div class="segBtn${mm==='mouse'?' sel':''}" data-mm="mouse">🖱 Mouse / Click-move<small>Hold L-click to move to cursor · R-click attack</small></div>
-    </div>
-    <div class="setHead">Touch controls (mobile)</div>
-    <div style="display:flex;gap:8px;margin:0 16px 10px;">
-      <div class="segBtn${SETTINGS.touch==='auto'?' sel':''}" data-tc="auto">Auto<small>on for touchscreens</small></div>
-      <div class="segBtn${SETTINGS.touch==='on'?' sel':''}" data-tc="on">On<small>always show</small></div>
-      <div class="segBtn${SETTINGS.touch==='off'?' sel':''}" data-tc="off">Off<small>hide</small></div>
-    </div>
-    <div style="display:flex;gap:8px;margin:0 16px 14px;">
-      <div class="segBtn${SETTINGS.touchAim==='auto'?' sel':''}" data-ta="auto">🎯 Auto-aim<small>left stick moves · auto-fire at nearest foe</small></div>
-      <div class="segBtn${SETTINGS.touchAim==='twin'?' sel':''}" data-ta="twin">🕹 Twin-stick<small>left moves · right aims &amp; fires</small></div>
-    </div>${keybindHTML()}`
+  const b=$('settingsBody'), mm=SETTINGS.moveMode, T=settingsTab;
+  const tabs=`<div class="uiTabs">`+SET_TABS.map(([k,t])=>
+    `<button class="uiTab${T===k?' sel':''}" data-stab="${k}">${t}</button>`).join('')+`</div>`;
+
+  let body='';
+  if(T==='play'){
+    body=`<div class="setHead first">Movement</div>`
+      +_sSeg('mm',mm,[['keyboard','⌨ Keyboard','WASD to move · cursor to aim · L-click attack'],
+                      ['mouse','\u{1F5B1} Mouse / Click-move','Hold L-click to move to cursor · R-click attack']])
+      +`<div class="setHead">Camera</div>`
+      +_sTog('togSway',SETTINGS.camSway,'Camera sway','The view leans as you move &amp; springs on direction changes — more kinetic, less stiff')
+      +`<div class="setRow"><div class="lbl">Screen shake<small>Strength of every impact kick. An intensity rather than an on/off — turn it down without losing the cue</small></div>
+          <div class="ctl"><input type="range" class="uiSlider" min="0" max="100" step="1" value="${SETTINGS.camShake}" id="camShake">
+          <span class="uiVal" id="camShakeVal">${SETTINGS.camShake}%</span></div></div>`
+      +`<div class="setHead">Loot</div>`
+      +_sTog('togSalv',SETTINGS.autoSalvage,'Auto-salvage junk','Grey/common drops auto-sell for gold instead of filling your bag')
+      +`<div class="setHead">Touch controls (mobile)</div>`
+      +_sSeg('tc',SETTINGS.touch,[['auto','Auto','on for touchscreens'],['on','On','always show'],['off','Off','hide']])
+      +_sSeg('ta',SETTINGS.touchAim,[['auto','\u{1F3AF} Auto-aim','left stick moves · auto-fire at nearest foe'],
+                                     ['twin','\u{1F579} Twin-stick','left moves · right aims &amp; fires']]);
+  } else if(T==='ui'){
+    body=`<div class="setHead first">Combat text</div>`
+      +`<div class="setNote">Each kind is separate, so you can drop the damage-number spam in a big pull and still see the healing and gold you actually read.</div>`
+      +_sTog('togFctDmg',SETTINGS.fctDmg!==false,'Damage you deal','Hit and critical numbers on enemies')
+      +_sTog('togFctHurt',SETTINGS.fctHurt!==false,'Damage you take','Numbers above your own character')
+      +_sTog('togFctHeal',SETTINGS.fctHeal!==false,'Healing &amp; mana','Life and mana restored')
+      +_sTog('togFctGold',SETTINGS.fctGold!==false,'Gold','Coin pickups')
+      +_sTog('togBig',SETTINGS.bigNumbers,'Enhanced damage numbers','Warframe / PoE-style — numbers scale &amp; pop with hit size')
+      +`<div class="setHead">On-screen messages</div>`
+      +_sTog('togPopups',SETTINGS.popups!==false,'Screen pop-ups','Toast messages &amp; tip cards on screen. Turn off for a clean view — everything still records to the Event Log')
+      +_sTog('togTips',SETTINGS.tips,'Coaching tips','One-time hints that explain each system as you meet it');
+  } else if(T==='audio'){
+    body=`<div class="setHead first">Music</div>`
+      +_sTog('togMusic',SETTINGS.music,'Music','Procedural mood loops — calm hub, tense climb, driving boss fights')
+      +`<div class="setRow" id="musVolRow" style="${SETTINGS.music?'':'opacity:.45;pointer-events:none'}"><div class="lbl">Music volume<small>How loud the soundtrack plays</small></div>
+          <div class="ctl"><input type="range" class="uiSlider" min="0" max="100" step="1" value="${SETTINGS.musicVol}" id="musVol">
+          <span class="uiVal" id="musVolVal">${SETTINGS.musicVol}%</span></div></div>`;
+  } else {
+    body=keybindHTML();
+  }
+
+  // "Save & Leave" is an action, not a preference — it stays under every tab
+  // rather than hiding inside one of them.
+  b.innerHTML=tabs+body
     +(G.running && !_G.splitscreen && !NET.role && !G.dailyRun && !G.practice
-      ? `<div style="margin:6px 16px 14px;border-top:1px solid rgba(255,255,255,.08);padding-top:14px">
-           <button class="btn" id="extractBtn" style="width:100%;background:linear-gradient(180deg,#1a3a2e,#0f241c);border-color:var(--good);color:#bfffdd">🚪 Save &amp; Leave to Menu</button>
-           <div style="font-size:10px;opacity:.6;margin-top:7px;text-align:center">Your climb is saved automatically each floor — leave any time and press <b>▶ Continue</b> to return to Floor ${G.floor}.</div>
+      ? `<div style="margin:var(--s2) var(--s6) var(--s5);border-top:1px solid var(--line-soft);padding-top:var(--s5)">
+           <button class="btn" id="extractBtn" style="width:100%;background:linear-gradient(180deg,#1a3a2e,#0f241c);border-color:var(--good);color:#bfffdd">\u{1F6AA} Save &amp; Leave to Menu</button>
+           <div style="font-size:var(--f-2xs);color:var(--txt-4);margin-top:var(--s2);text-align:center">Your climb is saved automatically each floor — leave any time and press <b>▶ Continue</b> to return to Floor ${G.floor}.</div>
          </div>` : '');
-  $('togBig').onclick=()=>{ SETTINGS.bigNumbers=!SETTINGS.bigNumbers; saveSettings(); renderSettings();
-    if(G.player){ const p=G.player.position; floatText(p.x,p.z, SETTINGS.bigNumbers?'1234':'1234', 'crit', 2.6); } };
-  $('togTips').onclick=()=>{ SETTINGS.tips=!SETTINGS.tips; saveSettings(); renderSettings();
-    if(!SETTINGS.tips) dismissCoach(); else log('💡 Coaching tips on — hints will appear as you meet new systems.'); };
-  $('togPopups').onclick=()=>{ SETTINGS.popups=(SETTINGS.popups===false); saveSettings(); renderSettings(); log(SETTINGS.popups?'\u{1F514} Screen pop-ups ON.':'\u{1F515} Screen pop-ups OFF \u2014 messages go to the Event Log only.'); };
-  $('togSalv').onclick=()=>{ SETTINGS.autoSalvage=!SETTINGS.autoSalvage; saveSettings(); renderSettings();
-    log(SETTINGS.autoSalvage?'♻ Auto-salvage on — grey drops become gold.':'Auto-salvage off — all drops go to your bag.'); };
-  $('togMusic').onclick=()=>{ SETTINGS.music=!SETTINGS.music; saveSettings(); renderSettings();
-    if(SETTINGS.music){ setMusic(MUS.desired||null); log('🎵 Music on.'); } else { const d=MUS.desired; setMusic(null); MUS.desired=d; log('Music off.'); } };
+
+  b.querySelectorAll('[data-stab]').forEach(el=>el.onclick=()=>{ settingsTab=el.dataset.stab; renderSettings(); });
+
+  // Tabs mean a given control may not be on screen; bind only what actually rendered.
+  const tog=(id,fn)=>{ const el=$(id); if(el) el.onclick=fn; };
+  for(const [id,key,msg] of [['togFctDmg','fctDmg','Damage numbers'],['togFctHurt','fctHurt','Damage-taken numbers'],
+                             ['togFctHeal','fctHeal','Healing numbers'],['togFctGold','fctGold','Gold numbers']])
+    tog(id,()=>{ SETTINGS[key]=(SETTINGS[key]===false); saveSettings(); renderSettings(); log(msg+(SETTINGS[key]?' on.':' off.')); });
+  { const sh=$('camShake'); if(sh){
+      sh.oninput=()=>{ SETTINGS.camShake=clamp(sh.value|0,0,100); const v=$('camShakeVal'); if(v) v.textContent=SETTINGS.camShake+'%'; };   // live while dragging
+      sh.onchange=()=>{ SETTINGS.camShake=clamp(sh.value|0,0,100); saveSettings(); shakeCam(.45); }; } }   // sample kick at the new strength, so the number means something
+  tog('togBig',()=>{ SETTINGS.bigNumbers=!SETTINGS.bigNumbers; saveSettings(); renderSettings();
+    if(G.player){ const p=G.player.position; floatText(p.x,p.z, SETTINGS.bigNumbers?'1234':'1234', 'crit', 2.6); } });
+  tog('togTips',()=>{ SETTINGS.tips=!SETTINGS.tips; saveSettings(); renderSettings();
+    if(!SETTINGS.tips) dismissCoach(); else log('\u{1F4A1} Coaching tips on — hints will appear as you meet new systems.'); });
+  tog('togPopups',()=>{ SETTINGS.popups=(SETTINGS.popups===false); saveSettings(); renderSettings(); log(SETTINGS.popups?'\u{1F514} Screen pop-ups ON.':'\u{1F515} Screen pop-ups OFF — messages go to the Event Log only.'); });
+  tog('togSalv',()=>{ SETTINGS.autoSalvage=!SETTINGS.autoSalvage; saveSettings(); renderSettings();
+    log(SETTINGS.autoSalvage?'♻ Auto-salvage on — grey drops become gold.':'Auto-salvage off — all drops go to your bag.'); });
+  tog('togMusic',()=>{ SETTINGS.music=!SETTINGS.music; saveSettings(); renderSettings();
+    if(SETTINGS.music){ setMusic(MUS.desired||null); log('\u{1F3B5} Music on.'); } else { const d=MUS.desired; setMusic(null); MUS.desired=d; log('Music off.'); } });
   { const mv=$('musVol'); if(mv){
       mv.oninput=()=>{ SETTINGS.musicVol=clamp(mv.value|0,0,100); const vv=$('musVolVal'); if(vv)vv.textContent=SETTINGS.musicVol+'%'; initAudio(); applyMusicVol(); };   // live while dragging
-      mv.onchange=()=>{ SETTINGS.musicVol=clamp(mv.value|0,0,100); saveSettings(); log('🎵 Music volume '+SETTINGS.musicVol+'%.'); }; } }   // persist on release
-  $('togSway').onclick=()=>{ SETTINGS.camSway=!SETTINGS.camSway; saveSettings(); renderSettings(); log(SETTINGS.camSway?'🎥 Camera sway on.':'Camera sway off.'); };
+      mv.onchange=()=>{ SETTINGS.musicVol=clamp(mv.value|0,0,100); saveSettings(); log('\u{1F3B5} Music volume '+SETTINGS.musicVol+'%.'); }; } }   // persist on release
+  tog('togSway',()=>{ SETTINGS.camSway=!SETTINGS.camSway; saveSettings(); renderSettings(); log(SETTINGS.camSway?'\u{1F3A5} Camera sway on.':'Camera sway off.'); });
   { const eb=$('extractBtn'); if(eb) eb.onclick=extractToMenu; }
   b.querySelectorAll('[data-mm]').forEach(el=>el.onclick=()=>{ SETTINGS.moveMode=el.dataset.mm; saveSettings(); renderSettings();
-    log(SETTINGS.moveMode==='mouse'?'🖱 Mouse-move: hold left-click to move, right-click to attack.':'⌨ Keyboard: WASD to move, left-click to attack.'); });
+    log(SETTINGS.moveMode==='mouse'?'\u{1F5B1} Mouse-move: hold left-click to move, right-click to attack.':'⌨ Keyboard: WASD to move, left-click to attack.'); });
   b.querySelectorAll('[data-tc]').forEach(el=>el.onclick=()=>{ SETTINGS.touch=el.dataset.tc; saveSettings(); applyTouchMode(); renderSettings();
-    log(TOUCH.on?'📱 Touch controls on — left stick moves; use Settings to pick auto-aim or twin-stick.':'Touch controls off.'); });
+    log(TOUCH.on?'\u{1F4F1} Touch controls on — left stick moves; use Settings to pick auto-aim or twin-stick.':'Touch controls off.'); });
   b.querySelectorAll('[data-ta]').forEach(el=>el.onclick=()=>{ SETTINGS.touchAim=el.dataset.ta; saveSettings(); applyTouchMode(); renderSettings();
-    log(SETTINGS.touchAim==='twin'?'🕹 Twin-stick: right stick aims & fires.':'🎯 Auto-aim: auto-fire at the nearest foe.'); });
+    log(SETTINGS.touchAim==='twin'?'\u{1F579} Twin-stick: right stick aims & fires.':'\u{1F3AF} Auto-aim: auto-fire at the nearest foe.'); });
   wireKeybinds(b);
 }
 // ============================================================ TUTORIAL (menu only — never interrupts a run)
