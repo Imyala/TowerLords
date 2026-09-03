@@ -54,22 +54,33 @@ scatter, void shards. Weather particles (spores, embers, snow, motes, dust, ash)
 The camera sits a touch lower (26 up, 17 back) so more of the world is in frame. The old accent-trim box walls
 and the grid overlay are gone; the collision grid, spawns and pathing are untouched.
 
-## Painted ground (`apPaintFloorPlanes`, in the WORLD PASS block)
+## Real ground (`apBuildGround`, in the WORLD PASS block)
 
-The walkable ground is painted per floor, not tiled: a 512² colour map with an alpha mask (only walkable cells
-show), a roughness map and, for Ember and Void, an emissive map. Layers: the world's base surface, patches of a
-second surface (dirt, cinder, packed snow, shattered glass, lawn, gravel), rock outcrops, a soft-edged worn path
-down every corridor, and a seeded RIVER that crosses the whole floor — water with sand banks, a lava river, a
-frozen river, a stream of void-light, a marble-edged canal, black water — and carves the outer terrain beyond the
-walls. A tiled grain overlay (multiply) adds fine detail; a rippling overlay makes the water move. Reeds, river
-stones, driftwood, lava crust or ice shards line the banks. None of it collides.
+The walkable ground is a relief mesh, not a picture: a 0.8-unit heightfield over the floor with soft undulation
+(never above the feet line), RIVERBEDS carved down to 0.75 units, sand / wet-earth banks, dirt patches, rock
+outcrops, worn paths down the corridors, and an edge that falls away at the walls. One liquid surface at about
+-0.22 fills every dip — inside the walls and beyond them — so a river carved through a room continues under the
+wall and out across the terrain. Per world it is water (rippling, translucent, with a foam line), lava (emissive,
+lit), a frozen river (opaque ice), void-light, a canal, or black water.
 
-## Creature realism (`apRealism`)
+Rivers are rolled per floor (`apRollRiver`): none, one meander, two streams, a lake with an outflow, or a wide
+slow river, at a random heading, width and wobble. Daily climbs share the roll; every other floor rolls its own.
+Reeds, river stones, driftwood, lava crust and ice shards line the banks.
 
-Every hero, boss, enemy, goblin, pet, NPC and station passes through `apRealism`: smooth shading, self-glow
-cut to a third (glowing parts ≥0.9 keep it), surface detail chosen from the material — skin (mottled, pored),
-cloth (weave), leather, bone (grain + cracks), metal (brushed), wood (grain) — applied as both colour map and bump
-map, and the families' low-poly spheres / cylinders / cones / tori resampled to rounder shared geometry.
+The ground is part of play. `apTerrainAt(x,z)` gives water / lava depth at a point: wading slows the hero to
+60% and drains a little mana (the existing water rule) and slows enemies to 62%; lava burns the hero (the existing
+lava rule) and ticks enemies for 3% of their health every 0.6 s; heroes and enemies sink into the liquid and ripple
+as they wade. The floor slabs sit at -1.4 under the relief mesh.
+
+## Creature kit (`crRig`, in the CREATURE KIT block)
+
+The five sheet families are rebuilt with anatomy: torsos and skulls turned on a lathe from a silhouette profile,
+brows, jaws, noses, ears, individual teeth and tusks, hands with fingers and claws, feet with toes, cloth in ragged
+layers with patches, straps, belts and wraps. Each role on a sheet has its own build — the goblin scout is wiry,
+the clubber a wall of muscle, the shaman stooped under bone and feathers; skeletons are real ribcages on a spine
+with a hinged jaw; trolls are barrel-bodied and hunched with tusks and spine spikes; ghouls carry sores and exposed
+ribs, ghosts are drifting shrouds; slimes are clear-coated domes with a core, bubbles and whatever they swallowed.
+The old builders remain as `*Legacy` functions. Every creature still passes through `apRealism` for surface detail.
 
 ## Engine contract (unchanged)
 

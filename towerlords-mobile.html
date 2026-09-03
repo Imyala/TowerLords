@@ -5964,7 +5964,7 @@ function buildFloorMeshes(){ apResetLive();
   for(const r of G.rects){
     const w=(r.x1-r.x0)+PAD*2, d=(r.z1-r.z0)+PAD*2;
     const m=new THREE.Mesh(apFloorBox(w,1,d), mat);
-    m.position.set((r.x0+r.x1)/2,-0.5,(r.z0+r.z1)/2); m.receiveShadow=true; scene.add(m); G.scenery.push(m);
+    m.position.set((r.x0+r.x1)/2,-1.4,(r.z0+r.z1)/2); m.receiveShadow=true;   // REAL GROUND: the slab sits under the relief mesh (riverbeds carve below 0) scene.add(m); G.scenery.push(m);
   }
   // ---- grid-derived PATCH floor: guarantee a tile under EVERY walkable cell so there are never floorless-but-walkable
   // spots (the "broken terrain / standing over a hole" bug). Sits just below the rect floor and extends past cell
@@ -5976,7 +5976,7 @@ function buildFloorMeshes(){ apResetLive();
       tiles.push([g.ox+(gx+0.5)*g.C, g.oz+(gz+0.5)*g.C]); }
     if(tiles.length){ const im=new THREE.InstancedMesh(apFloorBox(TS,0.9,TS), mat, tiles.length); im.receiveShadow=true;
       const mtx=new THREE.Matrix4();
-      tiles.forEach((p,i)=>{ mtx.makeTranslation(p[0],-0.55,p[1]); im.setMatrixAt(i,mtx); });
+      tiles.forEach((p,i)=>{ mtx.makeTranslation(p[0],-1.45,p[1]); im.setMatrixAt(i,mtx); });
       im.instanceMatrix.needsUpdate=true; scene.add(im); G.scenery.push(im); } }
   buildLandscape();   // the world beyond the walls: terrain, forests / lava / glaciers / void / gardens / bone, particles
 }
@@ -6250,7 +6250,7 @@ const SKELE_MAP={   // concept-art pass: skeleton models mapped onto enemy types
 // engine's existing bob / hit-flash / telegraph animation drives it unchanged. userData.humanoid
 // makes it FACE its heading; userData.arms / userData.legs get a walk-swing in the enemy loop.
 // Shared skeletal base (skull, ribcage, spine, pelvis, bone limbs); opts.variant swaps the gear.
-function makeSkeletonMesh(scale,opts){
+function makeSkeletonMeshLegacy(scale,opts){
   opts=opts||{}; const s=scale||1; const v=opts.variant||'skirmisher';
   const mat=(c,e,ei,r)=>new THREE.MeshStandardMaterial({color:c,emissive:(e==null?c:e),emissiveIntensity:(ei==null?.3:ei),roughness:(r==null?.6:r),flatShading:true});
   const bone   = mat(opts.bone||0xe9e3cf, 0x6b6350, .34, .5);
@@ -6622,7 +6622,7 @@ function makeOrcMesh(scale,opts){ opts=opts||{}; const s=scale||1; const v=opts.
   return g; }
 
 // ============================================================ TROLLS (huge, hunched)
-function makeTrollMesh(scale,opts){ opts=opts||{}; const s=scale||1; const v=opts.variant||'cave';
+function makeTrollMeshLegacy(scale,opts){ opts=opts||{}; const s=scale||1; const v=opts.variant||'cave';
   const P={cave:0x5f7048,rock:0x6a6a60,ice:0x6f9ec2,swamp:0x5a6a2a,war:0x6a7048,shaman:0x7a6a80,armor:0x6a6a60,fire:0x7a5040,stone:0x74746a,chief:0x5f7048};
   const skin=_mat(opts.skin||P[v]||0x5f7048,0x141810,.28,.8), tusk=_boneMat(), armor=_ironD();
   function head(h,s){ const sk=skin;
@@ -6678,7 +6678,7 @@ function makeRatmanMesh(scale,opts){ opts=opts||{}; const s=scale||1; const v=op
   return g; }
 
 // ============================================================ GHOULS & GHOSTS (opts.ghost → floating robe)
-function makeGhostGhoulMesh(scale,opts){ opts=opts||{}; const s=scale||1; const v=opts.variant||'ghoulscout';
+function makeGhostGhoulMeshLegacy(scale,opts){ opts=opts||{}; const s=scale||1; const v=opts.variant||'ghoulscout';
   const GH={ghoulscout:0,ghoulbrute:0,hungryghoul:0, wailingspirit:1,banshee:1,souldrainer:1,shackledghost:1,gravephantom:1,cursedwraith:1,lostsoul:1};
   const isGhost = opts.ghost!=null ? opts.ghost : !!GH[v];
   if(!isGhost){
@@ -6729,7 +6729,7 @@ function makeGhostGhoulMesh(scale,opts){ opts=opts||{}; const s=scale||1; const 
   return grp; }
 
 // ============================================================ SLIMES (short blob — body geo offset down)
-function makeSlimeMesh(scale,opts){ opts=opts||{}; const s=scale||1; const v=opts.variant||'green';
+function makeSlimeMeshLegacy(scale,opts){ opts=opts||{}; const s=scale||1; const v=opts.variant||'green';
   const P={green:0x6faa3a,water:0x3a86c8,fire:0xe0431f,poison:0x8a3ec8,electric:0xd8b020,shadow:0x2a2436,ice:0x9fd8ec,mud:0x6b5836,acid:0x9ad020,prism:0x8a6bd8};
   const col=opts.col||P[v]||0x6faa3a; const oy=-.55*s;   // push the blob down so it rests on the floor under the forced .95 baseline
   const jelly=_mat(col,col,.5,.45); jelly.transparent=true; jelly.opacity=.9;
@@ -7169,7 +7169,7 @@ function apAnimateHero(grp,dt){ const u=grp.userData; if(!u||!u.hero) return;
   if(u.cloak) u.cloak.rotation.x=-.12-u._amp*.55+Math.sin(t*2.3)*.04;
   if(u.plume) u.plume.rotation.z=Math.sin(t*2.1)*.08;
   if(u.chest){ const k=1+Math.sin(t*1.5)*.012; u.chest.scale.set(1.18*k,.78/k,.92*k); }
-  if(u.rig) u.rig.position.y=-1+Math.abs(Math.sin(u._ph))*.07*u._amp; }
+  const wd=(typeof apWadeAt==='function')?apWadeAt(x,z):0; if(u.rig) u.rig.position.y=-1-wd*.45+Math.abs(Math.sin(u._ph))*.07*(u._amp*(1-wd*.6)); if(wd>0&&sp>1.5&&typeof apSplash==='function') apSplash(grp,x,z,Math.min(1,sp/10),(typeof G!=='undefined'&&G._lavaT!=null&&apTerrainAt(x,z).lava>.3)?0xff8a30:0x9fd8ff); }
 // a ghostly afterimage of the hero (dash decoys)
 function makeHeroGhostMesh(){ const g=new THREE.Group(); const m=apM(0x56e0ff,{ei:.9,r:.4,t:true,op:.45,flat:false});
   const b=new THREE.Mesh(new THREE.CapsuleGeometry(.5,1.0,4,8), m); b.position.y=1.15; g.add(b);
@@ -7716,59 +7716,6 @@ function apCairn(){ const g=new THREE.Group(); const cm=apM(0x1a1626,{e:0x6b2436
   const gl=new THREE.PointLight(0xff5470,.7,7); gl.position.y=1.6; g.add(gl); apAnim(g,{k:'flicker',o:gl,base:.7,amp:.15,spd:3});
   return apShadow(g,true); }
 
-// ============================================================ ART PASS — GOBLIN ROLES (from the "10 Goblin Enemies" sheet)
-// The warren-kin used to be one model. Now each combat role is the goblin on the sheet: Scout (hood, dagger), Shaman
-// (skull staff, bone headdress, green hex-fire), Spear Guard (spiked helm, spear, skull shield), Bomber (goggles, lit bomb,
-// belt of shells), Archer (hood, bow, quiver), Clubber (big, spiked club, iron helm), Poisoner (hood, green vials),
-// Trapper (bear trap on a rope), Berserker (twin axes, topknot, war paint), Commander (horned skull helm, banner, mace, red cape).
-// Built on the existing goblin body so the engine contract (userData.body / arms / legs / humanoid) is unchanged.
-function makeGoblinVariantMesh(scale,opts){ opts=opts||{}; const s=scale||1; const v=opts.variant||'scout';
-  const skinCol={clubber:0x6f8a3c, berserker:0x7e9a44, commander:0x6a8438, shaman:0x7b944a, poisoner:0x748c46}[v]||0x7a9440;
-  const g=makeGoblinMesh(s,{skin:skinCol, leather:v==='commander'?0x4a3020:v==='shaman'?0x5a4a34:0x5a4630, noSpear:true});
-  const body=g.userData.body; const head=body.children.find(c=>c.geometry&&c.geometry.type==='SphereGeometry'&&Math.abs(c.geometry.parameters.radius-.44*s)<1e-4);
-  if(head) head.scale.multiplyScalar(.86);
-  if(head){ const cap=head.children.find(c=>c.geometry&&c.geometry.type==='SphereGeometry'&&Math.abs(c.geometry.parameters.radius-.5*s)<1e-4); if(cap){ cap.geometry.dispose(); cap.geometry=new THREE.SphereGeometry(.5*s,9,7,0,Math.PI*2,0,Math.PI*.4); cap.position.y=.12*s; } }   // the cap sits on the crown, not over the eyes   // a touch less chibi — the sheet's goblins are stocky, not bobble-headed
-  const iron=apM(0x6f7682,{e:0x262a33,ei:.05,r:.45,m:.7}), dark=apM(0x2a2018,{ei:.03,r:.9}), wood=apM(0x5c4225,{ei:.05,r:.9}), bone=apM(0xe6dfc8,{ei:.06,r:.55}), gold=apM(0xb08a3a,{ei:.1,r:.4,m:.7}), leatherM=apM(0x4a3826,{ei:.05,r:.9});
-  const R=g.userData.arms[1], L=g.userData.arms[0];   // arms are simple cylinders: hands sit at their lower end
-  const gripR=new THREE.Group(); gripR.position.set(.42*s,-.16*s,.14*s); body.add(gripR); const gripL=new THREE.Group(); gripL.position.set(-.42*s,-.16*s,.14*s); body.add(gripL);
-  g.userData.gripR=gripR; g.userData.gripL=gripL;
-  const hood=()=>{ if(head){ const peak=new THREE.Mesh(new THREE.ConeGeometry(.15*s,.36*s,6), leatherM); peak.position.set(0,.4*s,-.16*s); peak.rotation.x=-.7; head.add(peak); } };   // the base goblin already wears its patched cap; roles add a cowl peak behind it
-  const helm=(spikes)=>{ if(!head) return; const hm=new THREE.Mesh(new THREE.SphereGeometry(.47*s*.86,10,7,0,Math.PI*2,0,Math.PI*.55), iron); hm.position.y=.08*s; head.add(hm); const brim=new THREE.Mesh(new THREE.TorusGeometry(.45*s*.86,.04*s,5,14), iron); brim.rotation.x=Math.PI/2; brim.position.y=.02*s; head.add(brim); if(spikes) for(let i=0;i<5;i++){ const a=i/5*Math.PI*2; const sp=new THREE.Mesh(new THREE.ConeGeometry(.04*s,.16*s,4), iron); sp.position.set(Math.cos(a)*.3*s,.36*s,Math.sin(a)*.3*s); sp.rotation.z=-Math.cos(a)*.9; sp.rotation.x=Math.sin(a)*.9; head.add(sp); } };
-  const cape=(col)=>{ const c=apCape(s,col,.8,.9); c.position.set(0,.3*s,-.3*s); c.rotation.x=-.1; body.add(c); };
-  if(v==='scout'){ hood(); const d=apDagger(s*1.1); d.rotation.x=-.5; gripR.add(d); const d2=apDagger(s*.9); d2.rotation.x=-.8; gripL.add(d2); }
-  else if(v==='shaman'){ // bone headdress, skull staff, green hex-fire in the off hand
-    if(head){ const sk=new THREE.Mesh(new THREE.SphereGeometry(.2*s,8,6), bone); sk.position.set(0,.36*s,.1*s); head.add(sk); for(const sd of [-1,1]){ const bn=new THREE.Mesh(new THREE.CylinderGeometry(.03*s,.03*s,.5*s,5), bone); bn.position.set(sd*.28*s,.34*s,0); bn.rotation.z=sd*.9; head.add(bn); } }
-    const st=new THREE.Group(); const shaft=new THREE.Mesh(new THREE.CylinderGeometry(.035*s,.045*s,1.7*s,6), wood); st.add(shaft); const skull=new THREE.Mesh(new THREE.SphereGeometry(.16*s,8,6), bone); skull.position.y=.9*s; st.add(skull); for(const sd of [-1,1]){ const bn=new THREE.Mesh(new THREE.CylinderGeometry(.025*s,.025*s,.4*s,5), bone); bn.position.set(sd*.14*s,1.0*s,0); bn.rotation.z=sd*.8; st.add(bn); } for(let i=0;i<3;i++){ const bead=new THREE.Mesh(new THREE.SphereGeometry(.03*s,5,4), apM([0xc03a3a,0x3a9a5a,0xd8c060][i],{ei:.2})); bead.position.set(.08*s,(.5-i*.12)*s,.06*s); st.add(bead); }
-    st.position.y=-.2*s; st.rotation.x=.1; gripR.add(st);
-    const fire=new THREE.Mesh(new THREE.SphereGeometry(.14*s,8,6), apM(0x6aff6a,{ei:1.6,t:true,op:.85})); gripL.add(fire); apAnim(g,{k:'pulse',o:fire,base:1.5,amp:.6,spd:6}); apAnim(g,{k:'breathe',o:fire,spd:7,amp:.15}); const lt=new THREE.PointLight(0x6aff6a,.6,6); gripL.add(lt);
-    const robe=new THREE.Mesh(new THREE.ConeGeometry(.5*s,.9*s,8,1,true), apM(0x4a4030,{ei:.04,r:.95})); robe.position.y=-.4*s; body.add(robe); }
-  else if(v==='spearguard'){ helm(true); const sp=apSpear(s*.9); sp.position.y=-.1*s; sp.rotation.x=.05; gripR.add(sp); const sh=apShield(s*1.1,0x6b5a3a,0x6f7682); const sk=new THREE.Mesh(new THREE.SphereGeometry(.12*s,7,6), bone); sk.position.z=.06*s; sh.add(sk); sh.position.set(-.05*s,.05*s,.1*s); sh.rotation.y=-.3; gripL.add(sh);
-    const pauld=new THREE.Mesh(new THREE.SphereGeometry(.16*s,7,6,0,Math.PI*2,0,Math.PI*.5), iron); pauld.position.set(.34*s,.28*s,0); body.add(pauld); }
-  else if(v==='bomber'){ if(head){ const cap=new THREE.Mesh(new THREE.SphereGeometry(.47*s*.86,9,7,0,Math.PI*2,0,Math.PI*.5), leatherM); cap.position.y=.08*s; head.add(cap); for(const sd of [-1,1]){ const gl=new THREE.Mesh(new THREE.TorusGeometry(.09*s,.025*s,5,10), gold); gl.position.set(sd*.13*s,.3*s,.28*s); gl.rotation.x=.4; head.add(gl); const lens=new THREE.Mesh(new THREE.CircleGeometry(.08*s,8), apM(0x7ac0d0,{ei:.3,r:.2,m:.3})); lens.position.set(sd*.13*s,.3*s,.29*s); lens.rotation.x=-.4; head.add(lens); } }
-    const bomb=new THREE.Group(); const b=new THREE.Mesh(new THREE.SphereGeometry(.2*s,9,7), apM(0x1e1e22,{ei:.03,r:.5,m:.4})); bomb.add(b); const fuse=new THREE.Mesh(new THREE.CylinderGeometry(.015*s,.015*s,.14*s,4), apM(0xc0b090,{ei:.05})); fuse.position.y=.24*s; bomb.add(fuse); const spark=new THREE.Mesh(new THREE.SphereGeometry(.045*s,5,4), apM(0xffb040,{ei:2})); spark.position.y=.32*s; bomb.add(spark); apAnim(g,{k:'pulse',o:spark,base:1.8,amp:1,spd:12}); const lt=new THREE.PointLight(0xffa040,.5,4); lt.position.y=.32*s; bomb.add(lt); bomb.position.set(-.04*s,.02*s,.06*s); gripL.add(bomb);
-    for(let i=0;i<4;i++){ const sh=new THREE.Mesh(new THREE.CylinderGeometry(.045*s,.045*s,.16*s,6), apM(i%2?0xb03030:0x2a2a2e,{ei:.05})); sh.position.set((i-1.5)*.13*s,-.06*s,.36*s); body.add(sh); } }
-  else if(v==='archer'){ hood(); const bw=apBow(s*1.05); bw.rotation.y=Math.PI/2; bw.rotation.z=-.2; gripL.add(bw); const arrow=new THREE.Mesh(new THREE.CylinderGeometry(.012*s,.012*s,.55*s,4), wood); arrow.rotation.x=Math.PI/2; arrow.position.set(.02*s,0,.2*s); gripR.add(arrow);
-    const quiver=new THREE.Group(); const q=new THREE.Mesh(new THREE.CylinderGeometry(.08*s,.07*s,.5*s,7), leatherM); quiver.add(q); for(let i=0;i<4;i++){ const ar=new THREE.Mesh(new THREE.CylinderGeometry(.01*s,.01*s,.32*s,4), wood); ar.position.set((i-1.5)*.03*s,.3*s,0); quiver.add(ar); const fl=new THREE.Mesh(new THREE.ConeGeometry(.025*s,.07*s,4), apM(0xc0c0c0,{ei:.05})); fl.position.set((i-1.5)*.03*s,.46*s,0); quiver.add(fl); } quiver.position.set(-.16*s,.1*s,-.34*s); quiver.rotation.z=.5; quiver.rotation.x=.25; body.add(quiver); }
-  else if(v==='clubber'){ helm(false); body.scale.set(1.3,1.12,1.3); const club=new THREE.Group(); const haft=new THREE.Mesh(new THREE.CylinderGeometry(.05*s,.07*s,.9*s,6), wood); club.add(haft); const hd=new THREE.Mesh(new THREE.CylinderGeometry(.17*s,.13*s,.5*s,7), wood); hd.position.y=.55*s; club.add(hd); for(let i=0;i<9;i++){ const a=i/9*Math.PI*2, yy=.42*s+(i%3)*.12*s; const sp=new THREE.Mesh(new THREE.ConeGeometry(.03*s,.12*s,4), iron); sp.position.set(Math.cos(a)*.17*s,yy,Math.sin(a)*.17*s); sp.rotation.z=Math.PI/2-a; sp.rotation.x=Math.sin(a); club.add(sp); }
-    club.position.set(.1*s,.1*s,0); club.rotation.z=-.4; club.rotation.x=-.4; gripR.add(club);
-    for(const sd of [-1,1]){ const pd=new THREE.Mesh(new THREE.SphereGeometry(.17*s,7,6,0,Math.PI*2,0,Math.PI*.5), iron); pd.position.set(sd*.3*s,.28*s,0); body.add(pd); } const plate=new THREE.Mesh(new THREE.BoxGeometry(.4*s,.36*s,.06*s), iron); plate.position.set(0,.1*s,.3*s); body.add(plate); }
-  else if(v==='poisoner'){ hood(); const vial=(col,x,y,z,sc)=>{ const vg=new THREE.Group(); const gl=new THREE.Mesh(new THREE.SphereGeometry(.11*s*sc,8,6), apM(col,{ei:.9,t:true,op:.85,r:.2})); vg.add(gl); const neck=new THREE.Mesh(new THREE.CylinderGeometry(.035*s*sc,.045*s*sc,.1*s*sc,6), apM(0x8a8a70,{ei:.05})); neck.position.y=.14*s*sc; vg.add(neck); const cork=new THREE.Mesh(new THREE.CylinderGeometry(.03*s*sc,.03*s*sc,.05*s*sc,6), wood); cork.position.y=.2*s*sc; vg.add(cork); vg.position.set(x,y,z); return vg; };
-    gripR.add(vial(0x6aff3a,0,.02*s,.04*s,1.1)); const lt=new THREE.PointLight(0x6aff3a,.4,4); gripR.add(lt); body.add(vial(0x9aff5a,-.3*s,-.2*s,.28*s,.7)); body.add(vial(0xc0ff40,.28*s,-.24*s,.3*s,.6));
-    const drip=new THREE.Mesh(new THREE.SphereGeometry(.03*s,5,4), apM(0x6aff3a,{ei:1.2})); drip.position.set(.05*s,-.16*s,.04*s); gripR.add(drip); apAnim(g,{k:'bob',o:drip,y:-.16*s,amp:.06*s,spd:3}); }
-  else if(v==='trapper'){ hood(); const trap=new THREE.Group(); const base=new THREE.Mesh(new THREE.CylinderGeometry(.24*s,.26*s,.04*s,10), iron); trap.add(base); for(const sd of [-1,1]){ const jaw=new THREE.Mesh(new THREE.TorusGeometry(.22*s,.03*s,5,12,Math.PI), iron); jaw.rotation.x=Math.PI/2; jaw.rotation.z=sd>0?0:Math.PI; jaw.position.y=.03*s; trap.add(jaw); for(let i=0;i<5;i++){ const a=(i+.5)/5*Math.PI*(sd>0?1:-1)+(sd>0?0:0); const t=new THREE.Mesh(new THREE.ConeGeometry(.02*s,.09*s,4), iron); t.position.set(Math.cos(a)*.22*s,.08*s,Math.sin(a)*.22*s*(sd>0?1:-1)*(sd>0?1:1)); trap.add(t); } }
-    const sk=new THREE.Mesh(new THREE.SphereGeometry(.08*s,7,5), bone); sk.position.y=.06*s; trap.add(sk); trap.position.set(.55*s,-.9*s,.45*s); trap.rotation.x=.1; body.add(trap);
-    const rope=new THREE.Mesh(new THREE.CylinderGeometry(.018*s,.018*s,.9*s,5), apM(0x9a8a5a,{ei:.05})); rope.position.set(.5*s,-.5*s,.32*s); rope.rotation.z=-.15; rope.rotation.x=.3; body.add(rope);
-    const coil=new THREE.Mesh(new THREE.TorusGeometry(.12*s,.03*s,5,12), apM(0x9a8a5a,{ei:.05})); coil.position.set(-.3*s,-.1*s,-.28*s); coil.rotation.y=.6; body.add(coil); }
-  else if(v==='berserker'){ if(head){ const knot=new THREE.Mesh(new THREE.ConeGeometry(.12*s,.42*s,6), apM(0x1a1410,{ei:.03,r:.95})); knot.position.set(0,.4*s,-.08*s); knot.rotation.x=-.9; head.add(knot); const band=new THREE.Mesh(new THREE.TorusGeometry(.1*s,.025*s,5,10), apM(0xb03030,{ei:.1})); band.position.set(0,.34*s,-.04*s); head.add(band); for(const sd of [-1,1]){ const paint=new THREE.Mesh(new THREE.BoxGeometry(.04*s,.24*s,.02*s), apM(0xb03030,{ei:.15})); paint.position.set(sd*.2*s,.0,.4*s); paint.rotation.z=sd*.2; head.add(paint); } }
-    for(const sd of [-1,1]){ const ax=new THREE.Group(); const haft=new THREE.Mesh(new THREE.CylinderGeometry(.03*s,.035*s,.7*s,6), wood); ax.add(haft); const hd=new THREE.Mesh(new THREE.CylinderGeometry(.02*s,.02*s,.3*s,4), iron); hd.rotation.z=Math.PI/2; hd.position.y=.3*s; hd.scale.set(1,1,.4); ax.add(hd); const bl=new THREE.Mesh(new THREE.CircleGeometry(.2*s,8,0,Math.PI), iron); bl.position.set(.14*s,.3*s,0); bl.rotation.y=Math.PI/2; ax.add(bl); const bl2=bl.clone(); bl2.rotation.y=-Math.PI/2; bl2.position.z=-.001; ax.add(bl2); ax.rotation.x=-.5; ax.rotation.z=sd*.3; (sd>0?gripR:gripL).add(ax); }
-    const necklace=new THREE.Mesh(new THREE.TorusGeometry(.2*s,.02*s,5,12), bone); necklace.rotation.x=Math.PI/2+.5; necklace.position.set(0,.22*s,.18*s); body.add(necklace); const sk=new THREE.Mesh(new THREE.SphereGeometry(.07*s,6,5), bone); sk.position.set(0,.06*s,.34*s); body.add(sk); }
-  else if(v==='commander'){ if(head){ const sk=new THREE.Mesh(new THREE.SphereGeometry(.42*s*.86,9,7,0,Math.PI*2,0,Math.PI*.6), bone); sk.position.y=.1*s; head.add(sk); for(const sd of [-1,1]){ const horn=new THREE.Mesh(new THREE.ConeGeometry(.06*s,.36*s,6), apM(0xd8c8a8,{ei:.05,r:.7})); horn.position.set(sd*.34*s,.32*s,0); horn.rotation.z=sd*-1.0; head.add(horn); } }
-    cape(0x7a1a1a); const mace=new THREE.Group(); const hf=new THREE.Mesh(new THREE.CylinderGeometry(.03*s,.035*s,.7*s,6), wood); mace.add(hf); const hd=new THREE.Mesh(new THREE.IcosahedronGeometry(.13*s,0), iron); hd.position.y=.4*s; mace.add(hd); apSpikeRing(hd,s,7,.12,0,.12,0x8a8f99); mace.rotation.x=-.5; gripR.add(mace);
-    const banner=new THREE.Group(); const pole=new THREE.Mesh(new THREE.CylinderGeometry(.03*s,.035*s,2.4*s,6), wood); banner.add(pole); const cross=new THREE.Mesh(new THREE.BoxGeometry(.6*s,.03*s,.03*s), wood); cross.position.y=1.0*s; banner.add(cross); const cloth=new THREE.Mesh(new THREE.BoxGeometry(.03*s,.9*s,.55*s), apM(0x8a1a1a,{ei:.08,r:.95})); cloth.position.set(0,.55*s,.28*s); banner.add(cloth); const sig=new THREE.Mesh(new THREE.SphereGeometry(.12*s,7,6), apM(0x2a0a0a,{ei:.05})); sig.scale.x=.2; sig.position.set(0,.6*s,.28*s); banner.add(sig); const tip=new THREE.Mesh(new THREE.ConeGeometry(.05*s,.2*s,5), iron); tip.position.y=1.28*s; banner.add(tip); apAnim(g,{k:'sway',o:cloth,axis:'y',base:0,amp:.15,spd:2.4});
-    banner.position.set(-.1*s,.1*s,-.1*s); gripL.add(banner);
-    const chest=new THREE.Mesh(new THREE.BoxGeometry(.42*s,.34*s,.08*s), iron); chest.position.set(0,.1*s,.3*s); body.add(chest); const skc=new THREE.Mesh(new THREE.SphereGeometry(.09*s,7,6), bone); skc.position.set(0,.1*s,.36*s); body.add(skc); }
-  apShadow(g); return g; }
-
 // ============================================================ ART PASS — WORLDS
 // Tower-of-God rule: every floor is a real place, not a painted board. Each biome is a WORLD definition — its own
 // sky (a fog-free gradient dome with a sun), sunlight colour, natural ground (grass / basalt / snow / void-glass /
@@ -7856,7 +7803,7 @@ const AP_WORLD=[
    sky:{zen:0x22262e, hor:0x8a8e94, gnd:0x1a1a1e, sun:0xd0d4dc, sunDir:[.2,.6,.3], sunI:1.2, hemi:0xa0a4ac, hemiG:0x303034, hemiI:1.0, fog:[50,200]},
    amp:5, freq:.045, colLo:0x707078, colMid:0xa0a0a8, colHi:0xd0ccc0, water:{col:0x1a1c22, y:-1.0, op:.9}, walls:'bone', trees:'dead', bones:true, motes:{col:0xd8d2c0,n:320,k:'ash'}},
 ];
-function apResetLive(){ for(const o of _AP.live){ try{ scene.remove(o); }catch(_){} } _AP.live=[]; _AP.particles=null; _AP.land=null; _AP.water=null; _AP.river=null; _AP.sky=null; }
+function apResetLive(){ for(const o of _AP.live){ try{ scene.remove(o); }catch(_){} } _AP.live=[]; _AP.particles=null; _AP.land=null; _AP.water=null; _AP.river=null; _AP.sky=null; _AP.field=null; _AP.foam=null; if(typeof G!=="undefined") G._river=null; }
 function apLive(o){ scene.add(o); _AP.live.push(o); return o; }
 // distance (in cells) from every grid cell to the nearest walkable cell — chamfer transform, two passes
 function apGridDist(g){ const gw=g.gw, gh=g.gh, D=new Float32Array(gw*gh); const INF=1e5;
@@ -7881,7 +7828,7 @@ function apApplyWorldLight(W){ const S=W.sky; try{ scene.background=new THREE.Co
   if(hemi){ hemi.color.setHex(S.hemi); hemi.groundColor.setHex(S.hemiG); hemi.intensity=S.hemiI; }
   if(dir){ dir.color.setHex(S.sun); dir.intensity=S.sunI; } }catch(_){} }
 function buildLandscape(){ try{ apBuildLandscape(); }catch(err){ console.warn('landscape skipped:',err); } }
-function apBuildLandscape(){ const g=G.grid; if(!g) return; const bi=Math.max(0,BIOMES.indexOf(biome)); const W=AP_WORLD[bi]||AP_WORLD[0]; const seed=((G.seed|0)*31+(G.floor|0)*7)>>>0;
+function apBuildLandscape(){ const g=G.grid; if(!g) return; const bi=Math.max(0,BIOMES.indexOf(biome)); const W=AP_WORLD[bi]||AP_WORLD[0]; const seed=(((G.seed|0)*31+(G.floor|0)*7)+(G.dailyRun?0:Math.floor(Math.random()*1e6)))>>>0;   // daily climbs share a world; every other floor rolls its own
   _AP.world=W; apSky(W); apApplyWorldLight(W);
   const D=apGridDist(g); const half=(G.bounds||140)/2; const EXT=half+150; const SEG=Math.min(170,Math.round(EXT*2/2.4));
   // ---- terrain beyond the walls: smooth, textured, vertex-tinted by height (valley → slope → peaks) ----
@@ -7891,22 +7838,19 @@ function apBuildLandscape(){ const g=G.grid; if(!g) return; const bi=Math.max(0,
   for(let i=0;i<n;i++){ const x=pos.getX(i), z=pos.getZ(i); const d=apDistAt(g,D,x,z);
     const rim=Math.max(0,Math.min(1,(d-1.6)/8)), far=Math.max(0,Math.min(1,(d-12)/34));
     const nz=apFbm(x*W.freq+seed*.001,z*W.freq+seed*.002,seed,5), nz2=apFbm(x*.011,z*.011,seed+9,4), ridge=Math.pow(Math.abs(apFbm(x*.02,z*.02,seed+21,3)-.5)*2,1.4);
-    let h=-0.7 + rim*(0.4 + nz*W.amp) + far*(nz2*W.amp*2.2 + ridge*W.amp*3.5);
-    const basin=apFbm(x*.028,z*.028,seed+33,3); const rb=apRiverBand(x,z,seed); if(rim>.35 && rb<apRiverWidth(W)*1.2) h=Math.min(h,-1.9);   // the river runs on beyond the walls
+    let h=-0.15 + rim*(0.35 + nz*W.amp) + far*(nz2*W.amp*2.2 + ridge*W.amp*3.5);
+    const basin=apFbm(x*.028,z*.028,seed+33,3); if(d>1.0){ const rt=apRiverT(x,z,G._river||(G._river=apRollRiver(seed))); if(rt<1.15) h=Math.min(h,-1.5-(1-Math.min(1,rt))*.5); }   // the river runs on beyond the walls
+    if(d<1.3) h=-1.6;   // under the floor mesh the outer terrain drops away so the liquid surface shows in the carved beds
     if(W.abyss){ if(rim>.55 && basin<.42) h=W.abyss.y; }
-    else if(rim>.5 && basin<(W.lava?.42:.36)) h=Math.min(h,-1.8);
+    else if(rim>.5 && basin<(W.lava?.42:.36)) h=Math.min(h,-1.6);
     pos.setY(i,h); heights[i]=h;
     const t=Math.max(0,Math.min(1,(h+0.7)/(W.amp*2.2))); tmp.copy(cLo).lerp(cMid,Math.min(1,t*2)); if(t>.5) tmp.lerp(cHi,(t-.5)*2); const shade=.9+apHash(i,3,seed)*.2; cols[i*3]=tmp.r*shade; cols[i*3+1]=tmp.g*shade; cols[i*3+2]=tmp.b*shade; }
   geo.setAttribute('color',new THREE.BufferAttribute(cols,3)); geo.computeVertexNormals();
   const tmat=new THREE.MeshStandardMaterial({vertexColors:true, map:apPaintNatural(W.ground==='basalt'?'cinder':W.ground==='voidglass'?'voidglass':W.ground==='garden'?'grass':W.ground), roughness:.95, metalness:0});
   const terrain=new THREE.Mesh(geo,tmat); terrain.receiveShadow=true; apLive(terrain); _AP.land={mesh:terrain,W,bi};
-  apPaintFloorPlanes(W,g,D,seed,EXT);   // the walkable ground, painted for this floor: surfaces, patches, paths, rivers
+  apBuildGround(W,g,D,seed);   // REAL GROUND: relief mesh with carved riverbeds, banks, an edge, and the liquid surface that fills every dip
   const hAt=(x,z)=>{ const gx=Math.round((x+EXT)/(EXT*2)*SEG), gz=Math.round((z+EXT)/(EXT*2)*SEG); const i=gz*(SEG+1)+gx; return heights[Math.max(0,Math.min(n-1,i))]; };
-  // ---- water / lava / abyss ----
-  if(W.water){ const wm=new THREE.MeshStandardMaterial({color:W.water.col, map:apRipple(), roughness:W.water.ice?.15:.25, metalness:W.water.ice?.3:.15, transparent:!W.water.ice, opacity:W.water.op, emissive:W.water.col, emissiveIntensity:.12});
-    wm.map.repeat.set(24,24); const pl=new THREE.Mesh(new THREE.PlaneGeometry(EXT*2,EXT*2),wm); pl.rotation.x=-Math.PI/2; pl.position.y=W.water.y; pl.receiveShadow=true; apLive(pl); if(!W.water.ice) _AP.water=pl; }
-  if(W.lava){ const lm=new THREE.MeshStandardMaterial({color:W.lava.col, map:apRipple(), emissive:0xff6a18, emissiveIntensity:1.3, roughness:.7}); lm.map.repeat.set(20,20); const pl=new THREE.Mesh(new THREE.PlaneGeometry(EXT*2,EXT*2),lm); pl.rotation.x=-Math.PI/2; pl.position.y=W.lava.y; apLive(pl); pl.userData.lava=true; _AP.water=pl;
-    const lt=new THREE.PointLight(0xff6a20,.6,120,1); lt.position.set(0,6,0); apLive(lt); }
+  // ---- abyss (the liquid surface itself is built with the ground) ----
   if(W.abyss){ const pl=new THREE.Mesh(new THREE.PlaneGeometry(EXT*2,EXT*2), new THREE.MeshBasicMaterial({color:0x07030f,fog:false})); pl.rotation.x=-Math.PI/2; pl.position.y=W.abyss.y+.5; apLive(pl);
     const sg=new THREE.BufferGeometry(); const sp=new Float32Array(700*3); for(let i=0;i<700;i++){ sp[i*3]=(apHash(i,1,seed)-.5)*EXT*2; sp[i*3+1]=W.abyss.y+2+apHash(i,2,seed)*12; sp[i*3+2]=(apHash(i,3,seed)-.5)*EXT*2; } sg.setAttribute('position',new THREE.BufferAttribute(sp,3)); apLive(new THREE.Points(sg,new THREE.PointsMaterial({color:0xb06bff,size:.6,transparent:true,opacity:.8,depthWrite:false}))); }
   // ---- scattered life on the outer terrain (never on walkable ground) ----
@@ -8014,7 +7958,7 @@ function updateLandscape(dt){ _AP.t+=dt; const P=_AP.particles;
       if(a[j+1]>30) a[j+1]=0; else if(a[j+1]<0) a[j+1]=30; }
     P.pts.geometry.attributes.position.needsUpdate=true; }
   if(_AP.river&&_AP.river.material.map){ _AP.river.material.map.offset.x+=dt*.03; _AP.river.material.map.offset.y-=dt*.02; }
-  if(_AP.water&&_AP.water.material.map){ _AP.water.material.map.offset.x+=dt*.012; _AP.water.material.map.offset.y+=dt*.008; if(_AP.water.userData.lava) _AP.water.material.emissiveIntensity=1.25+Math.sin(_AP.t*1.3)*.2; }
+  if(_AP.water&&_AP.water.material.map){ _AP.water.material.map.offset.x+=dt*.012; _AP.water.material.map.offset.y+=dt*.008; if(_AP.water.userData.rip2){ _AP.water.userData.rip2.offset.x-=dt*.009; _AP.water.userData.rip2.offset.y+=dt*.014; } if(_AP.foam&&_AP.foam.material.map){ _AP.foam.material.map.offset.x+=dt*.02; } if(_AP.water.userData.lava) _AP.water.material.emissiveIntensity=1.25+Math.sin(_AP.t*1.3)*.2; }
   for(const o of _AP.live){ if(o.userData&&o.userData.anim) apAnimateParts(o,dt); }
   if(typeof G!=='undefined'){ for(const st of [G.stashStation,G.vendorStation,G.craftStation,G.yardStation,G.scoreStation,G.yardTerminal,G.portal]){ if(st&&st.mesh&&st.mesh.userData.anim) apAnimateParts(st.mesh,dt); }
     for(const list of [G.shrines,G.vistas,G.heroChallenges,G.pois,G.chests,G.townNpcs]){ if(!list) continue; for(const it of list){ const m=it&&it.mesh; if(m&&m.userData&&m.userData.anim) apAnimateParts(m,dt); } }
@@ -8128,7 +8072,7 @@ function apPaintFloorPlanes(W,g,D,seed,EXT){ const S=512; const half=(G.bounds||
     let pathK=0; for(const r of corridors){ const dx=Math.max(r.x0-x,0,x-r.x1), dz=Math.max(r.z0-z,0,z-r.z1); const dd=Math.hypot(dx,dz); const k=dd<=0?1:Math.max(0,1-dd/2.2); if(k>pathK) pathK=k; }
     if(pathK>0){ const wear=pathK*(.55+n2*.45); let pc=apLerp3(P0.lo,P0.mid,Math.min(1,n*1.3)); pc=apLerp3(pc,P0.hi,Math.max(0,n2-.45)*1.2); c=apLerp3(c,pc,Math.min(1,wear)); }
     // the river: centre = water, banks = sand / wet earth / rime / gilt edge
-    const rb=apRiverBand(x,z,seed); let riv=0;
+    const rb=apRiverT(x,z,G._river)*rw; let riv=0;
     if(rb<rw){ riv=1-rb/rw; const deep=Math.min(1,riv*1.6); c=apLerp3(bank,water,deep); rough=name==='ember'?.6:name==='cryo'?.2:.12; if(name==='ember') em=[255*deep,80*deep,16*deep]; if(name==='void') em=[110*deep,50*deep,230*deep]; }
     else if(rb<rw*1.9){ const k=1-(rb-rw)/(rw*.9); c=apLerp3(c,bank,k*.8); }
     d[i]=c[0]|0; d[i+1]=c[1]|0; d[i+2]=c[2]|0; d[i+3]=a; const rg=Math.round(rough*255); rd[i]=rg; rd[i+1]=rg; rd[i+2]=rg; rd[i+3]=255; ed[i]=em[0]|0; ed[i+1]=em[1]|0; ed[i+2]=em[2]|0; ed[i+3]=255; const mk=Math.round(riv*255*(a/255)); md[i]=mk; md[i+1]=mk; md[i+2]=mk; md[i+3]=255; }
@@ -8149,7 +8093,7 @@ function apPaintFloorPlanes(W,g,D,seed,EXT){ const S=512; const half=(G.bounds||
 }
 // ---- life along the rivers and in the rooms: reeds, river stones, driftwood, lava crust, ice shards ----
 function apDressRivers(W,g,D,seed,inst,M2,rock){ const rw=apRiverWidth(W); const list=[], stones=[]; let tries=0; const rooms=G.rooms||[]; if(!rooms.length) return;
-  while(list.length<160 && tries<3000){ tries++; const r=rooms[Math.floor(apHash(tries,3,seed+1)*rooms.length)]; const x=r.x0+1.5+apHash(tries,4,seed+2)*(r.x1-r.x0-3), z=r.z0+1.5+apHash(tries,5,seed+3)*(r.z1-r.z0-3); const rb=apRiverBand(x,z,seed);
+  while(list.length<160 && tries<3000){ tries++; const r=rooms[Math.floor(apHash(tries,3,seed+1)*rooms.length)]; const x=r.x0+1.5+apHash(tries,4,seed+2)*(r.x1-r.x0-3), z=r.z0+1.5+apHash(tries,5,seed+3)*(r.z1-r.z0-3); const rb=apRiverT(x,z,G._river)*rw;
     if(rb>rw*1.05 && rb<rw*2.2){ if(typeof nearAnyPlayer==='function'&&nearAnyPlayer(x,z,3)) continue; list.push({x,z,h:0,r:apHash(tries,6,seed),r2:apHash(tries,7,seed)}); }
     else if(rb<rw*1.1 && apHash(tries,8,seed)<.35){ stones.push({x,z,h:0,r:apHash(tries,9,seed),r2:apHash(tries,10,seed)}); } }
   if(W.name==='verdant'||W.name==='gilded'){ inst(new THREE.ConeGeometry(.08,1.3,5), M2(0x5a8a3a), list, o=>({s:.7+o.r*.8, y:.5*(.7+o.r*.8), rx:(o.r2-.5)*.4, ry:o.r*6})); inst(new THREE.SphereGeometry(.16,7,5), M2(0x6a4a2a), list.filter(o=>o.r>.6), o=>({s:.8, sy:.5, y:.08})); }
@@ -8159,6 +8103,354 @@ function apDressRivers(W,g,D,seed,inst,M2,rock){ const rw=apRiverWidth(W); const
   if(W.name==='void'){ inst(new THREE.OctahedronGeometry(.25,0), new THREE.MeshStandardMaterial({color:0x9a6aff,emissive:0x7a3aff,emissiveIntensity:.9,roughness:.3}), list, o=>({s:.4+o.r*.6, sy:1.2+o.r, y:.2, ry:o.r*6})); }
   inst(new THREE.SphereGeometry(.3,8,6), rock, stones, o=>({s:.5+o.r*1.2, sy:.45+o.r2*.3, y:.02, ry:o.r*6}));
 }
+
+// ============================================================ ART PASS — REAL GROUND
+// The walkable ground is a real relief mesh now, not a picture: a fine heightfield over the floor with soft
+// undulation, RIVERBEDS carved into it, banks, and a boundary that falls away at the walls. One water surface fills
+// every dip — the rivers, the ponds beyond the walls, the lakes — and moves. Rivers are rolled per floor: none, one
+// meander, two streams, a lake with an outflow, or a wide slow river, at a random heading and width, so no two
+// floors share a river. And the ground is part of play: wading slows you and drains a little mana (the existing
+// water rule), lava burns (the existing lava rule), and everything that walks through water sinks into it.
+const AP_RIVER_STYLES=['none','meander','twin','lake','wide'];
+function apRollRiver(seed){ const r=(k)=>apHash(seed,k,977); const rs=r(1); const style=rs<.12?'none':rs<.42?'meander':rs<.6?'twin':rs<.8?'lake':'wide';   // most floors have water; a few are dry
+  return {seed, style, ang:r(2)*Math.PI, w:1.6+r(3)*2.4, w2:1.2+r(4)*1.4, ang2:r(5)*Math.PI, lakeX:(r(6)-.5)*80, lakeZ:(r(7)-.5)*80, lakeR:14+r(8)*14, wobble:.35+r(9)*.5}; }
+// 0 = river centre line → 1 = bank edge; >1 dry. Also returns 'lake' membership through the same scale.
+function apRiverT(x,z,cfg){ if(!cfg||cfg.style==='none') return 9;
+  const c=Math.cos(cfg.ang), s=Math.sin(cfg.ang); const u=x*c+z*s, v=-x*s+z*c;   // rotate so the river flows along u
+  const wob=(apFbm(u*.022+cfg.seed*.001,7+cfg.seed*.0003,cfg.seed+51,3)-.5)*46*cfg.wobble + (apFbm(u*.07,3,cfg.seed+53,2)-.5)*6;
+  const w=cfg.style==='wide'?cfg.w*2.2:cfg.w; let t=Math.abs(v-wob)/w;
+  if(cfg.style==='twin'){ const c2=Math.cos(cfg.ang2), s2=Math.sin(cfg.ang2); const u2=x*c2+z*s2, v2=-x*s2+z*c2; const wob2=(apFbm(u2*.025+cfg.seed*.002,11,cfg.seed+57,3)-.5)*40*cfg.wobble; t=Math.min(t,Math.abs(v2-wob2+18)/cfg.w2); }
+  if(cfg.style==='lake'){ const dl=Math.hypot(x-cfg.lakeX,z-cfg.lakeZ)+ (apFbm(x*.08,z*.08,cfg.seed+61,3)-.5)*8; t=Math.min(t,dl/cfg.lakeR); }
+  return t; }
+function apGroundKind(W){ return W.ground; }
+// per-world liquid look
+function apLiquid(W){ return {verdant:{col:0x2a6a8c,y:-.22,op:.72,em:0x0a2a3a,ei:.25,ice:false}, ember:{col:0xff5a14,y:-.24,op:1,em:0xff6a18,ei:1.4,ice:false,lava:true}, cryo:{col:0xc8e4f4,y:-.2,op:1,em:0x203a50,ei:.1,ice:true},
+  void:{col:0x8a4aff,y:-.24,op:.9,em:0x7a3aff,ei:1.0,ice:false,void:true}, gilded:{col:0x3a8ab0,y:-.22,op:.75,em:0x0a2a3a,ei:.2,ice:false}, crypt:{col:0x141a20,y:-.24,op:.9,em:0x000000,ei:0,ice:false}}[W.name]; }
+function apBuildGround(W,g,D,seed){ const half=(G.bounds||140)/2+6; const ext=half+2; const res=.8; const N=Math.ceil(ext*2/res); const cfg=G._river||(G._river=apRollRiver(seed));
+  const geo=new THREE.PlaneGeometry(ext*2,ext*2,N,N); geo.rotateX(-Math.PI/2); apTileUV(geo,ext*2,ext*2,4);
+  const pos=geo.attributes.position, n=pos.count, cols=new Float32Array(n*3); const tmp=new THREE.Color();
+  const G0=AP_GROUND[W.ground], P0=AP_GROUND[W.path||W.ground]; const name=W.name;
+  const bank={verdant:[176,160,112], ember:[62,38,30], cryo:[176,204,224], void:[80,52,120], gilded:[220,206,176], crypt:[64,62,64]}[name];
+  const patch={verdant:[96,74,50], ember:[76,56,46], cryo:[160,182,200], void:[56,38,92], gilded:[104,142,66], crypt:[92,88,84]}[name];
+  const rockc={verdant:[118,118,106], ember:[84,68,60], cryo:[136,152,166], void:[80,64,116], gilded:[190,180,150], crypt:[108,104,102]}[name];
+  const wet={verdant:[60,54,40], ember:[40,26,22], cryo:[120,150,175], void:[40,26,70], gilded:[150,140,110], crypt:[30,30,34]}[name];
+  const rooms=G.rooms||[], rects=G.rects||[]; const corridors=rects.filter(r=>!rooms.some(rm=>rm.x0===r.x0&&rm.x1===r.x1&&rm.z0===r.z0&&rm.z1===r.z1));
+  const FN=N+1; const field={ox:-ext,oz:-ext,res:ext*2/N,n:FN,water:new Float32Array(FN*FN),lava:new Float32Array(FN*FN),h:new Float32Array(FN*FN)};
+  const liq=apLiquid(W); const depthMax=name==='cryo'?.35:.75;
+  for(let i=0;i<n;i++){ const x=pos.getX(i), z=pos.getZ(i); const d=apDistAt(g,D,x,z);
+    const n1=apFbm(x*.09,z*.09,seed,4), n2=apFbm(x*.25+3,z*.25+9,seed+5,3), n3=apFbm(x*.9,z*.9,seed+11,2);
+    let c=apLerp3(G0.lo,G0.mid,Math.min(1,n1*1.3)); c=apLerp3(c,G0.hi,Math.max(0,n2-.45)*1.4);
+    if(G0.style==='grass'){ c=apLerp3(c,G0.hi,Math.max(0,n3-.6)*1.2); if(n1<.36&&G0.spot) c=apLerp3(c,G0.spot,(.36-n1)*2.5); }
+    else if(G0.style==='snow'){ c=apLerp3(c,G0.hi,n3*.3); if(n1<.3&&G0.spot) c=apLerp3(c,G0.spot,(.3-n1)*1.2); }
+    else if(G0.style==='ash'){ if(n3>.72) c=apLerp3(c,G0.lo,.5); }
+    const pn=apFbm(x*.045+7,z*.045+2,seed+21,3); if(pn>.6) c=apLerp3(c,patch,Math.min(1,(pn-.6)*4)*.85);
+    const rn=apFbm(x*.12+5,z*.12+8,seed+27,3); if(rn>.72) c=apLerp3(c,rockc,Math.min(1,(rn-.72)*6));
+    let pathK=0; for(const r of corridors){ const dx=Math.max(r.x0-x,0,x-r.x1), dz=Math.max(r.z0-z,0,z-r.z1); const dd=Math.hypot(dx,dz); const k=dd<=0?1:Math.max(0,1-dd/2.2); if(k>pathK) pathK=k; }
+    if(pathK>0){ let pc=apLerp3(P0.lo,P0.mid,Math.min(1,n1*1.3)); pc=apLerp3(pc,P0.hi,Math.max(0,n2-.45)*1.2); c=apLerp3(c,pc,Math.min(1,pathK*(.55+n2*.45))); }
+    // relief: soft undulation (never above the feet line), a riverbed carved in, banks of sand / wet earth
+    let h=Math.min(.05,(n2-.5)*.14)+(n3-.5)*.04; const t=apRiverT(x,z,cfg); let water=0;
+    if(t<1){ const k=1-t; const depth=depthMax*Math.pow(Math.sin(Math.min(1,k*1.15)*Math.PI/2),1.2); h=-depth+(n3-.5)*.05; water=Math.min(1,depth/.3); c=apLerp3(bank,wet,Math.min(1,k*1.4)); }
+    else if(t<1.7){ const k=1-(t-1)/.7; c=apLerp3(c,bank,k*.85); h=Math.min(h,.02)+k*.03; }
+    // the boundary: ground falls away just past the walkable cells so the floor reads as solid land with an edge
+    if(d>.55 && t>=1){ const k=Math.min(1,(d-.55)/.75); h=h*(1-k)-.06*k; if(d>1.3) h=-.06; } if(d>2.2) h=-1.6;
+    pos.setY(i,h); const shade=.92+apHash(i,3,seed)*.16; tmp.setRGB(c[0]/255*shade,c[1]/255*shade,c[2]/255*shade); if(THREE.SRGBColorSpace&&tmp.convertSRGBToLinear) tmp.convertSRGBToLinear(); cols[i*3]=tmp.r; cols[i*3+1]=tmp.g; cols[i*3+2]=tmp.b;
+    const gx=Math.round((x+ext)/field.res), gz=Math.round((z+ext)/field.res); const fi=gz*FN+gx; if(fi>=0&&fi<FN*FN){ field.h[fi]=h; field.water[fi]=(d<=.6&&!liq.ice)?water:0; field.lava[fi]=(d<=.6&&liq.lava)?water:0; } }
+  geo.setAttribute('color',new THREE.BufferAttribute(cols,3)); geo.computeVertexNormals();
+  const det=apDetailTex('ground');
+  const mat=new THREE.MeshStandardMaterial({vertexColors:true, map:det, bumpMap:det, bumpScale:.06, roughness:W.groundRough||.95, metalness:0, emissive:name==='ember'?0xffffff:0x000000, emissiveMap:name==='ember'?apPaintEmissiveBasalt():null, emissiveIntensity:name==='ember'?.9:0});
+  if(name==='ember'){ mat.map=apPaintNatural('basalt'); mat.bumpMap=det; }
+  const ground=new THREE.Mesh(geo,mat); ground.receiveShadow=true; ground.castShadow=false; apLive(ground); _AP.field=field; _AP.riverCfg=cfg;
+  // one liquid surface fills every carved dip, inside the walls and beyond them
+  const rip=apRipple().clone(); rip.wrapS=rip.wrapT=THREE.RepeatWrapping; rip.repeat.set(ext*2/5,ext*2/5); rip.needsUpdate=true;
+  const rip2=apRipple().clone(); rip2.wrapS=rip2.wrapT=THREE.RepeatWrapping; rip2.repeat.set(ext*2/7.3,ext*2/7.3); rip2.needsUpdate=true;
+  const wm=new THREE.MeshStandardMaterial({color:liq.col, map:rip, bumpMap:rip2, bumpScale:liq.ice?.02:.08, roughness:liq.ice?.12:.18, metalness:liq.ice?.2:.25, transparent:liq.op<1, opacity:liq.op, emissive:liq.em, emissiveIntensity:liq.ei, depthWrite:liq.op>=1});
+  const wp=new THREE.Mesh(new THREE.PlaneGeometry(ext*2+300,ext*2+300), wm); wp.rotation.x=-Math.PI/2; wp.position.y=liq.y; wp.receiveShadow=true; wp.renderOrder=2; apLive(wp); _AP.water=wp; wp.userData.lava=!!liq.lava; wp.userData.rip2=rip2;
+  if(liq.lava){ const lt=new THREE.PointLight(0xff6a20,.5,140,1); lt.position.set(0,5,0); apLive(lt); }
+  // foam / light line along the water's edge: a second, thinner surface a hair higher, only where the bed is shallow
+  if(!liq.ice&&!liq.lava){ const fm=new THREE.MeshBasicMaterial({color:0xffffff, map:rip2, transparent:true, opacity:.14, depthWrite:false, blending:THREE.AdditiveBlending}); const fp=new THREE.Mesh(new THREE.PlaneGeometry(ext*2,ext*2), fm); fp.rotation.x=-Math.PI/2; fp.position.y=liq.y+.03; fp.renderOrder=3; apLive(fp); _AP.foam=fp; }
+}
+// ---- queries used by gameplay and animation ----
+function apTerrainAt(x,z){ const f=_AP.field; if(!f) return {water:0,lava:0,h:0}; const gx=Math.round((x-f.ox)/f.res), gz=Math.round((z-f.oz)/f.res); if(gx<0||gz<0||gx>=f.n||gz>=f.n) return {water:0,lava:0,h:0}; const i=gz*f.n+gx; return {water:f.water[i],lava:f.lava[i],h:f.h[i]}; }
+function apWadeAt(x,z){ const t=apTerrainAt(x,z); return Math.max(t.water,t.lava); }
+// wading ripples at a creature's feet (throttled per object)
+function apSplash(o,x,z,strength,col){ if(typeof ringFx!=='function') return; const now=performance.now(); if(o.userData._splashT&&now-o.userData._splashT<260) return; o.userData._splashT=now; try{ ringFx(x,z,.5+strength*.7,col||0x9fd8ff); }catch(_){} }
+
+// ============================================================ ART PASS — CREATURE KIT (the sheet families, rebuilt)
+// The five concept sheets — goblins, skeletons, slimes, trolls, ghouls & ghosts — rebuilt with real anatomy instead
+// of cylinders-and-spheres. Organic parts are turned on a lathe from a silhouette profile (chest, belly, skull,
+// muscle), heads carry brows, jaws, noses, ears, individual teeth and tusks, hands have fingers, feet have toes and
+// claws, cloth hangs in ragged layers with patches and straps, and every role on a sheet has its own build: the
+// scout is wiry, the clubber is a wall of muscle, the shaman is stooped under bone and feathers, the commander
+// stands tall in a horned skull. Same engine contract as before: userData.body / humanoid / arms / legs / anim.
+function crLathe(pts,segs,mat){ const v=pts.map(p=>new THREE.Vector2(p[0],p[1])); const geo=new THREE.LatheGeometry(v,segs||16); const m=new THREE.Mesh(geo,mat); m.castShadow=true; return m; }
+function crRagged(radiusTop,radiusBottom,height,segs,mat,jag){ const geo=new THREE.CylinderGeometry(radiusTop,radiusBottom,height,segs||14,3,true); const p=geo.attributes.position; for(let i=0;i<p.count;i++){ const y=p.getY(i); if(y<-height*.2){ const a=Math.atan2(p.getZ(i),p.getX(i)); const k=(y+height*.5)/(height*.3); const j=(apHash(Math.round(a*7),1,3)-.5)*jag*(1-Math.max(0,k)); p.setY(i,y+j); const rr=1+(apHash(Math.round(a*5),2,3)-.5)*.12; p.setX(i,p.getX(i)*rr); p.setZ(i,p.getZ(i)*rr); } } geo.computeVertexNormals(); const m=new THREE.Mesh(geo,mat); m.castShadow=true; return m; }
+function crM(c,o){ return apM(c,Object.assign({ei:.05,r:.75},o||{})); }
+function crHand(s,mat,claw,clawMat,big){ const h=new THREE.Group(); const k=big?1.35:1; const palm=new THREE.Mesh(new THREE.BoxGeometry(.11*s*k,.05*s*k,.11*s*k), mat); palm.castShadow=true; h.add(palm);
+  for(let f=0;f<3;f++){ const fg=new THREE.Mesh(new THREE.CylinderGeometry(.016*s*k,.02*s*k,.1*s*k,6), mat); fg.position.set((f-1)*.035*s*k,-.03*s*k,.06*s*k); fg.rotation.x=-1.1; h.add(fg); if(claw){ const c=new THREE.Mesh(new THREE.ConeGeometry(.014*s*k,.05*s*k,5), clawMat||mat); c.position.set((f-1)*.035*s*k,-.055*s*k,.11*s*k); c.rotation.x=-1.9; h.add(c); } }
+  const th=new THREE.Mesh(new THREE.CylinderGeometry(.016*s*k,.02*s*k,.07*s*k,6), mat); th.position.set(.06*s*k,-.01*s*k,.02*s*k); th.rotation.z=-1.0; h.add(th); return h; }
+function crFoot(s,mat,claw,clawMat,big){ const f=new THREE.Group(); const k=big?1.3:1; const sole=new THREE.Mesh(new THREE.BoxGeometry(.14*s*k,.06*s*k,.24*s*k), mat); sole.position.z=.06*s*k; sole.castShadow=true; f.add(sole);
+  for(let t=0;t<3;t++){ const toe=new THREE.Mesh(new THREE.SphereGeometry(.028*s*k,7,6), mat); toe.position.set((t-1)*.045*s*k,-.005*s*k,.2*s*k); f.add(toe); if(claw){ const c=new THREE.Mesh(new THREE.ConeGeometry(.014*s*k,.05*s*k,5), clawMat||mat); c.position.set((t-1)*.045*s*k,-.01*s*k,.245*s*k); c.rotation.x=Math.PI/2; f.add(c); } } return f; }
+function crEye(h,s,x,y,z,r,iris,pupilR){ const white=new THREE.Mesh(new THREE.SphereGeometry(r*s,10,8), apM(0xf0ead8,{ei:.08,r:.35})); white.position.set(x*s,y*s,z*s); h.add(white);
+  const ir=new THREE.Mesh(new THREE.SphereGeometry(r*s*.55,8,6), apM(iris||0xd8a020,{ei:.45,r:.3})); ir.position.set(x*s,y*s,(z+r*.62)*s); h.add(ir);
+  const pu=new THREE.Mesh(new THREE.SphereGeometry(r*s*(pupilR||.28),6,5), apM(0x0a0806,{ei:0,r:.3})); pu.position.set(x*s,y*s,(z+r*.9)*s); h.add(pu); return white; }
+function crBrow(h,s,x,y,z,len,mat,tilt){ const b=new THREE.Mesh(new THREE.CylinderGeometry(.03*s,.022*s,len*s,7), mat); b.position.set(x*s,y*s,z*s); b.rotation.z=Math.PI/2+(tilt||0); b.rotation.y=.35*Math.sign(x||1); h.add(b); return b; }
+function crTeeth(h,s,y,z,n,w,mat,up){ for(let i=0;i<n;i++){ const t=new THREE.Mesh(new THREE.ConeGeometry(.014*s,.05*s,5), mat); t.position.set((i-(n-1)/2)*w*s,y*s,z*s); t.rotation.x=up?0:Math.PI; h.add(t); } }
+// the shared creature rig: lathe torso from a profile, head group at the neck, lathe limbs with joints, hands/feet, feet on the floor
+function crRig(s,c){ const grp=new THREE.Group(); grp.userData.humanoid=true; grp.userData.arms=[]; grp.userData.legs=[];
+  const bodyY=(c.bodyY!=null?c.bodyY:.95)*s;
+  // torso profile: [radius, y] from the hips up to the neck — c.torso gives the silhouette
+  const prof=c.torso.map(p=>[p[0]*s,p[1]*s]); const body=crLathe(prof,18,c.skin); body.position.y=bodyY; grp.add(body); grp.userData.body=body;
+  const hipY=prof[0][1], neckY=prof[prof.length-1][1], shoulderY=neckY-(c.shoulderDrop||.1)*s, shoulderR=(c.shoulderR||.3)*s;
+  const head=new THREE.Group(); head.position.set(0,neckY+(c.neckLen||.08)*s,(c.headFwd||0)*s); head.rotation.x=(c.headTilt||0); body.add(head); grp.userData.head=head;
+  const neck=new THREE.Mesh(new THREE.CylinderGeometry((c.neckR||.09)*s,(c.neckR||.09)*1.25*s,(c.neckLen||.08)*2.4*s,10), c.skin); neck.position.y=-(c.neckLen||.08)*s; head.add(neck);
+  if(c.buildHead) c.buildHead(head,s,c,grp);
+  const aL=(c.armLen||.7), aR=(c.armR||.06);
+  for(const sd of [-1,1]){ const arm=new THREE.Group(); arm.position.set(sd*shoulderR,shoulderY,(c.shoulderFwd||0)*s); body.add(arm); grp.userData.arms.push(arm); if(sd<0) grp.userData.armL=arm; else grp.userData.armR=arm;
+    const sh=new THREE.Mesh(new THREE.SphereGeometry(aR*1.5*s,12,10), c.skin); sh.castShadow=true; arm.add(sh);
+    const up=crLathe([[aR*1.15*s,0],[aR*1.3*s,-aL*.12*s],[aR*1.05*s,-aL*.3*s],[aR*.85*s,-aL*.5*s]],12,c.sleeve||c.skin); arm.add(up);
+    const el=new THREE.Mesh(new THREE.SphereGeometry(aR*.95*s,10,8), c.sleeve||c.skin); el.position.y=-aL*.5*s; arm.add(el);
+    const fo=crLathe([[aR*.9*s,0],[aR*1.05*s,-aL*.12*s],[aR*.8*s,-aL*.35*s],[aR*.6*s,-aL*.5*s]],12,c.fore||c.skin); fo.position.y=-aL*.5*s; arm.add(fo);
+    const hand=crHand(s,c.hand||c.skin,c.claws,c.clawMat,c.bigHands); hand.position.y=-aL*1.02*s; hand.rotation.y=sd*.2; arm.add(hand);
+    const grip=new THREE.Group(); grip.position.y=-aL*1.0*s; arm.add(grip); if(sd<0) grp.userData.gripL=grip; else grp.userData.gripR=grip;
+    arm.rotation.z=sd*(c.armSplay||.12); arm.rotation.x=(c.armFwd||.1); if(c.buildArm) c.buildArm(arm,s,sd,c,grp); }
+  const lTop=hipY-(c.hipDrop||.02)*s, legLen=(bodyY+lTop)/s, lR=(c.legR||.075), hipW=(c.hipW||.14);
+  for(const sd of [-1,1]){ const leg=new THREE.Group(); leg.position.set(sd*hipW*s,lTop,0); body.add(leg); grp.userData.legs.push(leg);
+    const th=crLathe([[lR*1.3*s,0],[lR*1.35*s,-legLen*.12*s],[lR*1.05*s,-legLen*.32*s],[lR*.85*s,-legLen*.46*s]],12,c.pants||c.skin); leg.add(th);
+    const kn=new THREE.Mesh(new THREE.SphereGeometry(lR*.95*s,10,8), c.pants||c.skin); kn.position.y=-legLen*.46*s; leg.add(kn);
+    const sh=crLathe([[lR*.9*s,0],[lR*1.0*s,-legLen*.1*s],[lR*.75*s,-legLen*.3*s],[lR*.6*s,-legLen*.44*s]],12,c.shin||c.pants||c.skin); sh.position.y=-legLen*.46*s; leg.add(sh);
+    const foot=crFoot(s,c.boot||c.skin,c.claws,c.clawMat,c.bigFeet); foot.position.y=-legLen*.9*s-.02*s; foot.rotation.y=sd*.12; leg.add(foot);
+    leg.rotation.z=sd*(c.legSplay||.06); if(c.buildLeg) c.buildLeg(leg,s,sd,c,grp,legLen); }
+  grp.userData.rigS=s; grp.userData.hipY=hipY; grp.userData.neckY=neckY; grp.userData.shoulderY=shoulderY; grp.userData.shoulderR=shoulderR; return grp; }
+// ---- cloth & gear helpers ----
+function crTunic(body,s,r,top,len,mat,jag){ const t=crRagged(r*.95*s,r*1.25*s,len*s,14,mat,jag==null?.12*s:jag); t.position.y=top*s-len*s/2; body.add(t); return t; }
+function crHoodOn(head,s,r,mat,peak){ const h=new THREE.Mesh(new THREE.SphereGeometry(r*s,14,10,0,Math.PI*2,0,Math.PI*.58), mat); h.position.y=.04*s; h.rotation.x=-.18; head.add(h);
+  const back=crRagged(r*.95*s,r*1.15*s,.36*s,12,mat,.06*s); back.position.set(0,-.14*s,-.06*s); head.add(back);
+  if(peak){ const p=new THREE.Mesh(new THREE.ConeGeometry(r*.55*s,.5*s,10), mat); p.position.set(0,r*.9*s,-.1*s); p.rotation.x=-.9; head.add(p); } return h; }
+function crBelt(body,s,y,r,mat,buckle){ const b=new THREE.Mesh(new THREE.TorusGeometry(r*s,.03*s,8,22), mat); b.rotation.x=Math.PI/2; b.position.y=y*s; body.add(b); if(buckle){ const bk=new THREE.Mesh(new THREE.BoxGeometry(.08*s,.07*s,.03*s), buckle); bk.position.set(0,y*s,r*s); body.add(bk); } return b; }
+function crStrap(body,s,r,y0,y1,mat,side){ const len=Math.hypot(r*2,(y1-y0))*s; const st=new THREE.Mesh(new THREE.BoxGeometry(.06*s,len,.02*s), mat); st.position.set(side*r*.5*s,(y0+y1)/2*s,r*1.02*s); st.rotation.z=side*Math.atan2(r*2,(y1-y0)); body.add(st); return st; }
+function crPatch(parent,s,x,y,z,w,h,mat,ry){ const p=new THREE.Mesh(new THREE.BoxGeometry(w*s,h*s,.012*s), mat); p.position.set(x*s,y*s,z*s); if(ry) p.rotation.y=ry; parent.add(p); for(const sd of [-1,1]){ const st=new THREE.Mesh(new THREE.BoxGeometry(.008*s,h*.9*s,.014*s), apM(0x2a2018,{ei:0})); st.position.set((x+sd*w*.45)*s,y*s,(z+.002)*s); if(ry) st.rotation.y=ry; parent.add(st); } return p; }
+function crWraps(limb,s,y,r,mat,n){ for(let i=0;i<(n||3);i++){ const w=new THREE.Mesh(new THREE.TorusGeometry(r*s,.018*s,6,14), mat); w.rotation.x=Math.PI/2; w.rotation.z=(i%2)*.2; w.position.y=(y-i*.05)*s; limb.add(w); } }
+function crPauldron(arm,s,r,mat,spike,spikeMat){ const p=new THREE.Mesh(new THREE.SphereGeometry(r*s,14,10,0,Math.PI*2,0,Math.PI*.55), mat); p.position.y=.02*s; p.scale.set(1.15,.9,1.15); arm.add(p); if(spike){ for(let i=0;i<3;i++){ const sp=new THREE.Mesh(new THREE.ConeGeometry(.025*s,.12*s,6), spikeMat||mat); const a=i*.9-.9; sp.position.set(Math.sin(a)*r*.7*s,r*.6*s,Math.cos(a)*r*.7*s); sp.rotation.x=Math.cos(a)*.8; sp.rotation.z=-Math.sin(a)*.8; arm.add(sp); } } return p; }
+function crHelmet(head,s,r,mat,rim,spikes,spikeMat,nasal){ const h=new THREE.Mesh(new THREE.SphereGeometry(r*s,16,12,0,Math.PI*2,0,Math.PI*.55), mat); h.position.y=.06*s; head.add(h); if(rim){ const b=new THREE.Mesh(new THREE.TorusGeometry(r*.97*s,.035*s,8,24), rim); b.rotation.x=Math.PI/2; b.position.y=.04*s; head.add(b); for(let i=0;i<8;i++){ const a=i/8*Math.PI*2; const rv=new THREE.Mesh(new THREE.SphereGeometry(.018*s,6,5), rim); rv.position.set(Math.cos(a)*r*1.0*s,.04*s,Math.sin(a)*r*1.0*s); head.add(rv); } }
+  if(spikes){ for(let i=0;i<5;i++){ const a=i/5*Math.PI*2; const sp=new THREE.Mesh(new THREE.ConeGeometry(.03*s,.16*s,6), spikeMat||mat); sp.position.set(Math.cos(a)*r*.62*s,(.06+r*.78)*s,Math.sin(a)*r*.62*s); sp.rotation.z=-Math.cos(a)*.9; sp.rotation.x=Math.sin(a)*.9; head.add(sp); } const top=new THREE.Mesh(new THREE.ConeGeometry(.035*s,.2*s,6), spikeMat||mat); top.position.y=(.06+r)*s; head.add(top); }
+  if(nasal){ const nb=new THREE.Mesh(new THREE.BoxGeometry(.035*s,.2*s,.02*s), mat); nb.position.set(0,-.02*s,r*.98*s); head.add(nb); } return h; }
+function crSkullMesh(s,r,mat,eyeMat){ const g=new THREE.Group(); const sk=crLathe([[0,r*1.02*s],[r*.55*s,r*.95*s],[r*.92*s,r*.55*s],[r*1.0*s,r*.05*s],[r*.86*s,-r*.35*s],[r*.62*s,-r*.62*s],[r*.4*s,-r*.78*s],[0,-r*.8*s]],16,mat); sk.rotation.x=0; g.add(sk);
+  const cheekL=new THREE.Mesh(new THREE.BoxGeometry(r*.28*s,r*.22*s,r*.4*s), mat); cheekL.position.set(-r*.72*s,-r*.28*s,r*.5*s); g.add(cheekL); const cheekR=cheekL.clone(); cheekR.position.x=r*.72*s; g.add(cheekR);
+  for(const sd of [-1,1]){ const sock=new THREE.Mesh(new THREE.SphereGeometry(r*.3*s,10,8), apM(0x090806,{ei:0})); sock.position.set(sd*r*.38*s,r*.08*s,r*.78*s); g.add(sock); if(eyeMat){ const e=new THREE.Mesh(new THREE.SphereGeometry(r*.11*s,7,6), eyeMat); e.position.set(sd*r*.38*s,r*.08*s,r*.95*s); g.add(e); } }
+  const nose=new THREE.Mesh(new THREE.ConeGeometry(r*.14*s,r*.3*s,4), apM(0x0a0806,{ei:0})); nose.position.set(0,-r*.22*s,r*.9*s); nose.rotation.x=Math.PI; g.add(nose);
+  const jaw=new THREE.Mesh(new THREE.BoxGeometry(r*1.2*s,r*.22*s,r*.7*s), mat); jaw.position.set(0,-r*.7*s,r*.3*s); g.add(jaw); crTeeth(g,s,-r*.56,r*.75,6,r*.19,mat,false); crTeeth(g,s,-r*.78,r*.72,5,r*.2,mat,true); g.userData.jaw=jaw; return g; }
+function crWeaponGrip(grp,side,obj,rx,rz,y){ const gr=side<0?grp.userData.gripL:grp.userData.gripR; if(!gr) return; obj.rotation.x=rx||0; obj.rotation.z=rz||0; obj.position.y=y||0; gr.add(obj); apShadow(obj); return obj; }
+
+// ============================================================ GOBLINS — 10 roles from the sheet
+function makeGoblinVariantMesh(scale,opts){ opts=opts||{}; const s=scale||1; const v=opts.variant||'scout';
+  const skinC={clubber:0x6e8a3e, berserker:0x7f9a44, commander:0x6b8438, shaman:0x7f9450, poisoner:0x74904a, bomber:0x7c9647}[v]||0x7a9642;
+  const skin=crM(skinC,{r:.8}), skinD=crM(0x556a2e,{r:.85}), leather=crM(0x4e3a26,{r:.9}), leather2=crM(0x5e4a30,{r:.9}), cloth=crM(v==='commander'?0x6a1e1e:v==='shaman'?0x4a4234:0x52483a,{r:.95}), iron=apM(0x6f7682,{e:0x262a33,ei:.04,r:.42,m:.72}), ironD=apM(0x4a4f58,{ei:.03,r:.5,m:.6}), bone=crM(0xe6dfc8,{r:.55}), wood=crM(0x5c4225,{r:.9}), tooth=crM(0xf0e8d0,{r:.5}), eyeIris=0xe0a62a;
+  const big=v==='clubber', tall=v==='commander'||v==='spearguard', hunch=v==='shaman'?.45:v==='trapper'?.3:v==='poisoner'?.25:.15;
+  const bulk=big?1.45:v==='berserker'?1.15:v==='scout'?.9:1;
+  const torso=[[.20*bulk,-.02],[.27*bulk,.08],[.30*bulk,.2],[.26*bulk,.34],[.24*bulk,.46],[.17*bulk,.56]];   // pot belly, narrow chest, short neck
+  const g=crRig(s,{skin, sleeve:skin, fore:skin, hand:skin, pants:skin, boot:skin, torso, bodyY:.95, shoulderR:.28*bulk, shoulderDrop:.1, armLen:.72, armR:.06*Math.sqrt(bulk), legR:.07*Math.sqrt(bulk), hipW:.13*bulk, neckLen:.06, neckR:.09, headFwd:.06, headTilt:hunch*.4, armFwd:.2+hunch*.5, armSplay:.16, claws:true, clawMat:tooth, bigHands:true, bigFeet:true,
+    buildHead(h,s){ // big skull, heavy brow, long hooked nose, huge ears, snaggle grin
+      const sk=crLathe([[0,.34*s],[.2*s,.32*s],[.32*s,.2*s],[.36*s,.04*s],[.33*s,-.12*s],[.24*s,-.26*s],[.12*s,-.32*s],[0,-.33*s]],18,skin); h.add(sk);
+      const brow=new THREE.Mesh(new THREE.TorusGeometry(.2*s,.05*s,8,16,Math.PI), skinD); brow.position.set(0,.1*s,.24*s); brow.rotation.x=-.4; h.add(brow);
+      for(const sd of [-1,1]){ crEye(h,s,sd*.14,.06,.27,.075,eyeIris,.3); const lid=new THREE.Mesh(new THREE.SphereGeometry(.078*s,10,6,0,Math.PI*2,0,Math.PI*.4), skin); lid.position.set(sd*.14*s,.075*s,.27*s); lid.rotation.x=-.5; h.add(lid);
+        const ear=crLathe([[0,0],[.06*s,.02*s],[.08*s,.14*s],[.05*s,.36*s],[0,.5*s]],8,skin); ear.position.set(sd*.3*s,.04*s,-.02*s); ear.rotation.z=sd*-1.35; ear.rotation.x=-.3; ear.scale.set(1,1,.45); h.add(ear); const earIn=new THREE.Mesh(new THREE.SphereGeometry(.05*s,8,6), skinD); earIn.position.set(sd*.34*s,.08*s,.02*s); earIn.scale.set(1,1.6,.5); h.add(earIn); }
+      const nose=crLathe([[0,0],[.05*s,.02*s],[.06*s,.14*s],[.04*s,.26*s],[0,.3*s]],8,skin); nose.position.set(0,-.02*s,.3*s); nose.rotation.x=Math.PI/2+.35; h.add(nose);
+      const mouth=new THREE.Mesh(new THREE.BoxGeometry(.24*s,.05*s,.05*s), apM(0x2a0a0a,{ei:0})); mouth.position.set(0,-.17*s,.3*s); h.add(mouth); crTeeth(h,s,-.145,.32,4,.06,tooth,false); crTeeth(h,s,-.2,.31,3,.07,tooth,true);
+      for(let i=0;i<3;i++){ const wart=new THREE.Mesh(new THREE.SphereGeometry(.02*s,6,5), skinD); wart.position.set((i-1)*.12*s+.05*s,-.08*s+i*.02*s,.31*s); h.add(wart); }
+      const cap=new THREE.Mesh(new THREE.SphereGeometry(.3*s,14,10,0,Math.PI*2,0,Math.PI*.4), leather); cap.position.set(0,.13*s,-.06*s); cap.rotation.x=-.25; h.add(cap); crPatch(cap,s,.1,.2,.22,.1,.08,leather2,-.6); const stud=new THREE.Mesh(new THREE.SphereGeometry(.03*s,6,5), bone); stud.position.set(.16*s,.32*s,.14*s); h.add(stud); },
+    buildArm(arm,s,sd){ crWraps(arm,s,-.58,.075*Math.sqrt(bulk),leather2,3); },
+    buildLeg(leg,s,sd,c,grp,lL){ crWraps(leg,s,-lL*.7,.07*Math.sqrt(bulk),leather2,2); } });
+  const body=g.userData.body, head=g.userData.head;
+  const tun=crTunic(body,s,.27*bulk,.5,.62,cloth,.14*s); crPatch(tun,s,.1,-.05,.3*bulk,.14,.12,leather2); crPatch(tun,s,-.14,-.18,.28*bulk,.1,.14,leather,.5);
+  crBelt(body,s,.03,.3*bulk,leather,iron); crStrap(body,s,.29*bulk,.03,.5,leather,-1);
+  const pouch=new THREE.Mesh(new THREE.SphereGeometry(.07*s,8,6), leather2); pouch.position.set(.26*bulk*s,-.03*s,.16*s); body.add(pouch);
+  const charm=new THREE.Mesh(new THREE.SphereGeometry(.05*s,8,6), bone); charm.position.set(.1*s,.36*s,.26*bulk*s); body.add(charm);
+  // ---- roles ----
+  if(v==='scout'){ crHoodOn(head,s,.4,cloth,true); crWeaponGrip(g,1,apDagger(s*1.15),-.6,0,0); crWeaponGrip(g,-1,apDagger(s*.95),-.9,0,0); }
+  else if(v==='shaman'){ const skull=crSkullMesh(s,.16,bone,null); skull.position.set(0,.38*s,.06*s); skull.rotation.x=-.3; head.add(skull); for(const sd of [-1,1]){ const bn=new THREE.Mesh(new THREE.CylinderGeometry(.025*s,.03*s,.55*s,7), bone); bn.position.set(sd*.3*s,.36*s,0); bn.rotation.z=sd*1.0; head.add(bn); const fe=new THREE.Mesh(new THREE.ConeGeometry(.03*s,.3*s,6), crM([0xc03a3a,0x3a9a5a][sd>0?0:1])); fe.position.set(sd*.42*s,.5*s,0); fe.rotation.z=sd*1.1; head.add(fe); }
+    const robe=crRagged(.3*bulk*s,.44*s,.9*s,14,crM(0x4a4034,{r:.95}),.16*s); robe.position.y=-.36*s; body.add(robe); for(let i=0;i<4;i++){ const bd=new THREE.Mesh(new THREE.SphereGeometry(.03*s,6,5), i%2?bone:crM(0xc03a3a)); bd.position.set((i-1.5)*.08*s,.3*s-Math.abs(i-1.5)*.03*s,.3*bulk*s); body.add(bd); }
+    const st=new THREE.Group(); const shaft=new THREE.Mesh(new THREE.CylinderGeometry(.03*s,.045*s,1.9*s,8), wood); st.add(shaft); const sk=crSkullMesh(s,.15,bone,apM(0x6aff6a,{ei:2})); sk.position.y=1.0*s; st.add(sk); for(const sd of [-1,1]){ const bn=new THREE.Mesh(new THREE.CylinderGeometry(.02*s,.02*s,.45*s,6), bone); bn.position.set(sd*.14*s,1.1*s,0); bn.rotation.z=sd*.85; st.add(bn); } for(let i=0;i<4;i++){ const bd=new THREE.Mesh(new THREE.SphereGeometry(.03*s,6,5), crM([0xc03a3a,0x3a9a5a,0xd8c060,0x3a6ac0][i])); bd.position.set(.07*s,(.6-i*.1)*s,.05*s); st.add(bd); }
+    crWeaponGrip(g,1,st,.08,0,-.2*s); const fire=new THREE.Mesh(new THREE.SphereGeometry(.15*s,10,8), apM(0x6aff6a,{ei:1.6,t:true,op:.85})); g.userData.gripL.add(fire); apAnim(g,{k:'pulse',o:fire,base:1.5,amp:.6,spd:6}); apAnim(g,{k:'breathe',o:fire,spd:7,amp:.15}); const lt=new THREE.PointLight(0x6aff6a,.6,6); g.userData.gripL.add(lt); }
+  else if(v==='spearguard'){ crHelmet(head,s,.4,iron,ironD,true,ironD,true); for(const arm of g.userData.arms) crPauldron(arm,s,.13,iron,true,ironD); const plate=new THREE.Mesh(new THREE.BoxGeometry(.4*bulk*s,.34*s,.06*s), ironD); plate.position.set(0,.3*s,.28*bulk*s); body.add(plate);
+    crWeaponGrip(g,1,apSpear(s*1.05),.05,0,-.1*s); const sh=apShield(s*1.25,0x6b5a3a,0x6f7682); const skl=crSkullMesh(s,.11,bone,null); skl.position.z=.06*s; sh.add(skl); sh.position.set(-.05*s,.05*s,.1*s); sh.rotation.y=-.3; g.userData.gripL.add(sh); }
+  else if(v==='bomber'){ const cap=new THREE.Mesh(new THREE.SphereGeometry(.38*s,14,10,0,Math.PI*2,0,Math.PI*.5), leather); cap.position.y=.08*s; head.add(cap); for(const sd of [-1,1]){ const gl=new THREE.Mesh(new THREE.TorusGeometry(.1*s,.025*s,8,14), apM(0xb08a3a,{ei:.1,m:.7,r:.4})); gl.position.set(sd*.14*s,.3*s,.3*s); gl.rotation.x=.4; head.add(gl); const lens=new THREE.Mesh(new THREE.CircleGeometry(.085*s,12), apM(0x7ac0d0,{ei:.3,r:.2,m:.3})); lens.position.set(sd*.14*s,.3*s,.31*s); lens.rotation.x=-.4; head.add(lens); }
+    const bomb=new THREE.Group(); const b=new THREE.Mesh(new THREE.SphereGeometry(.2*s,14,12), apM(0x1e1e22,{ei:.03,r:.5,m:.4})); bomb.add(b); const fuse=new THREE.Mesh(new THREE.CylinderGeometry(.015*s,.015*s,.14*s,5), apM(0xc0b090,{ei:.05})); fuse.position.y=.24*s; bomb.add(fuse); const spark=new THREE.Mesh(new THREE.SphereGeometry(.045*s,6,5), apM(0xffb040,{ei:2})); spark.position.y=.32*s; bomb.add(spark); apAnim(g,{k:'pulse',o:spark,base:1.8,amp:1,spd:12}); const lt=new THREE.PointLight(0xffa040,.5,4); lt.position.y=.32*s; bomb.add(lt); g.userData.gripL.add(bomb);
+    for(let i=0;i<4;i++){ const sh=new THREE.Mesh(new THREE.CylinderGeometry(.045*s,.045*s,.16*s,8), apM(i%2?0xb03030:0x2a2a2e,{ei:.05})); sh.position.set((i-1.5)*.13*s,-.04*s,.32*bulk*s); body.add(sh); } }
+  else if(v==='archer'){ crHoodOn(head,s,.4,cloth,true); const bw=apBow(s*1.1); bw.rotation.y=Math.PI/2; bw.rotation.z=-.2; g.userData.gripL.add(bw); const arrow=new THREE.Mesh(new THREE.CylinderGeometry(.012*s,.012*s,.55*s,5), wood); arrow.rotation.x=Math.PI/2; arrow.position.set(.02*s,0,.2*s); g.userData.gripR.add(arrow);
+    const quiver=new THREE.Group(); const q=new THREE.Mesh(new THREE.CylinderGeometry(.08*s,.07*s,.5*s,10), leather); quiver.add(q); for(let i=0;i<4;i++){ const ar=new THREE.Mesh(new THREE.CylinderGeometry(.01*s,.01*s,.32*s,5), wood); ar.position.set((i-1.5)*.03*s,.3*s,0); quiver.add(ar); const fl=new THREE.Mesh(new THREE.ConeGeometry(.025*s,.07*s,5), crM(0xc0c0c0)); fl.position.set((i-1.5)*.03*s,.46*s,0); quiver.add(fl); } quiver.position.set(-.18*s,.3*s,-.3*s); quiver.rotation.z=.5; quiver.rotation.x=.25; body.add(quiver); }
+  else if(v==='clubber'){ crHelmet(head,s,.4,iron,ironD,false,null,true); for(const arm of g.userData.arms) crPauldron(arm,s,.16,ironD,true,iron); const plate=new THREE.Mesh(new THREE.BoxGeometry(.5*bulk*s,.4*s,.07*s), iron); plate.position.set(0,.28*s,.3*bulk*s); body.add(plate); for(let i=0;i<6;i++){ const rv=new THREE.Mesh(new THREE.SphereGeometry(.02*s,6,5), ironD); rv.position.set((i%3-1)*.18*bulk*s,(i<3?.42:.14)*s,.34*bulk*s); body.add(rv); }
+    const club=new THREE.Group(); const haft=new THREE.Mesh(new THREE.CylinderGeometry(.05*s,.07*s,1.0*s,8), wood); club.add(haft); const hd=crLathe([[.13*s,0],[.19*s,.15*s],[.2*s,.4*s],[.15*s,.55*s],[0,.6*s]],10,wood); hd.position.y=.4*s; club.add(hd); for(let i=0;i<10;i++){ const a=i/10*Math.PI*2, yy=.5*s+(i%3)*.14*s; const sp=new THREE.Mesh(new THREE.ConeGeometry(.03*s,.12*s,5), iron); sp.position.set(Math.cos(a)*.19*s,yy,Math.sin(a)*.19*s); sp.rotation.z=Math.PI/2-a; sp.rotation.x=Math.sin(a); club.add(sp); }
+    crWeaponGrip(g,1,club,-.5,-.3,.1*s); }
+  else if(v==='poisoner'){ crHoodOn(head,s,.4,cloth,true); const vial=(col,sc)=>{ const vg=new THREE.Group(); const gl=new THREE.Mesh(new THREE.SphereGeometry(.11*s*sc,12,10), apM(col,{ei:.9,t:true,op:.85,r:.2})); vg.add(gl); const neck=new THREE.Mesh(new THREE.CylinderGeometry(.035*s*sc,.045*s*sc,.1*s*sc,8), apM(0x8a8a70,{ei:.05})); neck.position.y=.14*s*sc; vg.add(neck); const cork=new THREE.Mesh(new THREE.CylinderGeometry(.03*s*sc,.03*s*sc,.05*s*sc,8), wood); cork.position.y=.2*s*sc; vg.add(cork); return vg; };
+    g.userData.gripR.add(vial(0x6aff3a,1.1)); const lt=new THREE.PointLight(0x6aff3a,.4,4); g.userData.gripR.add(lt); const v2=vial(0x9aff5a,.7); v2.position.set(-.3*s,-.02*s,.26*s); body.add(v2); const v3=vial(0xc0ff40,.6); v3.position.set(.28*s,-.06*s,.28*s); body.add(v3); }
+  else if(v==='trapper'){ crHoodOn(head,s,.4,cloth,false); const trap=new THREE.Group(); const base=new THREE.Mesh(new THREE.CylinderGeometry(.26*s,.28*s,.04*s,14), iron); trap.add(base); for(const sd of [-1,1]){ const jaw=new THREE.Mesh(new THREE.TorusGeometry(.24*s,.03*s,8,16,Math.PI), iron); jaw.rotation.x=Math.PI/2; jaw.rotation.z=sd>0?0:Math.PI; jaw.position.y=.03*s; trap.add(jaw); for(let i=0;i<5;i++){ const a=(i+.5)/5*Math.PI*sd; const t=new THREE.Mesh(new THREE.ConeGeometry(.02*s,.09*s,5), iron); t.position.set(Math.cos(a)*.24*s,.08*s,Math.sin(a)*.24*s); trap.add(t); } }
+    const sk=crSkullMesh(s,.08,bone,null); sk.position.y=.08*s; trap.add(sk); trap.position.set(.55*s,-.9*s,.45*s); trap.rotation.x=.1; body.add(trap);
+    const rope=new THREE.Mesh(new THREE.CylinderGeometry(.018*s,.018*s,.9*s,6), crM(0x9a8a5a)); rope.position.set(.5*s,-.5*s,.32*s); rope.rotation.z=-.15; rope.rotation.x=.3; body.add(rope); const coil=new THREE.Mesh(new THREE.TorusGeometry(.12*s,.03*s,8,16), crM(0x9a8a5a)); coil.position.set(-.3*s,.1*s,-.26*s); coil.rotation.y=.6; body.add(coil); }
+  else if(v==='berserker'){ const knot=crLathe([[0,0],[.1*s,.06*s],[.08*s,.3*s],[0,.5*s]],8,crM(0x1a1410,{r:.95})); knot.position.set(0,.34*s,-.08*s); knot.rotation.x=-.9; head.add(knot); const band=new THREE.Mesh(new THREE.TorusGeometry(.1*s,.025*s,6,12), crM(0xb03030)); band.position.set(0,.3*s,-.04*s); head.add(band);
+    for(const sd of [-1,1]){ const paint=new THREE.Mesh(new THREE.BoxGeometry(.05*s,.26*s,.02*s), crM(0xb03030,{ei:.1})); paint.position.set(sd*.2*s,.0,.32*s); paint.rotation.z=sd*.2; head.add(paint); }
+    for(const sd of [-1,1]){ const ax=new THREE.Group(); const haft=new THREE.Mesh(new THREE.CylinderGeometry(.03*s,.035*s,.75*s,8), wood); ax.add(haft); const hd=new THREE.Mesh(new THREE.CylinderGeometry(.02*s,.02*s,.3*s,5), iron); hd.rotation.z=Math.PI/2; hd.position.y=.3*s; hd.scale.set(1,1,.4); ax.add(hd); const bl=new THREE.Mesh(new THREE.CircleGeometry(.22*s,10,0,Math.PI), iron); bl.position.set(.14*s,.3*s,0); bl.rotation.y=Math.PI/2; ax.add(bl); const bl2=bl.clone(); bl2.rotation.y=-Math.PI/2; bl2.position.z=-.001; ax.add(bl2); crWeaponGrip(g,sd,ax,-.5,sd*.3,0); }
+    const neck=new THREE.Mesh(new THREE.TorusGeometry(.2*s,.02*s,6,14), bone); neck.rotation.x=Math.PI/2+.5; neck.position.set(0,.44*s,.2*s); body.add(neck); for(let i=0;i<5;i++){ const t=new THREE.Mesh(new THREE.ConeGeometry(.02*s,.07*s,5), tooth); t.position.set((i-2)*.07*s,.36*s-Math.abs(i-2)*.02*s,.3*bulk*s); t.rotation.x=Math.PI; body.add(t); }
+    for(let i=0;i<3;i++){ const scar=new THREE.Mesh(new THREE.BoxGeometry(.03*s,.16*s,.01*s), crM(0x8a3030)); scar.position.set(-.12*bulk*s+i*.06*s,.3*s-i*.05*s,.3*bulk*s); scar.rotation.z=.6; body.add(scar); } }
+  else if(v==='commander'){ const sk=crSkullMesh(s,.36,bone,null); sk.position.set(0,.16*s,.02*s); sk.rotation.x=-.2; sk.scale.set(1.05,.85,1.05); head.add(sk); for(const sd of [-1,1]){ const horn=crLathe([[0,0],[.06*s,.02*s],[.05*s,.22*s],[.02*s,.42*s],[0,.5*s]],8,crM(0xd8c8a8,{r:.7})); horn.position.set(sd*.36*s,.36*s,0); horn.rotation.z=sd*-1.1; horn.rotation.x=-.3; head.add(horn); }
+    const cape=apCape(s,0x7a1a1a,.95,1.0); cape.position.set(0,.52*s,-.3*bulk*s); cape.rotation.x=-.1; body.add(cape); const collar=new THREE.Mesh(new THREE.TorusGeometry(.26*bulk*s,.05*s,8,20), crM(0x8a1a1a)); collar.rotation.x=Math.PI/2; collar.position.y=.5*s; body.add(collar);
+    for(const arm of g.userData.arms) crPauldron(arm,s,.14,ironD,true,iron); const chest=new THREE.Mesh(new THREE.BoxGeometry(.44*bulk*s,.36*s,.08*s), iron); chest.position.set(0,.3*s,.3*bulk*s); body.add(chest); const skc=crSkullMesh(s,.07,bone,null); skc.position.set(0,.3*s,.36*bulk*s); body.add(skc);
+    const mace=new THREE.Group(); const hf=new THREE.Mesh(new THREE.CylinderGeometry(.03*s,.035*s,.75*s,8), wood); mace.add(hf); const hd=new THREE.Mesh(new THREE.IcosahedronGeometry(.14*s,1), iron); hd.position.y=.42*s; mace.add(hd); apSpikeRing(hd,s,8,.13,0,.13,0x8a8f99); crWeaponGrip(g,1,mace,-.5,0,0);
+    const banner=new THREE.Group(); const pole=new THREE.Mesh(new THREE.CylinderGeometry(.03*s,.035*s,2.6*s,8), wood); banner.add(pole); const cross=new THREE.Mesh(new THREE.BoxGeometry(.7*s,.03*s,.03*s), wood); cross.position.y=1.1*s; banner.add(cross); const cloth2=crRagged(.02*s,.02*s,.95*s,4,crM(0x8a1a1a,{r:.95,side:THREE.DoubleSide}),.1*s); cloth2.scale.set(1,1,14); cloth2.position.set(0,.62*s,.3*s); banner.add(cloth2); const sig=crSkullMesh(s,.09,crM(0x2a0a0a),null); sig.position.set(0,.66*s,.32*s); sig.scale.z=.3; banner.add(sig); const tip=new THREE.Mesh(new THREE.ConeGeometry(.05*s,.2*s,6), iron); tip.position.y=1.4*s; banner.add(tip); apAnim(g,{k:'sway',o:cloth2,axis:'y',base:0,amp:.15,spd:2.4}); banner.position.set(-.1*s,.1*s,-.1*s); g.userData.gripL.add(banner); }
+  apShadow(g); return g; }
+
+// ============================================================ SKELETONS — 10 units from the sheet
+function makeSkeletonMesh(scale,opts){ opts=opts||{}; const s=scale||1; const v=opts.variant||'skirmisher';
+  const bone=crM(opts.bone||0xe4dcc4,{r:.55}), boneD=crM(0xb8ae94,{r:.6}), cloth=crM(opts.cloth||0x6a2725,{r:.95}), hoodM=crM(opts.hood||0x2a2630,{r:.95}), leather=crM(0x4a3826,{r:.9}), wood=crM(0x6b4f2e,{r:.9}), iron=apM(0x9aa0aa,{e:0x3a3f48,ei:.04,r:.4,m:.7}), ironD=apM(0x50555e,{ei:.03,r:.5,m:.6}), gold=apM(0xcaa23a,{e:0x6b4f14,ei:.1,r:.4,m:.75});
+  const glowC=opts.glow||(v==='mage'?0xb27bff:v==='reaper'?0xff3b5c:v==='commander'?0xffd23a:0xd8c8a0); const eyeMat=apM(glowC,{ei:1.8});
+  const big=v==='guardian', hunch=v==='reaper'?.3:.1;
+  const grp=new THREE.Group(); grp.userData.humanoid=true; grp.userData.arms=[]; grp.userData.legs=[];
+  // spine as the root body node, ribcage hung from it, pelvis below
+  const body=new THREE.Mesh(new THREE.CylinderGeometry(.045*s,.055*s,.62*s,8), bone); body.castShadow=true; body.position.y=.95*s; grp.add(body); grp.userData.body=body;
+  for(let i=0;i<6;i++){ const vert=new THREE.Mesh(new THREE.SphereGeometry(.05*s,8,6), boneD); vert.position.y=(-.28+i*.1)*s; vert.scale.set(1.2,.7,1.2); body.add(vert); }
+  const ribW=big?.36:.28; for(let i=0;i<6;i++){ const r=ribW*(1-Math.abs(i-2.5)*.08); const rib=new THREE.Mesh(new THREE.TorusGeometry(r*s,.022*s,6,16,Math.PI*1.15), bone); rib.position.y=(.3-i*.075)*s; rib.rotation.x=Math.PI/2+.2; rib.rotation.z=Math.PI*.92; rib.scale.set(1,.75,1); body.add(rib); }
+  const sternum=new THREE.Mesh(new THREE.BoxGeometry(.05*s,.36*s,.03*s), bone); sternum.position.set(0,.1*s,ribW*.72*s); body.add(sternum);
+  const clav=new THREE.Mesh(new THREE.CylinderGeometry(.02*s,.02*s,ribW*2.3*s,6), bone); clav.rotation.z=Math.PI/2; clav.position.set(0,.36*s,.04*s); body.add(clav);
+  const pelvis=crLathe([[.06*s,0],[.14*s,-.04*s],[.19*s,-.1*s],[.15*s,-.17*s],[.06*s,-.2*s]],12,bone); pelvis.position.y=-.3*s; body.add(pelvis);
+  // skull
+  const head=new THREE.Group(); head.position.y=.48*s; body.add(head); grp.userData.head=head; const skull=crSkullMesh(s,.21,bone,eyeMat); head.add(skull); apAnim(grp,{k:'sway',o:skull.userData.jaw,axis:'x',base:0,amp:.08,spd:2.2+Math.random()});
+  const neck=new THREE.Mesh(new THREE.CylinderGeometry(.035*s,.04*s,.14*s,7), boneD); neck.position.y=-.2*s; head.add(neck);
+  // arms & legs — bone shafts with real joints
+  const aL=big?.78:.72; for(const sd of [-1,1]){ const arm=new THREE.Group(); arm.position.set(sd*ribW*1.05*s,.36*s,.02*s); body.add(arm); grp.userData.arms.push(arm); if(sd<0) grp.userData.armL=arm; else grp.userData.armR=arm;
+    const sh=new THREE.Mesh(new THREE.SphereGeometry(.06*s,10,8), boneD); arm.add(sh);
+    const hum=crLathe([[.045*s,0],[.035*s,-aL*.25*s],[.05*s,-aL*.48*s]],8,bone); arm.add(hum); const el=new THREE.Mesh(new THREE.SphereGeometry(.05*s,10,8), boneD); el.position.y=-aL*.5*s; arm.add(el);
+    for(const k of [-1,1]){ const fr=new THREE.Mesh(new THREE.CylinderGeometry(.02*s,.028*s,aL*.48*s,7), bone); fr.position.set(k*.022*s,-aL*.75*s,0); arm.add(fr); }
+    const hand=crHand(s,bone,false,null,false); hand.position.y=-aL*1.02*s; arm.add(hand); const grip=new THREE.Group(); grip.position.y=-aL*1.0*s; arm.add(grip); if(sd<0) grp.userData.gripL=grip; else grp.userData.gripR=grip; arm.rotation.z=sd*.12; arm.rotation.x=.15; }
+  const legTop=-.48*s, legLen=(.95*s+legTop)/s; for(const sd of [-1,1]){ const leg=new THREE.Group(); leg.position.set(sd*.13*s,legTop,0); body.add(leg); grp.userData.legs.push(leg);
+    const fem=crLathe([[.05*s,0],[.038*s,-legLen*.25*s],[.052*s,-legLen*.46*s]],8,bone); leg.add(fem); const kn=new THREE.Mesh(new THREE.SphereGeometry(.052*s,10,8), boneD); kn.position.y=-legLen*.46*s; leg.add(kn);
+    for(const k of [-1,1]){ const tib=new THREE.Mesh(new THREE.CylinderGeometry(.022*s,.03*s,legLen*.44*s,7), bone); tib.position.set(k*.022*s,-legLen*.69*s,0); leg.add(tib); }
+    const foot=crFoot(s,bone,false,null,false); foot.position.y=-legLen*.92*s; leg.add(foot); }
+  // ---- units ----
+  const sword=(len,col)=>apSword(s,col,len); const round=(col)=>apShield(s*1.1,col||0x6b5a3a,0x9aa0aa);
+  if(v==='skirmisher'){ const scarf=crRagged(.09*s,.14*s,.28*s,10,cloth,.08*s); scarf.position.set(0,.4*s,.02*s); body.add(scarf); const kilt=crRagged(.17*s,.24*s,.3*s,12,cloth,.1*s); kilt.position.y=-.42*s; body.add(kilt); crWeaponGrip(grp,1,sword(.7),-.6,0,0); const sh=round(); const skl=crSkullMesh(s,.09,boneD,null); skl.position.z=.05*s; sh.add(skl); sh.position.set(-.05*s,.05*s,.1*s); sh.rotation.y=-.3; grp.userData.gripL.add(sh); }
+  else if(v==='archer'){ crHoodOn(head,s,.3,crM(0x5a5a2a,{r:.95}),true); const cloak=crRagged(.2*s,.34*s,.8*s,12,crM(0x5a5a2a,{r:.95}),.14*s); cloak.position.set(0,-.1*s,-.06*s); body.add(cloak); const bw=apBow(s*1.1); bw.rotation.y=Math.PI/2; bw.rotation.z=-.2; grp.userData.gripL.add(bw); const arrow=new THREE.Mesh(new THREE.CylinderGeometry(.012*s,.012*s,.6*s,5), wood); arrow.rotation.x=Math.PI/2; arrow.position.z=.2*s; grp.userData.gripR.add(arrow);
+    const quiver=new THREE.Group(); const q=new THREE.Mesh(new THREE.CylinderGeometry(.08*s,.07*s,.55*s,10), leather); quiver.add(q); for(let i=0;i<5;i++){ const ar=new THREE.Mesh(new THREE.CylinderGeometry(.01*s,.01*s,.34*s,5), wood); ar.position.set((i-2)*.028*s,.34*s,0); quiver.add(ar); } quiver.position.set(-.16*s,.2*s,-.22*s); quiver.rotation.z=.5; quiver.rotation.x=.25; body.add(quiver); }
+  else if(v==='spearman'){ crHelmet(head,s,.25,iron,ironD,false,null,true); const sp=new THREE.Mesh(new THREE.ConeGeometry(.03*s,.16*s,6), iron); sp.position.y=.32*s; head.add(sp); const scarf=crRagged(.09*s,.14*s,.28*s,10,crM(0x2a3a5a),.08*s); scarf.position.set(0,.4*s,.02*s); body.add(scarf); const kilt=crRagged(.17*s,.24*s,.3*s,12,leather,.08*s); kilt.position.y=-.42*s; body.add(kilt); crWeaponGrip(grp,1,apSpear(s*1.15),.05,0,-.1*s); const sh=round(0x5a4a3a); const cr=new THREE.Mesh(new THREE.BoxGeometry(.05*s,.28*s,.02*s), boneD); cr.position.z=.05*s; sh.add(cr); sh.position.set(-.05*s,.05*s,.1*s); sh.rotation.y=-.3; grp.userData.gripL.add(sh); }
+  else if(v==='mage'){ crHoodOn(head,s,.32,hoodM,true); const robe=crRagged(.24*s,.42*s,1.05*s,14,hoodM,.16*s); robe.position.set(0,-.3*s,0); body.add(robe); const mantle=crRagged(.28*s,.38*s,.3*s,12,crM(0x3a2a44),.08*s); mantle.position.y=.3*s; body.add(mantle); for(let i=0;i<3;i++){ const bd=new THREE.Mesh(new THREE.SphereGeometry(.025*s,6,5), boneD); bd.position.set((i-1)*.07*s,.16*s-Math.abs(i-1)*.03*s,.26*s); body.add(bd); }
+    const st=apStaff(s*1.35,glowC); const sk=crSkullMesh(s,.11,bone,eyeMat); sk.position.y=.98*s*1.35; st.add(sk); crWeaponGrip(grp,1,st,.08,0,-.2*s); const fire=new THREE.Mesh(new THREE.SphereGeometry(.14*s,10,8), apM(glowC,{ei:1.6,t:true,op:.85})); grp.userData.gripL.add(fire); apAnim(grp,{k:'pulse',o:fire,base:1.5,amp:.6,spd:6}); apAnim(grp,{k:'breathe',o:fire,spd:7,amp:.15}); const lt=new THREE.PointLight(glowC,.7,7); grp.userData.gripL.add(lt); }
+  else if(v==='bomber'){ crHelmet(head,s,.25,ironD,iron,false,null,false); const bomb=new THREE.Group(); const b=new THREE.Mesh(new THREE.SphereGeometry(.2*s,14,12), apM(0x1e1e22,{ei:.03,r:.5,m:.4})); bomb.add(b); const fuse=new THREE.Mesh(new THREE.CylinderGeometry(.015*s,.015*s,.14*s,5), crM(0xc0b090)); fuse.position.y=.24*s; bomb.add(fuse); const spark=new THREE.Mesh(new THREE.SphereGeometry(.045*s,6,5), apM(0xffb040,{ei:2})); spark.position.y=.32*s; bomb.add(spark); apAnim(grp,{k:'pulse',o:spark,base:1.8,amp:1,spd:12}); const lt=new THREE.PointLight(0xffa040,.5,4); lt.position.y=.32*s; bomb.add(lt); grp.userData.gripR.add(bomb); const sack=new THREE.Mesh(new THREE.SphereGeometry(.12*s,10,8), leather); sack.position.set(-.2*s,-.32*s,.1*s); body.add(sack); const belt=crBelt(body,s,-.3,.2,leather,ironD); }
+  else if(v==='guardian'){ crHelmet(head,s,.26,ironD,iron,true,iron,true); for(const sd of [-1,1]){ const horn=crLathe([[0,0],[.05*s,.02*s],[.04*s,.2*s],[0,.36*s]],8,boneD); horn.position.set(sd*.24*s,.2*s,0); horn.rotation.z=sd*-1.1; head.add(horn); } for(const arm of grp.userData.arms) crPauldron(arm,s,.14,ironD,true,iron); const plate=new THREE.Mesh(new THREE.BoxGeometry(.5*s,.5*s,.1*s), ironD); plate.position.set(0,.14*s,.24*s); body.add(plate); const skc=crSkullMesh(s,.08,bone,null); skc.position.set(0,.16*s,.3*s); body.add(skc); const kilt=crRagged(.2*s,.3*s,.4*s,12,leather,.06*s); kilt.position.y=-.44*s; body.add(kilt); for(let i=0;i<4;i++){ const tas=new THREE.Mesh(new THREE.BoxGeometry(.1*s,.26*s,.03*s), ironD); const a=i/4*Math.PI*2; tas.position.set(Math.sin(a)*.24*s,-.44*s,Math.cos(a)*.24*s); tas.rotation.y=a; body.add(tas); }
+    crWeaponGrip(grp,1,sword(.85),-.5,0,0); const sh=new THREE.Group(); const pl=new THREE.Mesh(new THREE.BoxGeometry(.5*s,.72*s,.06*s), ironD); sh.add(pl); const rim=new THREE.Mesh(new THREE.BoxGeometry(.54*s,.76*s,.04*s), iron); rim.position.z=-.01*s; sh.add(rim); const skl=crSkullMesh(s,.12,bone,null); skl.position.z=.05*s; sh.add(skl); apSpikeRing(sh,s,6,.27,0,.1,0x9aa0aa); sh.position.set(0,-.2*s,.12*s); grp.userData.gripL.add(sh); }
+  else if(v==='dualwielder'){ const band=new THREE.Mesh(new THREE.TorusGeometry(.22*s,.04*s,8,18), crM(0xb03030)); band.position.y=.1*s; head.add(band); const tail=crRagged(.03*s,.05*s,.3*s,6,crM(0xb03030),.06*s); tail.position.set(-.18*s,-.04*s,-.1*s); tail.rotation.z=.5; head.add(tail); const kilt=crRagged(.17*s,.24*s,.3*s,12,crM(0xb03030),.1*s); kilt.position.y=-.42*s; body.add(kilt); for(const sd of [-1,1]){ const bl=new THREE.Group(); const b=new THREE.Mesh(new THREE.BoxGeometry(.05*s,.5*s,.016*s), iron); b.position.y=.25*s; bl.add(b); const tip=new THREE.Mesh(new THREE.ConeGeometry(.03*s,.12*s,4), iron); tip.position.y=.55*s; bl.add(tip); const guard=new THREE.Mesh(new THREE.BoxGeometry(.14*s,.03*s,.03*s), gold); bl.add(guard); const grip=new THREE.Mesh(new THREE.CylinderGeometry(.02*s,.02*s,.14*s,6), leather); grip.position.y=-.08*s; bl.add(grip); b.rotation.z=.1; crWeaponGrip(grp,sd,bl,-.7,sd*.35,0); } }
+  else if(v==='reaper'){ crHoodOn(head,s,.33,crM(0x14101a,{r:.98}),true); const robe=crRagged(.26*s,.46*s,1.1*s,14,crM(0x14101a,{r:.98}),.2*s); robe.position.set(0,-.3*s,0); body.add(robe); const mantle=crRagged(.3*s,.42*s,.34*s,12,crM(0x1e1622),.1*s); mantle.position.y=.3*s; body.add(mantle); const rope=new THREE.Mesh(new THREE.TorusGeometry(.26*s,.02*s,6,18), crM(0x9a8a5a)); rope.rotation.x=Math.PI/2; rope.position.y=-.2*s; body.add(rope);
+    const sc=new THREE.Group(); const haft=new THREE.Mesh(new THREE.CylinderGeometry(.03*s,.035*s,2.0*s,8), crM(0x2a1a14)); sc.add(haft); const blade=new THREE.Mesh(new THREE.TorusGeometry(.5*s,.035*s,6,18,Math.PI*.8), iron); blade.position.set(-.28*s,.95*s,0); blade.rotation.z=-.5; blade.scale.set(1,1,.3); sc.add(blade); const skl=crSkullMesh(s,.09,bone,null); skl.position.y=.98*s; sc.add(skl); crWeaponGrip(grp,1,sc,.15,.25,-.3*s); }
+  else if(v==='shieldbearer'){ crHelmet(head,s,.26,iron,ironD,false,null,true); const sp=new THREE.Mesh(new THREE.ConeGeometry(.03*s,.14*s,6), ironD); sp.position.y=.32*s; head.add(sp); const mail=crRagged(.2*s,.26*s,.5*s,12,ironD,.03*s); mail.position.y=.05*s; body.add(mail); const kilt=crRagged(.18*s,.26*s,.3*s,12,leather,.08*s); kilt.position.y=-.42*s; body.add(kilt);
+    const sh=new THREE.Group(); const pl=new THREE.Mesh(new THREE.BoxGeometry(.62*s,1.0*s,.06*s), crM(0x6b5030)); sh.add(pl); for(let i=0;i<3;i++){ const band=new THREE.Mesh(new THREE.BoxGeometry(.66*s,.05*s,.05*s), ironD); band.position.set(0,(i-1)*.36*s,.02*s); sh.add(band); } const skl=crSkullMesh(s,.14,bone,null); skl.position.z=.06*s; sh.add(skl); for(let i=0;i<10;i++){ const rv=new THREE.Mesh(new THREE.ConeGeometry(.025*s,.07*s,5), iron); rv.position.set(-.26*s+(i%5)*.13*s,i<5?.44*s:-.44*s,.05*s); rv.rotation.x=-Math.PI/2; sh.add(rv); } sh.position.set(0,-.3*s,.14*s); grp.userData.gripL.add(sh); crWeaponGrip(grp,1,apHammer(s*.7),-.6,0,0); }
+  else if(v==='commander'){ head.add(apCrown(s,0xcaa23a,.24,7)); const cape=apCape(s,0x6a1622,1.0,1.2); cape.position.set(0,.4*s,-.16*s); cape.rotation.x=-.1; body.add(cape); const collar=new THREE.Mesh(new THREE.TorusGeometry(.26*s,.05*s,8,20), crM(0x7a1a2a)); collar.rotation.x=Math.PI/2; collar.position.y=.4*s; body.add(collar); for(const arm of grp.userData.arms) crPauldron(arm,s,.12,ironD,true,gold); const plate=new THREE.Mesh(new THREE.BoxGeometry(.44*s,.4*s,.08*s), ironD); plate.position.set(0,.14*s,.24*s); body.add(plate); const skc=crSkullMesh(s,.07,bone,null); skc.position.set(0,.16*s,.29*s); body.add(skc);
+    const banner=new THREE.Group(); const pole=new THREE.Mesh(new THREE.CylinderGeometry(.03*s,.035*s,2.6*s,8), wood); banner.add(pole); const cross=new THREE.Mesh(new THREE.BoxGeometry(.7*s,.03*s,.03*s), wood); cross.position.y=1.1*s; banner.add(cross); const cl=crRagged(.02*s,.02*s,.95*s,4,crM(0x7a1a2a,{r:.95,side:THREE.DoubleSide}),.1*s); cl.scale.set(1,1,14); cl.position.set(0,.62*s,.3*s); banner.add(cl); const sig=crSkullMesh(s,.09,crM(0xd8c8a0),null); sig.position.set(0,.66*s,.32*s); sig.scale.z=.3; banner.add(sig); apAnim(grp,{k:'sway',o:cl,axis:'y',base:0,amp:.15,spd:2.4}); banner.position.set(-.1*s,.1*s,-.1*s); grp.userData.gripL.add(banner); crWeaponGrip(grp,1,sword(.8,0xd8b84a),-.5,0,0); }
+  apShadow(grp); return grp; }
+
+// ============================================================ TROLLS — 10 from the sheet: big, hunched, all muscle and hide
+function makeTrollMesh(scale,opts){ opts=opts||{}; const s=(scale||1)*1.25; const v=opts.variant||'cave';
+  const skinC={cave:0x6f8a52, rock:0x6a6650, ice:0x8fb0c0, swamp:0x6b7a3a, war:0x7c8654, shaman:0x8a7a9a, armor:0x707a5a, fire:0x8a4a30, stone:0x8a8a76, chief:0x7c8a56}[v]||0x6f8a52;
+  const skin=crM(skinC,{r:.88}), skinD=crM(0x3e4a2c,{r:.9}), hide=crM(0x4e3a26,{r:.95}), iron=apM(0x6f7682,{e:0x262a33,ei:.04,r:.45,m:.7}), ironD=apM(0x484d56,{ei:.03,r:.5,m:.6}), bone=crM(0xe6dfc8,{r:.55}), wood=crM(0x5c4225,{r:.9}), tusk=crM(0xf0e8d0,{r:.5});
+  const bulk=v==='stone'?1.3:v==='armor'?1.15:v==='war'?1.05:1;
+  const torso=[[.36*bulk,-.02],[.46*bulk,.1],[.5*bulk,.26],[.48*bulk,.44],[.4*bulk,.58],[.26*bulk,.66]];
+  const g=crRig(s,{skin, torso, bodyY:.95, shoulderR:.52*bulk, shoulderDrop:.06, shoulderFwd:.08, armLen:.95, armR:.1*Math.sqrt(bulk), legR:.11*Math.sqrt(bulk), hipW:.2*bulk, hipDrop:.02, neckLen:.06, neckR:.16, headFwd:.16, headTilt:.35, armFwd:.4, armSplay:.2, claws:true, clawMat:tusk, bigHands:true, bigFeet:true,
+    buildHead(h,s){ const sk=crLathe([[0,.34*s],[.24*s,.32*s],[.36*s,.18*s],[.4*s,0],[.36*s,-.18*s],[.26*s,-.3*s],[.12*s,-.36*s],[0,-.37*s]],18,skin); h.add(sk);
+      const brow=new THREE.Mesh(new THREE.TorusGeometry(.26*s,.07*s,8,16,Math.PI), skinD); brow.position.set(0,.1*s,.24*s); brow.rotation.x=-.5; h.add(brow);
+      for(const sd of [-1,1]){ crEye(h,s,sd*.16,.04,.3,.06,v==='ice'?0x9ad8ff:0xe0b040,.35); const ear=crLathe([[0,0],[.05*s,.02*s],[.06*s,.12*s],[.03*s,.24*s],[0,.3*s]],8,skin); ear.position.set(sd*.36*s,.08*s,-.02*s); ear.rotation.z=sd*-1.4; ear.scale.set(1,1,.5); h.add(ear); }
+      const nose=new THREE.Mesh(new THREE.SphereGeometry(.12*s,12,10), skin); nose.scale.set(1.3,.8,1); nose.position.set(0,-.06*s,.36*s); h.add(nose);
+      const jaw=new THREE.Mesh(new THREE.BoxGeometry(.5*s,.18*s,.34*s), skin); jaw.position.set(0,-.3*s,.14*s); h.add(jaw); const mouth=new THREE.Mesh(new THREE.BoxGeometry(.36*s,.06*s,.05*s), apM(0x2a0a0a,{ei:0})); mouth.position.set(0,-.2*s,.34*s); h.add(mouth);
+      for(const sd of [-1,1]){ const tk=crLathe([[0,0],[.05*s,.02*s],[.04*s,.14*s],[0,.22*s]],8,tusk); tk.position.set(sd*.14*s,-.24*s,.34*s); tk.rotation.x=-.4; tk.rotation.z=sd*-.3; h.add(tk); } crTeeth(h,s,-.17,.36,5,.06,tusk,false);
+      for(let i=0;i<5;i++){ const wart=new THREE.Mesh(new THREE.SphereGeometry(.025*s,6,5), skinD); wart.position.set(Math.sin(i*1.9)*.25*s,.14*s+Math.cos(i*1.3)*.12*s,.28*s); h.add(wart); } },
+    buildArm(arm,s,sd){ const m1=new THREE.Mesh(new THREE.SphereGeometry(.12*bulk*s,12,10), skin); m1.position.y=-.14*s; m1.scale.set(1.2,1,1.2); arm.add(m1); crWraps(arm,s,-.75,.1*Math.sqrt(bulk),hide,3); },
+    buildLeg(leg,s,sd,c,grp,lL){ crWraps(leg,s,-lL*.72,.1*Math.sqrt(bulk),hide,2); } });
+  const body=g.userData.body, head=g.userData.head;
+  for(let i=0;i<7;i++){ const spk=new THREE.Mesh(new THREE.ConeGeometry(.035*s,.12*s,6), skinD); spk.position.set(0,(.6-i*.09)*s,-(.44-i*.01)*bulk*s); spk.rotation.x=-.9; body.add(spk); }
+  const belly=new THREE.Mesh(new THREE.SphereGeometry(.34*bulk*s,14,12), crM(0x8a9a6a,{r:.85})); belly.scale.set(1.05,.9,.7); belly.position.set(0,.14*s,.24*bulk*s); body.add(belly);
+  const loin=crRagged(.36*bulk*s,.44*bulk*s,.42*s,14,hide,.12*s); loin.position.y=-.16*s; body.add(loin); crBelt(body,s,.04,.44*bulk,hide,ironD); crStrap(body,s,.44*bulk,.04,.6,hide,1);
+  const club=(spiked,big2)=>{ const c=new THREE.Group(); const k=big2?1.3:1; const haft=new THREE.Mesh(new THREE.CylinderGeometry(.06*s,.08*s,1.2*s*k,8), wood); c.add(haft); const hd=crLathe([[.15*s,0],[.22*s,.2*s],[.24*s,.5*s],[.18*s,.68*s],[0,.74*s]],10,wood); hd.scale.multiplyScalar(k); hd.position.y=.5*s*k; c.add(hd); if(spiked) for(let i=0;i<12;i++){ const a=i/12*Math.PI*2, yy=(.6+(i%3)*.18)*s*k; const sp=new THREE.Mesh(new THREE.ConeGeometry(.035*s,.14*s,5), iron); sp.position.set(Math.cos(a)*.23*s*k,yy,Math.sin(a)*.23*s*k); sp.rotation.z=Math.PI/2-a; sp.rotation.x=Math.sin(a); c.add(sp); } return c; };
+  if(v==='cave'){ crWeaponGrip(g,1,club(false,false),-.5,-.3,.1*s); }
+  else if(v==='rock'){ for(let i=0;i<9;i++){ const rk=new THREE.Mesh(new THREE.DodecahedronGeometry(.1*s,0), crM(0x5a5644,{r:.95})); rk.position.set(Math.sin(i*2.1)*.4*bulk*s,(.5-i*.09)*s,Math.cos(i*2.1)*.4*bulk*s*.6-.1*s); rk.scale.set(1,.8,1); body.add(rk); } const slab=new THREE.Mesh(new THREE.BoxGeometry(.5*s,1.1*s,.12*s), crM(0x5a5644,{r:.95})); crWeaponGrip(g,1,slab,-.4,0,.3*s); }
+  else if(v==='ice'){ for(let i=0;i<7;i++){ const cr=new THREE.Mesh(new THREE.OctahedronGeometry(.08*s,0), apM(0xbfe8ff,{ei:.25,r:.15,m:.2})); cr.scale.set(.7,2+(i%3)*.5,.7); cr.position.set(Math.sin(i*1.7)*.3*bulk*s,(.6-i*.05)*s,-.36*bulk*s+Math.cos(i*1.7)*.1*s); cr.rotation.x=-.7; body.add(cr); } const c=club(false,true); for(let i=0;i<5;i++){ const cr=new THREE.Mesh(new THREE.OctahedronGeometry(.12*s,0), apM(0xbfe8ff,{ei:.3,r:.15,m:.2})); cr.scale.set(.6,2.2,.6); cr.position.set(Math.sin(i*1.3)*.2*s,1.0*s,Math.cos(i*1.3)*.2*s); cr.rotation.z=Math.sin(i)*.6; c.add(cr); } crWeaponGrip(g,1,c,-.5,-.3,.1*s); }
+  else if(v==='swamp'){ const moss=crM(0x4a7a2a,{r:.95}); for(let i=0;i<8;i++){ const m=new THREE.Mesh(new THREE.SphereGeometry(.12*s,10,8), moss); m.scale.set(1.4,.5,1.2); m.position.set(Math.sin(i*2.3)*.4*bulk*s,(.5-i*.07)*s,Math.cos(i*2.3)*.3*bulk*s); body.add(m); } for(let i=0;i<3;i++){ const sh=new THREE.Mesh(new THREE.ConeGeometry(.05*s,.24*s,7), crM(0xc8a850)); sh.position.set(Math.sin(i*2)*.3*s,.2*s,Math.cos(i*2)*.32*bulk*s); sh.rotation.x=-.4; head.add(sh); } const log=new THREE.Mesh(new THREE.CylinderGeometry(.09*s,.12*s,1.5*s,9), wood); crWeaponGrip(g,1,log,-.5,-.2,.2*s); }
+  else if(v==='war'){ for(const sd of [-1,1]){ const p=new THREE.Mesh(new THREE.BoxGeometry(.05*s,.3*s,.02*s), crM(0xb03030,{ei:.1})); p.position.set(sd*.18*s,.02*s,.36*s); p.rotation.z=sd*.3; head.add(p); } for(const arm of g.userData.arms) crPauldron(arm,s,.2,ironD,true,iron); const chain=new THREE.Mesh(new THREE.TorusGeometry(.4*bulk*s,.03*s,8,24), ironD); chain.rotation.x=Math.PI/2+.6; chain.position.y=.4*s; body.add(chain); const skc=crSkullMesh(s,.1,bone,null); skc.position.set(0,.36*s,.44*bulk*s); body.add(skc); const mace=new THREE.Group(); const hf=new THREE.Mesh(new THREE.CylinderGeometry(.05*s,.06*s,1.0*s,8), wood); mace.add(hf); const hd=new THREE.Mesh(new THREE.IcosahedronGeometry(.24*s,1), ironD); hd.position.y=.6*s; mace.add(hd); apSpikeRing(hd,s,10,.22,0,.18,0x8a8f99); crWeaponGrip(g,1,mace,-.5,-.2,.1*s); }
+  else if(v==='shaman'){ const sk=crSkullMesh(s,.2,bone,null); sk.position.set(0,.36*s,.1*s); sk.rotation.x=-.3; head.add(sk); for(const sd of [-1,1]){ const fe=new THREE.Mesh(new THREE.ConeGeometry(.04*s,.4*s,6), crM([0x8a2a2a,0x3a6a8a][sd>0?0:1])); fe.position.set(sd*.4*s,.5*s,0); fe.rotation.z=sd*1.1; head.add(fe); } const rope=new THREE.Mesh(new THREE.TorusGeometry(.42*bulk*s,.025*s,6,24), crM(0x9a8a5a)); rope.rotation.x=Math.PI/2+.5; rope.position.y=.4*s; body.add(rope); for(let i=0;i<5;i++){ const bd=new THREE.Mesh(new THREE.SphereGeometry(.04*s,6,5), i%2?bone:crM(0xc03a3a)); bd.position.set((i-2)*.12*s,.24*s-Math.abs(i-2)*.05*s,.46*bulk*s); body.add(bd); }
+    const st=new THREE.Group(); const shaft=new THREE.Mesh(new THREE.CylinderGeometry(.04*s,.06*s,2.4*s,8), wood); st.add(shaft); const skl=crSkullMesh(s,.2,bone,apM(0xb06bff,{ei:2})); skl.position.y=1.28*s; st.add(skl); crWeaponGrip(g,1,st,.08,0,-.3*s); const lt=new THREE.PointLight(0xb06bff,.7,8); lt.position.y=1.3*s; st.add(lt); const fire=new THREE.Mesh(new THREE.SphereGeometry(.16*s,10,8), apM(0xb06bff,{ei:1.6,t:true,op:.8})); fire.position.y=1.3*s; st.add(fire); apAnim(g,{k:'breathe',o:fire,spd:6,amp:.15}); }
+  else if(v==='armor'){ crHelmet(head,s,.44,ironD,iron,true,iron,true); for(const arm of g.userData.arms) crPauldron(arm,s,.22,ironD,true,iron); const plate=new THREE.Mesh(new THREE.BoxGeometry(.8*bulk*s,.7*s,.12*s), ironD); plate.position.set(0,.3*s,.44*bulk*s); body.add(plate); for(let i=0;i<8;i++){ const rv=new THREE.Mesh(new THREE.SphereGeometry(.03*s,6,5), iron); rv.position.set((i%4-1.5)*.2*bulk*s,(i<4?.58:.04)*s,.5*bulk*s); body.add(rv); } const kilt=crRagged(.42*bulk*s,.52*bulk*s,.5*s,14,ironD,.04*s); kilt.position.y=-.2*s; body.add(kilt);
+    const sh=new THREE.Group(); const pl=new THREE.Mesh(new THREE.BoxGeometry(.9*s,1.3*s,.1*s), ironD); sh.add(pl); const rim=new THREE.Mesh(new THREE.BoxGeometry(.96*s,1.36*s,.06*s), iron); rim.position.z=-.02*s; sh.add(rim); const skl=crSkullMesh(s,.2,bone,null); skl.position.z=.08*s; sh.add(skl); apSpikeRing(sh,s,8,.48,0,.16,0x9aa0aa); sh.position.set(0,-.3*s,.2*s); g.userData.gripL.add(sh); crWeaponGrip(g,1,club(true,false),-.5,-.3,.1*s); }
+  else if(v==='fire'){ const lava=apM(0xff6a20,{ei:1.5}); for(let i=0;i<10;i++){ const cr=new THREE.Mesh(new THREE.BoxGeometry(.05*s,.2*s,.02*s), lava); cr.position.set(Math.sin(i*1.9)*.44*bulk*s,(.5-i*.08)*s,Math.cos(i*1.9)*.44*bulk*s); cr.rotation.y=-i*1.9; cr.rotation.z=(i%2)*.6; body.add(cr); apAnim(g,{k:'pulse',o:cr,base:1.4,amp:.6,spd:3+i*.3,ph:i}); } const mane=crRagged(.3*s,.34*s,.3*s,10,crM(0x2a1a14),.1*s); mane.position.set(0,.3*s,-.1*s); head.add(mane); const lt=new THREE.PointLight(0xff6a20,.9,9); lt.position.y=.3*s; body.add(lt); const log=new THREE.Mesh(new THREE.CylinderGeometry(.1*s,.13*s,1.6*s,9), crM(0x2a1a14)); for(let i=0;i<6;i++){ const e=new THREE.Mesh(new THREE.BoxGeometry(.04*s,.16*s,.02*s), lava); e.position.set(Math.sin(i*2)*.12*s,(.5-i*.2)*s,Math.cos(i*2)*.12*s); e.rotation.y=-i*2; log.add(e); } crWeaponGrip(g,1,log,-.5,-.2,.2*s); }
+  else if(v==='stone'){ const rockM=crM(0x8a8a76,{r:.98}); for(let i=0;i<14;i++){ const rk=new THREE.Mesh(new THREE.DodecahedronGeometry(.13*s,0), rockM); rk.position.set(Math.sin(i*2.1)*.5*bulk*s,(.62-i*.07)*s,Math.cos(i*2.1)*.45*bulk*s*.7); rk.scale.set(1,.7+(i%3)*.3,1); rk.rotation.set(i,i*.7,0); body.add(rk); } const moss=crM(0x4a6a2a); for(let i=0;i<4;i++){ const m=new THREE.Mesh(new THREE.SphereGeometry(.1*s,8,6), moss); m.scale.set(1.5,.4,1.2); m.position.set(Math.sin(i*2.6)*.3*s,.2*s,Math.cos(i*2.6)*.32*s); head.add(m); } for(const sd of [-1,1]){ const hm=new THREE.Group(); const hd=new THREE.Mesh(new THREE.DodecahedronGeometry(.3*s,0), rockM); hd.position.y=.7*s; hm.add(hd); const hf=new THREE.Mesh(new THREE.CylinderGeometry(.06*s,.08*s,1.1*s,8), wood); hm.add(hf); crWeaponGrip(g,sd,hm,-.5,sd*.3,.1*s); } }
+  else if(v==='chief'){ head.add(apCrown(s,0xd8c8a8,.4,7)); for(const sd of [-1,1]){ const horn=crLathe([[0,0],[.07*s,.02*s],[.06*s,.3*s],[.02*s,.5*s],[0,.6*s]],8,tusk); horn.position.set(sd*.4*s,.3*s,0); horn.rotation.z=sd*-1.0; head.add(horn); } for(const arm of g.userData.arms) crPauldron(arm,s,.22,hide,true,iron); const fur=crRagged(.5*bulk*s,.6*bulk*s,.5*s,14,crM(0x4a3a2a,{r:.98}),.16*s); fur.position.y=.44*s; body.add(fur); const skc=crSkullMesh(s,.12,bone,null); skc.position.set(0,.3*s,.5*bulk*s); body.add(skc); for(let i=0;i<3;i++){ const skl=crSkullMesh(s,.07,bone,null); skl.position.set((i-1)*.2*s,-.1*s,.48*bulk*s); body.add(skl); }
+    crWeaponGrip(g,1,club(true,true),-.5,-.3,.1*s); const banner=new THREE.Group(); const pole=new THREE.Mesh(new THREE.CylinderGeometry(.04*s,.05*s,3.0*s,8), wood); banner.add(pole); const cross=new THREE.Mesh(new THREE.BoxGeometry(.8*s,.04*s,.04*s), wood); cross.position.y=1.3*s; banner.add(cross); const cl=crRagged(.02*s,.02*s,1.1*s,4,crM(0x8a1a1a,{r:.95,side:THREE.DoubleSide}),.12*s); cl.scale.set(1,1,16); cl.position.set(0,.75*s,.34*s); banner.add(cl); const sig=crSkullMesh(s,.11,crM(0x2a0a0a),null); sig.position.set(0,.8*s,.36*s); sig.scale.z=.3; banner.add(sig); apAnim(g,{k:'sway',o:cl,axis:'y',base:0,amp:.15,spd:2}); banner.position.set(-.1*s,.1*s,-.1*s); g.userData.gripL.add(banner); }
+  apShadow(g); return g; }
+
+// ============================================================ GHOULS & GHOSTS — 10 from the sheet
+function makeGhostGhoulMesh(scale,opts){ opts=opts||{}; const s=scale||1; const v=opts.variant||'ghoulscout';
+  const ghoul=(v==='ghoulscout'||v==='ghoulbrute'||v==='hungryghoul');
+  if(ghoul){ const brute=v==='ghoulbrute'; const skin=crM(brute?0x8a8a6a:0x9a9a7a,{r:.85}), skinD=crM(0x5a5a44,{r:.9}), rot=crM(0x6a4a3a,{r:.9}), hide=crM(0x4e3a26,{r:.95}), iron=apM(0x6f7682,{e:0x262a33,ei:.04,r:.45,m:.7}), tooth=crM(0xe8e0c8,{r:.5}); const bulk=brute?1.5:.85;
+    const torso=[[.22*bulk,-.02],[.3*bulk,.1],[.3*bulk,.28],[.3*bulk,.44],[.26*bulk,.58],[.16*bulk,.66]];
+    const g=crRig(s,{skin, torso, bodyY:.95, shoulderR:.32*bulk, shoulderDrop:.06, shoulderFwd:.06, armLen:brute?.95:.9, armR:.06*Math.sqrt(bulk), legR:.06*Math.sqrt(bulk), hipW:.13*bulk, neckLen:.06, neckR:.08, headFwd:.16, headTilt:.5, armFwd:.75, armSplay:.25, claws:true, clawMat:tooth, bigHands:true,
+      buildHead(h,s){ const sk=crLathe([[0,.32*s],[.2*s,.3*s],[.3*s,.16*s],[.32*s,0],[.28*s,-.16*s],[.2*s,-.28*s],[.1*s,-.34*s],[0,-.35*s]],16,skin); h.add(sk);
+        for(const sd of [-1,1]){ const e=crEye(h,s,sd*.13,.04,.26,.08,0xd8ffb0,.2); e.material=apM(0xe8ffc8,{ei:.9}); const ear=crLathe([[0,0],[.05*s,.02*s],[.06*s,.12*s],[.03*s,.24*s],[0,.3*s]],8,skin); ear.position.set(sd*.3*s,.06*s,-.02*s); ear.rotation.z=sd*-1.3; ear.scale.set(1,1,.5); h.add(ear); }
+        const nose=new THREE.Mesh(new THREE.ConeGeometry(.05*s,.1*s,5), apM(0x2a1a1a,{ei:0})); nose.position.set(0,-.06*s,.3*s); nose.rotation.x=Math.PI; h.add(nose);
+        const mouth=new THREE.Mesh(new THREE.BoxGeometry(.26*s,.1*s,.06*s), apM(0x2a0a0a,{ei:0})); mouth.position.set(0,-.18*s,.28*s); h.add(mouth); crTeeth(h,s,-.14,.31,6,.045,tooth,false); crTeeth(h,s,-.23,.3,5,.05,tooth,true);
+        if(v==='hungryghoul'){ const tongue=new THREE.Mesh(new THREE.CapsuleGeometry(.03*s,.22*s,6,10), crM(0x8a2a3a)); tongue.position.set(0,-.26*s,.36*s); tongue.rotation.x=1.3; h.add(tongue); }
+        for(let i=0;i<4;i++){ const sore=new THREE.Mesh(new THREE.SphereGeometry(.03*s,6,5), rot); sore.position.set(Math.sin(i*2.2)*.22*s,.1*s+Math.cos(i*1.6)*.14*s,.26*s); h.add(sore); } },
+      buildArm(arm,s,sd){ if(brute){ crWraps(arm,s,-.5,.1,hide,2); const cuff=new THREE.Mesh(new THREE.TorusGeometry(.1*s,.03*s,8,14), iron); cuff.rotation.x=Math.PI/2; cuff.position.y=-.86*s; arm.add(cuff); } } });
+    const body=g.userData.body; for(let i=0;i<6;i++){ const sore=new THREE.Mesh(new THREE.SphereGeometry(.04*s,8,6), rot); sore.scale.y=.5; sore.position.set(Math.sin(i*2.4)*.28*bulk*s,(.5-i*.09)*s,Math.cos(i*2.4)*.28*bulk*s); body.add(sore); }
+    for(let i=0;i<4;i++){ const rib=new THREE.Mesh(new THREE.TorusGeometry(.24*bulk*s,.018*s,6,14,Math.PI), skinD); rib.position.y=(.4-i*.07)*s; rib.rotation.x=Math.PI/2+.2; rib.rotation.z=Math.PI*.9; rib.scale.set(1,.7,1); body.add(rib); }
+    const rags=crRagged(.28*bulk*s,.36*bulk*s,.34*s,12,hide,.14*s); rags.position.y=-.14*s; body.add(rags);
+    if(brute){ crBelt(body,s,.3,.34*bulk,hide,iron); const strap=crStrap(body,s,.32*bulk,.06,.62,hide,-1); const mace=new THREE.Group(); const hf=new THREE.Mesh(new THREE.CylinderGeometry(.05*s,.06*s,.9*s,8), crM(0x4a3320)); mace.add(hf); const hd=new THREE.Mesh(new THREE.IcosahedronGeometry(.22*s,1), crM(0x4a3320)); hd.position.y=.55*s; mace.add(hd); apSpikeRing(hd,s,10,.2,0,.16,0x8a8f99); crWeaponGrip(g,1,mace,-.5,-.2,.1*s); }
+    apShadow(g); return g; }
+  // ---- ghosts: a hooded shroud with tatters, no legs, drifting ----
+  const col={wailingspirit:0x9fe8e0, banshee:0x6a3a9a, souldrainer:0x2a6a5a, shackledghost:0x4aa8a0, gravephantom:0x2a2038, cursedwraith:0x1a4a3a, lostsoul:0xcfe8ff}[v]||0x9fe8e0;
+  const glowC={wailingspirit:0xbfffff, banshee:0xd08aff, souldrainer:0x4affb0, shackledghost:0x8affff, gravephantom:0x9a7aff, cursedwraith:0x6affc0, lostsoul:0x9ad8ff}[v]||0xbfffff;
+  const shroud=apM(col,{ei:.45,r:.9,t:true,op:v==='lostsoul'?.7:.82,side:THREE.DoubleSide}), glow=apM(glowC,{ei:1.8}), bone=crM(0xe4dcc4,{r:.55}), iron=apM(0x5a606a,{ei:.03,r:.5,m:.6});
+  const grp=new THREE.Group(); grp.userData.humanoid=true; grp.userData.arms=[]; grp.userData.legs=[];
+  const body=crLathe([[0,-.9*s],[.14*s,-.8*s],[.3*s,-.5*s],[.34*s,-.1*s],[.3*s,.2*s],[.24*s,.4*s],[.12*s,.5*s]],16,shroud); body.castShadow=false; body.position.y=.95*s; grp.add(body); grp.userData.body=body;
+  const tat=crRagged(.3*s,.4*s,.7*s,14,shroud,.3*s); tat.position.y=-.3*s; body.add(tat); apAnim(grp,{k:'sway',o:tat,axis:'z',base:0,amp:.06,spd:1.8});
+  const head=new THREE.Group(); head.position.y=.56*s; body.add(head); grp.userData.head=head;
+  if(v==='lostsoul'){ const face=new THREE.Mesh(new THREE.SphereGeometry(.28*s,16,12), apM(0xdff4ff,{ei:.6,t:true,op:.85})); head.add(face); for(const sd of [-1,1]){ const e=new THREE.Mesh(new THREE.SphereGeometry(.06*s,8,6), apM(0x0a1a2a,{ei:0})); e.position.set(sd*.1*s,.02*s,.25*s); head.add(e); } const mouth=new THREE.Mesh(new THREE.TorusGeometry(.03*s,.012*s,6,10,Math.PI), apM(0x0a1a2a,{ei:0})); mouth.position.set(0,-.09*s,.27*s); head.add(mouth); }
+  else { const hood=crHoodOn(head,s,.32,shroud,v!=='banshee'); const face=new THREE.Mesh(new THREE.SphereGeometry(.24*s,14,10,0,Math.PI*2,0,Math.PI*.5), apM(0x06060c,{ei:0})); face.position.y=.02*s; face.rotation.x=Math.PI*.5; head.add(face);
+    if(v==='banshee'){ const hair=crRagged(.26*s,.36*s,.7*s,12,crM(0xd8d8e8,{r:.98,side:THREE.DoubleSide}),.2*s); hair.position.set(0,-.2*s,-.1*s); head.add(hair); const fc=new THREE.Mesh(new THREE.SphereGeometry(.2*s,14,12), crM(0xc8c0d8,{r:.8})); fc.position.set(0,0,.06*s); head.add(fc); const mouth=new THREE.Mesh(new THREE.SphereGeometry(.07*s,8,6), apM(0x0a0408,{ei:0})); mouth.scale.set(.7,1.3,.5); mouth.position.set(0,-.1*s,.24*s); head.add(mouth); for(const sd of [-1,1]){ const e=new THREE.Mesh(new THREE.SphereGeometry(.045*s,8,6), apM(0x0a0408,{ei:0})); e.position.set(sd*.08*s,.04*s,.24*s); head.add(e); } }
+    else if(v==='gravephantom'||v==='cursedwraith'){ const sk=crSkullMesh(s,.17,bone,glow); sk.position.set(0,0,.06*s); head.add(sk); }
+    else { for(const sd of [-1,1]){ const e=new THREE.Mesh(new THREE.SphereGeometry(.045*s,8,6), glow); e.position.set(sd*.09*s,.02*s,.2*s); head.add(e); } const mouth=new THREE.Mesh(new THREE.SphereGeometry(.05*s,8,6), glow); mouth.scale.set(.8,1.4,.5); mouth.position.set(0,-.1*s,.2*s); head.add(mouth); } }
+  for(const sd of [-1,1]){ const arm=new THREE.Group(); arm.position.set(sd*.3*s,.36*s,.06*s); body.add(arm); grp.userData.arms.push(arm); if(sd<0) grp.userData.armL=arm; else grp.userData.armR=arm;
+    const up=crLathe([[.06*s,0],[.07*s,-.15*s],[.05*s,-.4*s]],10,shroud); arm.add(up); const fo=crLathe([[.05*s,0],[.06*s,-.1*s],[.04*s,-.4*s]],10,shroud); fo.position.y=-.4*s; arm.add(fo); const hand=crHand(s,v==='souldrainer'?crM(0x3a6a5a):bone,true,bone,false); hand.position.y=-.82*s; arm.add(hand); const grip=new THREE.Group(); grip.position.y=-.8*s; arm.add(grip); if(sd<0) grp.userData.gripL=grip; else grp.userData.gripR=grip; arm.rotation.x=.6; arm.rotation.z=sd*.35; }
+  const chain=(len,x,y)=>{ for(let i=0;i<len;i++){ const link=new THREE.Mesh(new THREE.TorusGeometry(.05*s,.016*s,6,10), iron); link.position.set(x*s,(y-i*.1)*s,.3*s); link.rotation.y=i%2?Math.PI/2:0; body.add(link); } };
+  if(v==='wailingspirit'){ chain(7,.26,.2); chain(5,-.28,0); const ball=new THREE.Mesh(new THREE.SphereGeometry(.12*s,10,8), iron); ball.position.set(-.28*s,-.5*s,.3*s); body.add(ball); }
+  if(v==='shackledghost'){ for(const arm of grp.userData.arms){ const cuff=new THREE.Mesh(new THREE.TorusGeometry(.08*s,.025*s,8,14), iron); cuff.rotation.x=Math.PI/2; cuff.position.y=-.76*s; arm.add(cuff); } chain(8,.3,-.3); chain(6,-.3,-.2); const ball=new THREE.Mesh(new THREE.SphereGeometry(.16*s,12,10), iron); ball.position.set(.3*s,-.9*s,.3*s); body.add(ball); }
+  if(v==='banshee'){ for(let i=0;i<3;i++){ const skl=crSkullMesh(s,.08,apM(0x8a5aff,{ei:.8,t:true,op:.8}),null); body.add(skl); apAnim(grp,{k:'orbit',o:skl,r:.6*s,y:(.1-i*.2)*s,spd:1+i*.3,ph:i*2.1,wob:.2*s,face:true}); } }
+  if(v==='souldrainer'){ for(const gr of [grp.userData.gripL,grp.userData.gripR]){ const fl=new THREE.Mesh(new THREE.SphereGeometry(.14*s,10,8), apM(0x4affb0,{ei:1.6,t:true,op:.8})); gr.add(fl); apAnim(grp,{k:'breathe',o:fl,spd:6,amp:.15}); const lt=new THREE.PointLight(0x4affb0,.6,6); gr.add(lt); } const skc=crSkullMesh(s,.08,bone,null); skc.position.set(0,.2*s,.3*s); body.add(skc); }
+  if(v==='gravephantom'){ for(let i=0;i<4;i++){ const m=new THREE.Mesh(new THREE.OctahedronGeometry(.05*s,0), glow); body.add(m); apAnim(grp,{k:'orbit',o:m,r:.5*s,y:(-.2+i*.15)*s,spd:1.5+i*.4,ph:i*1.6,wob:.25*s}); } }
+  if(v==='cursedwraith'){ const sc=new THREE.Group(); const haft=new THREE.Mesh(new THREE.CylinderGeometry(.03*s,.035*s,1.4*s,8), crM(0x2a1a14)); sc.add(haft); const blade=new THREE.Mesh(new THREE.TorusGeometry(.36*s,.03*s,6,16,Math.PI*.8), apM(0x6affc0,{ei:.6,m:.5,r:.3})); blade.position.set(-.2*s,.65*s,0); blade.rotation.z=-.5; blade.scale.set(1,1,.3); sc.add(blade); crWeaponGrip(grp,1,sc,.15,.25,-.2*s); }
+  if(v==='lostsoul'){ for(let i=0;i<4;i++){ const b=new THREE.Mesh(new THREE.SphereGeometry(.05*s,8,6), apM(0x9ad8ff,{ei:1.2,t:true,op:.7})); body.add(b); apAnim(grp,{k:'orbit',o:b,r:.5*s,y:(.2+i*.1)*s,spd:1+i*.3,ph:i*1.5,wob:.3*s}); } }
+  const lt=new THREE.PointLight(glowC,.6,7); lt.position.y=.3*s; body.add(lt);
+  return grp; }
+
+// ============================================================ SLIMES — 10 from the sheet: translucent bodies with something inside
+function makeSlimeMesh(scale,opts){ opts=opts||{}; const s=scale||1; const v=opts.variant||'green';
+  const C={green:[0x7ab830,0x3a6a10,0x1a3a08], water:[0x3a8ad8,0x1a4a9a,0x0a2a6a], fire:[0xff5a20,0xd02a10,0x6a0a04], poison:[0x8a3aa8,0x4a1a68,0x2a0a3a], electric:[0xf0d030,0xb09010,0x605008], shadow:[0x2a2036,0x14101c,0x08060c], ice:[0xbfe8ff,0x6ab0e0,0x2a5a80], mud:[0x7a6040,0x4a3a26,0x2a2014], acid:[0xa8d820,0x6a9a10,0x3a5a08], prism:[0xd070ff,0xff70a0,0x60c0ff]}[v]||[0x7ab830,0x3a6a10,0x1a3a08];
+  const jelly=new THREE.MeshPhysicalMaterial({color:C[0], roughness:.18, metalness:0, transparent:true, opacity:v==='mud'?1:.78, transmission:0, clearcoat:.8, clearcoatRoughness:.2, emissive:C[1], emissiveIntensity:v==='fire'||v==='electric'?.9:.25, side:THREE.FrontSide});
+  jelly.userData.keepGlow=true; jelly.userData.noDetail=true; if(v==='mud'){ jelly.roughness=.9; jelly.clearcoat=0; }
+  const grp=new THREE.Group(); grp.userData.humanoid=true; grp.userData.arms=[]; grp.userData.legs=[];
+  const wob=(k)=>1+(apHash(k,3,7)-.5)*.14;
+  const dome=crLathe([[0,.72*s],[.3*s*wob(1),.7*s],[.52*s*wob(2),.56*s],[.66*s*wob(3),.34*s],[.7*s,.12*s],[.66*s*wob(4),-.02*s],[.5*s,-.1*s],[0,-.12*s]],22,jelly); dome.castShadow=true;
+  const body=dome; body.position.y=.95*s-.6*s; grp.add(body); grp.userData.body=body; body.userData.baseY=-.6*s;
+  const core=new THREE.Mesh(new THREE.SphereGeometry(.22*s,14,12), apM(C[2],{ei:.5,t:true,op:.9})); core.position.y=.28*s; body.add(core);
+  for(let i=0;i<6;i++){ const bub=new THREE.Mesh(new THREE.SphereGeometry(.04*s+apHash(i,1,9)*.05*s,8,6), apM(0xffffff,{ei:.3,t:true,op:.35})); bub.position.set((apHash(i,2,9)-.5)*.8*s,.1*s+apHash(i,4,9)*.5*s,(apHash(i,5,9)-.5)*.6*s); body.add(bub); apAnim(grp,{k:'bob',o:bub,y:bub.position.y,amp:.05*s,spd:1.5+i*.3,ph:i}); }
+  // face: two dark eyes and a mouth line pressed into the front of the dome
+  const eyeM=apM(0x0a0806,{ei:0,r:.3}); for(const sd of [-1,1]){ const e=new THREE.Mesh(new THREE.SphereGeometry(.07*s,10,8), eyeM); e.scale.set(1,1.4,.6); e.position.set(sd*.2*s,.36*s,.6*s); body.add(e); const hl=new THREE.Mesh(new THREE.SphereGeometry(.02*s,6,5), apM(0xffffff,{ei:1})); hl.position.set(sd*.2*s+.02*s,.4*s,.66*s); body.add(hl); }
+  const mouth=new THREE.Mesh(new THREE.TorusGeometry(.06*s,.012*s,6,10,Math.PI), eyeM); mouth.position.set(0,.2*s,.64*s); mouth.rotation.z=v==='green'||v==='water'||v==='ice'||v==='prism'||v==='mud'?Math.PI:0; body.add(mouth);
+  apAnim(grp,{k:'breathe',o:body,spd:2.2+apHash(s*100,1,2)*1.2,amp:.05});
+  if(v==='fire'){ for(let i=0;i<7;i++){ const fl=new THREE.Mesh(new THREE.ConeGeometry(.08*s+apHash(i,6,3)*.08*s,.4*s+apHash(i,7,3)*.4*s,8), apM(0xff8a20,{ei:1.6,t:true,op:.85})); fl.position.set((apHash(i,8,3)-.5)*.9*s,.6*s,(apHash(i,9,3)-.5)*.7*s); body.add(fl); apAnim(grp,{k:'breathe',o:fl,spd:8+i,amp:.2,ph:i}); } const lt=new THREE.PointLight(0xff6a20,.9,8); lt.position.y=.8*s; body.add(lt); }
+  if(v==='water'){ for(let i=0;i<8;i++){ const dr=new THREE.Mesh(new THREE.SphereGeometry(.04*s,8,6), apM(0x8ad0ff,{ei:.4,t:true,op:.6})); body.add(dr); apAnim(grp,{k:'orbit',o:dr,r:.7*s+i*.05*s,y:.4*s,spd:1.2+i*.2,ph:i,wob:.4*s}); } }
+  if(v==='poison'){ const sk=crSkullMesh(s,.2,crM(0xe4dcc4),null); sk.position.y=.32*s; body.add(sk); for(let i=0;i<5;i++){ const wisp=new THREE.Mesh(new THREE.SphereGeometry(.06*s,8,6), apM(0xb06bff,{ei:1.0,t:true,op:.5})); body.add(wisp); apAnim(grp,{k:'bob',o:wisp,y:.8*s+i*.12*s,amp:.08*s,spd:2+i*.4,ph:i}); wisp.position.set((i-2)*.12*s,0,0); } }
+  if(v==='electric'){ for(let i=0;i<10;i++){ const sp=new THREE.Mesh(new THREE.ConeGeometry(.04*s,.3*s,5), apM(0xffe860,{ei:1.5})); const a=i/10*Math.PI*2; sp.position.set(Math.cos(a)*.6*s,.2*s+(i%3)*.15*s,Math.sin(a)*.6*s); sp.rotation.z=-Math.cos(a)*1.2; sp.rotation.x=Math.sin(a)*1.2; body.add(sp); apAnim(grp,{k:'pulse',o:sp,base:1.4,amp:.8,spd:9+i,ph:i}); } const lt=new THREE.PointLight(0xffe860,.7,7); lt.position.y=.6*s; body.add(lt); }
+  if(v==='shadow'){ for(let i=0;i<8;i++){ const t=crRagged(.04*s,.02*s,.5*s,6,apM(0x14101c,{ei:.1,t:true,op:.8}),.1*s); const a=i/8*Math.PI*2; t.position.set(Math.cos(a)*.45*s,.7*s,Math.sin(a)*.45*s); t.rotation.z=-Math.cos(a)*.5; t.rotation.x=Math.sin(a)*.5; body.add(t); apAnim(grp,{k:'sway',o:t,axis:'x',base:t.rotation.x,amp:.25,spd:2+i*.3,ph:i}); } for(const sd of [-1,1]){ const e=new THREE.Mesh(new THREE.SphereGeometry(.05*s,8,6), apM(0xd060ff,{ei:1.8})); e.scale.set(.6,1.6,.6); e.position.set(sd*.2*s,.36*s,.62*s); body.add(e); } }
+  if(v==='ice'){ for(let i=0;i<9;i++){ const cr=new THREE.Mesh(new THREE.OctahedronGeometry(.1*s,0), apM(0xdff4ff,{ei:.3,r:.1,m:.2,t:true,op:.9})); cr.scale.set(.6,1.8+apHash(i,1,4)*1.5,.6); const a=i/9*Math.PI*2; cr.position.set(Math.cos(a)*.4*s,.5*s,Math.sin(a)*.4*s); cr.rotation.z=-Math.cos(a)*.6; cr.rotation.x=Math.sin(a)*.6; body.add(cr); } }
+  if(v==='mud'){ const sk=crSkullMesh(s,.16,crM(0xd8d0bc),null); sk.position.set(.2*s,.66*s,.1*s); sk.rotation.z=-.3; body.add(sk); for(let i=0;i<6;i++){ const rk=new THREE.Mesh(new THREE.DodecahedronGeometry(.08*s,0), crM(0x5a4a34,{r:.98})); rk.position.set((apHash(i,1,5)-.5)*1.0*s,.1*s+apHash(i,2,5)*.5*s,(apHash(i,3,5)-.5)*.9*s); body.add(rk); } const stick=new THREE.Mesh(new THREE.CylinderGeometry(.015*s,.02*s,.5*s,6), crM(0x3a2a1a)); stick.position.set(-.3*s,.8*s,-.1*s); stick.rotation.z=.4; body.add(stick); }
+  if(v==='acid'){ for(let i=0;i<6;i++){ const dr=new THREE.Mesh(new THREE.SphereGeometry(.05*s,8,6), apM(0xc8ff40,{ei:1.2,t:true,op:.7})); dr.position.set((apHash(i,1,6)-.5)*.9*s,.75*s,(apHash(i,2,6)-.5)*.7*s); body.add(dr); apAnim(grp,{k:'bob',o:dr,y:.75*s,amp:.15*s,spd:2+i*.5,ph:i}); } const lt=new THREE.PointLight(0xa8ff30,.5,6); lt.position.y=.6*s; body.add(lt); }
+  if(v==='prism'){ for(let i=0;i<7;i++){ const st=new THREE.Mesh(new THREE.OctahedronGeometry(.05*s,0), apM([0xff70a0,0x60c0ff,0xffe060,0x70ffb0][i%4],{ei:1.6})); body.add(st); apAnim(grp,{k:'orbit',o:st,r:.75*s,y:.3*s+(i%3)*.15*s,spd:1+i*.25,ph:i*.9,wob:.3*s}); apAnim(grp,{k:'spin',o:st,spd:3}); } const lt=new THREE.PointLight(0xd070ff,.7,7); lt.position.y=.6*s; body.add(lt); }
+  const puddle=new THREE.Mesh(new THREE.CircleGeometry(.8*s,20), apM(C[1],{ei:.25,t:true,op:.5,r:.3})); puddle.rotation.x=-Math.PI/2; puddle.position.y=-.1*s; body.add(puddle);
+  dome.geometry.translate(0,-.83*s,0); const inner=new THREE.Group(); while(body.children.length) inner.add(body.children[0]); inner.position.y=-.83*s; body.add(inner); body.position.y=.95*s;   // the loop forces body.y = .95*scale; the dome's foot is at 0
+  return grp; }
 
 
 const ENEMY_FAMILIES = {
@@ -14620,8 +14912,9 @@ function updatePlayerStations(dt){
       if(G._hungerDT>1){ G._hungerDT=0; G._hungerN=0; G.hp=Math.max(1,G.hp-G.maxhp*0.02); floatText(p.x,p.z,'🦷','hurt',1.9); } }
     else G._hungerDT=0; }
   // ---- biome hazards: lava burns HP over time · water saps MP over time (both stay walkable) ----
-  if(G.hazPools && G.hazPools.length){ let inLava=false, inWater=false;
-    for(const hz of G.hazPools){ if(Math.hypot(p.x-hz.x,p.z-hz.z)<hz.r){ if(hz.type==='lava'){inLava=true;break;} inWater=true; } }
+  { let inLava=false, inWater=false; { const _tf=apTerrainAt(p.x,p.z); if(_tf.lava>.3) inLava=true; else if(_tf.water>.3) inWater=true; }   // REAL GROUND: rivers are wet, lava rivers burn
+    for(const hz of (G.hazPools||[])){ if(Math.hypot(p.x-hz.x,p.z-hz.z)<hz.r){ if(hz.type==='lava'){inLava=true;break;} inWater=true; } }
+    G._wade=inWater||inLava;
     if(inLava){ G._lavaT=(G._lavaT||0)+dt;
       if(G._lavaT>0.45){ G._lavaT=0; hurtPlayer((8+G.floor*1.2)*(1-masteryHazardResist()),{unmitigated:true}); floatText(p.x,p.z,'🔥 LAVA','fire',2.2); } }   // DAMAGE TYPE §4: hazard damage bypasses armour entirely, same as GW2 environmental damage
     else G._lavaT=0;
@@ -15166,7 +15459,8 @@ function updateWorld(dt){
     let dx=p.x-ex, dz=p.z-ez; const d=Math.hypot(dx,dz)||1; dx/=d;dz/=d;
     e.hitFlash=Math.max(0,e.hitFlash-dt); e.kx=(e.kx||0)*0.85; e.kz=(e.kz||0)*0.85;
     if(e.boss && e.defianceBroken){ e.defianceBrokenT-=dt; if(e.defianceBrokenT<=0){ e.defianceBroken=false; e.defiance=e.defianceMax; } }   // DEFIANCE BAR: the window closes, the bar refills
-    const atkRange=e.r+2.0; const espd=(e.frozen>0?0:e.speed)*(e.chill>0?0.5:1)*(e.hasteT>0?1.4:1);   // Deep Rime: flash-frozen enemies stop moving entirely
+    const atkRange=e.r+2.0; const espd=(e.frozen>0?0:e.speed)*(e.chill>0?0.5:1)*(e.hasteT>0?1.4:1)*(apWadeAt(ex,ez)>.3?0.62:1);   // rivers slow everything that walks
+    { const _tf=apTerrainAt(ex,ez); if(_tf.lava>.3 && !e.boss){ e._lavaT=(e._lavaT||0)+dt; if(e._lavaT>.6){ e._lavaT=0; reactHit(e,Math.max(1,e.maxhp*0.03),'fire'); } } else e._lavaT=0; if(_tf.water>.3&&e.aggro) apSplash(e.mesh,ex,ez,.5); }   // Deep Rime: flash-frozen enemies stop moving entirely
     // separation — push apart so they don't phase through each other
     let sx=0,sz=0; for(let j=0;j<G.enemies.length;j++){ if(j===i)continue; const o=G.enemies[j]; const od=Math.hypot(ex-o.mesh.position.x,ez-o.mesh.position.z), min=e.r+o.r;
       if(od>0.01 && od<min){ const f=(min-od)/min; sx+=(ex-o.mesh.position.x)/od*f; sz+=(ez-o.mesh.position.z)/od*f; } }
@@ -15226,7 +15520,7 @@ function updateWorld(dt){
     } else b.rotation.y+=dt*2;
     if(e.mesh.userData.anim) apAnimateParts(e.mesh,dt);   // orbiting skulls, spinning brushes, flapping wings…
     b.material.emissiveIntensity = e.hitFlash>0?2 : telling?2 : (e.elite?.35:.08);
-    b.position.y=(e.scale*.95)+Math.sin(performance.now()*0.004+ex)*0.12 + (telling?0.28:0);
+    b.position.y=(e.scale*.95)+Math.sin(performance.now()*0.004+ex)*0.12 + (telling?0.28:0) - apWadeAt(ex,ez)*Math.min(.5,e.scale*.3);   // sink into the river
     b.scale.setScalar(telling?1.18:1);
     // ranged enemy projectiles — shoot faster, with type-specific patterns (only when awake)
     if(e.range && !e.boss && e.aggro && !(e.frozen>0)){   // Deep Rime: flash-frozen ranged enemies can't aim or fire either
@@ -15331,7 +15625,7 @@ function updateDecals(dt){
   G.decals=G.decals.filter(dc=>{ if(dc.dead){scene.remove(dc.mesh);return false;} return true; });
 }
 // ---- adaptation debuffs: helpers the combat code multiplies through ----
-function playerMoveMul(){ return G.slowT>0?0.42:1; }        // slowed (speed builds)
+function playerMoveMul(){ return (G.slowT>0?0.42:1)*(G._wade?0.6:1); }   // wading through a river is slow going        // slowed (speed builds)
 function playerDmgMul(){ return G.weakT>0?0.55:1; }         // weakened (damage builds)
 function healScale(){ let s=G.healCutT>0?0.25:1; if(G.S&&G.S.beast6) s*=0.6; return s; }   // mortal wounds · No Longer Human heals poorly
 // Regeneration lane HoT stacking: distinct from the flat continuous G.S.lifeRegen stat (see updatePlayerStep tick).
