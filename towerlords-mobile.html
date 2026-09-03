@@ -7793,10 +7793,10 @@ const AP_GROUND={
   grass:{lo:[46,78,34], mid:[78,124,52], hi:[132,166,74], spot:[62,58,34], style:'grass'},
   dirt:{lo:[58,44,30], mid:[96,76,52], hi:[136,112,80], spot:[70,60,46], style:'dirt'},
   basalt:{lo:[26,20,20], mid:[62,50,44], hi:[104,86,74], ember:[255,120,40], style:'basalt'},
-  cinder:{lo:[30,22,20], mid:[62,48,40], hi:[100,80,66], style:'dirt'},
+  cinder:{lo:[70,52,44], mid:[120,92,76], hi:[170,136,112], style:'dirt'},
   snow:{lo:[168,190,210], mid:[214,230,244], hi:[248,252,255], spot:[130,160,190], style:'snow'},
   ice:{lo:[60,110,150], mid:[130,190,225], hi:[220,240,250], style:'ice'},
-  voidglass:{lo:[30,20,52], mid:[68,48,108], hi:[130,100,180], vein:[190,130,255], style:'marble'},
+  voidglass:{lo:[44,30,74], mid:[88,62,132], hi:[150,120,200], vein:[190,130,255], style:'marble'},
   marble:{lo:[150,138,112], mid:[208,196,168], hi:[240,232,212], vein:[120,100,70], style:'marble'},
   garden:{lo:[52,88,40], mid:[92,140,60], hi:[150,180,84], spot:[80,70,40], style:'grass'},
   ash:{lo:[38,38,42], mid:[76,74,78], hi:[118,114,116], bone:[210,204,186], style:'ash'},
@@ -7856,7 +7856,7 @@ const AP_WORLD=[
    sky:{zen:0x22262e, hor:0x8a8e94, gnd:0x1a1a1e, sun:0xd0d4dc, sunDir:[.2,.6,.3], sunI:1.2, hemi:0xa0a4ac, hemiG:0x303034, hemiI:1.0, fog:[50,200]},
    amp:5, freq:.045, colLo:0x707078, colMid:0xa0a0a8, colHi:0xd0ccc0, water:{col:0x1a1c22, y:-1.0, op:.9}, walls:'bone', trees:'dead', bones:true, motes:{col:0xd8d2c0,n:320,k:'ash'}},
 ];
-function apResetLive(){ for(const o of _AP.live){ try{ scene.remove(o); }catch(_){} } _AP.live=[]; _AP.particles=null; _AP.land=null; _AP.water=null; }
+function apResetLive(){ for(const o of _AP.live){ try{ scene.remove(o); }catch(_){} } _AP.live=[]; _AP.particles=null; _AP.land=null; _AP.water=null; _AP.river=null; _AP.sky=null; }
 function apLive(o){ scene.add(o); _AP.live.push(o); return o; }
 // distance (in cells) from every grid cell to the nearest walkable cell — chamfer transform, two passes
 function apGridDist(g){ const gw=g.gw, gh=g.gh, D=new Float32Array(gw*gh); const INF=1e5;
@@ -7867,10 +7867,6 @@ function apGridDist(g){ const gw=g.gw, gh=g.gh, D=new Float32Array(gw*gh); const
 function apDistAt(g,D,x,z){ const fx=(x-g.ox)/g.C, fz=(z-g.oz)/g.C; const gx=Math.floor(fx), gz=Math.floor(fz);
   const cx=Math.max(0,Math.min(g.gw-1,gx)), cz=Math.max(0,Math.min(g.gh-1,gz)); let d=D[cx*g.gh+cz];
   const ox=Math.max(0,gx-cx,cx-gx), oz=Math.max(0,gz-cz,cz-gz); return d+Math.hypot(ox,oz); }
-// ---- realism helpers: smooth shading, no self-glow unless it is meant to glow ----
-function apRealism(root){ if(!root) return root; root.traverse(o=>{ if(!o.isMesh||!o.material) return; const mats=Array.isArray(o.material)?o.material:[o.material];
-  for(const m of mats){ if(!m||m.userData.apDone) continue; m.userData.apDone=true; if(m.isMeshStandardMaterial||m.isMeshLambertMaterial||m.isMeshPhongMaterial){ if(m.flatShading&&!m.userData.keepFlat){ m.flatShading=false; m.needsUpdate=true; } if(m.emissiveIntensity!=null && m.emissiveIntensity<0.9 && !m.userData.keepGlow) m.emissiveIntensity*=0.35; } } }); return root; }
-function apRealizeScene(){ try{ if(typeof G==='undefined'||!G.scenery) return; for(const s of G.scenery) apRealism(s); for(const st of [G.stashStation,G.vendorStation,G.craftStation,G.yardStation,G.scoreStation,G.yardTerminal,G.portal]){ if(st&&st.mesh) apRealism(st.mesh); } }catch(_){} }
 // ---- sky dome: a fog-free gradient sphere with a sun disc; the fog colour matches the horizon so the far world melts into it ----
 function apSky(W){ const S=W.sky; const geo=new THREE.SphereGeometry(420,24,16); const pos=geo.attributes.position, n=pos.count, cols=new Float32Array(n*3);
   const zen=new THREE.Color(S.zen), hor=new THREE.Color(S.hor), gnd=new THREE.Color(S.gnd), tmp=new THREE.Color();
@@ -7896,7 +7892,7 @@ function apBuildLandscape(){ const g=G.grid; if(!g) return; const bi=Math.max(0,
     const rim=Math.max(0,Math.min(1,(d-1.6)/8)), far=Math.max(0,Math.min(1,(d-12)/34));
     const nz=apFbm(x*W.freq+seed*.001,z*W.freq+seed*.002,seed,5), nz2=apFbm(x*.011,z*.011,seed+9,4), ridge=Math.pow(Math.abs(apFbm(x*.02,z*.02,seed+21,3)-.5)*2,1.4);
     let h=-0.7 + rim*(0.4 + nz*W.amp) + far*(nz2*W.amp*2.2 + ridge*W.amp*3.5);
-    const basin=apFbm(x*.028,z*.028,seed+33,3);
+    const basin=apFbm(x*.028,z*.028,seed+33,3); const rb=apRiverBand(x,z,seed); if(rim>.35 && rb<apRiverWidth(W)*1.2) h=Math.min(h,-1.9);   // the river runs on beyond the walls
     if(W.abyss){ if(rim>.55 && basin<.42) h=W.abyss.y; }
     else if(rim>.5 && basin<(W.lava?.42:.36)) h=Math.min(h,-1.8);
     pos.setY(i,h); heights[i]=h;
@@ -7904,6 +7900,7 @@ function apBuildLandscape(){ const g=G.grid; if(!g) return; const bi=Math.max(0,
   geo.setAttribute('color',new THREE.BufferAttribute(cols,3)); geo.computeVertexNormals();
   const tmat=new THREE.MeshStandardMaterial({vertexColors:true, map:apPaintNatural(W.ground==='basalt'?'cinder':W.ground==='voidglass'?'voidglass':W.ground==='garden'?'grass':W.ground), roughness:.95, metalness:0});
   const terrain=new THREE.Mesh(geo,tmat); terrain.receiveShadow=true; apLive(terrain); _AP.land={mesh:terrain,W,bi};
+  apPaintFloorPlanes(W,g,D,seed,EXT);   // the walkable ground, painted for this floor: surfaces, patches, paths, rivers
   const hAt=(x,z)=>{ const gx=Math.round((x+EXT)/(EXT*2)*SEG), gz=Math.round((z+EXT)/(EXT*2)*SEG); const i=gz*(SEG+1)+gx; return heights[Math.max(0,Math.min(n-1,i))]; };
   // ---- water / lava / abyss ----
   if(W.water){ const wm=new THREE.MeshStandardMaterial({color:W.water.col, map:apRipple(), roughness:W.water.ice?.15:.25, metalness:W.water.ice?.3:.15, transparent:!W.water.ice, opacity:W.water.op, emissive:W.water.col, emissiveIntensity:.12});
@@ -7949,14 +7946,14 @@ function apBuildLandscape(){ const g=G.grid; if(!g) return; const bi=Math.max(0,
     bg.setAttribute('position',new THREE.BufferAttribute(arr,3));
     const pm=new THREE.PointsMaterial({color:P.col,map:apSpriteTex(),size:P.k==='snow'?.6:P.k==='ember'?.45:.5,transparent:true,opacity:P.k==='dust'?.4:.7,depthWrite:false,blending:P.k==='snow'?THREE.NormalBlending:THREE.AdditiveBlending,sizeAttenuation:true});
     const pts=new THREE.Points(bg,pm); pts.frustumCulled=false; apLive(pts); _AP.particles={pts,vel,N,k:P.k}; }
-  apDressRooms(W,g,D,seed,inst,M2,rock,bark);
+  apDressRooms(W,g,D,seed,inst,M2,rock,bark); apDressRivers(W,g,D,seed,inst,M2,rock);
 }
 // ---- inside the walkable area: meadow tufts, flowers, puddles, pebbles, roots — small, non-colliding life so rooms are places ----
 function apDressRooms(W,g,D,seed,inst,M2,rock,bark){ if(!G.rooms||!G.rooms.length) return;
   const inside=(count,fn)=>{ const list=[]; let tries=0; while(list.length<count && tries<count*6){ tries++; const r=G.rooms[Math.floor(apHash(tries,3,seed)*G.rooms.length)]; const x=r.x0+2+apHash(tries,4,seed+count)*(r.x1-r.x0-4), z=r.z0+2+apHash(tries,5,seed+count)*(r.z1-r.z0-4); if(typeof nearAnyPlayer==='function'&&nearAnyPlayer(x,z,3)) continue; list.push({x,z,h:0,r:apHash(tries,6,seed),r2:apHash(tries,7,seed)}); } fn(list); };
   if(W.meadow){ inside(Math.min(600,G.rooms.length*55),list=>inst(new THREE.ConeGeometry(.16,.55,4), M2(0x5e9a3a), list, o=>({s:.6+o.r*.9, y:.2*(.6+o.r*.9), ry:o.r*6, rx:(o.r2-.5)*.5})));
     inside(Math.min(160,G.rooms.length*14),list=>inst(new THREE.SphereGeometry(.12,5,4), M2([0xffd23a,0xff6a8a,0xf0f0ff][Math.floor(apHash(seed,1,2)*3)],{emissive:0x332200,emissiveIntensity:.1}), list, o=>({s:.8+o.r*.6, y:.45})));
-    inside(Math.min(90,G.rooms.length*8),list=>inst(new THREE.DodecahedronGeometry(.32,1), rock, list, o=>({s:.5+o.r*1.2, sy:.4+o.r*.5, y:.05, ry:o.r*6}))); }
+    inside(Math.min(90,G.rooms.length*8),list=>inst(new THREE.DodecahedronGeometry(.32,1), rock, list, o=>({s:.3+o.r*.7, sy:.35+o.r*.4, y:.03, ry:o.r*6}))); }
   if(W.name==='ember'){ inside(Math.min(120,G.rooms.length*10),list=>inst(new THREE.DodecahedronGeometry(.4,1), rock, list, o=>({s:.5+o.r*1.4, sy:.5, y:.05, ry:o.r*6}))); }
   if(W.name==='cryo'){ inside(Math.min(160,G.rooms.length*14),list=>inst(new THREE.SphereGeometry(.5,7,5), M2(0xeef4fa), list, o=>({s:.5+o.r*1.4, sy:.35, y:.02, ry:o.r*6})));   // snow drifts
     inside(Math.min(60,G.rooms.length*5),list=>inst(new THREE.OctahedronGeometry(.4,0), new THREE.MeshStandardMaterial({color:0xbfe8ff,roughness:.15,metalness:.2,emissive:0x2a5a80,emissiveIntensity:.15}), list, o=>({s:.4+o.r*.8, sy:1.2+o.r*1.2, y:.3, ry:o.r*6}))); }
@@ -8016,6 +8013,7 @@ function updateLandscape(dt){ _AP.t+=dt; const P=_AP.particles;
       let dx=a[j]-fx, dz=a[j+2]-fz; if(dx>55)a[j]-=110; else if(dx<-55)a[j]+=110; if(dz>55)a[j+2]-=110; else if(dz<-55)a[j+2]+=110;
       if(a[j+1]>30) a[j+1]=0; else if(a[j+1]<0) a[j+1]=30; }
     P.pts.geometry.attributes.position.needsUpdate=true; }
+  if(_AP.river&&_AP.river.material.map){ _AP.river.material.map.offset.x+=dt*.03; _AP.river.material.map.offset.y-=dt*.02; }
   if(_AP.water&&_AP.water.material.map){ _AP.water.material.map.offset.x+=dt*.012; _AP.water.material.map.offset.y+=dt*.008; if(_AP.water.userData.lava) _AP.water.material.emissiveIntensity=1.25+Math.sin(_AP.t*1.3)*.2; }
   for(const o of _AP.live){ if(o.userData&&o.userData.anim) apAnimateParts(o,dt); }
   if(typeof G!=='undefined'){ for(const st of [G.stashStation,G.vendorStation,G.craftStation,G.yardStation,G.scoreStation,G.yardTerminal,G.portal]){ if(st&&st.mesh&&st.mesh.userData.anim) apAnimateParts(st.mesh,dt); }
@@ -8048,6 +8046,119 @@ function buildSanctuaryDressing(){ try{
   for(const p of [[19,5,.3],[21,7,1.1],[-19,6,.6]]){ const g=new THREE.Group(); const c=new THREE.Mesh(new THREE.BoxGeometry(1.4,1.2,1.4), wood); c.position.y=.6; g.add(c); for(const sd of [-1,1]){ const b=new THREE.Mesh(new THREE.BoxGeometry(1.46,.12,.12), apM(0x3a3a40,{m:.6,ei:.05})); b.position.set(0,.6,sd*.6); g.add(b); } add(g,p[0],p[1],p[2]); }
   for(const p of [[-15,5,0x7a3a9a],[15,5,0x2a6a8a]]){ const rug=new THREE.Mesh(new THREE.CircleGeometry(3.2,20), apM(p[2],{ei:.05,r:.95})); rug.rotation.x=-Math.PI/2; rug.position.set(p[0],.03,p[1]); scene.add(rug); G.scenery.push(rug); }
 }catch(err){ console.warn('sanctuary dressing skipped:',err); } }
+
+// ============================================================ ART PASS — PAINTED GROUND & MATERIAL DETAIL
+// Two things live here. (1) The walkable ground of every floor is PAINTED per floor, like a real landscape: a base
+// surface (grass / basalt / snow / obsidian / marble / graveyard earth), dirt and sand and rock patches, worn paths
+// down the corridors, and RIVERS — water, lava, ice, void-light, canals, black water — that cross the floor as fords
+// and carve the outer terrain beyond the walls. Fine grain comes from a tiled detail overlay, water moves.
+// (2) Every creature gets real surface detail: skin, cloth, bone, metal and wood detail maps with bump relief, and
+// its low-poly limbs are resampled to rounder geometry, so the goblin / skeleton / troll sheets read as painted
+// figures instead of plastic toys. Nothing here touches gameplay.
+// ---- grayscale detail maps (tiled, cached) ----
+function apDetailTex(kind){ const key='d_'+kind; if(_AP.tex[key]) return _AP.tex[key]; const S=128;
+  const t=apCanvasTex(key,S,(d,size)=>{ const sc=1/size; const seed=kind.length*53+11;
+    for(let y=0;y<size;y++) for(let x=0;x<size;x++){ const i=(y*size+x)*4; const u=x*sc, v=y*sc; let k=1;
+      if(kind==='skin'){ const m=apFbm(u*4,v*4,seed,4), p=apFbm(u*24,v*24,seed+3,2); k=.78+m*.22+(p>.62?-.08:0); }
+      else if(kind==='cloth'){ const w=(Math.sin(u*Math.PI*2*18)*.5+.5)*(Math.sin(v*Math.PI*2*18)*.5+.5); const m=apFbm(u*5,v*5,seed,3); k=.74+w*.16+m*.14; }
+      else if(kind==='leather'){ const m=apFbm(u*6,v*6,seed,4), c=apFbm(u*16,v*16,seed+7,3); k=.72+m*.24+(Math.abs(c-.5)<.03?-.1:0); }
+      else if(kind==='bone'){ const m=apFbm(u*3,v*3,seed,4), g=apFbm(u*30+m,v*6,seed+5,2), c=apFbm(u*9,v*9,seed+9,4); k=.82+m*.12+g*.08+(Math.abs(c-.5)<.012?-.2:0); }
+      else if(kind==='metal'){ const g=apFbm(u*2,v*40,seed,3), m=apFbm(u*6,v*6,seed+2,3); k=.78+g*.14+m*.1; }
+      else if(kind==='wood'){ const g=apFbm(u*3+v*.2,v*22,seed,3); k=.7+g*.3; }
+      else if(kind==='ground'){ const m=apFbm(u*8,v*8,seed,4), p=apFbm(u*40,v*40,seed+3,2); k=.8+m*.2+(p>.7?-.1:0); }
+      else if(kind==='fur'){ const g=apFbm(u*30,v*4,seed,3), m=apFbm(u*5,v*5,seed+2,3); k=.72+g*.18+m*.12; }
+      const b=Math.max(0,Math.min(255,k*255))|0; d[i]=b; d[i+1]=b; d[i+2]=b; d[i+3]=255; } });
+  if(THREE.NoColorSpace) t.colorSpace=THREE.NoColorSpace; return t; }
+function apDetailFor(m){ const c=m.color; if(!c) return null; const hsl={}; c.getHSL(hsl);
+  if((m.metalness||0)>=.3) return 'metal';
+  if(hsl.l>.7 && hsl.s<.35) return 'bone';
+  if(hsl.s>.22 && hsl.l>.18 && hsl.l<.7 && ((hsl.h>.13&&hsl.h<.45)||hsl.h<.09||hsl.h>.92)) return 'skin';
+  if(hsl.h>.05&&hsl.h<.13&&hsl.s>.3&&hsl.l<.45) return 'wood';
+  if(hsl.l<.4) return 'leather';
+  return 'cloth'; }
+// shared rounder geometry for the low-poly primitives the families are built from (cached by parameters)
+function apRoundGeo(geo){ const p=geo.parameters; if(!p) return null; let key=null, mk=null;
+  if(geo.type==='SphereGeometry' && p.widthSegments<14){ key=['S',p.radius,p.phiStart,p.phiLength,p.thetaStart,p.thetaLength].join(','); mk=()=>new THREE.SphereGeometry(p.radius,18,14,p.phiStart,p.phiLength,p.thetaStart,p.thetaLength); }
+  else if(geo.type==='CylinderGeometry' && p.radialSegments>=5 && p.radialSegments<=9){ key=['C',p.radiusTop,p.radiusBottom,p.height,p.openEnded,p.thetaStart,p.thetaLength].join(','); mk=()=>new THREE.CylinderGeometry(p.radiusTop,p.radiusBottom,p.height,14,1,p.openEnded,p.thetaStart,p.thetaLength); }
+  else if(geo.type==='ConeGeometry' && p.radialSegments>=6 && p.radialSegments<=9){ key=['K',p.radius,p.height,p.openEnded,p.thetaStart,p.thetaLength].join(','); mk=()=>new THREE.ConeGeometry(p.radius,p.height,14,1,p.openEnded,p.thetaStart,p.thetaLength); }
+  else if(geo.type==='TorusGeometry' && p.radialSegments<8){ key=['T',p.radius,p.tube,p.arc].join(','); mk=()=>new THREE.TorusGeometry(p.radius,p.tube,10,Math.max(p.tubularSegments,20),p.arc); }
+  else if(geo.type==='CapsuleGeometry' && p.capSegments<6){ key=['P',p.radius,p.length].join(','); mk=()=>new THREE.CapsuleGeometry(p.radius,p.length,8,16); }
+  if(!key) return null; const cache=_AP.geo||(_AP.geo={}); if(!cache[key]) cache[key]=mk(); return cache[key]; }
+// realism: smooth shading, no toy self-glow, surface detail + bump, rounder limbs — once per material / mesh
+function apRealism(root){ if(!root) return root; root.traverse(o=>{ if(!o.isMesh||!o.material) return;
+  if(!o.isInstancedMesh && o.geometry && !o.userData.apRounded){ o.userData.apRounded=true; const g2=apRoundGeo(o.geometry); if(g2) o.geometry=g2; }
+  const mats=Array.isArray(o.material)?o.material:[o.material];
+  for(const m of mats){ if(!m||m.userData.apDone) continue; m.userData.apDone=true; if(!(m.isMeshStandardMaterial||m.isMeshLambertMaterial||m.isMeshPhongMaterial)) continue;
+    if(m.flatShading&&!m.userData.keepFlat){ m.flatShading=false; }
+    if(m.emissiveIntensity!=null && m.emissiveIntensity<0.9 && !m.userData.keepGlow) m.emissiveIntensity*=0.35;
+    if(!m.map && !m.userData.noDetail && !o.isInstancedMesh && !(m.transparent&&m.opacity<.9)){ const kind=apDetailFor(m); if(kind){ const t=apDetailTex(kind); m.map=t; m.bumpMap=t; m.bumpScale=kind==='metal'?.012:kind==='bone'?.03:kind==='skin'?.035:.025; m.color.multiplyScalar(1.12); if(kind==='metal'){ m.roughness=Math.min(m.roughness,.45); } if(kind==='skin'){ m.roughness=Math.max(m.roughness,.7); } } }
+    m.needsUpdate=true; } }); return root; }
+function apRealizeScene(){ try{ if(typeof G==='undefined'||!G.scenery) return; for(const s of G.scenery) apRealism(s); for(const st of [G.stashStation,G.vendorStation,G.craftStation,G.yardStation,G.scoreStation,G.yardTerminal,G.portal]){ if(st&&st.mesh) apRealism(st.mesh); } }catch(_){} }
+
+// ---- rivers: one meandering band per floor (seeded) that crosses the whole world ----
+function apRiverBand(x,z,seed){ const a=apFbm(x*.016+seed*.0007,z*.016+seed*.0011,seed+41,3), b=apFbm(x*.05,z*.05,seed+43,2); return Math.abs(a-.5)*2 + (b-.5)*.06; }   // 0 on the river's centre line
+function apRiverWidth(W){ return W.name==='ember'?.075:W.name==='gilded'?.05:.065; }
+// ---- the painted floor: colour (with alpha mask), roughness and emissive maps for the whole walkable area ----
+function apPaintFloorPlanes(W,g,D,seed,EXT){ const S=512; const half=(G.bounds||140)/2+6; const ext=half+2; const sc=ext*2/S;
+  const G0=AP_GROUND[W.ground], P0=AP_GROUND[W.path||W.ground];
+  const cv=document.createElement('canvas'); cv.width=cv.height=S; const ctx=cv.getContext('2d'); const img=ctx.createImageData(S,S); const d=img.data;
+  const rc=document.createElement('canvas'); rc.width=rc.height=S; const rctx=rc.getContext('2d'); const rimg=rctx.createImageData(S,S); const rd=rimg.data;
+  const ec=document.createElement('canvas'); ec.width=ec.height=S; const ectx=ec.getContext('2d'); const eimg=ectx.createImageData(S,S); const ed=eimg.data;
+  const mc=document.createElement('canvas'); mc.width=mc.height=S; const mctx=mc.getContext('2d'); const mimg=mctx.createImageData(S,S); const md=mimg.data;   // river mask for the ripple overlay
+  const rooms=G.rooms||[], rects=G.rects||[]; const corridors=rects.filter(r=>!rooms.some(rm=>rm.x0===r.x0&&rm.x1===r.x1&&rm.z0===r.z0&&rm.z1===r.z1));
+  const rw=apRiverWidth(W); const name=W.name;
+  const water={verdant:[34,96,130], ember:[255,90,20], cryo:[190,222,240], void:[120,60,220], gilded:[52,132,170], crypt:[22,26,32]}[name];
+  const bank={verdant:[168,150,104], ember:[70,40,30], cryo:[150,190,215], void:[70,44,110], gilded:[214,200,170], crypt:[60,58,60]}[name];
+  const patch={verdant:[92,72,48], ember:[70,52,44], cryo:[150,175,195], void:[52,34,86], gilded:[100,140,64], crypt:[88,84,80]}[name];
+  const rockc={verdant:[112,112,100], ember:[80,64,56], cryo:[130,146,160], void:[74,60,110], gilded:[190,180,150], crypt:[104,100,98]}[name];
+  for(let py=0;py<S;py++) for(let px=0;px<S;px++){ const i=(py*S+px)*4; const x=-ext+(px+.5)*sc, z=-ext+(py+.5)*sc;
+    const dist=apDistAt(g,D,x,z); const a=dist<=0.6?255:dist<1.1?Math.round(255*(1.1-dist)/.5):0;
+    if(a===0){ d[i+3]=0; rd[i]=rd[i+1]=rd[i+2]=200; rd[i+3]=255; ed[i+3]=255; md[i+3]=255; continue; }
+    const n=apFbm(x*.09,z*.09,seed,4), n2=apFbm(x*.25+3,z*.25+9,seed+5,3), n3=apFbm(x*.9,z*.9,seed+11,2);
+    let c=apLerp3(G0.lo,G0.mid,Math.min(1,n*1.3)); c=apLerp3(c,G0.hi,Math.max(0,n2-.45)*1.4); let rough=.95, em=[0,0,0];
+    if(G0.style==='grass'){ c=apLerp3(c,G0.hi,Math.max(0,n3-.6)*1.2); if(n<.36&&G0.spot) c=apLerp3(c,G0.spot,(.36-n)*2.5); }
+    else if(G0.style==='basalt'){ const cr=apFbm(x*.16,z*.16,seed+3,5); const ridge=Math.abs(cr-.5); if(ridge<.03){ const heat=1-ridge/.03; c=apLerp3(c,G0.ember,heat*heat*.9); em=[255*heat*heat,110*heat*heat,30*heat*heat]; } else if(ridge<.06) c=apLerp3(c,G0.lo,.6); rough=.9; }
+    else if(G0.style==='snow'){ c=apLerp3(c,G0.hi,n3*.3); if(n<.3&&G0.spot) c=apLerp3(c,G0.spot,(.3-n)*1.2); rough=.85; }
+    else if(G0.style==='marble'){ const vn=apFbm(x*.07+n*2,z*.07+n2*2,seed+4,4); const ridge=Math.abs(vn-.5); const vw=name==='void'?.011:.02, vk=name==='void'?.5:.8; if(ridge<vw) c=apLerp3(c,G0.vein,(1-ridge/vw)*vk); else if(ridge<.06) c=apLerp3(c,G0.hi,name==='void'?.15:.3); rough=name==='void'?.45:.5; if(name==='void'&&ridge<.02){ const k=(1-ridge/.02); em=[120*k,60*k,220*k]; } }
+    else if(G0.style==='ash'){ const b=apFbm(x*.45,z*.45,seed+6,2); if(b>.68&&G0.bone) c=apLerp3(c,G0.bone,(b-.68)*2.4); if(n3>.72) c=apLerp3(c,G0.lo,.5); }
+    // patches of another surface: dirt / cinder / packed snow / shattered glass / lawn / gravel
+    const pn=apFbm(x*.045+7,z*.045+2,seed+21,3); if(pn>.6) c=apLerp3(c,patch,Math.min(1,(pn-.6)*4)*.85);
+    const rn=apFbm(x*.12+5,z*.12+8,seed+27,3); if(rn>.72){ c=apLerp3(c,rockc,Math.min(1,(rn-.72)*6)); rough=.8; }
+    // worn path down every corridor (soft-edged), and around room doorways
+    let pathK=0; for(const r of corridors){ const dx=Math.max(r.x0-x,0,x-r.x1), dz=Math.max(r.z0-z,0,z-r.z1); const dd=Math.hypot(dx,dz); const k=dd<=0?1:Math.max(0,1-dd/2.2); if(k>pathK) pathK=k; }
+    if(pathK>0){ const wear=pathK*(.55+n2*.45); let pc=apLerp3(P0.lo,P0.mid,Math.min(1,n*1.3)); pc=apLerp3(pc,P0.hi,Math.max(0,n2-.45)*1.2); c=apLerp3(c,pc,Math.min(1,wear)); }
+    // the river: centre = water, banks = sand / wet earth / rime / gilt edge
+    const rb=apRiverBand(x,z,seed); let riv=0;
+    if(rb<rw){ riv=1-rb/rw; const deep=Math.min(1,riv*1.6); c=apLerp3(bank,water,deep); rough=name==='ember'?.6:name==='cryo'?.2:.12; if(name==='ember') em=[255*deep,80*deep,16*deep]; if(name==='void') em=[110*deep,50*deep,230*deep]; }
+    else if(rb<rw*1.9){ const k=1-(rb-rw)/(rw*.9); c=apLerp3(c,bank,k*.8); }
+    d[i]=c[0]|0; d[i+1]=c[1]|0; d[i+2]=c[2]|0; d[i+3]=a; const rg=Math.round(rough*255); rd[i]=rg; rd[i+1]=rg; rd[i+2]=rg; rd[i+3]=255; ed[i]=em[0]|0; ed[i+1]=em[1]|0; ed[i+2]=em[2]|0; ed[i+3]=255; const mk=Math.round(riv*255*(a/255)); md[i]=mk; md[i+1]=mk; md[i+2]=mk; md[i+3]=255; }
+  ctx.putImageData(img,0,0); rctx.putImageData(rimg,0,0); ectx.putImageData(eimg,0,0); mctx.putImageData(mimg,0,0);
+  const mk=(c,srgb)=>{ const t=new THREE.CanvasTexture(c); t.wrapS=t.wrapT=THREE.ClampToEdgeWrapping; t.anisotropy=8; if(srgb&&THREE.SRGBColorSpace) t.colorSpace=THREE.SRGBColorSpace; return t; };
+  const map=mk(cv,true), roughMap=mk(rc), emMap=mk(ec), riverMask=mk(mc);
+  const hasEm=(name==='ember'||name==='void');
+  const mat=new THREE.MeshStandardMaterial({map, roughnessMap:roughMap, roughness:1, metalness:0, transparent:true, alphaTest:.5, emissive:hasEm?0xffffff:0x000000, emissiveMap:hasEm?emMap:null, emissiveIntensity:hasEm?1.0:0, depthWrite:true});
+  const plane=new THREE.Mesh(new THREE.PlaneGeometry(ext*2,ext*2),mat); plane.rotation.x=-Math.PI/2; plane.position.y=.02; plane.receiveShadow=true; plane.renderOrder=1; apLive(plane);
+  // fine grain: a tiled multiply overlay clipped to the same footprint
+  const det=apDetailTex('ground').clone(); det.wrapS=det.wrapT=THREE.RepeatWrapping; det.repeat.set(ext*2/3,ext*2/3); det.needsUpdate=true;
+  const ov=new THREE.Mesh(new THREE.PlaneGeometry(ext*2,ext*2), new THREE.MeshBasicMaterial({map:det, alphaMap:map, alphaTest:.5, blending:THREE.MultiplyBlending, depthWrite:false, transparent:true})); ov.rotation.x=-Math.PI/2; ov.position.y=.035; ov.renderOrder=2; apLive(ov);
+  // moving water on the fords
+  if(name!=='cryo'){ const rip=apRipple().clone(); rip.wrapS=rip.wrapT=THREE.RepeatWrapping; rip.repeat.set(ext*2/6,ext*2/6); rip.needsUpdate=true;
+    const wcol=name==='ember'?0xffb060:name==='void'?0xd8a0ff:name==='crypt'?0x506070:0xbfe8ff;
+    const rv=new THREE.Mesh(new THREE.PlaneGeometry(ext*2,ext*2), new THREE.MeshBasicMaterial({map:rip, alphaMap:riverMask, alphaTest:.25, color:wcol, transparent:true, opacity:name==='ember'?.5:.38, depthWrite:false, blending:name==='ember'||name==='void'?THREE.AdditiveBlending:THREE.NormalBlending})); rv.rotation.x=-Math.PI/2; rv.position.y=.05; rv.renderOrder=3; apLive(rv); _AP.river=rv; }
+  _AP.floorPaint={map,ext};
+}
+// ---- life along the rivers and in the rooms: reeds, river stones, driftwood, lava crust, ice shards ----
+function apDressRivers(W,g,D,seed,inst,M2,rock){ const rw=apRiverWidth(W); const list=[], stones=[]; let tries=0; const rooms=G.rooms||[]; if(!rooms.length) return;
+  while(list.length<160 && tries<3000){ tries++; const r=rooms[Math.floor(apHash(tries,3,seed+1)*rooms.length)]; const x=r.x0+1.5+apHash(tries,4,seed+2)*(r.x1-r.x0-3), z=r.z0+1.5+apHash(tries,5,seed+3)*(r.z1-r.z0-3); const rb=apRiverBand(x,z,seed);
+    if(rb>rw*1.05 && rb<rw*2.2){ if(typeof nearAnyPlayer==='function'&&nearAnyPlayer(x,z,3)) continue; list.push({x,z,h:0,r:apHash(tries,6,seed),r2:apHash(tries,7,seed)}); }
+    else if(rb<rw*1.1 && apHash(tries,8,seed)<.35){ stones.push({x,z,h:0,r:apHash(tries,9,seed),r2:apHash(tries,10,seed)}); } }
+  if(W.name==='verdant'||W.name==='gilded'){ inst(new THREE.ConeGeometry(.08,1.3,5), M2(0x5a8a3a), list, o=>({s:.7+o.r*.8, y:.5*(.7+o.r*.8), rx:(o.r2-.5)*.4, ry:o.r*6})); inst(new THREE.SphereGeometry(.16,7,5), M2(0x6a4a2a), list.filter(o=>o.r>.6), o=>({s:.8, sy:.5, y:.08})); }
+  if(W.name==='crypt'){ inst(new THREE.CylinderGeometry(.04,.06,1.1,5), M2(0x3a3028), list, o=>({s:.8+o.r*.6, y:.45, rx:(o.r2-.5)*.6, ry:o.r*6})); }
+  if(W.name==='cryo'){ inst(new THREE.OctahedronGeometry(.3,0), new THREE.MeshStandardMaterial({color:0xd8ecf8,roughness:.15,metalness:.2}), list, o=>({s:.4+o.r*.7, sy:1+o.r*1.2, y:.2, ry:o.r*6})); }
+  if(W.name==='ember'){ inst(new THREE.DodecahedronGeometry(.35,1), rock, list, o=>({s:.5+o.r*1.2, sy:.45, y:.02, ry:o.r*6})); }
+  if(W.name==='void'){ inst(new THREE.OctahedronGeometry(.25,0), new THREE.MeshStandardMaterial({color:0x9a6aff,emissive:0x7a3aff,emissiveIntensity:.9,roughness:.3}), list, o=>({s:.4+o.r*.6, sy:1.2+o.r, y:.2, ry:o.r*6})); }
+  inst(new THREE.SphereGeometry(.3,8,6), rock, stones, o=>({s:.5+o.r*1.2, sy:.45+o.r2*.3, y:.02, ry:o.r*6}));
+}
 
 
 const ENEMY_FAMILIES = {
@@ -10165,7 +10276,7 @@ function spawnBoss(floor,room,opts){
   e.defianceMax=Math.round(hp*0.22); e.defiance=e.defianceMax; e.defianceBroken=false; e.defianceBrokenT=0;   // DEFIANCE BAR (GW2 parity) — depleted by knockback via hitRadius, see applyDefianceDamage
   if(castT!==1) e.castRate=castT;                       // Tireless lords cast without pause
   for(const t of trs){ if(t.flag) e[t.flag]=true; }     // behaviour flags reuse the proven elite machinery (vampiric/volatile/blink/shield/toxic/arcane/enrage)
-  e.mesh=makeBossMesh(def,e.scale);   // ART PASS: every lord has his own body now
+  e.mesh=makeBossMesh(def,e.scale); apRealism(e.mesh);   // ART PASS: every lord has his own body now
   const ring=new THREE.Mesh(new THREE.TorusGeometry(e.scale*0.87,.18,8,24), new THREE.MeshStandardMaterial({color:0xffce4d,emissive:0xffce4d,emissiveIntensity:1}));
   ring.rotation.x=Math.PI/2; ring.position.y=e.scale*0.9; e.mesh.add(ring);
   // ---- the grudge made visible: one dark trophy on the ring per time this boss has killed you ----
@@ -11545,7 +11656,7 @@ function petName(p){ const f=PET_FAMILIES[p.family]; const band=f&&f.nm3&&f.nm3[
   if(band&&band.length){ return band[(p.nameIdx||0)%band.length]; }
   return PET_RARITY[p.rarity].nm+' '+(f?f.nm:'Pet'); }
 function buildPetMesh(p){ const rz=clamp(p.rarity||0,0,4);
-  const grp=makePetMesh(p.family,rz);   // ART PASS: sprite / drake / golem / wisp / beast / imp — real creatures, rarity brightens them
+  const grp=makePetMesh(p.family,rz); apRealism(grp);   // ART PASS: sprite / drake / golem / wisp / beast / imp — real creatures, rarity brightens them
   if(G.player) grp.position.set(G.player.position.x, 1.2, G.player.position.z+1.5);
   return grp;
 }
@@ -13612,7 +13723,7 @@ function respawn(){ clearScreenFx(); G.dead=false; G.hp=G.maxhp; G.mana=G.maxman
 
 // ============================================================ PLAYER
 function createPlayer(){ let _arch='sword'; try{ const w=G&&G.equip&&G.equip.weapon; _arch=w?(w.arch||'sword'):'fists'; }catch(_){}
-  const grp=makeHeroMesh({arch:_arch});   // ART PASS: a real armoured climber (helm, plate, cloak, the equipped weapon in hand)
+  const grp=makeHeroMesh({arch:_arch}); apRealism(grp);   // ART PASS: a real armoured climber (helm, plate, cloak, the equipped weapon in hand)
   // x-ray silhouette: drawn ONLY where a wall is in front of the hero (GreaterDepth), so the model itself stays clean
   const sil=new THREE.Mesh(new THREE.CapsuleGeometry(.62,1,4,8), new THREE.MeshBasicMaterial({color:0x9be7ff,transparent:true,opacity:.3,depthWrite:false,depthFunc:THREE.GreaterDepth})); sil.position.y=1.1; sil.renderOrder=998; grp.add(sil);
   // overhead beacon removed — the on-player ring shows dash cooldown; the see-through silhouette still marks the hero behind walls

@@ -54,6 +54,23 @@ scatter, void shards. Weather particles (spores, embers, snow, motes, dust, ash)
 The camera sits a touch lower (26 up, 17 back) so more of the world is in frame. The old accent-trim box walls
 and the grid overlay are gone; the collision grid, spawns and pathing are untouched.
 
+## Painted ground (`apPaintFloorPlanes`, in the WORLD PASS block)
+
+The walkable ground is painted per floor, not tiled: a 512² colour map with an alpha mask (only walkable cells
+show), a roughness map and, for Ember and Void, an emissive map. Layers: the world's base surface, patches of a
+second surface (dirt, cinder, packed snow, shattered glass, lawn, gravel), rock outcrops, a soft-edged worn path
+down every corridor, and a seeded RIVER that crosses the whole floor — water with sand banks, a lava river, a
+frozen river, a stream of void-light, a marble-edged canal, black water — and carves the outer terrain beyond the
+walls. A tiled grain overlay (multiply) adds fine detail; a rippling overlay makes the water move. Reeds, river
+stones, driftwood, lava crust or ice shards line the banks. None of it collides.
+
+## Creature realism (`apRealism`)
+
+Every hero, boss, enemy, goblin, pet, NPC and station passes through `apRealism`: smooth shading, self-glow
+cut to a third (glowing parts ≥0.9 keep it), surface detail chosen from the material — skin (mottled, pored),
+cloth (weave), leather, bone (grain + cracks), metal (brushed), wood (grain) — applied as both colour map and bump
+map, and the families' low-poly spheres / cylinders / cones / tori resampled to rounder shared geometry.
+
 ## Engine contract (unchanged)
 
 * `userData.body` — root node the engine bobs, hit-flashes, telegraph-scales and tints.
