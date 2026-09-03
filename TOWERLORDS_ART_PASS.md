@@ -82,6 +82,14 @@ with a hinged jaw; trolls are barrel-bodied and hunched with tusks and spine spi
 ribs, ghosts are drifting shrouds; slimes are clear-coated domes with a core, bubbles and whatever they swallowed.
 The old builders remain as `*Legacy` functions. Every creature still passes through `apRealism` for surface detail.
 
+## Creature kit II
+
+Ratmen, orcs, sahuagin, kuo-toa and tengu are rebuilt on the same kit from their sheets (CREATURE KIT II block):
+rat snouts with whiskers and pink ears and tails; orc under-bites with tusks and topknots; sea-devil crests, gill
+slits and dorsal fins; kuo-toa great staring eyes; tengu beaks, crests, feathered wings and kimono. Every role on
+each sheet has its own kit — slings, harpoons on chains, eye-staffs, katanas, naginata, kanabō, war fans, whips,
+banners, spiral and shell shields, straw hats, ninja shuriken and smoke, windmaster rings.
+
 ## Engine contract (unchanged)
 
 * `userData.body` — root node the engine bobs, hit-flashes, telegraph-scales and tints.
