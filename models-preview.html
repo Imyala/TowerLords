@@ -1,26 +1,81 @@
-<!DOCTYPE html><html><head><meta charset="utf-8"><title>TowerLords — model & landscape preview</title>
+<!DOCTYPE html><html><head><meta charset="utf-8"><title>TowerLords — model & world preview</title>
 <style>html,body{margin:0;background:#06080f;overflow:hidden;font-family:system-ui,sans-serif}#lbl{position:fixed;left:12px;top:10px;color:#dfe6f5;font-size:13px;letter-spacing:1px;opacity:.85;pointer-events:none}
 #nav{position:fixed;right:12px;top:10px;display:flex;gap:6px;flex-wrap:wrap;max-width:60vw}#nav a{color:#9be7ff;font-size:11px;text-decoration:none;border:1px solid #2a3350;border-radius:6px;padding:4px 7px;background:#0a0e1a}</style>
 <script type="importmap">{ "imports": { "three": "./vendor/three.module.js" } }</script></head><body>
 <div id="lbl"></div><div id="nav"></div>
 <script type="module">
 import * as THREE from 'three'; window.THREE=THREE;
-// ---- minimal engine stubs so the module code runs stand-alone ----
 const rand=(a,b)=>a+Math.random()*(b-a), randi=(a,b)=>Math.floor(rand(a,b+1)), pick=a=>a[Math.floor(Math.random()*a.length)];
 const BIOMES=[
-  {name:'Verdant Vault', ground:0x1d3326, accent:0x4caf6e, fog:0x081710, wall:0x2e4d3a, wallRough:.95, wallFlat:true},
-  {name:'Ember Foundry', ground:0x36211c, accent:0xff7a3d, fog:0x150905, wall:0x4d2f24, wallRough:.8,  wallEmiI:.16},
-  {name:'Cryo Archive',  ground:0x1b2a3a, accent:0x56e0ff, fog:0x06121e, wall:0x274055, wallRough:.3,  wallMetal:.35},
-  {name:'Void Sanctum',  ground:0x241b36, accent:0xb06bff, fog:0x0f091a, wall:0x382b52, wallRough:.6,  wallEmiI:.22},
-  {name:'Gilded Halls',  ground:0x322a18, accent:0xffce4d, fog:0x161104, wall:0x4a3e22, wallRough:.3,  wallMetal:.6},
-  {name:'Bone Crypt',    ground:0x2b2b30, accent:0xd8d2c0, fog:0x101013, wall:0x44444a, wallRough:.92, wallFlat:true}];
+  {name:'Verdant Vault', ground:0x1d3326, accent:0x4caf6e, fog:0x081710, wall:0x2e4d3a},
+  {name:'Ember Foundry', ground:0x36211c, accent:0xff7a3d, fog:0x150905, wall:0x4d2f24},
+  {name:'Cryo Archive',  ground:0x1b2a3a, accent:0x56e0ff, fog:0x06121e, wall:0x274055},
+  {name:'Void Sanctum',  ground:0x241b36, accent:0xb06bff, fog:0x0f091a, wall:0x382b52},
+  {name:'Gilded Halls',  ground:0x322a18, accent:0xffce4d, fog:0x161104, wall:0x4a3e22},
+  {name:'Bone Crypt',    ground:0x2b2b30, accent:0xd8d2c0, fog:0x101013, wall:0x44444a}];
 const q=new URLSearchParams(location.search); const view=q.get('view')||'heroes'; const bi=+(q.get('biome')||0);
-let biome=BIOMES[bi]; const G={seed:7,floor:3,grid:null,bounds:120,obstacles:[],scenery:[],rooms:[],rects:[]}; const _G={players:[]};
+let biome=BIOMES[view==='land'?bi:4]; const G={seed:7,floor:3,grid:null,bounds:120,obstacles:[],scenery:[],rooms:[],rects:[]}; const _G={players:[]};
 const renderer=new THREE.WebGLRenderer({antialias:true}); renderer.setPixelRatio(1); renderer.setSize(innerWidth,innerHeight); renderer.shadowMap.enabled=true; renderer.shadowMap.type=THREE.PCFSoftShadowMap;
-renderer.toneMapping=THREE.ACESFilmicToneMapping; renderer.toneMappingExposure=1.15; document.body.appendChild(renderer.domElement);
+renderer.toneMapping=THREE.ACESFilmicToneMapping; renderer.toneMappingExposure=1.12; document.body.appendChild(renderer.domElement);
 const scene=new THREE.Scene(); scene.background=new THREE.Color(biome.fog); scene.fog=new THREE.Fog(biome.fog,60,170);
 const camera=new THREE.PerspectiveCamera(54,innerWidth/innerHeight,.1,500);
 const hemi=new THREE.HemisphereLight(0xbfd4ff,0x0a0a16,.8); scene.add(hemi); const dir=new THREE.DirectionalLight(0xffffff,1.15); dir.position.set(20,42,14); dir.castShadow=true; dir.shadow.mapSize.set(2048,2048); const d=70,c=dir.shadow.camera; c.left=-d;c.right=d;c.top=d;c.bottom=-d;c.near=1;c.far=160; scene.add(dir);
+function makeGoblinMesh(scale,opts){
+  opts=opts||{}; const s=scale||1;
+  const skin=new THREE.MeshStandardMaterial({color:opts.skin||0x7a9440, emissive:opts.skin||0x7a9440, emissiveIntensity:.28, roughness:.62, flatShading:true});
+  const leather=new THREE.MeshStandardMaterial({color:opts.leather||0x5a4630, emissive:0x241a10, emissiveIntensity:.3, roughness:.85, flatShading:true});
+  const bone=new THREE.MeshStandardMaterial({color:0xe8e2cc, emissive:0x6b6350, emissiveIntensity:.35, roughness:.5, flatShading:true});
+  const dark=new THREE.MeshStandardMaterial({color:0x1c130c, roughness:.9, flatShading:true});
+  const grp=new THREE.Group();
+  // torso — the root animated node (bob / hit-flash / telegraph all drive this one mesh)
+  const body=new THREE.Mesh(new THREE.CylinderGeometry(.30*s,.40*s,.62*s,7), skin);
+  body.castShadow=true; body.position.y=.95*s; grp.add(body); grp.userData.body=body; grp.userData.humanoid=true;
+  // ragged tunic + belt + skull charm
+  const tunic=new THREE.Mesh(new THREE.ConeGeometry(.45*s,.6*s,7,1,true), leather); tunic.position.y=-.14*s; body.add(tunic);
+  const belt=new THREE.Mesh(new THREE.TorusGeometry(.36*s,.05*s,5,10), dark); belt.rotation.x=Math.PI/2; belt.position.y=-.02*s; body.add(belt);
+  const charm=new THREE.Mesh(new THREE.SphereGeometry(.085*s,6,5), bone); charm.position.set(.07*s,.16*s,.30*s); body.add(charm);
+  // head — oversized, slightly squashed (chibi)
+  const head=new THREE.Mesh(new THREE.SphereGeometry(.44*s,9,7), skin); head.scale.set(1.06,.9,1); head.position.y=.72*s; head.castShadow=true; body.add(head);
+  // patched hood (cap) + bone stud
+  const hood=new THREE.Mesh(new THREE.SphereGeometry(.5*s,8,6,0,Math.PI*2,0,Math.PI*0.60), leather); hood.position.y=.09*s; head.add(hood);
+  const stud=new THREE.Mesh(new THREE.SphereGeometry(.06*s,5,4), bone); stud.position.set(.26*s,.30*s,.30*s); head.add(stud);
+  // HUGE ears — flattened cones raked out and up, with a hint of droop variance per goblin
+  const rake=rand(1.75,2.05);
+  for(const sd of [-1,1]){ const ear=new THREE.Mesh(new THREE.ConeGeometry(.14*s,.66*s,4), skin);
+    ear.position.set(sd*.44*s,.08*s,-.02*s); ear.rotation.z=sd*-rake; ear.scale.set(1,1,.42); head.add(ear); }
+  // long hooked nose
+  const nose=new THREE.Mesh(new THREE.ConeGeometry(.09*s,.30*s,5), skin); nose.rotation.x=Math.PI/2; nose.position.set(0,-.03*s,.48*s); head.add(nose);
+  // amber lamp-eyes + pupils (they glow — packs read as eye-clusters in the dark)
+  const eyeMat=new THREE.MeshStandardMaterial({color:0xf0c24a, emissive:0xd89a2a, emissiveIntensity:.9, flatShading:true});
+  for(const sd of [-1,1]){ const eye=new THREE.Mesh(new THREE.SphereGeometry(.10*s,6,5), eyeMat); eye.position.set(sd*.18*s,.08*s,.36*s); head.add(eye);
+    const pup=new THREE.Mesh(new THREE.SphereGeometry(.038*s,4,4), dark); pup.position.set(sd*.18*s,.08*s,.445*s); head.add(pup); }
+  // snaggle-tooth grin: dark slit + three bone teeth
+  const mouth=new THREE.Mesh(new THREE.BoxGeometry(.30*s,.07*s,.06*s), dark); mouth.position.set(0,-.19*s,.40*s); head.add(mouth);
+  for(let i=0;i<3;i++){ const tooth=new THREE.Mesh(new THREE.ConeGeometry(.028*s,.07*s,4), bone);
+    tooth.position.set((i-1)*.09*s,-.225*s,.42*s); tooth.rotation.x=Math.PI; head.add(tooth); }
+  // arms (swing in the walk cycle)
+  grp.userData.arms=[];
+  for(const sd of [-1,1]){ const arm=new THREE.Mesh(new THREE.CylinderGeometry(.075*s,.065*s,.44*s,5), skin);
+    arm.position.set(sd*.36*s,.10*s,0); arm.rotation.z=sd*0.42; body.add(arm); grp.userData.arms.push(arm); }
+  // stone-tipped spear in the off hand (skippable for the fat merchants)
+  if(!opts.noSpear){ const spear=new THREE.Group();
+    const shaft=new THREE.Mesh(new THREE.CylinderGeometry(.035*s,.05*s,1.3*s,5), leather); spear.add(shaft);
+    const tip=new THREE.Mesh(new THREE.ConeGeometry(.10*s,.30*s,4), new THREE.MeshStandardMaterial({color:0x8a8f98,emissive:0x3a3f48,emissiveIntensity:.4,flatShading:true}));
+    tip.position.y=.78*s; spear.add(tip);
+    const wrap=new THREE.Mesh(new THREE.CylinderGeometry(.055*s,.055*s,.16*s,5), dark); wrap.position.y=.30*s; spear.add(wrap);
+    spear.position.set(.46*s,.02*s,.14*s); spear.rotation.z=-0.16; spear.rotation.x=-0.22; body.add(spear); }
+  // loot sack on the back (gold / loot-guzzler variants)
+  if(opts.bag){ const bag=new THREE.Mesh(new THREE.SphereGeometry(.30*s,7,6), new THREE.MeshStandardMaterial({color:0x8a6a3a,emissive:0x6b4a1a,emissiveIntensity:.4,roughness:.8,flatShading:true}));
+    bag.scale.set(1,1.15,.8); bag.position.set(-.12*s,.12*s,-.40*s); body.add(bag);
+    const tie=new THREE.Mesh(new THREE.CylinderGeometry(.05*s,.07*s,.12*s,5), dark); tie.position.set(-.12*s,.48*s,-.40*s); body.add(tie); }
+  if(opts.belly){ body.scale.set(1.25,1,1.25); }   // the loot-guzzler arrives pre-fattened
+  // stubby legs (walk cycle)
+  grp.userData.legs=[];
+  for(const sd of [-1,1]){ const leg=new THREE.Mesh(new THREE.CylinderGeometry(.09*s,.115*s,.36*s,5), skin);
+    leg.position.set(sd*.16*s,-.50*s,0); body.add(leg); grp.userData.legs.push(leg); }
+  return grp;
+}
+
 // ============================================================ ART PASS — CHARACTER & PROP MODELS
 // Every thing that used to be a bare primitive (the hero capsule, the boss polyhedra, the pet blobs, the
 // spirit icosahedra, the NPC cylinders, the station cylinders, the training-dummy box, the glowing
@@ -30,7 +85,7 @@ const hemi=new THREE.HemisphereLight(0xbfd4ff,0x0a0a16,.8); scene.add(hemi); con
 // userData.anim list of self-animating parts that apAnimateParts() advances every frame.
 // Everything is cheap flat-shaded primitives — no external assets, packs stay fast, offline stays offline.
 const _AP={ live:[], t:0, tex:{}, particles:null, land:null };
-function apM(c,o){ o=o||{}; return new THREE.MeshStandardMaterial({color:c, emissive:(o.e==null?c:o.e), emissiveIntensity:(o.ei==null?.22:o.ei), roughness:(o.r==null?.62:o.r), metalness:(o.m==null?0:o.m), flatShading:o.flat!==false, transparent:!!o.t, opacity:(o.op==null?1:o.op), side:o.side||THREE.FrontSide, depthWrite:o.dw!==false}); }
+function apM(c,o){ o=o||{}; return new THREE.MeshStandardMaterial({color:c, emissive:(o.e==null?c:o.e), emissiveIntensity:(o.ei==null?.07:o.ei), roughness:(o.r==null?.7:o.r), metalness:(o.m==null?0:o.m), flatShading:o.flat===true, transparent:!!o.t, opacity:(o.op==null?1:o.op), side:o.side||THREE.FrontSide, depthWrite:o.dw!==false}); }
 function apLimb(s,len,r1,r2,m,segs){ const g=new THREE.Group();
   const sh=new THREE.Mesh(new THREE.CylinderGeometry(r1*s,r2*s,len*s,segs||7), m); sh.castShadow=true; g.add(sh);
   const a=new THREE.Mesh(new THREE.SphereGeometry(r1*s*1.02,7,6), m); a.position.y=len*s/2; g.add(a);
@@ -527,7 +582,7 @@ function apFacePet(pm,dt){ const u=pm.userData; const b=u.body; if(!b) return;
   let want=null; if(Math.hypot(dx,dz)>0.015) want=Math.atan2(dx,dz); else if(typeof G!=='undefined'&&G.player) want=G.player.rotation.y;
   if(want==null) return; let d=want-pm.rotation.y; while(d>Math.PI)d-=Math.PI*2; while(d<-Math.PI)d+=Math.PI*2; pm.rotation.y+=d*Math.min(1,dt*6); }
 // pets dim when downed / brighten when up — spread across every glow material, not just the root
-function apPetGlow(pm,v){ const u=pm.userData; if(u.body&&u.body.material) u.body.material.emissiveIntensity=v; for(const m of (u.glow||[])) m.emissiveIntensity=v>.5?Math.max(1.2,v*2):v; }
+function apPetGlow(pm,v){ const u=pm.userData; if(u.body&&u.body.material) u.body.material.emissiveIntensity=v*.4; for(const m of (u.glow||[])) m.emissiveIntensity=v>.5?Math.max(1.2,v*2):v; }
 
 // ============================================================ ALLIED SPIRITS (summons) — a ghost-flame with a face and a mote trail
 function makeSpiritMesh(col,size){ col=col||0x9be7ff; size=size||.55; const g=new THREE.Group();
@@ -744,85 +799,147 @@ function apCairn(){ const g=new THREE.Group(); const cm=apM(0x1a1626,{e:0x6b2436
   const gl=new THREE.PointLight(0xff5470,.7,7); gl.position.y=1.6; g.add(gl); apAnim(g,{k:'flicker',o:gl,base:.7,amp:.15,spd:3});
   return apShadow(g,true); }
 
-// ============================================================ ART PASS — LANDSCAPE
-// The tower's floors used to be flat coloured slabs on a black void with a grid drawn over them. Every floor now
-// sits inside a real landscape: procedurally textured ground and walls, a rolling low-poly terrain beyond the walls
-// dressed in each biome's own life (forest, lava fields, glaciers, void islands, gilded gardens, bone dunes), a ring
-// of distant silhouettes in the fog, water / lava / abyss planes, and a drifting particle field (spores, embers,
-// snow, void motes, gold dust, ash). Nothing here touches gameplay — the outer terrain never overlaps a walkable
-// cell, so collision, pathing and spawns are exactly as before.
+// ============================================================ ART PASS — GOBLIN ROLES (from the "10 Goblin Enemies" sheet)
+// The warren-kin used to be one model. Now each combat role is the goblin on the sheet: Scout (hood, dagger), Shaman
+// (skull staff, bone headdress, green hex-fire), Spear Guard (spiked helm, spear, skull shield), Bomber (goggles, lit bomb,
+// belt of shells), Archer (hood, bow, quiver), Clubber (big, spiked club, iron helm), Poisoner (hood, green vials),
+// Trapper (bear trap on a rope), Berserker (twin axes, topknot, war paint), Commander (horned skull helm, banner, mace, red cape).
+// Built on the existing goblin body so the engine contract (userData.body / arms / legs / humanoid) is unchanged.
+function makeGoblinVariantMesh(scale,opts){ opts=opts||{}; const s=scale||1; const v=opts.variant||'scout';
+  const skinCol={clubber:0x6f8a3c, berserker:0x7e9a44, commander:0x6a8438, shaman:0x7b944a, poisoner:0x748c46}[v]||0x7a9440;
+  const g=makeGoblinMesh(s,{skin:skinCol, leather:v==='commander'?0x4a3020:v==='shaman'?0x5a4a34:0x5a4630, noSpear:true});
+  const body=g.userData.body; const head=body.children.find(c=>c.geometry&&c.geometry.type==='SphereGeometry'&&Math.abs(c.geometry.parameters.radius-.44*s)<1e-4);
+  if(head) head.scale.multiplyScalar(.86);
+  if(head){ const cap=head.children.find(c=>c.geometry&&c.geometry.type==='SphereGeometry'&&Math.abs(c.geometry.parameters.radius-.5*s)<1e-4); if(cap){ cap.geometry.dispose(); cap.geometry=new THREE.SphereGeometry(.5*s,9,7,0,Math.PI*2,0,Math.PI*.4); cap.position.y=.12*s; } }   // the cap sits on the crown, not over the eyes   // a touch less chibi — the sheet's goblins are stocky, not bobble-headed
+  const iron=apM(0x6f7682,{e:0x262a33,ei:.05,r:.45,m:.7}), dark=apM(0x2a2018,{ei:.03,r:.9}), wood=apM(0x5c4225,{ei:.05,r:.9}), bone=apM(0xe6dfc8,{ei:.06,r:.55}), gold=apM(0xb08a3a,{ei:.1,r:.4,m:.7}), leatherM=apM(0x4a3826,{ei:.05,r:.9});
+  const R=g.userData.arms[1], L=g.userData.arms[0];   // arms are simple cylinders: hands sit at their lower end
+  const gripR=new THREE.Group(); gripR.position.set(.42*s,-.16*s,.14*s); body.add(gripR); const gripL=new THREE.Group(); gripL.position.set(-.42*s,-.16*s,.14*s); body.add(gripL);
+  g.userData.gripR=gripR; g.userData.gripL=gripL;
+  const hood=()=>{ if(head){ const peak=new THREE.Mesh(new THREE.ConeGeometry(.15*s,.36*s,6), leatherM); peak.position.set(0,.4*s,-.16*s); peak.rotation.x=-.7; head.add(peak); } };   // the base goblin already wears its patched cap; roles add a cowl peak behind it
+  const helm=(spikes)=>{ if(!head) return; const hm=new THREE.Mesh(new THREE.SphereGeometry(.47*s*.86,10,7,0,Math.PI*2,0,Math.PI*.55), iron); hm.position.y=.08*s; head.add(hm); const brim=new THREE.Mesh(new THREE.TorusGeometry(.45*s*.86,.04*s,5,14), iron); brim.rotation.x=Math.PI/2; brim.position.y=.02*s; head.add(brim); if(spikes) for(let i=0;i<5;i++){ const a=i/5*Math.PI*2; const sp=new THREE.Mesh(new THREE.ConeGeometry(.04*s,.16*s,4), iron); sp.position.set(Math.cos(a)*.3*s,.36*s,Math.sin(a)*.3*s); sp.rotation.z=-Math.cos(a)*.9; sp.rotation.x=Math.sin(a)*.9; head.add(sp); } };
+  const cape=(col)=>{ const c=apCape(s,col,.8,.9); c.position.set(0,.3*s,-.3*s); c.rotation.x=-.1; body.add(c); };
+  if(v==='scout'){ hood(); const d=apDagger(s*1.1); d.rotation.x=-.5; gripR.add(d); const d2=apDagger(s*.9); d2.rotation.x=-.8; gripL.add(d2); }
+  else if(v==='shaman'){ // bone headdress, skull staff, green hex-fire in the off hand
+    if(head){ const sk=new THREE.Mesh(new THREE.SphereGeometry(.2*s,8,6), bone); sk.position.set(0,.36*s,.1*s); head.add(sk); for(const sd of [-1,1]){ const bn=new THREE.Mesh(new THREE.CylinderGeometry(.03*s,.03*s,.5*s,5), bone); bn.position.set(sd*.28*s,.34*s,0); bn.rotation.z=sd*.9; head.add(bn); } }
+    const st=new THREE.Group(); const shaft=new THREE.Mesh(new THREE.CylinderGeometry(.035*s,.045*s,1.7*s,6), wood); st.add(shaft); const skull=new THREE.Mesh(new THREE.SphereGeometry(.16*s,8,6), bone); skull.position.y=.9*s; st.add(skull); for(const sd of [-1,1]){ const bn=new THREE.Mesh(new THREE.CylinderGeometry(.025*s,.025*s,.4*s,5), bone); bn.position.set(sd*.14*s,1.0*s,0); bn.rotation.z=sd*.8; st.add(bn); } for(let i=0;i<3;i++){ const bead=new THREE.Mesh(new THREE.SphereGeometry(.03*s,5,4), apM([0xc03a3a,0x3a9a5a,0xd8c060][i],{ei:.2})); bead.position.set(.08*s,(.5-i*.12)*s,.06*s); st.add(bead); }
+    st.position.y=-.2*s; st.rotation.x=.1; gripR.add(st);
+    const fire=new THREE.Mesh(new THREE.SphereGeometry(.14*s,8,6), apM(0x6aff6a,{ei:1.6,t:true,op:.85})); gripL.add(fire); apAnim(g,{k:'pulse',o:fire,base:1.5,amp:.6,spd:6}); apAnim(g,{k:'breathe',o:fire,spd:7,amp:.15}); const lt=new THREE.PointLight(0x6aff6a,.6,6); gripL.add(lt);
+    const robe=new THREE.Mesh(new THREE.ConeGeometry(.5*s,.9*s,8,1,true), apM(0x4a4030,{ei:.04,r:.95})); robe.position.y=-.4*s; body.add(robe); }
+  else if(v==='spearguard'){ helm(true); const sp=apSpear(s*.9); sp.position.y=-.1*s; sp.rotation.x=.05; gripR.add(sp); const sh=apShield(s*1.1,0x6b5a3a,0x6f7682); const sk=new THREE.Mesh(new THREE.SphereGeometry(.12*s,7,6), bone); sk.position.z=.06*s; sh.add(sk); sh.position.set(-.05*s,.05*s,.1*s); sh.rotation.y=-.3; gripL.add(sh);
+    const pauld=new THREE.Mesh(new THREE.SphereGeometry(.16*s,7,6,0,Math.PI*2,0,Math.PI*.5), iron); pauld.position.set(.34*s,.28*s,0); body.add(pauld); }
+  else if(v==='bomber'){ if(head){ const cap=new THREE.Mesh(new THREE.SphereGeometry(.47*s*.86,9,7,0,Math.PI*2,0,Math.PI*.5), leatherM); cap.position.y=.08*s; head.add(cap); for(const sd of [-1,1]){ const gl=new THREE.Mesh(new THREE.TorusGeometry(.09*s,.025*s,5,10), gold); gl.position.set(sd*.13*s,.3*s,.28*s); gl.rotation.x=.4; head.add(gl); const lens=new THREE.Mesh(new THREE.CircleGeometry(.08*s,8), apM(0x7ac0d0,{ei:.3,r:.2,m:.3})); lens.position.set(sd*.13*s,.3*s,.29*s); lens.rotation.x=-.4; head.add(lens); } }
+    const bomb=new THREE.Group(); const b=new THREE.Mesh(new THREE.SphereGeometry(.2*s,9,7), apM(0x1e1e22,{ei:.03,r:.5,m:.4})); bomb.add(b); const fuse=new THREE.Mesh(new THREE.CylinderGeometry(.015*s,.015*s,.14*s,4), apM(0xc0b090,{ei:.05})); fuse.position.y=.24*s; bomb.add(fuse); const spark=new THREE.Mesh(new THREE.SphereGeometry(.045*s,5,4), apM(0xffb040,{ei:2})); spark.position.y=.32*s; bomb.add(spark); apAnim(g,{k:'pulse',o:spark,base:1.8,amp:1,spd:12}); const lt=new THREE.PointLight(0xffa040,.5,4); lt.position.y=.32*s; bomb.add(lt); bomb.position.set(-.04*s,.02*s,.06*s); gripL.add(bomb);
+    for(let i=0;i<4;i++){ const sh=new THREE.Mesh(new THREE.CylinderGeometry(.045*s,.045*s,.16*s,6), apM(i%2?0xb03030:0x2a2a2e,{ei:.05})); sh.position.set((i-1.5)*.13*s,-.06*s,.36*s); body.add(sh); } }
+  else if(v==='archer'){ hood(); const bw=apBow(s*1.05); bw.rotation.y=Math.PI/2; bw.rotation.z=-.2; gripL.add(bw); const arrow=new THREE.Mesh(new THREE.CylinderGeometry(.012*s,.012*s,.55*s,4), wood); arrow.rotation.x=Math.PI/2; arrow.position.set(.02*s,0,.2*s); gripR.add(arrow);
+    const quiver=new THREE.Group(); const q=new THREE.Mesh(new THREE.CylinderGeometry(.08*s,.07*s,.5*s,7), leatherM); quiver.add(q); for(let i=0;i<4;i++){ const ar=new THREE.Mesh(new THREE.CylinderGeometry(.01*s,.01*s,.32*s,4), wood); ar.position.set((i-1.5)*.03*s,.3*s,0); quiver.add(ar); const fl=new THREE.Mesh(new THREE.ConeGeometry(.025*s,.07*s,4), apM(0xc0c0c0,{ei:.05})); fl.position.set((i-1.5)*.03*s,.46*s,0); quiver.add(fl); } quiver.position.set(-.16*s,.1*s,-.34*s); quiver.rotation.z=.5; quiver.rotation.x=.25; body.add(quiver); }
+  else if(v==='clubber'){ helm(false); body.scale.set(1.3,1.12,1.3); const club=new THREE.Group(); const haft=new THREE.Mesh(new THREE.CylinderGeometry(.05*s,.07*s,.9*s,6), wood); club.add(haft); const hd=new THREE.Mesh(new THREE.CylinderGeometry(.17*s,.13*s,.5*s,7), wood); hd.position.y=.55*s; club.add(hd); for(let i=0;i<9;i++){ const a=i/9*Math.PI*2, yy=.42*s+(i%3)*.12*s; const sp=new THREE.Mesh(new THREE.ConeGeometry(.03*s,.12*s,4), iron); sp.position.set(Math.cos(a)*.17*s,yy,Math.sin(a)*.17*s); sp.rotation.z=Math.PI/2-a; sp.rotation.x=Math.sin(a); club.add(sp); }
+    club.position.set(.1*s,.1*s,0); club.rotation.z=-.4; club.rotation.x=-.4; gripR.add(club);
+    for(const sd of [-1,1]){ const pd=new THREE.Mesh(new THREE.SphereGeometry(.17*s,7,6,0,Math.PI*2,0,Math.PI*.5), iron); pd.position.set(sd*.3*s,.28*s,0); body.add(pd); } const plate=new THREE.Mesh(new THREE.BoxGeometry(.4*s,.36*s,.06*s), iron); plate.position.set(0,.1*s,.3*s); body.add(plate); }
+  else if(v==='poisoner'){ hood(); const vial=(col,x,y,z,sc)=>{ const vg=new THREE.Group(); const gl=new THREE.Mesh(new THREE.SphereGeometry(.11*s*sc,8,6), apM(col,{ei:.9,t:true,op:.85,r:.2})); vg.add(gl); const neck=new THREE.Mesh(new THREE.CylinderGeometry(.035*s*sc,.045*s*sc,.1*s*sc,6), apM(0x8a8a70,{ei:.05})); neck.position.y=.14*s*sc; vg.add(neck); const cork=new THREE.Mesh(new THREE.CylinderGeometry(.03*s*sc,.03*s*sc,.05*s*sc,6), wood); cork.position.y=.2*s*sc; vg.add(cork); vg.position.set(x,y,z); return vg; };
+    gripR.add(vial(0x6aff3a,0,.02*s,.04*s,1.1)); const lt=new THREE.PointLight(0x6aff3a,.4,4); gripR.add(lt); body.add(vial(0x9aff5a,-.3*s,-.2*s,.28*s,.7)); body.add(vial(0xc0ff40,.28*s,-.24*s,.3*s,.6));
+    const drip=new THREE.Mesh(new THREE.SphereGeometry(.03*s,5,4), apM(0x6aff3a,{ei:1.2})); drip.position.set(.05*s,-.16*s,.04*s); gripR.add(drip); apAnim(g,{k:'bob',o:drip,y:-.16*s,amp:.06*s,spd:3}); }
+  else if(v==='trapper'){ hood(); const trap=new THREE.Group(); const base=new THREE.Mesh(new THREE.CylinderGeometry(.24*s,.26*s,.04*s,10), iron); trap.add(base); for(const sd of [-1,1]){ const jaw=new THREE.Mesh(new THREE.TorusGeometry(.22*s,.03*s,5,12,Math.PI), iron); jaw.rotation.x=Math.PI/2; jaw.rotation.z=sd>0?0:Math.PI; jaw.position.y=.03*s; trap.add(jaw); for(let i=0;i<5;i++){ const a=(i+.5)/5*Math.PI*(sd>0?1:-1)+(sd>0?0:0); const t=new THREE.Mesh(new THREE.ConeGeometry(.02*s,.09*s,4), iron); t.position.set(Math.cos(a)*.22*s,.08*s,Math.sin(a)*.22*s*(sd>0?1:-1)*(sd>0?1:1)); trap.add(t); } }
+    const sk=new THREE.Mesh(new THREE.SphereGeometry(.08*s,7,5), bone); sk.position.y=.06*s; trap.add(sk); trap.position.set(.55*s,-.9*s,.45*s); trap.rotation.x=.1; body.add(trap);
+    const rope=new THREE.Mesh(new THREE.CylinderGeometry(.018*s,.018*s,.9*s,5), apM(0x9a8a5a,{ei:.05})); rope.position.set(.5*s,-.5*s,.32*s); rope.rotation.z=-.15; rope.rotation.x=.3; body.add(rope);
+    const coil=new THREE.Mesh(new THREE.TorusGeometry(.12*s,.03*s,5,12), apM(0x9a8a5a,{ei:.05})); coil.position.set(-.3*s,-.1*s,-.28*s); coil.rotation.y=.6; body.add(coil); }
+  else if(v==='berserker'){ if(head){ const knot=new THREE.Mesh(new THREE.ConeGeometry(.12*s,.42*s,6), apM(0x1a1410,{ei:.03,r:.95})); knot.position.set(0,.4*s,-.08*s); knot.rotation.x=-.9; head.add(knot); const band=new THREE.Mesh(new THREE.TorusGeometry(.1*s,.025*s,5,10), apM(0xb03030,{ei:.1})); band.position.set(0,.34*s,-.04*s); head.add(band); for(const sd of [-1,1]){ const paint=new THREE.Mesh(new THREE.BoxGeometry(.04*s,.24*s,.02*s), apM(0xb03030,{ei:.15})); paint.position.set(sd*.2*s,.0,.4*s); paint.rotation.z=sd*.2; head.add(paint); } }
+    for(const sd of [-1,1]){ const ax=new THREE.Group(); const haft=new THREE.Mesh(new THREE.CylinderGeometry(.03*s,.035*s,.7*s,6), wood); ax.add(haft); const hd=new THREE.Mesh(new THREE.CylinderGeometry(.02*s,.02*s,.3*s,4), iron); hd.rotation.z=Math.PI/2; hd.position.y=.3*s; hd.scale.set(1,1,.4); ax.add(hd); const bl=new THREE.Mesh(new THREE.CircleGeometry(.2*s,8,0,Math.PI), iron); bl.position.set(.14*s,.3*s,0); bl.rotation.y=Math.PI/2; ax.add(bl); const bl2=bl.clone(); bl2.rotation.y=-Math.PI/2; bl2.position.z=-.001; ax.add(bl2); ax.rotation.x=-.5; ax.rotation.z=sd*.3; (sd>0?gripR:gripL).add(ax); }
+    const necklace=new THREE.Mesh(new THREE.TorusGeometry(.2*s,.02*s,5,12), bone); necklace.rotation.x=Math.PI/2+.5; necklace.position.set(0,.22*s,.18*s); body.add(necklace); const sk=new THREE.Mesh(new THREE.SphereGeometry(.07*s,6,5), bone); sk.position.set(0,.06*s,.34*s); body.add(sk); }
+  else if(v==='commander'){ if(head){ const sk=new THREE.Mesh(new THREE.SphereGeometry(.42*s*.86,9,7,0,Math.PI*2,0,Math.PI*.6), bone); sk.position.y=.1*s; head.add(sk); for(const sd of [-1,1]){ const horn=new THREE.Mesh(new THREE.ConeGeometry(.06*s,.36*s,6), apM(0xd8c8a8,{ei:.05,r:.7})); horn.position.set(sd*.34*s,.32*s,0); horn.rotation.z=sd*-1.0; head.add(horn); } }
+    cape(0x7a1a1a); const mace=new THREE.Group(); const hf=new THREE.Mesh(new THREE.CylinderGeometry(.03*s,.035*s,.7*s,6), wood); mace.add(hf); const hd=new THREE.Mesh(new THREE.IcosahedronGeometry(.13*s,0), iron); hd.position.y=.4*s; mace.add(hd); apSpikeRing(hd,s,7,.12,0,.12,0x8a8f99); mace.rotation.x=-.5; gripR.add(mace);
+    const banner=new THREE.Group(); const pole=new THREE.Mesh(new THREE.CylinderGeometry(.03*s,.035*s,2.4*s,6), wood); banner.add(pole); const cross=new THREE.Mesh(new THREE.BoxGeometry(.6*s,.03*s,.03*s), wood); cross.position.y=1.0*s; banner.add(cross); const cloth=new THREE.Mesh(new THREE.BoxGeometry(.03*s,.9*s,.55*s), apM(0x8a1a1a,{ei:.08,r:.95})); cloth.position.set(0,.55*s,.28*s); banner.add(cloth); const sig=new THREE.Mesh(new THREE.SphereGeometry(.12*s,7,6), apM(0x2a0a0a,{ei:.05})); sig.scale.x=.2; sig.position.set(0,.6*s,.28*s); banner.add(sig); const tip=new THREE.Mesh(new THREE.ConeGeometry(.05*s,.2*s,5), iron); tip.position.y=1.28*s; banner.add(tip); apAnim(g,{k:'sway',o:cloth,axis:'y',base:0,amp:.15,spd:2.4});
+    banner.position.set(-.1*s,.1*s,-.1*s); gripL.add(banner);
+    const chest=new THREE.Mesh(new THREE.BoxGeometry(.42*s,.34*s,.08*s), iron); chest.position.set(0,.1*s,.3*s); body.add(chest); const skc=new THREE.Mesh(new THREE.SphereGeometry(.09*s,7,6), bone); skc.position.set(0,.1*s,.36*s); body.add(skc); }
+  apShadow(g); return g; }
+
+// ============================================================ ART PASS — WORLDS
+// Tower-of-God rule: every floor is a real place, not a painted board. Each biome is a WORLD definition — its own
+// sky (a fog-free gradient dome with a sun), sunlight colour, natural ground (grass / basalt / snow / void-glass /
+// marble / ash with a worn path through the corridors), natural boundaries instead of neon-trimmed boxes (cliff
+// boulders, basalt columns, ice blocks, void cliffs, marble balustrades, bone walls), a terrain that rolls away to
+// mountains on the horizon, water or lava that actually moves, and weather in the air. Nothing here touches
+// gameplay: the collision grid, spawns and pathing are untouched — the world is dressed around them.
 // ---- value noise (seedable, deterministic) ----
 function apHash(x,y,seed){ let h=(x*374761393 + y*668265263 + (seed||0)*974634121)|0; h=(h^(h>>>13))*1274126177|0; return ((h^(h>>>16))>>>0)/4294967296; }
 function apNoise(x,y,seed){ const xi=Math.floor(x), yi=Math.floor(y), xf=x-xi, yf=y-yi, u=xf*xf*(3-2*xf), v=yf*yf*(3-2*yf);
   const a=apHash(xi,yi,seed), b=apHash(xi+1,yi,seed), c=apHash(xi,yi+1,seed), d=apHash(xi+1,yi+1,seed);
   return a+(b-a)*u+(c-a)*v+(a-b-c+d)*u*v; }
 function apFbm(x,y,seed,oct){ let s=0,a=.5,f=1,n=0; oct=oct||4; for(let i=0;i<oct;i++){ s+=apNoise(x*f,y*f,seed+i*17)*a; n+=a; a*=.5; f*=2.05; } return s/n; }
-// ---- procedural canvas textures, one set per biome, cached for the session ----
-const AP_TEX_DEFS=[
-  // Verdant Vault — mossy flagstones, moss creeping in from the cracks, wet dark grout
-  {ground:{base:[48,78,58], hi:[98,142,104], lo:[26,42,32], moss:[84,176,108], style:'flag'}, wall:{base:[66,98,78], hi:[108,150,118], lo:[34,52,40], style:'brick'}},
-  // Ember Foundry — cracked basalt over a glowing magma lattice
-  {ground:{base:[54,34,28], hi:[88,58,44], lo:[26,14,10], ember:[255,120,40], style:'crack'}, wall:{base:[78,48,36], hi:[120,76,52], lo:[40,20,14], ember:[255,110,40], style:'brick'}},
-  // Cryo Archive — blue ice tiles with frost bloom and deep fractures
-  {ground:{base:[42,70,96], hi:[140,190,220], lo:[20,36,56], frost:[210,236,255], style:'ice'}, wall:{base:[52,84,112], hi:[120,170,200], lo:[26,44,66], style:'brick'}},
-  // Void Sanctum — black-violet marble veined with un-light
-  {ground:{base:[40,28,60], hi:[84,60,120], lo:[18,10,30], vein:[176,107,255], style:'marble'}, wall:{base:[64,46,92], hi:[110,80,160], lo:[30,20,48], vein:[176,107,255], style:'brick'}},
-  // Gilded Halls — cream marble tiles with gold grout and inlay
-  {ground:{base:[176,160,120], hi:[220,206,168], lo:[90,74,40], gold:[255,206,77], style:'tile'}, wall:{base:[96,80,44], hi:[150,128,72], lo:[50,40,20], gold:[255,206,77], style:'brick'}},
-  // Bone Crypt — grey ash packed with bone fragments and old stone
-  {ground:{base:[58,58,64], hi:[98,96,100], lo:[28,28,32], bone:[216,210,192], style:'ash'}, wall:{base:[80,80,86], hi:[124,124,130], lo:[40,40,44], bone:[216,210,192], style:'brick'}},
-];
+function apLerp3(a,b,t){ return [a[0]+(b[0]-a[0])*t, a[1]+(b[1]-a[1])*t, a[2]+(b[2]-a[2])*t]; }
+// ---- procedural canvas textures, cached for the session ----
 function apCanvasTex(key,size,paint){ if(_AP.tex[key]) return _AP.tex[key];
   const cv=document.createElement('canvas'); cv.width=cv.height=size; const ctx=cv.getContext('2d'); const img=ctx.createImageData(size,size); paint(img.data,size); ctx.putImageData(img,0,0);
-  const t=new THREE.CanvasTexture(cv); t.wrapS=t.wrapT=THREE.RepeatWrapping; if(THREE.SRGBColorSpace) t.colorSpace=THREE.SRGBColorSpace; t.anisotropy=4; _AP.tex[key]=t; return t; }
+  const t=new THREE.CanvasTexture(cv); t.wrapS=t.wrapT=THREE.RepeatWrapping; if(THREE.SRGBColorSpace) t.colorSpace=THREE.SRGBColorSpace; t.anisotropy=8; _AP.tex[key]=t; return t; }
 function apSpriteTex(){ if(_AP.tex.sprite) return _AP.tex.sprite; const cv=document.createElement('canvas'); cv.width=cv.height=32; const ctx=cv.getContext('2d'); const gr=ctx.createRadialGradient(16,16,0,16,16,16); gr.addColorStop(0,'rgba(255,255,255,1)'); gr.addColorStop(.35,'rgba(255,255,255,.7)'); gr.addColorStop(1,'rgba(255,255,255,0)'); ctx.fillStyle=gr; ctx.fillRect(0,0,32,32); const t=new THREE.CanvasTexture(cv); _AP.tex.sprite=t; return t; }
-function apLerp3(a,b,t){ return [a[0]+(b[0]-a[0])*t, a[1]+(b[1]-a[1])*t, a[2]+(b[2]-a[2])*t]; }
-function apPaintGround(D,bi){ const S=256; return apCanvasTex('g'+bi,S,(d,size)=>{ const sc=1/size; const seed=bi*101+7;
+// natural ground surfaces — no tiles, no grout: layered noise the way real ground is layered
+const AP_GROUND={
+  grass:{lo:[46,78,34], mid:[78,124,52], hi:[132,166,74], spot:[62,58,34], style:'grass'},
+  dirt:{lo:[58,44,30], mid:[96,76,52], hi:[136,112,80], spot:[70,60,46], style:'dirt'},
+  basalt:{lo:[26,20,20], mid:[62,50,44], hi:[104,86,74], ember:[255,120,40], style:'basalt'},
+  cinder:{lo:[30,22,20], mid:[62,48,40], hi:[100,80,66], style:'dirt'},
+  snow:{lo:[168,190,210], mid:[214,230,244], hi:[248,252,255], spot:[130,160,190], style:'snow'},
+  ice:{lo:[60,110,150], mid:[130,190,225], hi:[220,240,250], style:'ice'},
+  voidglass:{lo:[30,20,52], mid:[68,48,108], hi:[130,100,180], vein:[190,130,255], style:'marble'},
+  marble:{lo:[150,138,112], mid:[208,196,168], hi:[240,232,212], vein:[120,100,70], style:'marble'},
+  garden:{lo:[52,88,40], mid:[92,140,60], hi:[150,180,84], spot:[80,70,40], style:'grass'},
+  ash:{lo:[38,38,42], mid:[76,74,78], hi:[118,114,116], bone:[210,204,186], style:'ash'},
+  gravel:{lo:[44,42,46], mid:[80,78,82], hi:[124,120,124], spot:[60,58,60], style:'dirt'},
+};
+function apPaintNatural(name){ const D=AP_GROUND[name]; const S=256; return apCanvasTex('n_'+name,S,(d,size)=>{ const sc=1/size; const seed=name.length*131+7;
   for(let y=0;y<size;y++) for(let x=0;x<size;x++){ const i=(y*size+x)*4; const u=x*sc, v=y*sc;
-    const n=apFbm(u*6,v*6,seed,4), n2=apFbm(u*16+3,v*16+9,seed+5,3);   // tileable-ish by using integer-period noise
-    let c=apLerp3(D.lo,D.hi,n*.9+n2*.25);
-    if(D.style==='flag'||D.style==='tile'){ const cell=D.style==='flag'?4:6; const gx=(u*cell)%1, gy=(v*cell)%1; const edge=Math.min(gx,1-gx,gy,1-gy);
-      const w=D.style==='flag'?.06:.035; if(edge<w){ c=apLerp3(D.lo,D.gold||D.lo,D.gold?.75:0); c=apLerp3(c,[0,0,0],D.gold?0:.4); }
-      else { const id=apHash(Math.floor(u*cell),Math.floor(v*cell),seed); c=apLerp3(c,D.base,.35+id*.3); }
-      if(D.moss){ const m=apFbm(u*9+11,v*9+4,seed+9,3); if(m>.55) c=apLerp3(c,D.moss,(m-.55)*2.2); if(edge<.1&&m>.4) c=apLerp3(c,D.moss,.35); }
-      if(D.gold && D.style==='tile'){ const cx=Math.floor(u*cell), cy=Math.floor(v*cell); if((cx+cy)%2===0){ const dx=gx-.5, dy=gy-.5, r=Math.hypot(dx,dy); if(Math.abs(r-.22)<.02) c=apLerp3(c,D.gold,.7); } } }
-    else if(D.style==='crack'){ const cr=apFbm(u*10,v*10,seed+3,5); const ridge=Math.abs(cr-.5); c=apLerp3(D.lo,D.hi,n*.8+n2*.3); if(ridge<.035){ const heat=1-ridge/.035; c=apLerp3(c,D.ember,heat*heat*.95); } if(ridge<.07&&ridge>=.035) c=apLerp3(c,D.lo,.5); }
-    else if(D.style==='ice'){ const cr=apFbm(u*8+2,v*8+5,seed+3,5); const ridge=Math.abs(cr-.5); c=apLerp3(D.base,D.hi,n*.7+n2*.3); if(ridge<.02) c=apLerp3(c,D.lo,.8); const fr=apFbm(u*20,v*20,seed+8,3); if(fr>.6) c=apLerp3(c,D.frost,(fr-.6)*2); const cell=5; const gx=(u*cell)%1, gy=(v*cell)%1; if(Math.min(gx,1-gx,gy,1-gy)<.025) c=apLerp3(c,D.lo,.45); }
-    else if(D.style==='marble'){ const vn=apFbm(u*5+n*2,v*5+n2*2,seed+4,4); const ridge=Math.abs(vn-.5); c=apLerp3(D.lo,D.base,n); if(ridge<.03) c=apLerp3(c,D.vein,(1-ridge/.03)*.9); else if(ridge<.08) c=apLerp3(c,D.hi,.35); }
-    else if(D.style==='ash'){ c=apLerp3(D.lo,D.hi,n*.8+n2*.3); const b=apFbm(u*24,v*24,seed+6,2); if(b>.66) c=apLerp3(c,D.bone,(b-.66)*2.6); const s2=apFbm(u*40,v*40,seed+12,2); if(s2>.7) c=apLerp3(c,D.lo,.5); }
+    const n=apFbm(u*5,v*5,seed,5), n2=apFbm(u*14+3,v*14+9,seed+5,3), n3=apFbm(u*40+7,v*40+2,seed+11,2);
+    let c=apLerp3(D.lo,D.mid,Math.min(1,n*1.3)); c=apLerp3(c,D.hi,Math.max(0,n2-.45)*1.4);
+    if(D.style==='grass'){ c=apLerp3(c,D.hi,Math.max(0,n3-.6)*1.2); if(n<.36&&D.spot) c=apLerp3(c,D.spot,(.36-n)*2.5); }
+    else if(D.style==='dirt'){ if(n3>.68&&D.spot) c=apLerp3(c,D.spot,.6); if(n2>.7) c=apLerp3(c,D.hi,.3); }
+    else if(D.style==='basalt'){ const cr=apFbm(u*9,v*9,seed+3,5); const ridge=Math.abs(cr-.5); if(ridge<.03){ const heat=1-ridge/.03; c=apLerp3(c,D.ember,heat*heat*.9); } else if(ridge<.06) c=apLerp3(c,D.lo,.6); }
+    else if(D.style==='snow'){ c=apLerp3(c,D.hi,n3*.3); if(n<.3&&D.spot) c=apLerp3(c,D.spot,(.3-n)*1.2); }
+    else if(D.style==='ice'){ const cr=apFbm(u*8+2,v*8+5,seed+3,5); const ridge=Math.abs(cr-.5); if(ridge<.015) c=apLerp3(c,D.lo,.7); if(n3>.7) c=apLerp3(c,D.hi,.4); }
+    else if(D.style==='marble'){ const vn=apFbm(u*4+n*2,v*4+n2*2,seed+4,4); const ridge=Math.abs(vn-.5); if(ridge<.02) c=apLerp3(c,D.vein,(1-ridge/.02)*.8); else if(ridge<.06) c=apLerp3(c,D.hi,.3); }
+    else if(D.style==='ash'){ const b=apFbm(u*26,v*26,seed+6,2); if(b>.68&&D.bone) c=apLerp3(c,D.bone,(b-.68)*2.4); if(n3>.72) c=apLerp3(c,D.lo,.5); }
     d[i]=c[0]|0; d[i+1]=c[1]|0; d[i+2]=c[2]|0; d[i+3]=255; } }); }
-function apPaintEmissive(D,bi){ if(!D.ember) return null; const S=256; return apCanvasTex('e'+bi,S,(d,size)=>{ const sc=1/size; const seed=bi*101+7;
-  for(let y=0;y<size;y++) for(let x=0;x<size;x++){ const i=(y*size+x)*4; const u=x*sc, v=y*sc; const cr=apFbm(u*10,v*10,seed+3,5); const ridge=Math.abs(cr-.5); let k=ridge<.035?(1-ridge/.035):0; k=k*k;
-    d[i]=(D.ember[0]*k)|0; d[i+1]=(D.ember[1]*k)|0; d[i+2]=(D.ember[2]*k)|0; d[i+3]=255; } }); }
-function apPaintWall(D,bi){ const S=256; return apCanvasTex('w'+bi,S,(d,size)=>{ const sc=1/size; const seed=bi*131+3; const rows=4, cols=2;
-  for(let y=0;y<size;y++) for(let x=0;x<size;x++){ const i=(y*size+x)*4; const u=x*sc, v=y*sc; const row=Math.floor(v*rows); const uu=u+(row%2)*.5/cols*1;
-    const gx=(uu*cols)%1, gy=(v*rows)%1; const edge=Math.min(gx,1-gx,gy*2,(1-gy)*2); const id=apHash(Math.floor(uu*cols),row,seed);
-    const n=apFbm(u*8,v*8,seed,3); let c=apLerp3(D.lo,D.hi,n*.7+id*.3); c=apLerp3(c,D.base,.4);
-    if(edge<.05) c=apLerp3(c,D.lo,.7); else if(edge<.09) c=apLerp3(c,D.lo,.25);
-    if(D.ember&&edge<.05&&n>.55) c=apLerp3(c,D.ember,.5); if(D.vein&&n>.72) c=apLerp3(c,D.vein,(n-.72)*1.5); if(D.gold&&edge<.05) c=apLerp3(c,D.gold,.35); if(D.bone&&n>.7&&edge>.1) c=apLerp3(c,D.bone,(n-.7)*1.4);
+function apPaintEmissiveBasalt(){ const S=256; return apCanvasTex('e_basalt',S,(d,size)=>{ const sc=1/size; const seed='basalt'.length*131+7;
+  for(let y=0;y<size;y++) for(let x=0;x<size;x++){ const i=(y*size+x)*4; const u=x*sc, v=y*sc; const cr=apFbm(u*9,v*9,seed+3,5); const ridge=Math.abs(cr-.5); let k=ridge<.03?(1-ridge/.03):0; k=k*k;
+    d[i]=(255*k)|0; d[i+1]=(110*k)|0; d[i+2]=(30*k)|0; d[i+3]=255; } }); }
+function apPaintRock(name,lo,mid,hi){ const S=256; return apCanvasTex('r_'+name,S,(d,size)=>{ const sc=1/size; const seed=name.length*77+3;
+  for(let y=0;y<size;y++) for(let x=0;x<size;x++){ const i=(y*size+x)*4; const u=x*sc, v=y*sc; const n=apFbm(u*6,v*6,seed,5), n2=apFbm(u*18,v*18,seed+9,3);
+    let c=apLerp3(lo,mid,Math.min(1,n*1.4)); c=apLerp3(c,hi,Math.max(0,n2-.5)*1.3); const cr=apFbm(u*7+1,v*7+4,seed+3,4); if(Math.abs(cr-.5)<.015) c=apLerp3(c,lo,.7);
     d[i]=c[0]|0; d[i+1]=c[1]|0; d[i+2]=c[2]|0; d[i+3]=255; } }); }
-function apGroundMat(bi){ const D=AP_TEX_DEFS[bi]||AP_TEX_DEFS[0]; const key='gm'+bi; if(_AP.tex[key]) return _AP.tex[key];
-  const map=apPaintGround(D.ground,bi), em=apPaintEmissive(D.ground,bi);
-  const m=new THREE.MeshStandardMaterial({color:0xffffff, map, roughness:bi===2?.35:bi===4?.45:.92, metalness:bi===4?.25:bi===2?.15:0, emissive:em?0xffffff:0x000000, emissiveMap:em||null, emissiveIntensity:em?1.1:0});
+function apRipple(){ const S=128; return apCanvasTex('ripple',S,(d,size)=>{ const sc=1/size; for(let y=0;y<size;y++) for(let x=0;x<size;x++){ const i=(y*size+x)*4; const n=apFbm(x*sc*6,y*sc*6,99,3); const k=150+n*105; d[i]=k; d[i+1]=k; d[i+2]=k; d[i+3]=255; } }); }
+function apNatMat(name,o){ o=o||{}; const key='nm_'+name+(o.key||''); if(_AP.tex[key]) return _AP.tex[key];
+  const m=new THREE.MeshStandardMaterial({color:0xffffff, map:apPaintNatural(name), roughness:o.r==null?.95:o.r, metalness:o.m||0, emissive:name==='basalt'?0xffffff:0x000000, emissiveMap:name==='basalt'?apPaintEmissiveBasalt():null, emissiveIntensity:name==='basalt'?1.0:0, vertexColors:!!o.vc});
   _AP.tex[key]=m; return m; }
-function apWallMat(bi,biome){ const D=AP_TEX_DEFS[bi]||AP_TEX_DEFS[0]; const key='wm'+bi; if(_AP.tex[key]) return _AP.tex[key];
-  const map=apPaintWall(D.wall,bi);
-  const m=new THREE.MeshStandardMaterial({color:0xffffff, map, roughness:(biome.wallRough!=null?biome.wallRough:.85), metalness:biome.wallMetal||0, emissive:biome.wallEmiI?biome.accent:0x000000, emissiveIntensity:(biome.wallEmiI||0)*.6});
-  _AP.tex[key]=m; return m; }
-function apFloorBox(w,h,d){ const T=8; const geo=new THREE.BoxGeometry(w,h,d); const uv=geo.attributes.uv; for(let i=8;i<12;i++){ uv.setXY(i, uv.getX(i)*w/T, uv.getY(i)*d/T); } uv.needsUpdate=true; return geo; }   // BoxGeometry face order: px nx py ny pz nz → the top (py) is verts 8-11
-// scale a plane's UVs so the texture tiles at a fixed world size (T units per repeat) regardless of the plane's size
+function apRockMat(name,lo,mid,hi,o){ o=o||{}; const key='rm_'+name; if(_AP.tex[key]) return _AP.tex[key];
+  const m=new THREE.MeshStandardMaterial({color:0xffffff, map:apPaintRock(name,lo,mid,hi), roughness:o.r==null?.92:o.r, metalness:o.m||0, emissive:o.e||0x000000, emissiveIntensity:o.ei||0}); _AP.tex[key]=m; return m; }
+// scale UVs so a texture tiles at a fixed world size regardless of mesh size
 function apTileUV(geo,w,d,T){ const uv=geo.attributes.uv; for(let i=0;i<uv.count;i++){ uv.setXY(i, uv.getX(i)*w/T, uv.getY(i)*d/T); } uv.needsUpdate=true; return geo; }
+function apFloorBox(w,h,d){ const T=9; const geo=new THREE.BoxGeometry(w,h,d); const uv=geo.attributes.uv; for(let i=8;i<12;i++){ uv.setXY(i, uv.getX(i)*w/T, uv.getY(i)*d/T); } uv.needsUpdate=true; return geo; }   // BoxGeometry face order: px nx py ny pz nz → the top (py) is verts 8-11
+// the floor material for the walkable area: rooms get the world's ground, corridors its worn path
+function apGroundMat(bi){ const W=AP_WORLD[bi]||AP_WORLD[0]; return apNatMat(W.ground,{r:W.groundRough}); }
+function apPathMat(bi){ const W=AP_WORLD[bi]||AP_WORLD[0]; return apNatMat(W.path||W.ground,{r:.95}); }
+function apWallMat(bi){ const W=AP_WORLD[bi]||AP_WORLD[0]; return apRockMat(W.name,W.rockLo,W.rockMid,W.rockHi,{r:W.rockRough,e:W.rockEmis,ei:W.rockEmisI}); }
 
-// ---- the outer world: a displaced low-poly terrain that hugs the walkable area and rolls away into the fog ----
-const AP_LAND=[
-  {name:'verdant', amp:5.5, freq:.045, colLo:0x1c3a26, colHi:0x4c8a5a, colPeak:0x7fb27a, water:0x1e6a8a, waterY:-0.9, trees:true, rocks:0x3a4a3e, spire:0x2a4a3a, spireN:26, motes:{col:0x9be78a,n:420,k:'spore'}, hemi:0x9fd39a},
-  {name:'ember',   amp:6.5, freq:.05,  colLo:0x2a1410, colHi:0x5a3020, colPeak:0x8a5030, lava:0xff5a1a, lavaY:-1.0, rocks:0x2a1a14, vents:true, spire:0x3a1a12, spireN:22, motes:{col:0xffa040,n:520,k:'ember'}, hemi:0xff9a5a},
-  {name:'cryo',    amp:6.0, freq:.04,  colLo:0x2a4a6a, colHi:0x9fdcff, colPeak:0xe8f6ff, ice:0xbfe8ff, iceY:-0.8, crystals:true, rocks:0x6a86a0, spire:0xd0ecff, spireN:30, motes:{col:0xe8f8ff,n:700,k:'snow'}, hemi:0xbfe0ff},
-  {name:'void',    amp:7.0, freq:.05,  colLo:0x120a22, colHi:0x3a2a5a, colPeak:0x6a4aa0, abyss:true, obelisks:true, rocks:0x1c1430, spire:0x2a1a4a, spireN:24, motes:{col:0xb06bff,n:460,k:'mote'}, hemi:0xb08aff},
-  {name:'gilded',  amp:3.0, freq:.04,  colLo:0x4a3a1a, colHi:0x8a7238, colPeak:0xd6b860, marble:0xd8c8a0, marbleY:-0.7, columns:true, gardens:true, rocks:0x5a4a2a, spire:0xb89a4a, spireN:20, motes:{col:0xffe08a,n:360,k:'dust'}, hemi:0xffe0a0},
-  {name:'crypt',   amp:5.0, freq:.045, colLo:0x1e1e22, colHi:0x4a4a52, colPeak:0x8a8478, ash:0x2a2a30, ashY:-0.9, bones:true, rocks:0x3a3a40, spire:0xcfc8b4, spireN:28, motes:{col:0xd8d2c0,n:380,k:'ash'}, hemi:0xd8d2c0},
+// ---- the six worlds ----
+const AP_WORLD=[
+  {name:'verdant', ground:'grass', path:'dirt', groundRough:.95, rockLo:[40,44,38], rockMid:[92,96,84], rockHi:[150,150,132], rockRough:.95,
+   sky:{zen:0x2d5f9a, hor:0xb9d4e6, gnd:0x2a3d2e, sun:0xfff1d0, sunDir:[.4,.7,.3], sunI:2.0, hemi:0x9fc4e8, hemiG:0x2f4a2a, hemiI:.9, fog:[70,260]},
+   amp:6, freq:.045, colLo:0x6a9a58, colMid:0x98c470, colHi:0xd0d0a0, water:{col:0x1d5d7a, y:-1.0, op:.82}, walls:'cliff', trees:'deciduous', meadow:true, motes:{col:0xdff0a0,n:260,k:'spore'}},
+  {name:'ember', ground:'basalt', path:'cinder', groundRough:.9, rockLo:[22,14,12], rockMid:[64,44,36], rockHi:[110,80,64], rockRough:.85, rockEmis:0xff5a10, rockEmisI:.05,
+   sky:{zen:0x2a0c08, hor:0xc8501c, gnd:0x1a0806, sun:0xffb070, sunDir:[-.5,.45,.2], sunI:1.6, hemi:0xff9a5a, hemiG:0x3a1408, hemiI:1.0, fog:[60,230]},
+   amp:7, freq:.05, colLo:0x7a5a50, colMid:0xa87868, colHi:0xd0a888, lava:{col:0xff4a10, y:-1.1}, walls:'basalt', trees:null, vents:true, motes:{col:0xffa040,n:420,k:'ember'}},
+  {name:'cryo', ground:'snow', path:'ice', groundRough:.9, rockLo:[80,110,140], rockMid:[150,190,220], rockHi:[236,246,255], rockRough:.4,
+   sky:{zen:0x1c3660, hor:0xc4d8ea, gnd:0x8aa0b8, sun:0xe8f0ff, sunDir:[.3,.5,-.4], sunI:1.7, hemi:0xbfe0ff, hemiG:0x6a7a90, hemiI:.9, fog:[70,260]},
+   amp:7, freq:.04, colLo:0xc0d8e8, colMid:0xe8f0f8, colHi:0xffffff, water:{col:0x9fd0ee, y:-.9, op:.95, ice:true}, walls:'ice', trees:'conifer', motes:{col:0xf4faff,n:700,k:'snow'}},
+  {name:'void', ground:'voidglass', path:'voidglass', groundRough:.5, rockLo:[14,8,26], rockMid:[46,30,74], rockHi:[110,80,160], rockRough:.6, rockEmis:0x6a3aff, rockEmisI:.08,
+   sky:{zen:0x05020c, hor:0x2a1050, gnd:0x05020c, sun:0xb06bff, sunDir:[-.3,.6,.4], sunI:1.2, hemi:0x9a6aff, hemiG:0x140a2a, hemiI:1.1, fog:[80,300], stars:true},
+   amp:8, freq:.05, colLo:0x5a4a90, colMid:0x8a6ac0, colHi:0xc0a0f0, abyss:{y:-30}, walls:'void', trees:null, obelisks:true, motes:{col:0xb06bff,n:420,k:'mote'}},
+  {name:'gilded', ground:'garden', path:'marble', groundRough:.9, rockLo:[120,98,58], rockMid:[190,160,96], rockHi:[240,220,170], rockRough:.4, rockEmis:0x000000,
+   sky:{zen:0x4a6aa8, hor:0xf2c48a, gnd:0x4a3a2a, sun:0xffe0b0, sunDir:[.5,.35,.5], sunI:1.9, hemi:0xffd8a8, hemiG:0x3a2a18, hemiI:.9, fog:[70,260]},
+   amp:3, freq:.04, colLo:0x88a860, colMid:0xb8cc80, colHi:0xe8dcb0, water:{col:0x3a8ab0, y:-.9, op:.85}, walls:'marble', trees:'deciduous', columns:true, meadow:true, motes:{col:0xffe08a,n:240,k:'dust'}},
+  {name:'crypt', ground:'ash', path:'gravel', groundRough:.98, rockLo:[36,34,36], rockMid:[80,76,78], rockHi:[150,142,136], rockRough:.95,
+   sky:{zen:0x22262e, hor:0x8a8e94, gnd:0x1a1a1e, sun:0xd0d4dc, sunDir:[.2,.6,.3], sunI:1.2, hemi:0xa0a4ac, hemiG:0x303034, hemiI:1.0, fog:[50,200]},
+   amp:5, freq:.045, colLo:0x707078, colMid:0xa0a0a8, colHi:0xd0ccc0, water:{col:0x1a1c22, y:-1.0, op:.9}, walls:'bone', trees:'dead', bones:true, motes:{col:0xd8d2c0,n:320,k:'ash'}},
 ];
-function apResetLive(){ for(const o of _AP.live){ try{ scene.remove(o); }catch(_){} } _AP.live=[]; _AP.particles=null; _AP.land=null; }
+function apResetLive(){ for(const o of _AP.live){ try{ scene.remove(o); }catch(_){} } _AP.live=[]; _AP.particles=null; _AP.land=null; _AP.water=null; }
 function apLive(o){ scene.add(o); _AP.live.push(o); return o; }
 // distance (in cells) from every grid cell to the nearest walkable cell — chamfer transform, two passes
 function apGridDist(g){ const gw=g.gw, gh=g.gh, D=new Float32Array(gw*gh); const INF=1e5;
@@ -832,158 +949,221 @@ function apGridDist(g){ const gw=g.gw, gh=g.gh, D=new Float32Array(gw*gh); const
   return D; }
 function apDistAt(g,D,x,z){ const fx=(x-g.ox)/g.C, fz=(z-g.oz)/g.C; const gx=Math.floor(fx), gz=Math.floor(fz);
   const cx=Math.max(0,Math.min(g.gw-1,gx)), cz=Math.max(0,Math.min(g.gh-1,gz)); let d=D[cx*g.gh+cz];
-  const ox=Math.max(0,gx-cx,cx-gx), oz=Math.max(0,gz-cz,cz-gz); return d+Math.hypot(ox,oz); }   // outside the grid: add the overshoot
+  const ox=Math.max(0,gx-cx,cx-gx), oz=Math.max(0,gz-cz,cz-gz); return d+Math.hypot(ox,oz); }
+// ---- realism helpers: smooth shading, no self-glow unless it is meant to glow ----
+function apRealism(root){ if(!root) return root; root.traverse(o=>{ if(!o.isMesh||!o.material) return; const mats=Array.isArray(o.material)?o.material:[o.material];
+  for(const m of mats){ if(!m||m.userData.apDone) continue; m.userData.apDone=true; if(m.isMeshStandardMaterial||m.isMeshLambertMaterial||m.isMeshPhongMaterial){ if(m.flatShading&&!m.userData.keepFlat){ m.flatShading=false; m.needsUpdate=true; } if(m.emissiveIntensity!=null && m.emissiveIntensity<0.9 && !m.userData.keepGlow) m.emissiveIntensity*=0.35; } } }); return root; }
+function apRealizeScene(){ try{ if(typeof G==='undefined'||!G.scenery) return; for(const s of G.scenery) apRealism(s); for(const st of [G.stashStation,G.vendorStation,G.craftStation,G.yardStation,G.scoreStation,G.yardTerminal,G.portal]){ if(st&&st.mesh) apRealism(st.mesh); } }catch(_){} }
+// ---- sky dome: a fog-free gradient sphere with a sun disc; the fog colour matches the horizon so the far world melts into it ----
+function apSky(W){ const S=W.sky; const geo=new THREE.SphereGeometry(420,24,16); const pos=geo.attributes.position, n=pos.count, cols=new Float32Array(n*3);
+  const zen=new THREE.Color(S.zen), hor=new THREE.Color(S.hor), gnd=new THREE.Color(S.gnd), tmp=new THREE.Color();
+  for(let i=0;i<n;i++){ const y=pos.getY(i)/420; if(y>=0){ const t=Math.pow(Math.min(1,y*1.6),.55); tmp.copy(hor).lerp(zen,t); } else { tmp.copy(hor).lerp(gnd,Math.min(1,-y*4)); } cols[i*3]=tmp.r; cols[i*3+1]=tmp.g; cols[i*3+2]=tmp.b; }
+  geo.setAttribute('color',new THREE.BufferAttribute(cols,3));
+  const dome=new THREE.Mesh(geo,new THREE.MeshBasicMaterial({vertexColors:true,side:THREE.BackSide,fog:false,depthWrite:false})); dome.renderOrder=-10; dome.frustumCulled=false; apLive(dome); _AP.sky=dome;
+  const sd=new THREE.Vector3(...S.sunDir).normalize(); const sun=new THREE.Sprite(new THREE.SpriteMaterial({map:apSpriteTex(),color:S.sun,fog:false,transparent:true,opacity:.95,depthWrite:false})); sun.scale.set(70,70,1); sun.position.copy(sd).multiplyScalar(380); dome.add(sun);
+  const glow=new THREE.Sprite(new THREE.SpriteMaterial({map:apSpriteTex(),color:S.sun,fog:false,transparent:true,opacity:.35,depthWrite:false})); glow.scale.set(220,220,1); glow.position.copy(sd).multiplyScalar(375); dome.add(glow);
+  if(S.stars){ const sg=new THREE.BufferGeometry(); const sp=new Float32Array(900*3); for(let i=0;i<900;i++){ const a=apHash(i,1,5)*Math.PI*2, b=Math.acos(apHash(i,2,5)*.9); sp[i*3]=Math.sin(b)*Math.cos(a)*400; sp[i*3+1]=Math.cos(b)*400; sp[i*3+2]=Math.sin(b)*Math.sin(a)*400; } sg.setAttribute('position',new THREE.BufferAttribute(sp,3)); const st=new THREE.Points(sg,new THREE.PointsMaterial({color:0xd8c8ff,size:2.2,fog:false,transparent:true,opacity:.9,depthWrite:false})); dome.add(st); }
+  return dome; }
+function apApplyWorldLight(W){ const S=W.sky; try{ scene.background=new THREE.Color(S.hor); scene.fog=new THREE.Fog(S.hor,S.fog[0],S.fog[1]);
+  if(hemi){ hemi.color.setHex(S.hemi); hemi.groundColor.setHex(S.hemiG); hemi.intensity=S.hemiI; }
+  if(dir){ dir.color.setHex(S.sun); dir.intensity=S.sunI; } }catch(_){} }
 function buildLandscape(){ try{ apBuildLandscape(); }catch(err){ console.warn('landscape skipped:',err); } }
-function apBuildLandscape(){ const g=G.grid; if(!g) return; const bi=Math.max(0,BIOMES.indexOf(biome)); const L=AP_LAND[bi]||AP_LAND[0]; const seed=((G.seed|0)*31+(G.floor|0)*7)>>>0;
-  const D=apGridDist(g); const half=(G.bounds||140)/2; const EXT=half+110; const SEG=Math.min(140,Math.round(EXT*2/2.6));
-  const geo=new THREE.PlaneGeometry(EXT*2,EXT*2,SEG,SEG); geo.rotateX(-Math.PI/2);
-  const pos=geo.attributes.position, n=pos.count, cols=new Float32Array(n*3); const cLo=new THREE.Color(L.colLo), cHi=new THREE.Color(L.colHi), cPk=new THREE.Color(L.colPeak), tmp=new THREE.Color();
-  const heights=[]; let hMax=0;
-  for(let i=0;i<n;i++){ const x=pos.getX(i), z=pos.getZ(i); const d=apDistAt(g,D,x,z);   // cells from walkable ground
-    const rim=Math.max(0,Math.min(1,(d-1.4)/7));                      // 0 at the walls → 1 seven cells out
-    const far=Math.max(0,Math.min(1,(d-10)/30));                      // mountains build further out
-    const nz=apFbm(x*L.freq+seed*.001,z*L.freq+seed*.002,seed,4), nz2=apFbm(x*.012,z*.012,seed+9,3);
-    let h=-0.65 + rim*(0.5 + nz*L.amp) + far*(nz2*L.amp*2.4);
-    if(L.abyss){ const pit=apFbm(x*.03,z*.03,seed+21,3); if(rim>.6 && pit<.42) h=-30; }   // the void: islands over nothing
-    if(bi===1){ const basin=apFbm(x*.035,z*.035,seed+33,3); if(rim>.5 && basin<.4) h=Math.min(h,-1.6); }   // lava lakes
-    if(bi===0||bi===2||bi===4||bi===5){ const basin=apFbm(x*.03,z*.03,seed+33,3); if(rim>.7 && basin<.36) h=Math.min(h,-1.5); }   // ponds / frozen lakes / ash pans
-    pos.setY(i,h); heights.push(h); if(h>hMax) hMax=h;
-    const t=Math.max(0,Math.min(1,(h+0.6)/(L.amp*1.6))); tmp.copy(cLo).lerp(cHi,Math.min(1,t*1.4)); if(t>.55) tmp.lerp(cPk,(t-.55)*1.6);
-    const shade=.85+apHash(i,3,seed)*.3; cols[i*3]=tmp.r*shade; cols[i*3+1]=tmp.g*shade; cols[i*3+2]=tmp.b*shade; }
+function apBuildLandscape(){ const g=G.grid; if(!g) return; const bi=Math.max(0,BIOMES.indexOf(biome)); const W=AP_WORLD[bi]||AP_WORLD[0]; const seed=((G.seed|0)*31+(G.floor|0)*7)>>>0;
+  _AP.world=W; apSky(W); apApplyWorldLight(W);
+  const D=apGridDist(g); const half=(G.bounds||140)/2; const EXT=half+150; const SEG=Math.min(170,Math.round(EXT*2/2.4));
+  // ---- terrain beyond the walls: smooth, textured, vertex-tinted by height (valley → slope → peaks) ----
+  const geo=new THREE.PlaneGeometry(EXT*2,EXT*2,SEG,SEG); geo.rotateX(-Math.PI/2); apTileUV(geo,EXT*2,EXT*2,9);
+  const pos=geo.attributes.position, n=pos.count, cols=new Float32Array(n*3); const cLo=new THREE.Color(W.colLo), cMid=new THREE.Color(W.colMid), cHi=new THREE.Color(W.colHi), tmp=new THREE.Color();
+  const heights=new Float32Array(n);
+  for(let i=0;i<n;i++){ const x=pos.getX(i), z=pos.getZ(i); const d=apDistAt(g,D,x,z);
+    const rim=Math.max(0,Math.min(1,(d-1.6)/8)), far=Math.max(0,Math.min(1,(d-12)/34));
+    const nz=apFbm(x*W.freq+seed*.001,z*W.freq+seed*.002,seed,5), nz2=apFbm(x*.011,z*.011,seed+9,4), ridge=Math.pow(Math.abs(apFbm(x*.02,z*.02,seed+21,3)-.5)*2,1.4);
+    let h=-0.7 + rim*(0.4 + nz*W.amp) + far*(nz2*W.amp*2.2 + ridge*W.amp*3.5);
+    const basin=apFbm(x*.028,z*.028,seed+33,3);
+    if(W.abyss){ if(rim>.55 && basin<.42) h=W.abyss.y; }
+    else if(rim>.5 && basin<(W.lava?.42:.36)) h=Math.min(h,-1.8);
+    pos.setY(i,h); heights[i]=h;
+    const t=Math.max(0,Math.min(1,(h+0.7)/(W.amp*2.2))); tmp.copy(cLo).lerp(cMid,Math.min(1,t*2)); if(t>.5) tmp.lerp(cHi,(t-.5)*2); const shade=.9+apHash(i,3,seed)*.2; cols[i*3]=tmp.r*shade; cols[i*3+1]=tmp.g*shade; cols[i*3+2]=tmp.b*shade; }
   geo.setAttribute('color',new THREE.BufferAttribute(cols,3)); geo.computeVertexNormals();
-  const tmat=new THREE.MeshStandardMaterial({vertexColors:true, roughness:.95, metalness:0, flatShading:true, emissive:L.abyss?0x1a0a30:0x000000, emissiveIntensity:.35});
-  const terrain=new THREE.Mesh(geo,tmat); terrain.receiveShadow=true; terrain.position.y=0; apLive(terrain); _AP.land={mesh:terrain,L,bi};
-  // liquid / abyss planes fill the basins
-  if(L.water!=null||L.lava!=null||L.ice!=null||L.marble!=null||L.ash!=null||L.abyss){ let col,y,mat;
-    if(L.lava!=null){ col=L.lava; y=L.lavaY; mat=new THREE.MeshStandardMaterial({color:col,emissive:0xff7a20,emissiveIntensity:1.2,roughness:.6}); }
-    else if(L.water!=null){ col=L.water; y=L.waterY; mat=new THREE.MeshStandardMaterial({color:col,emissive:0x2e9ac0,emissiveIntensity:.35,roughness:.25,metalness:.2,transparent:true,opacity:.86}); }
-    else if(L.ice!=null){ col=L.ice; y=L.iceY; mat=new THREE.MeshStandardMaterial({color:col,emissive:0x8ac8ee,emissiveIntensity:.25,roughness:.1,metalness:.3}); }
-    else if(L.marble!=null){ col=L.marble; y=L.marbleY; mat=new THREE.MeshStandardMaterial({color:col,emissive:0x3a2a10,emissiveIntensity:.2,roughness:.3,metalness:.3}); }
-    else if(L.ash!=null){ col=L.ash; y=L.ashY; mat=new THREE.MeshStandardMaterial({color:col,roughness:1}); }
-    else { col=0x05030a; y=-28; mat=new THREE.MeshStandardMaterial({color:col,emissive:0x1a0830,emissiveIntensity:.8,roughness:1}); }
-    const pl=new THREE.Mesh(new THREE.PlaneGeometry(EXT*2,EXT*2), mat); pl.rotation.x=-Math.PI/2; pl.position.y=y; apLive(pl); if(L.lava!=null){ pl.userData.lava=true; }
-    if(L.abyss){ const stars=new THREE.BufferGeometry(); const sp=new Float32Array(600*3); for(let i=0;i<600;i++){ sp[i*3]=(apHash(i,1,seed)-.5)*EXT*2; sp[i*3+1]=-27+apHash(i,2,seed)*8; sp[i*3+2]=(apHash(i,3,seed)-.5)*EXT*2; } stars.setAttribute('position',new THREE.BufferAttribute(sp,3));
-      apLive(new THREE.Points(stars,new THREE.PointsMaterial({color:0xb06bff,size:.5,transparent:true,opacity:.8,depthWrite:false}))); } }
-  // props scattered over the outer terrain (never on walkable ground) — instanced per kind
-  const hAt=(x,z)=>{ const i=Math.round((z+EXT)/(EXT*2)*SEG)*(SEG+1)+Math.round((x+EXT)/(EXT*2)*SEG); return heights[Math.max(0,Math.min(heights.length-1,i))]; };
-  const scatter=(count,minD,maxR,fn)=>{ const list=[]; let tries=0; while(list.length<count && tries<count*8){ tries++; const x=(apHash(tries,11,seed+count)-.5)*maxR*2, z=(apHash(tries,13,seed+count)-.5)*maxR*2; const d=apDistAt(g,D,x,z); if(d<minD) continue; const h=hAt(x,z); if(h<-1.2) continue; list.push({x,z,h,r:apHash(tries,17,seed)}); } fn(list); };
+  const tmat=new THREE.MeshStandardMaterial({vertexColors:true, map:apPaintNatural(W.ground==='basalt'?'cinder':W.ground==='voidglass'?'voidglass':W.ground==='garden'?'grass':W.ground), roughness:.95, metalness:0});
+  const terrain=new THREE.Mesh(geo,tmat); terrain.receiveShadow=true; apLive(terrain); _AP.land={mesh:terrain,W,bi};
+  const hAt=(x,z)=>{ const gx=Math.round((x+EXT)/(EXT*2)*SEG), gz=Math.round((z+EXT)/(EXT*2)*SEG); const i=gz*(SEG+1)+gx; return heights[Math.max(0,Math.min(n-1,i))]; };
+  // ---- water / lava / abyss ----
+  if(W.water){ const wm=new THREE.MeshStandardMaterial({color:W.water.col, map:apRipple(), roughness:W.water.ice?.15:.25, metalness:W.water.ice?.3:.15, transparent:!W.water.ice, opacity:W.water.op, emissive:W.water.col, emissiveIntensity:.12});
+    wm.map.repeat.set(24,24); const pl=new THREE.Mesh(new THREE.PlaneGeometry(EXT*2,EXT*2),wm); pl.rotation.x=-Math.PI/2; pl.position.y=W.water.y; pl.receiveShadow=true; apLive(pl); if(!W.water.ice) _AP.water=pl; }
+  if(W.lava){ const lm=new THREE.MeshStandardMaterial({color:W.lava.col, map:apRipple(), emissive:0xff6a18, emissiveIntensity:1.3, roughness:.7}); lm.map.repeat.set(20,20); const pl=new THREE.Mesh(new THREE.PlaneGeometry(EXT*2,EXT*2),lm); pl.rotation.x=-Math.PI/2; pl.position.y=W.lava.y; apLive(pl); pl.userData.lava=true; _AP.water=pl;
+    const lt=new THREE.PointLight(0xff6a20,.6,120,1); lt.position.set(0,6,0); apLive(lt); }
+  if(W.abyss){ const pl=new THREE.Mesh(new THREE.PlaneGeometry(EXT*2,EXT*2), new THREE.MeshBasicMaterial({color:0x07030f,fog:false})); pl.rotation.x=-Math.PI/2; pl.position.y=W.abyss.y+.5; apLive(pl);
+    const sg=new THREE.BufferGeometry(); const sp=new Float32Array(700*3); for(let i=0;i<700;i++){ sp[i*3]=(apHash(i,1,seed)-.5)*EXT*2; sp[i*3+1]=W.abyss.y+2+apHash(i,2,seed)*12; sp[i*3+2]=(apHash(i,3,seed)-.5)*EXT*2; } sg.setAttribute('position',new THREE.BufferAttribute(sp,3)); apLive(new THREE.Points(sg,new THREE.PointsMaterial({color:0xb06bff,size:.6,transparent:true,opacity:.8,depthWrite:false}))); }
+  // ---- scattered life on the outer terrain (never on walkable ground) ----
+  const scatter=(count,minD,fn,minH)=>{ const list=[]; let tries=0; const R=EXT-8; while(list.length<count && tries<count*8){ tries++; const x=(apHash(tries,11,seed+count)-.5)*R*2, z=(apHash(tries,13,seed+count)-.5)*R*2; const d=apDistAt(g,D,x,z); if(d<minD) continue; const h=hAt(x,z); if(h<(minH==null?-1.2:minH)) continue; list.push({x,z,h,r:apHash(tries,17,seed),r2:apHash(tries,19,seed)}); } fn(list); };
   const inst=(geo,mat,list,place)=>{ if(!list.length) return; const im=new THREE.InstancedMesh(geo,mat,list.length); im.castShadow=true; im.receiveShadow=true; const m=new THREE.Matrix4(), q=new THREE.Quaternion(), p=new THREE.Vector3(), s=new THREE.Vector3(), e=new THREE.Euler();
-    list.forEach((o,i)=>{ const t=place(o); p.set(o.x,o.h+(t.y||0),o.z); e.set(t.rx||0,t.ry||0,t.rz||0); q.setFromEuler(e); s.set(t.s||1,t.sy||t.s||1,t.s||1); m.compose(p,q,s); im.setMatrixAt(i,m); }); im.instanceMatrix.needsUpdate=true; apLive(im); return im; };
-  const M2=(c,o)=>new THREE.MeshStandardMaterial(Object.assign({color:c,roughness:.9,flatShading:true},o||{}));
-  const R=EXT-6;
-  if(L.trees){ scatter(260,2.2,R,list=>{ inst(new THREE.ConeGeometry(1.6,4.2,7), M2(0x2f7a48,{emissive:0x1c5a30,emissiveIntensity:.18}), list, o=>({s:.7+o.r*1.2, y:2.6*(.7+o.r*1.2), ry:o.r*6}));
-      inst(new THREE.CylinderGeometry(.24,.38,2.2,6), M2(0x4a3524), list, o=>({s:.7+o.r*1.2, y:.9*(.7+o.r*1.2)})); });
-    scatter(90,2.2,R,list=>inst(new THREE.ConeGeometry(1.1,2.4,6), M2(0x3f9a5a,{emissive:0x2a7a40,emissiveIntensity:.25}), list, o=>({s:.6+o.r, y:1.3*(.6+o.r), ry:o.r*6})));
-    scatter(120,2,R,list=>inst(new THREE.SphereGeometry(.9,6,5), M2(0x2a6a3a,{emissive:0x1a4a2a,emissiveIntensity:.2}), list, o=>({s:.5+o.r*.9, sy:.6+o.r*.5, y:.3, ry:o.r*6}))); }
-  if(L.vents){ scatter(60,2.5,R,list=>inst(new THREE.CylinderGeometry(.5,1.4,2.2,6), M2(0x2a1a14,{emissive:0x5a1a08,emissiveIntensity:.35}), list, o=>({s:.8+o.r*1.4, y:1.0*(.8+o.r*1.4), ry:o.r*6})));
-    scatter(70,2.5,R,list=>inst(new THREE.ConeGeometry(.3,2.2,5), M2(0xff8a30,{emissive:0xff7a20,emissiveIntensity:1.3}), list, o=>({s:.5+o.r, y:.9*(.5+o.r)})));
-    scatter(140,2.2,R,list=>inst(new THREE.DodecahedronGeometry(1,0), M2(0x1e120e,{emissive:0x3a1208,emissiveIntensity:.3}), list, o=>({s:.6+o.r*1.6, y:.4, ry:o.r*6, rx:o.r}))); }
-  if(L.crystals){ scatter(160,2.2,R,list=>inst(new THREE.OctahedronGeometry(1,0), M2(0x9fdcff,{emissive:0x56b0e0,emissiveIntensity:.45,roughness:.2}), list, o=>({s:.6+o.r*1.2, sy:2+o.r*2.5, y:1.2, ry:o.r*6, rx:(o.r-.5)*.4})));
-    scatter(120,2.2,R,list=>inst(new THREE.DodecahedronGeometry(1,0), M2(0x6a86a0,{roughness:.3}), list, o=>({s:.6+o.r*1.4, y:.4, ry:o.r*6})));
-    scatter(40,3,R,list=>inst(new THREE.ConeGeometry(1.8,7,6), M2(0xd0ecff,{emissive:0x8ac8ee,emissiveIntensity:.3,roughness:.15}), list, o=>({s:.8+o.r*1.2, y:3.5*(.8+o.r*1.2), ry:o.r*6}))); }
-  if(L.obelisks){ scatter(90,2.5,R,list=>inst(new THREE.BoxGeometry(.7,3.4,.7), M2(0x1c1430,{emissive:0x7a4bd0,emissiveIntensity:.3}), list, o=>({s:.8+o.r*1.5, y:1.7*(.8+o.r*1.5), ry:o.r*6, rx:(o.r-.5)*.25, rz:(o.r-.5)*.25})));
-    scatter(140,2.2,R,list=>inst(new THREE.OctahedronGeometry(.6,0), M2(0xb06bff,{emissive:0x9d4bff,emissiveIntensity:.9}), list, o=>({s:.5+o.r, y:2+o.r*4, ry:o.r*6, rx:o.r*3})));
-    scatter(80,2.2,R,list=>inst(new THREE.DodecahedronGeometry(1,0), M2(0x1c1430,{emissive:0x2a1050,emissiveIntensity:.35}), list, o=>({s:.8+o.r*2, y:.2, ry:o.r*6}))); }
-  if(L.columns){ scatter(70,2.5,R,list=>{ inst(new THREE.CylinderGeometry(.55,.65,6,10), M2(0x8a7228,{metalness:.65,roughness:.3}), list, o=>({s:.8+o.r*.6, y:3*(.8+o.r*.6)})); inst(new THREE.BoxGeometry(1.8,.4,1.8), M2(0xb89a4a,{metalness:.6,roughness:.3}), list, o=>({s:.8+o.r*.6, y:6.1*(.8+o.r*.6)})); });
-    scatter(80,2.2,R,list=>inst(new THREE.CylinderGeometry(.4,.55,1.1,8), M2(0x6a5518,{metalness:.6,roughness:.35}), list, o=>({s:.8+o.r*.5, y:.55})));
-    scatter(80,2.2,R,list=>inst(new THREE.ConeGeometry(.3,.8,6), M2(0xffce4d,{emissive:0xffb020,emissiveIntensity:1.3}), list, o=>({s:.8+o.r*.5, y:1.5*(.8+o.r*.5)}))); }
-  if(L.gardens){ scatter(160,2.2,R,list=>inst(new THREE.SphereGeometry(1,7,6), M2(0x3a7a4a,{emissive:0x1c4a2a,emissiveIntensity:.2}), list, o=>({s:.6+o.r*1.2, sy:.7+o.r*.6, y:.4, ry:o.r*6})));
-    scatter(120,2.2,R,list=>inst(new THREE.ConeGeometry(1.2,4,7), M2(0x2f6a48,{emissive:0x1c5a30,emissiveIntensity:.2}), list, o=>({s:.7+o.r*1.1, y:2.2*(.7+o.r*1.1), ry:o.r*6})));
-    scatter(90,2.2,R,list=>inst(new THREE.SphereGeometry(.35,6,5), M2(0xff8ab0,{emissive:0xff5c78,emissiveIntensity:.6}), list, o=>({s:.6+o.r, y:.35}))); }
-  if(L.bones){ scatter(120,2.5,R,list=>inst(new THREE.ConeGeometry(.35,3.4,5), M2(0xcfc8b4), list, o=>({s:.7+o.r*1.4, y:1.5*(.7+o.r*1.4), ry:o.r*6, rz:(o.r-.5)*.4})));
-    scatter(90,2.5,R,list=>inst(new THREE.TorusGeometry(1.6,.14,6,12,Math.PI), M2(0xd8d2c0), list, o=>({s:.7+o.r*1.2, y:.1, ry:o.r*6})));
-    scatter(140,2.2,R,list=>inst(new THREE.SphereGeometry(1,8,6), M2(0x3a3a40), list, o=>({s:.8+o.r*1.6, sy:.3, y:.1})));
-    scatter(60,3,R,list=>inst(new THREE.SphereGeometry(.7,8,7), M2(0xe0d8c4,{emissive:0x5a5040,emissiveIntensity:.25}), list, o=>({s:.8+o.r*1.5, y:.5, ry:o.r*6}))); }
-  // every biome gets boulders, and a ring of distant silhouettes that stand in the fog
-  scatter(110,2.2,R,list=>inst(new THREE.DodecahedronGeometry(1,0), M2(L.rocks,{flatShading:true}), list, o=>({s:.5+o.r*1.8, y:.3, ry:o.r*6, rx:o.r})));
-  { const list=[]; const ringR=half+58; for(let i=0;i<L.spireN;i++){ const a=i/L.spireN*Math.PI*2+apHash(i,5,seed)*.3; const rr=ringR+apHash(i,6,seed)*40; list.push({x:Math.cos(a)*rr,z:Math.sin(a)*rr,h:-2,r:apHash(i,7,seed)}); }
-    inst(new THREE.ConeGeometry(9,42,5), M2(L.spire,{emissive:L.spire,emissiveIntensity:.08}), list, o=>({s:.7+o.r*1.3, sy:.8+o.r*1.4, y:18*(.8+o.r*1.4), ry:o.r*6})); }
-  // ambient particles: a drifting field that follows the camera focus
-  { const P=L.motes, N=P.n; const bg=new THREE.BufferGeometry(); const arr=new Float32Array(N*3); const vel=new Float32Array(N*3);
+    list.forEach((o,i)=>{ const t=place(o); p.set(o.x+(t.dx||0),o.h+(t.y||0),o.z+(t.dz||0)); e.set(t.rx||0,t.ry||0,t.rz||0); q.setFromEuler(e); s.set(t.s||1,t.sy||t.s||1,t.s||1); m.compose(p,q,s); im.setMatrixAt(i,m); }); im.instanceMatrix.needsUpdate=true; apLive(im); return im; };
+  const M2=(c,o)=>new THREE.MeshStandardMaterial(Object.assign({color:c,roughness:.92},o||{}));
+  const bark=apRockMat('bark',[40,28,18],[84,62,40],[120,96,70],{r:.95}), rock=apWallMat(bi);
+  if(W.trees==='deciduous'){ const leaf=M2(bi===4?0x5a8a3a:0x3f7a34), leaf2=M2(bi===4?0x7aa64a:0x4f8f3e);
+    scatter(220,2.4,list=>{ inst(new THREE.CylinderGeometry(.22,.4,3.2,7), bark, list, o=>({s:.8+o.r*1.3, y:1.5*(.8+o.r*1.3)}));
+      inst(new THREE.SphereGeometry(1.9,9,7), leaf, list, o=>({s:.8+o.r*1.3, y:3.9*(.8+o.r*1.3), ry:o.r*6}));
+      inst(new THREE.SphereGeometry(1.4,8,6), leaf2, list, o=>({s:.8+o.r*1.3, y:4.9*(.8+o.r*1.3), dx:(o.r2-.5)*1.6, dz:(o.r-.5)*1.6})); });
+    scatter(160,2.2,list=>inst(new THREE.SphereGeometry(1,7,6), M2(0x3a6a2e), list, o=>({s:.5+o.r*1.1, sy:.6+o.r*.5, y:.3, ry:o.r*6}))); }
+  if(W.trees==='conifer'){ const nd=M2(0x2e5a44), snow=M2(0xe8f2fa);
+    scatter(240,2.4,list=>{ inst(new THREE.CylinderGeometry(.18,.32,2.6,6), bark, list, o=>({s:.8+o.r*1.4, y:1.2*(.8+o.r*1.4)}));
+      for(let k=0;k<3;k++){ inst(new THREE.ConeGeometry(1.7-k*.4,2.2,8), nd, list, o=>({s:.8+o.r*1.4, y:(2.4+k*1.3)*(.8+o.r*1.4), ry:o.r*6})); inst(new THREE.ConeGeometry(1.5-k*.38,.5,8), snow, list, o=>({s:.8+o.r*1.4, y:(3.3+k*1.3)*(.8+o.r*1.4), ry:o.r*6})); } });
+    scatter(120,2.2,list=>inst(new THREE.SphereGeometry(1,7,6), M2(0xe4eef8), list, o=>({s:.6+o.r*1.6, sy:.5, y:.2}))); }
+  if(W.trees==='dead'){ scatter(150,2.4,list=>{ inst(new THREE.CylinderGeometry(.12,.36,3.4,6), bark, list, o=>({s:.8+o.r*1.4, y:1.6*(.8+o.r*1.4), rz:(o.r-.5)*.2}));
+      for(const k of [0,1,2]){ inst(new THREE.CylinderGeometry(.05,.12,1.8,5), bark, list, o=>({s:.8+o.r*1.4, y:3.2*(.8+o.r*1.4), rz:(k-1)*.9+(o.r-.5)*.4, ry:o.r*6+k, dx:(k-1)*.5*(.8+o.r*1.4)})); } });
+    scatter(90,2.5,list=>inst(new THREE.BoxGeometry(.9,1.4,.25), rock, list, o=>({s:.8+o.r*.8, y:.6, ry:o.r*6, rz:(o.r2-.5)*.3})));   // tombstones
+  }
+  if(W.vents){ scatter(70,2.6,list=>inst(new THREE.CylinderGeometry(.6,1.6,2.4,7), rock, list, o=>({s:.8+o.r*1.5, y:1.0*(.8+o.r*1.5), ry:o.r*6})));
+    scatter(60,2.6,list=>inst(new THREE.ConeGeometry(.35,2.6,6), M2(0xff8a30,{emissive:0xff6a20,emissiveIntensity:1.2}), list, o=>({s:.5+o.r, y:1.0*(.5+o.r)}))); }
+  if(W.obelisks){ scatter(110,2.6,list=>inst(new THREE.BoxGeometry(.8,4,.8), rock, list, o=>({s:.8+o.r*1.6, y:1.9*(.8+o.r*1.6), ry:o.r*6, rx:(o.r-.5)*.3, rz:(o.r2-.5)*.3})));
+    scatter(160,2.2,list=>inst(new THREE.OctahedronGeometry(.6,0), M2(0xb06bff,{emissive:0x9d4bff,emissiveIntensity:.9}), list, o=>({s:.5+o.r, y:2+o.r*5, ry:o.r*6, rx:o.r*3}))); }
+  if(W.columns){ scatter(60,2.8,list=>{ inst(new THREE.CylinderGeometry(.55,.65,6,12), apWallMat(4), list, o=>({s:.8+o.r*.6, y:3*(.8+o.r*.6)})); inst(new THREE.BoxGeometry(1.8,.4,1.8), apWallMat(4), list, o=>({s:.8+o.r*.6, y:6.1*(.8+o.r*.6)})); }); }
+  if(W.bones){ scatter(120,2.6,list=>inst(new THREE.ConeGeometry(.35,3.4,6), M2(0xd8d0bc), list, o=>({s:.7+o.r*1.4, y:1.5*(.7+o.r*1.4), ry:o.r*6, rz:(o.r-.5)*.5})));
+    scatter(80,2.6,list=>inst(new THREE.TorusGeometry(1.6,.14,6,12,Math.PI), M2(0xd8d2c0), list, o=>({s:.7+o.r*1.2, y:.1, ry:o.r*6}))); }
+  scatter(150,2.3,list=>inst(new THREE.DodecahedronGeometry(1,1), rock, list, o=>({s:.5+o.r*2.2, sy:.5+o.r*1.4, y:.2, ry:o.r*6, rx:o.r})));
+  // ---- mountains on the horizon (in the fog, never reachable) ----
+  { const list=[]; const ringR=half+70; const N=34; for(let i=0;i<N;i++){ const a=i/N*Math.PI*2+apHash(i,5,seed)*.25; const rr=ringR+apHash(i,6,seed)*70; list.push({x:Math.cos(a)*rr,z:Math.sin(a)*rr,h:-4,r:apHash(i,7,seed),r2:apHash(i,8,seed)}); }
+    const mtn=new THREE.MeshStandardMaterial({vertexColors:false,color:W.colMid,roughness:1}); inst(new THREE.ConeGeometry(16,52,7), mtn, list, o=>({s:.8+o.r*1.6, sy:.7+o.r2*1.5, y:24*(.7+o.r2*1.5), ry:o.r*6}));
+    if(bi!==1&&bi!==3){ inst(new THREE.ConeGeometry(6,20,7), M2(bi===5?0xb0b0b8:0xf0f4f8), list, o=>({s:.8+o.r*1.6, sy:.7+o.r2*1.5, y:44*(.7+o.r2*1.5), ry:o.r*6})); } }   // snow caps
+  // ---- weather ----
+  { const P=W.motes, N=P.n; const bg=new THREE.BufferGeometry(); const arr=new Float32Array(N*3); const vel=new Float32Array(N*3);
     for(let i=0;i<N;i++){ arr[i*3]=(Math.random()-.5)*110; arr[i*3+1]=Math.random()*30; arr[i*3+2]=(Math.random()-.5)*110; vel[i*3]=(Math.random()-.5)*.6; vel[i*3+1]=P.k==='ember'?1.5+Math.random()*2:P.k==='snow'?-(1.2+Math.random()*1.5):P.k==='ash'?-(.4+Math.random()*.6):(Math.random()-.5)*.5; vel[i*3+2]=(Math.random()-.5)*.6; }
     bg.setAttribute('position',new THREE.BufferAttribute(arr,3));
-    const pm=new THREE.PointsMaterial({color:P.col,map:apSpriteTex(),size:P.k==='snow'?.7:P.k==='ember'?.5:.6,transparent:true,opacity:P.k==='dust'?.5:.75,depthWrite:false,blending:THREE.AdditiveBlending,sizeAttenuation:true});
-    const pts=new THREE.Points(bg,pm); pts.frustumCulled=false; apLive(pts); _AP.particles={pts,vel,N,k:P.k,cx:0,cz:0}; }
-  // biome-tinted fill light so the outer world reads in its own colour
-  const fill=new THREE.HemisphereLight(L.hemi,0x000000,.22); apLive(fill);
+    const pm=new THREE.PointsMaterial({color:P.col,map:apSpriteTex(),size:P.k==='snow'?.6:P.k==='ember'?.45:.5,transparent:true,opacity:P.k==='dust'?.4:.7,depthWrite:false,blending:P.k==='snow'?THREE.NormalBlending:THREE.AdditiveBlending,sizeAttenuation:true});
+    const pts=new THREE.Points(bg,pm); pts.frustumCulled=false; apLive(pts); _AP.particles={pts,vel,N,k:P.k}; }
+  apDressRooms(W,g,D,seed,inst,M2,rock,bark);
 }
-// per-frame: drift particles around the camera focus, animate live scenery, wave the lava
+// ---- inside the walkable area: meadow tufts, flowers, puddles, pebbles, roots — small, non-colliding life so rooms are places ----
+function apDressRooms(W,g,D,seed,inst,M2,rock,bark){ if(!G.rooms||!G.rooms.length) return;
+  const inside=(count,fn)=>{ const list=[]; let tries=0; while(list.length<count && tries<count*6){ tries++; const r=G.rooms[Math.floor(apHash(tries,3,seed)*G.rooms.length)]; const x=r.x0+2+apHash(tries,4,seed+count)*(r.x1-r.x0-4), z=r.z0+2+apHash(tries,5,seed+count)*(r.z1-r.z0-4); if(typeof nearAnyPlayer==='function'&&nearAnyPlayer(x,z,3)) continue; list.push({x,z,h:0,r:apHash(tries,6,seed),r2:apHash(tries,7,seed)}); } fn(list); };
+  if(W.meadow){ inside(Math.min(600,G.rooms.length*55),list=>inst(new THREE.ConeGeometry(.16,.55,4), M2(0x5e9a3a), list, o=>({s:.6+o.r*.9, y:.2*(.6+o.r*.9), ry:o.r*6, rx:(o.r2-.5)*.5})));
+    inside(Math.min(160,G.rooms.length*14),list=>inst(new THREE.SphereGeometry(.12,5,4), M2([0xffd23a,0xff6a8a,0xf0f0ff][Math.floor(apHash(seed,1,2)*3)],{emissive:0x332200,emissiveIntensity:.1}), list, o=>({s:.8+o.r*.6, y:.45})));
+    inside(Math.min(90,G.rooms.length*8),list=>inst(new THREE.DodecahedronGeometry(.32,1), rock, list, o=>({s:.5+o.r*1.2, sy:.4+o.r*.5, y:.05, ry:o.r*6}))); }
+  if(W.name==='ember'){ inside(Math.min(120,G.rooms.length*10),list=>inst(new THREE.DodecahedronGeometry(.4,1), rock, list, o=>({s:.5+o.r*1.4, sy:.5, y:.05, ry:o.r*6}))); }
+  if(W.name==='cryo'){ inside(Math.min(160,G.rooms.length*14),list=>inst(new THREE.SphereGeometry(.5,7,5), M2(0xeef4fa), list, o=>({s:.5+o.r*1.4, sy:.35, y:.02, ry:o.r*6})));   // snow drifts
+    inside(Math.min(60,G.rooms.length*5),list=>inst(new THREE.OctahedronGeometry(.4,0), new THREE.MeshStandardMaterial({color:0xbfe8ff,roughness:.15,metalness:.2,emissive:0x2a5a80,emissiveIntensity:.15}), list, o=>({s:.4+o.r*.8, sy:1.2+o.r*1.2, y:.3, ry:o.r*6}))); }
+  if(W.name==='crypt'){ inside(Math.min(120,G.rooms.length*10),list=>inst(new THREE.SphereGeometry(.35,7,6), M2(0xd6cfbc), list, o=>({s:.5+o.r*.9, y:.2, ry:o.r*6, rx:o.r2})));   // skulls & bone scatter
+    inside(Math.min(80,G.rooms.length*7),list=>inst(new THREE.CylinderGeometry(.06,.07,1.0,5), M2(0xd6cfbc), list, o=>({s:.8, y:.06, rz:Math.PI/2, ry:o.r*6}))); }
+  if(W.name==='void'){ inside(Math.min(90,G.rooms.length*8),list=>inst(new THREE.OctahedronGeometry(.35,0), new THREE.MeshStandardMaterial({color:0x8a5aff,emissive:0x6a3aff,emissiveIntensity:.8,roughness:.3}), list, o=>({s:.4+o.r*.9, sy:1+o.r*1.5, y:.2, ry:o.r*6}))); }
+  if(W.name==='gilded'){ inside(Math.min(70,G.rooms.length*6),list=>inst(new THREE.SphereGeometry(.7,8,6), M2(0x3f7a3a), list, o=>({s:.6+o.r*.9, sy:.7, y:.25, ry:o.r*6}))); }
+}
+// ---- walls: the collision grid stays exactly as it was; what STANDS on it is the world's own boundary ----
+function apDressWalls(horiz,vert,C,H){ try{
+  const bi=Math.max(0,BIOMES.indexOf(biome)); const W=AP_WORLD[bi]||AP_WORLD[0]; const seed=((G.seed|0)*17+(G.floor|0)*3)>>>0; const rock=apWallMat(bi);
+  const segs=horiz.map(p=>({x:p[0],z:p[1],v:0})).concat(vert.map(p=>({x:p[0],z:p[1],v:1}))); if(!segs.length) return;
+  const inst=(geo,mat,list,place)=>{ if(!list.length) return; const im=new THREE.InstancedMesh(geo,mat,list.length); im.castShadow=true; im.receiveShadow=true; const m=new THREE.Matrix4(), q=new THREE.Quaternion(), p=new THREE.Vector3(), s=new THREE.Vector3(), e=new THREE.Euler();
+    list.forEach((o,i)=>{ const t=place(o,i); p.set(o.x+(t.dx||0),t.y||0,o.z+(t.dz||0)); e.set(t.rx||0,t.ry||0,t.rz||0); q.setFromEuler(e); s.set(t.s||1,t.sy||t.s||1,t.sz||t.s||1); m.compose(p,q,s); im.setMatrixAt(i,m); }); im.instanceMatrix.needsUpdate=true; scene.add(im); G.scenery.push(im); return im; };
+  const M2=(c,o)=>new THREE.MeshStandardMaterial(Object.assign({color:c,roughness:.92},o||{}));
+  const rnd=(i,k)=>apHash(i,k,seed); const out=(o,d)=>(o.v?{dx:0,dz:0}:{dx:0,dz:0});   // segments already sit on the boundary line
+  if(W.walls==='cliff'){ // mossy cliff boulders, two per segment, with ferns and the odd tree behind
+    const two=[]; segs.forEach((o,i)=>{ two.push({x:o.x+(o.v?0:-.5),z:o.z+(o.v?-.5:0),i:i*2,v:o.v}); two.push({x:o.x+(o.v?0:.5),z:o.z+(o.v?.5:0),i:i*2+1,v:o.v}); });
+    inst(new THREE.DodecahedronGeometry(1,1), rock, two, o=>({s:1.15+rnd(o.i,1)*.5, sy:1.4+rnd(o.i,2)*1.2, y:.9+rnd(o.i,3)*.6, ry:rnd(o.i,4)*6, rx:(rnd(o.i,5)-.5)*.3}));
+    inst(new THREE.SphereGeometry(.7,7,5), M2(0x4a8a3a), segs.filter((o,i)=>rnd(i,6)<.45), o=>({s:.6+rnd(o.x|0,7)*.8, sy:.5, y:2.6+rnd(o.z|0,8)*.8, ry:rnd(o.x|0,9)*6}));   // moss caps
+    const tr=segs.filter((o,i)=>rnd(i,10)<.08).map(o=>({x:o.x+(o.v?(rnd(o.z|0,11)<.5?-1:1)*1.6:0),z:o.z+(o.v?0:(rnd(o.x|0,12)<.5?-1:1)*1.6)}));
+    inst(new THREE.CylinderGeometry(.2,.32,3.4,6), apRockMat('bark',[40,28,18],[84,62,40],[120,96,70]), tr, (o,i)=>({s:.9+rnd(i,13)*.5, y:1.7})); inst(new THREE.SphereGeometry(1.8,8,6), M2(0x3f7a34), tr, (o,i)=>({s:.9+rnd(i,13)*.5, y:4.4, ry:rnd(i,14)*6})); }
+  else if(W.walls==='basalt'){ // hexagonal basalt columns of varied height, lit from the cracks
+    inst(new THREE.CylinderGeometry(1.02,1.1,1,6), rock, segs, (o,i)=>{ const h=2.4+rnd(i,1)*2.2; return {s:1, sy:h, y:h/2-.2, ry:Math.PI/6}; });
+    inst(new THREE.CylinderGeometry(.55,.6,1,6), rock, segs.filter((o,i)=>rnd(i,2)<.5), (o,i)=>{ const h=3.2+rnd(i,3)*2.6; return {s:1, sy:h, y:h/2-.2, ry:Math.PI/6, dx:(rnd(i,4)-.5)*1.2, dz:(rnd(i,5)-.5)*1.2}; });
+    inst(new THREE.SphereGeometry(.3,6,5), M2(0xff7a20,{emissive:0xff5a10,emissiveIntensity:1.3}), segs.filter((o,i)=>rnd(i,6)<.18), (o,i)=>({s:.6+rnd(i,7)*.6, sy:.3, y:.15, dx:(rnd(i,8)-.5)*1.4, dz:(rnd(i,9)-.5)*1.4})); }
+  else if(W.walls==='ice'){ // glacier blocks, tilted and translucent-bright, with rime along the base
+    const icem=new THREE.MeshStandardMaterial({color:0xcfe8f8,roughness:.25,metalness:.15,emissive:0x2a4a66,emissiveIntensity:.1});
+    inst(new THREE.BoxGeometry(2.1,3,1.4), icem, segs, (o,i)=>({s:.95+rnd(i,1)*.25, sy:.8+rnd(i,2)*.6, y:1.3+rnd(i,3)*.6, ry:(o.v?Math.PI/2:0)+(rnd(i,4)-.5)*.35, rx:(rnd(i,5)-.5)*.2, rz:(rnd(i,6)-.5)*.2}));
+    inst(new THREE.OctahedronGeometry(.6,0), icem, segs.filter((o,i)=>rnd(i,7)<.4), (o,i)=>({s:.5+rnd(i,8)*.8, sy:1.5+rnd(i,9)*1.5, y:3.4, ry:rnd(i,10)*6, dx:(rnd(i,11)-.5), dz:(rnd(i,12)-.5)}));
+    inst(new THREE.SphereGeometry(.8,7,5), M2(0xf0f6fc), segs, (o,i)=>({s:.7+rnd(i,13)*.6, sy:.35, y:.05, dx:(rnd(i,14)-.5)*.8, dz:(rnd(i,15)-.5)*.8})); }
+  else if(W.walls==='void'){ // the floor is an island: a cliff drops into nothing, crystal shards mark the edge
+    inst(new THREE.BoxGeometry(2.2,10,1.2), rock, segs, (o,i)=>({s:1, y:-5.2, ry:o.v?Math.PI/2:0, dx:o.v?(o.x>0?.3:-.3):0, dz:o.v?0:(o.z>0?.3:-.3)}));
+    const shard=new THREE.MeshStandardMaterial({color:0x6a3aff,emissive:0x8a5aff,emissiveIntensity:.9,roughness:.3});
+    inst(new THREE.OctahedronGeometry(.45,0), shard, segs, (o,i)=>({s:.5+rnd(i,1)*.6, sy:1.6+rnd(i,2)*2.2, y:.6, ry:rnd(i,3)*6, rx:(rnd(i,4)-.5)*.4, rz:(rnd(i,5)-.5)*.4}));
+    inst(new THREE.DodecahedronGeometry(.9,0), rock, segs.filter((o,i)=>rnd(i,6)<.5), (o,i)=>({s:.6+rnd(i,7)*.9, y:.2, ry:rnd(i,8)*6})); }
+  else if(W.walls==='marble'){ // a balustrade: plinth, turned posts, a rail, hedges behind it
+    const mar=apWallMat(4), gold=new THREE.MeshStandardMaterial({color:0xd6a848,metalness:.8,roughness:.35});
+    inst(new THREE.BoxGeometry(2.1,.5,1.0), mar, segs, o=>({y:.25, ry:o.v?Math.PI/2:0}));
+    inst(new THREE.CylinderGeometry(.16,.22,1.4,8), mar, segs, o=>({y:1.2, dx:o.v?0:-.55, dz:o.v?-.55:0})); inst(new THREE.CylinderGeometry(.16,.22,1.4,8), mar, segs, o=>({y:1.2, dx:o.v?0:.55, dz:o.v?.55:0}));
+    inst(new THREE.BoxGeometry(2.15,.22,.5), mar, segs, o=>({y:2.0, ry:o.v?Math.PI/2:0})); inst(new THREE.SphereGeometry(.14,6,5), gold, segs.filter((o,i)=>rnd(i,1)<.35), o=>({y:2.25}));
+    inst(new THREE.SphereGeometry(1,8,6), M2(0x3f7a3a), segs, (o,i)=>({s:1.0+rnd(i,2)*.5, sy:.9+rnd(i,3)*.5, y:.9, dx:o.v?(o.x>0?1.4:-1.4):0, dz:o.v?0:(o.z>0?1.4:-1.4), ry:rnd(i,4)*6}));
+    inst(new THREE.SphereGeometry(.12,5,4), M2(0xff6a8a,{emissive:0x401018,emissiveIntensity:.2}), segs.filter((o,i)=>rnd(i,5)<.5), (o,i)=>({s:.8+rnd(i,6)*.6, y:1.9, dx:o.v?(o.x>0?1.4:-1.4)+(rnd(i,7)-.5):(rnd(i,7)-.5), dz:o.v?(rnd(i,8)-.5):(o.z>0?1.4:-1.4)+(rnd(i,8)-.5)})); }
+  else if(W.walls==='bone'){ // catacomb walls: stacked stone, skulls along the top, rusted spikes
+    inst(new THREE.BoxGeometry(2.1,3.0,1.1), rock, segs, (o,i)=>({sy:.85+rnd(i,1)*.35, y:1.3+rnd(i,1)*.5, ry:(o.v?Math.PI/2:0)+(rnd(i,2)-.5)*.06}));
+    const bone=M2(0xd6cfbc); inst(new THREE.SphereGeometry(.36,8,6), bone, segs.filter((o,i)=>rnd(i,3)<.55), (o,i)=>({s:.8+rnd(i,4)*.5, y:3.1+rnd(i,1)*.5, ry:rnd(i,5)*6, dx:(rnd(i,6)-.5)*1.2, dz:(rnd(i,7)-.5)*.4}));
+    inst(new THREE.ConeGeometry(.08,.9,5), M2(0x4a3a30,{metalness:.5,roughness:.6}), segs.filter((o,i)=>rnd(i,8)<.4), (o,i)=>({y:3.5+rnd(i,1)*.5, dx:(rnd(i,9)-.5)*1.4, dz:(rnd(i,10)-.5)*.5, rz:(rnd(i,11)-.5)*.3}));
+    inst(new THREE.CylinderGeometry(.06,.07,1.1,5), bone, segs.filter((o,i)=>rnd(i,12)<.3), (o,i)=>({y:3.2+rnd(i,1)*.5, rz:Math.PI/2, ry:o.v?Math.PI/2:0, dx:(rnd(i,13)-.5)})); }
+}catch(err){ console.warn('wall dressing skipped:',err); } }
+// per-frame: weather drifts around the player, water ripples, live scenery animates
 function updateLandscape(dt){ _AP.t+=dt; const P=_AP.particles;
   let fx=0,fz=0; try{ const pl=(typeof _G!=='undefined')&&_G.players&&_G.players[0]; if(pl&&pl.player){ fx=pl.player.position.x; fz=pl.player.position.z; } }catch(_){}
+  if(_AP.sky){ _AP.sky.position.set(fx,0,fz); }
   if(P){ const a=P.pts.geometry.attributes.position.array, v=P.vel, t=_AP.t;
     for(let i=0;i<P.N;i++){ const j=i*3; a[j]+=v[j]*dt+Math.sin(t*.7+i)*dt*(P.k==='snow'?.9:.4); a[j+1]+=v[j+1]*dt; a[j+2]+=v[j+2]*dt;
       if(P.k==='mote'||P.k==='spore'||P.k==='dust'){ a[j+1]+=Math.sin(t*.9+i*.3)*dt*.6; }
       let dx=a[j]-fx, dz=a[j+2]-fz; if(dx>55)a[j]-=110; else if(dx<-55)a[j]+=110; if(dz>55)a[j+2]-=110; else if(dz<-55)a[j+2]+=110;
       if(a[j+1]>30) a[j+1]=0; else if(a[j+1]<0) a[j+1]=30; }
     P.pts.geometry.attributes.position.needsUpdate=true; }
-  for(const o of _AP.live){ if(o.userData&&o.userData.anim) apAnimateParts(o,dt); if(o.userData&&o.userData.lava){ o.material.emissiveIntensity=1.1+Math.sin(_AP.t*1.3)*.25; } }
+  if(_AP.water&&_AP.water.material.map){ _AP.water.material.map.offset.x+=dt*.012; _AP.water.material.map.offset.y+=dt*.008; if(_AP.water.userData.lava) _AP.water.material.emissiveIntensity=1.25+Math.sin(_AP.t*1.3)*.2; }
+  for(const o of _AP.live){ if(o.userData&&o.userData.anim) apAnimateParts(o,dt); }
   if(typeof G!=='undefined'){ for(const st of [G.stashStation,G.vendorStation,G.craftStation,G.yardStation,G.scoreStation,G.yardTerminal,G.portal]){ if(st&&st.mesh&&st.mesh.userData.anim) apAnimateParts(st.mesh,dt); }
     for(const list of [G.shrines,G.vistas,G.heroChallenges,G.pois,G.chests,G.townNpcs]){ if(!list) continue; for(const it of list){ const m=it&&it.mesh; if(m&&m.userData&&m.userData.anim) apAnimateParts(m,dt); } }
     if(G.scenery) for(const sc of G.scenery){ if(sc.userData&&sc.userData.anim) apAnimateParts(sc,dt); } }
 }
 // sanctuary dressing: lanterns, banners, planters, a fountain, crates — the hub looks lived-in
 function buildSanctuaryDressing(){ try{
-  const stone=apM(0x5a4a2a,{e:0x1a1408,ei:.2,r:.85}), gold=apM(0xd6a848,{e:0x6b4f14,ei:.45,r:.35,m:.75}), wood=apM(0x6b4a2a,{e:0x231708,ei:.2,r:.9}), green=apM(0x2f7a48,{e:0x1c5a30,ei:.25,r:.9});
+  const stone=apWallMat(4), gold=apM(0xd6a848,{e:0x6b4f14,ei:.3,r:.35,m:.75}), wood=apM(0x6b4a2a,{e:0x231708,ei:.1,r:.9}), green=apM(0x2f7a48,{e:0x1c5a30,ei:.08,r:.9});
   const add=(m,x,z,ry)=>{ m.position.set(x,0,z); if(ry) m.rotation.y=ry; apShadow(m,true); scene.add(m); G.scenery.push(m); return m; };
-  // lantern posts along the walls
   for(const p of [[-24,18],[-12,20],[12,20],[24,18],[-26,-16],[26,-16],[-8,-20],[8,-20]]){ const g=new THREE.Group();
-    const post=new THREE.Mesh(new THREE.CylinderGeometry(.12,.18,4.2,6), apM(0x2a2a30,{ei:.2,m:.6})); post.position.y=2.1; g.add(post);
-    const arm=new THREE.Mesh(new THREE.BoxGeometry(.9,.1,.1), apM(0x2a2a30,{ei:.2,m:.6})); arm.position.set(.4,4.1,0); g.add(arm);
+    const post=new THREE.Mesh(new THREE.CylinderGeometry(.12,.18,4.2,6), apM(0x2a2a30,{ei:.05,m:.6})); post.position.y=2.1; g.add(post);
+    const arm=new THREE.Mesh(new THREE.BoxGeometry(.9,.1,.1), apM(0x2a2a30,{ei:.05,m:.6})); arm.position.set(.4,4.1,0); g.add(arm);
     const cage=new THREE.Mesh(new THREE.CylinderGeometry(.22,.26,.5,6,1,true), gold); cage.position.set(.8,3.8,0); g.add(cage);
     const fl=new THREE.Mesh(new THREE.SphereGeometry(.14,6,5), apM(0xffe0a0,{ei:1.8})); fl.position.set(.8,3.8,0); g.add(fl);
     const lt=new THREE.PointLight(0xffd080,.8,12); lt.position.set(.8,3.7,0); g.add(lt); apAnim(g,{k:'flicker',o:lt,base:.8,amp:.12,spd:5+Math.random()*3});
     add(g,p[0],p[1],Math.atan2(-p[0],-p[1])); }
-  // banners on tall poles flanking the portal
   for(const sd of [-1,1]){ const g=new THREE.Group(); const pole=new THREE.Mesh(new THREE.CylinderGeometry(.1,.14,7,6), wood); pole.position.y=3.5; g.add(pole);
-    const cloth=new THREE.Mesh(new THREE.BoxGeometry(.06,3.2,1.5), apM(0x7a1030,{ei:.3,r:.9})); cloth.position.set(0,4.6,.8); g.add(cloth); apAnim(g,{k:'sway',o:cloth,axis:'y',base:0,amp:.18,spd:1.7,ph:sd});
-    const em=new THREE.Mesh(new THREE.OctahedronGeometry(.4,0), gold); em.scale.x=.2; em.position.set(0,4.6,.8); cloth.add(em); em.position.set(0,0,0);
+    const cloth=new THREE.Mesh(new THREE.BoxGeometry(.06,3.2,1.5), apM(0x7a1030,{ei:.1,r:.9})); cloth.position.set(0,4.6,.8); g.add(cloth); apAnim(g,{k:'sway',o:cloth,axis:'y',base:0,amp:.18,spd:1.7,ph:sd});
+    const em=new THREE.Mesh(new THREE.OctahedronGeometry(.4,0), gold); em.scale.x=.2; cloth.add(em);
     const fin=new THREE.Mesh(new THREE.ConeGeometry(.16,.5,5), gold); fin.position.y=7.2; g.add(fin); add(g,sd*6,-14); }
-  // a fountain at the centre
   { const g=new THREE.Group(); const basin=new THREE.Mesh(new THREE.CylinderGeometry(3.2,3.5,.8,16), stone); basin.position.y=.4; g.add(basin);
-    const water=new THREE.Mesh(new THREE.CylinderGeometry(2.9,2.9,.2,16), apM(0x3aa0d0,{ei:.5,r:.2,m:.3,t:true,op:.85})); water.position.y=.75; g.add(water);
+    const water=new THREE.Mesh(new THREE.CylinderGeometry(2.9,2.9,.2,16), new THREE.MeshStandardMaterial({color:0x3a90c0,map:apRipple(),roughness:.2,metalness:.3,transparent:true,opacity:.85})); water.position.y=.75; g.add(water);
     const col=new THREE.Mesh(new THREE.CylinderGeometry(.5,.7,2.4,8), stone); col.position.y=1.8; g.add(col);
     const bowl=new THREE.Mesh(new THREE.CylinderGeometry(1.3,.9,.4,12), stone); bowl.position.y=3.0; g.add(bowl);
-    const jet=new THREE.Mesh(new THREE.ConeGeometry(.25,1.4,7), apM(0x9fe0ff,{ei:1.0,t:true,op:.7})); jet.position.y=3.9; g.add(jet); apAnim(g,{k:'breathe',o:jet,spd:6,amp:.12});
-    const glow=new THREE.PointLight(0x56e0ff,.7,10); glow.position.y=2.5; g.add(glow); add(g,0,6); G.obstacles.push({x:0,z:6,r:3.6,h:1}); }
-  // planters and crates
+    const jet=new THREE.Mesh(new THREE.ConeGeometry(.25,1.4,7), apM(0x9fe0ff,{ei:.5,t:true,op:.7})); jet.position.y=3.9; g.add(jet); apAnim(g,{k:'breathe',o:jet,spd:6,amp:.12});
+    add(g,0,6); G.obstacles.push({x:0,z:6,r:3.6,h:1}); }
   for(const p of [[-20,12],[20,12],[-6,20],[6,20]]){ const g=new THREE.Group(); const pot=new THREE.Mesh(new THREE.CylinderGeometry(1.1,.9,.9,8), stone); pot.position.y=.45; g.add(pot);
-    const bush=new THREE.Mesh(new THREE.SphereGeometry(1.1,7,6), green); bush.scale.y=.8; bush.position.y=1.3; g.add(bush); for(let i=0;i<4;i++){ const fl=new THREE.Mesh(new THREE.SphereGeometry(.14,5,4), apM([0xff5c78,0xffce4d,0xb06bff,0x56e0ff][i],{ei:.9})); fl.position.set(Math.cos(i*1.6)*.8,1.7,Math.sin(i*1.6)*.8); g.add(fl); } add(g,p[0],p[1]); G.obstacles.push({x:p[0],z:p[1],r:1.3,h:2}); }
-  for(const p of [[19,5,.3],[21,7,1.1],[-19,6,.6]]){ const g=new THREE.Group(); const c=new THREE.Mesh(new THREE.BoxGeometry(1.4,1.2,1.4), wood); c.position.y=.6; g.add(c); for(const sd of [-1,1]){ const b=new THREE.Mesh(new THREE.BoxGeometry(1.46,.12,.12), apM(0x3a3a40,{m:.6})); b.position.set(0,.6,sd*.6); g.add(b); } add(g,p[0],p[1],p[2]); }
-  // rugs before the stations
-  for(const p of [[-15,5,0xb06bff],[15,5,0x56e0ff]]){ const rug=new THREE.Mesh(new THREE.CircleGeometry(3.2,20), apM(p[2],{ei:.25,r:.95})); rug.rotation.x=-Math.PI/2; rug.position.set(p[0],.03,p[1]); scene.add(rug); G.scenery.push(rug); }
+    const bush=new THREE.Mesh(new THREE.SphereGeometry(1.1,7,6), green); bush.scale.y=.8; bush.position.y=1.3; g.add(bush); for(let i=0;i<4;i++){ const fl=new THREE.Mesh(new THREE.SphereGeometry(.14,5,4), apM([0xff5c78,0xffce4d,0xb06bff,0x56e0ff][i],{ei:.3})); fl.position.set(Math.cos(i*1.6)*.8,1.7,Math.sin(i*1.6)*.8); g.add(fl); } add(g,p[0],p[1]); G.obstacles.push({x:p[0],z:p[1],r:1.3,h:2}); }
+  for(const p of [[19,5,.3],[21,7,1.1],[-19,6,.6]]){ const g=new THREE.Group(); const c=new THREE.Mesh(new THREE.BoxGeometry(1.4,1.2,1.4), wood); c.position.y=.6; g.add(c); for(const sd of [-1,1]){ const b=new THREE.Mesh(new THREE.BoxGeometry(1.46,.12,.12), apM(0x3a3a40,{m:.6,ei:.05})); b.position.set(0,.6,sd*.6); g.add(b); } add(g,p[0],p[1],p[2]); }
+  for(const p of [[-15,5,0x7a3a9a],[15,5,0x2a6a8a]]){ const rug=new THREE.Mesh(new THREE.CircleGeometry(3.2,20), apM(p[2],{ei:.05,r:.95})); rug.rotation.x=-Math.PI/2; rug.position.set(p[0],.03,p[1]); scene.add(rug); G.scenery.push(rug); }
 }catch(err){ console.warn('sanctuary dressing skipped:',err); } }
 
-// ---- layout ----
-const nav=document.getElementById('nav'); for(const v of ['heroes','bosses','pets','npcs','stations','props']) nav.innerHTML+='<a href="?view='+v+'">'+v+'</a>'; for(let i=0;i<6;i++) nav.innerHTML+='<a href="?view=land&biome='+i+'">land '+i+'</a>';
+const nav=document.getElementById('nav'); for(const v of ['heroes','bosses','pets','npcs','goblins','stations','props']) nav.innerHTML+='<a href="?view='+v+'">'+v+'</a>'; for(let i=0;i<6;i++) nav.innerHTML+='<a href="?view=land&biome='+i+'">world '+i+'</a>';
 document.getElementById('lbl').textContent=view.toUpperCase()+(view==='land'?' · '+biome.name:'');
 const spin=[]; let camY=14, camZ=16, look=[0,1.5,0];
-function ground(){ const gm=apGroundMat(bi); const gg=new THREE.Mesh(apTileUV(new THREE.PlaneGeometry(90,60),90,60,8),gm); gg.rotation.x=-Math.PI/2; gg.receiveShadow=true; scene.add(gg); }
-function place(m,x,z,ry){ m.position.set(x,0,z); if(ry!=null) m.rotation.y=ry; scene.add(m); return m; }
-if(view==='heroes'){ ground(); const archs=['sword','daggers','bow','staff','wand','cannon','spear']; archs.forEach((a,i)=>{ const h=makeHeroMesh({arch:a,tint:[0x56e0ff,0xff5c78,0x6dff8c,0xffce4d][i%4]}); h.position.set((i-3)*3.2,1,0); h.rotation.y=.35; scene.add(h); spin.push(h); });
+function ground(){ const W=AP_WORLD[4]; apSky(W); apApplyWorldLight(W); const gg=new THREE.Mesh(apTileUV(new THREE.PlaneGeometry(120,80),120,80,9),apGroundMat(4)); gg.rotation.x=-Math.PI/2; gg.receiveShadow=true; scene.add(gg); }
+function place(m,x,z,ry){ m.position.set(x,0,z); if(ry!=null) m.rotation.y=ry; scene.add(m); apRealism(m); return m; }
+if(view==='heroes'){ ground(); const archs=['sword','daggers','bow','staff','wand','cannon','spear']; archs.forEach((a,i)=>{ const h=makeHeroMesh({arch:a,tint:[0x56e0ff,0xff5c78,0x6dff8c,0xffce4d][i%4]}); h.position.set((i-3)*3.2,1,0); h.rotation.y=.35; scene.add(h); apRealism(h); spin.push(h); });
   const gh=makeHeroGhostMesh(); place(gh,12.5,0); camY=6; camZ=10; look=[0,1.6,0]; }
 else if(view==='bosses'){ ground(); const keys=['warden','bombard','summoner','sweeper','twinfang','overlord','voidlord','warlock','reaper','towerlord']; const defs={warden:0xff3b5c,bombard:0xff9a3d,summoner:0xb06bff,sweeper:0x56e0ff,twinfang:0xffe14d,overlord:0xffffff,voidlord:0x9d7bff,warlock:0x56e0ff,reaper:0xff3b5c,towerlord:0xffce4d};
-  keys.forEach((k,i)=>{ const s=k==='towerlord'?4.4:3; const m=makeBossMesh({key:k,color:defs[k]},s); m.position.set((i%5-2)*11,0,i<5?-8:6); m.userData.body.rotation.y=.3; scene.add(m); spin.push(m); }); camY=22; camZ=26; look=[0,3,-1]; }
-else if(view==='pets'){ ground(); ['sprite','drake','golem','wisp','beast','imp'].forEach((f,i)=>{ for(let r=0;r<5;r+=2){ const m=makePetMesh(f,r); m.position.set((i-2.5)*3.4,1.2,(r/2-1)*3.2); m.rotation.y=.4; scene.add(m); spin.push(m); } });
+  keys.forEach((k,i)=>{ const s=k==='towerlord'?4.4:3; const m=makeBossMesh({key:k,color:defs[k]},s); m.position.set((i%5-2)*11,0,i<5?-8:6); m.userData.body.rotation.y=.3; scene.add(m); apRealism(m); spin.push(m); }); camY=22; camZ=26; look=[0,3,-1]; }
+else if(view==='pets'){ ground(); ['sprite','drake','golem','wisp','beast','imp'].forEach((f,i)=>{ for(let r=0;r<5;r+=2){ const m=makePetMesh(f,r); m.position.set((i-2.5)*3.4,1.2,(r/2-1)*3.2); m.rotation.y=.4; scene.add(m); apRealism(m); spin.push(m); } });
   const sp=makeSpiritMesh(0x9be7ff,.55); place(sp,11,0,0); spin.push(sp); camY=7; camZ=10; look=[0,1,0]; }
 else if(view==='npcs'){ ground(); const ids=[['wren',0x8effd9],['haldane',0xffce4d],['seravoss',0xb06bff],['cog',0x3aff8a],['mottle',0xff9a3d],['granny',0xff5470],['lumen',0xe8edf7],['echo',0x8aa0c0]]; ids.forEach((n,i)=>{ const m=makeNpcMesh({id:n[0],color:n[1]}); place(m,(i-3.5)*2.8,0,.3); spin.push(m); });
   const dm=makeDummyMesh(1.25); place(dm,12,0,0); camY=6; camZ=10; look=[0,1.5,0]; }
-else if(view==='stations'){ biome=BIOMES[4]; ground(); ['stash','vendor','craft','yard','obelisk','terminal'].forEach((k,i)=>{ const m=makeStationMesh(k); place(m,(i-2.5)*9,0,0); spin.push(m); });
+else if(view==='goblins'){ ground(); const roles=['scout','shaman','spearguard','bomber','archer','clubber','poisoner','trapper','berserker','commander']; roles.forEach((v,i)=>{ const m=makeGoblinVariantMesh(1.15*1.6,{variant:v}); m.position.set((i%5-2)*4.2,0,i<5?-3:3); m.userData.body.rotation.y=.3; scene.add(m); apRealism(m); spin.push(m); }); camY=8; camZ=11; look=[0,1.4,0]; }
+else if(view==='stations'){ ground(); ['stash','vendor','craft','yard','obelisk','terminal'].forEach((k,i)=>{ const m=makeStationMesh(k); place(m,(i-2.5)*9,0,0); spin.push(m); });
   const pg=new THREE.Group(); const ring=new THREE.Mesh(new THREE.TorusGeometry(2.4,.35,12,32), new THREE.MeshStandardMaterial({color:0x56e0ff,emissive:0x56e0ff,emissiveIntensity:1.5})); ring.rotation.x=Math.PI/2; ring.position.y=2.4; const beam=new THREE.Mesh(new THREE.CylinderGeometry(2,2,9,24,1,true), new THREE.MeshBasicMaterial({color:0x56e0ff,transparent:true,opacity:.12,side:THREE.DoubleSide,depthWrite:false})); beam.position.y=4.5; pg.add(ring,beam); apPortalDress(pg,0x56e0ff); place(pg,0,-14); spin.push(pg);
   camY=16; camZ=22; look=[0,2.5,-3]; }
 else if(view==='props'){ ground(); [apGlyphShrine(),apHubrisAltar(),apLever(),apVistaMarker(),apHeroTotem(),apWaymarker(),apChest(),apCampfire(),apCairn()].forEach((m,i)=>{ place(m,(i-4)*4.2,0,.2); spin.push(m); }); camY=8; camZ=13; look=[0,1.5,0]; }
-else if(view==='land'){ // fake a 2-room floor with a corridor, then build the real floor + landscape around it
-  const rooms=[{x0:-24,x1:6,z0:-16,z1:12},{x0:14,x1:44,z0:6,z1:30}]; const rects=rooms.concat([{x0:-3,x1:3.5,z0:-3.5,z1:20},{x0:-3,x1:20,z0:16,z1:22}]); G.rects=rects; G.rooms=rooms; G.bounds=140;
+else if(view==='land'){ // a 2-room floor with a corridor, built with the game's own world pass
+  const rooms=[{x0:-24,x1:6,z0:-16,z1:12},{x0:14,x1:44,z0:6,z1:30}]; const rects=[{x0:-3,x1:3.5,z0:-3.5,z1:20},{x0:-3,x1:20,z0:16,z1:22}].concat(rooms); G.rects=rects; G.rooms=rooms; G.bounds=140;
   const C=2, half=G.bounds/2+6, gw=Math.ceil(half*2/C), cells=new Uint8Array(gw*gw); const ox=-half, oz=-half;
   for(const r of rects){ for(let gx=0;gx<gw;gx++) for(let gz=0;gz<gw;gz++){ const cx=ox+(gx+.5)*C, cz=oz+(gz+.5)*C; if(cx>r.x0&&cx<r.x1&&cz>r.z0&&cz<r.z1) cells[gx*gw+gz]=1; } }
   G.grid={C,gw,gh:gw,ox,oz,cells};
-  const gm=apGroundMat(bi); for(const r of rects){ const w=r.x1-r.x0+2.4, dd=r.z1-r.z0+2.4; const m=new THREE.Mesh(apTileUV(new THREE.PlaneGeometry(w,dd),w,dd,8),gm); m.rotation.x=-Math.PI/2; m.position.set((r.x0+r.x1)/2,0,(r.z0+r.z1)/2); m.receiveShadow=true; scene.add(m); }
-  const wm=apWallMat(bi,biome); const H=3.7; const wl=[]; for(let gx=0;gx<gw;gx++) for(let gz=0;gz<gw;gz++){ if(!cells[gx*gw+gz]) continue; const cx=ox+(gx+.5)*C, cz=oz+(gz+.5)*C; const at=(a,b)=>(a>=0&&b>=0&&a<gw&&b<gw)?cells[a*gw+b]:0;
-    if(!at(gx,gz-1)) wl.push([cx,cz-1,0]); if(!at(gx,gz+1)) wl.push([cx,cz+1,0]); if(!at(gx-1,gz)) wl.push([cx-1,cz,1]); if(!at(gx+1,gz)) wl.push([cx+1,cz,1]); }
-  for(const w of wl){ const m=new THREE.Mesh(w[2]?new THREE.BoxGeometry(.7,H,C+.08):new THREE.BoxGeometry(C+.08,H,.7), wm); m.position.set(w[0],H/2,w[1]); m.castShadow=true; m.receiveShadow=true; scene.add(m); const tm=new THREE.Mesh(w[2]?new THREE.BoxGeometry(.78,.16,C+.1):new THREE.BoxGeometry(C+.1,.16,.78), new THREE.MeshStandardMaterial({color:biome.accent,emissive:biome.accent,emissiveIntensity:.5})); tm.position.set(w[0],H+.08,w[1]); scene.add(tm); }
-  buildLandscape(); const h=makeHeroMesh({arch:'sword'}); h.position.set(-8,1,-2); scene.add(h); _G.players=[{player:h}];
-  const bossKeys=['warden','bombard','summoner','sweeper','twinfang','overlord']; const b=makeBossMesh({key:bossKeys[bi],color:0xff3b5c},3); b.position.set(28,0,18); scene.add(b);
-  camY=28; camZ=15; look=[-8,1.2,-2]; camera.position.set(-8,28,13); }
+  const gm=apGroundMat(bi), pm=apPathMat(bi); for(const r of rects){ const isRoom=rooms.includes(r); const w=r.x1-r.x0+2.4, dd=r.z1-r.z0+2.4; const m=new THREE.Mesh(apFloorBox(w,1,dd),isRoom?gm:pm); m.position.set((r.x0+r.x1)/2,-.5,(r.z0+r.z1)/2); m.receiveShadow=true; scene.add(m); }
+  const wm=apWallMat(bi); const H=2.6; const horiz=[], vert=[]; for(let gx=0;gx<gw;gx++) for(let gz=0;gz<gw;gz++){ if(!cells[gx*gw+gz]) continue; const cx=ox+(gx+.5)*C, cz=oz+(gz+.5)*C; const at=(a,b)=>(a>=0&&b>=0&&a<gw&&b<gw)?cells[a*gw+b]:0;
+    if(!at(gx,gz-1)) horiz.push([cx,cz-1]); if(!at(gx,gz+1)) horiz.push([cx,cz+1]); if(!at(gx-1,gz)) vert.push([cx-1,cz]); if(!at(gx+1,gz)) vert.push([cx+1,cz]); }
+  for(const w of horiz){ const m=new THREE.Mesh(new THREE.BoxGeometry(C+.08,H,.7), wm); m.position.set(w[0],H/2,w[1]); m.castShadow=true; m.receiveShadow=true; scene.add(m); } for(const w of vert){ const m=new THREE.Mesh(new THREE.BoxGeometry(.7,H,C+.08), wm); m.position.set(w[0],H/2,w[1]); m.castShadow=true; m.receiveShadow=true; scene.add(m); }
+  buildLandscape(); apDressWalls(horiz,vert,C,H); const h=makeHeroMesh({arch:'sword'}); h.position.set(-8,1,-2); scene.add(h); apRealism(h); _G.players=[{player:h}];
+  const bossKeys=['warden','bombard','summoner','sweeper','twinfang','overlord']; const b=makeBossMesh({key:bossKeys[bi],color:0xff3b5c},3); b.position.set(-16,0,4); scene.add(b); apRealism(b);
+  const gb=makeGoblinVariantMesh(1.15*1.6,{variant:'commander'}); gb.position.set(-2,0,-8); scene.add(gb); apRealism(gb);
+  camY=26; camZ=17; look=[-8,1.2,-2]; camera.position.set(-8,26,15); }
 camera.position.set(look[0],camY,look[2]+camZ); camera.lookAt(look[0],look[1],look[2]);
 const clock=new THREE.Clock(); let frames=0;
-renderer.setAnimationLoop(()=>{ const dt=Math.min(.05,clock.getDelta()); frames++; for(const m of spin){ apAnimateParts(m,dt); if(m.userData.hero) apAnimateHero(m,dt); } if(view==='land') updateLandscape(dt); renderer.render(scene,camera); window.__frames=frames; });
+renderer.setAnimationLoop(()=>{ const dt=Math.min(.05,clock.getDelta()); frames++; for(const m of spin){ apAnimateParts(m,dt); if(m.userData.hero) apAnimateHero(m,dt); } updateLandscape(dt); renderer.render(scene,camera); window.__frames=frames; });
 </script></body></html>

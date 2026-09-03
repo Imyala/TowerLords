@@ -1,59 +1,64 @@
-# TOWERLORDS — Art Pass: characters, lords, companions, sanctuary & landscape
+# TOWERLORDS — Art Pass: characters, lords, companions, sanctuary & worlds
 
-Everything that used to be a bare primitive now has a real model, and every floor sits inside a real
-landscape. No external assets — all of it is built from flat-shaded three.js primitives and procedural
-canvas textures, so the offline build stays self-contained and packs stay cheap.
+Everything that used to be a bare primitive now has a real model, and every floor is a real place. No external
+assets — all of it is built from three.js primitives and procedural canvas textures, so the offline build stays
+self-contained and packs stay cheap.
 
-The code lives in one block inside `towerlords.html` (search for `ART PASS`), placed just before the
-`ENEMY_FAMILIES` table so it shares the family builders' scope. `towerlords-mobile.html` carries the
-same block; `towerlords-offline.html` is rebuilt from desktop by `.claude/build-offline.js` (now
-repo-relative — set `TL_DIR` to point it elsewhere). `models-preview.html` is a stand-alone showcase of
-every builder plus a landscape sample (`?view=heroes|bosses|pets|npcs|stations|props`,
-`?view=land&biome=0..5`).
+The code lives in one block inside `towerlords.html` (search for `ART PASS` / `WORLD PASS`), placed just before
+the `ENEMY_FAMILIES` table so it shares the family builders' scope. `towerlords-mobile.html` carries the same
+block; `towerlords-offline.html` is rebuilt from desktop by `.claude/build-offline.js` (repo-relative — set
+`TL_DIR` to point it elsewhere). `models-preview.html` is a stand-alone showcase
+(`?view=heroes|bosses|pets|npcs|goblins|stations|props`, `?view=land&biome=0..5`).
+
+## Look: "a bit more realistic"
+
+* Smooth shading everywhere (flat shading only where a rock should be faceted).
+* No toy self-glow: builder materials default to emissive 0.07, and `apRealism()` runs over every spawned
+  enemy, goblin and scenery group (smooth + emissive ×0.35, once per material). Things that are meant to glow —
+  eyes, magma, hex-fire, runes — keep their intensity (≥0.9 is left alone).
+* The enemy loop's baseline emissive dropped from .28 to .08 (elites .35); pets dim to 40% of the old glow.
+* ACES filmic tone mapping, and each world sets its own sun colour/intensity and hemisphere light.
 
 ## What was replaced
 
 | Was | Now |
 |---|---|
-| Player: capsule + nose cone | `makeHeroMesh` — armoured climber: crested great-helm with a glowing visor, breastplate, pauldrons, mail, greaves, tabard + hooded cloak in the player's colour, pouch and potion on the belt. Holds the **equipped weapon archetype** (sword+shield, twin daggers, bow+quiver, staff, wand+tome, hammer, spear+shield); `recompute()` swaps it live. Walk cycle, idle breathing and cloak flare run render-side in `apAnimateHero`. |
-| Bosses: icosahedron / box / cone | `makeBossMesh` — ten bespoke lords: Warden (gate-knight, portcullis shield, chained mace), Bombard (siege-golem, shoulder cannons, mortar back), Summoner (lich, soul-cage staff, three orbiting skulls), Sweeper (sanitation construct, great lens, spinning brush-blades, treads), Twin-Fang (two-headed serpent-lizard), Overlord (white-gold titan, halo, twin greatswords), Void-Lord (legless hooded silhouette, three orbiting rings, eye cluster), Warlock (five-eyed scholar, orbiting tomes and orbs), Reaper (skeletal wraith, bone wings, scythe), Tower Lord (gold colossus wearing the tower as a crown, orbiting crown fragments). |
-| Pets: rarity-sized polyhedra | `makePetMesh` — sprite (winged fairy), drake (small dragon), golem (rune-lit stone construct), wisp (hooded skull with a lantern), beast (wolf), imp (horned, with a fork). Walkers stand on the floor, flyers hover; all face where they travel instead of spinning. Rarity brightens the glow materials. |
-| Summoned spirits: icosahedron | `makeSpiritMesh` — ghost-flame with eyes and an orbiting mote trail. |
-| Town NPCs / waystation keeper: cylinder + sphere | `makeNpcMesh` — each of the Rescued has a face, clothes and props: Wren (kid, scarf, sling), Haldane (portly, wide hat, purse), Sera-Voss (cartographer, map and tube), Brother Cog (hood, egg basket), Mottle (cap, spectacles, ledger), Granny Thorn (shawl, cane, flask basket), Lumen (lantern and book), Echo (translucent, drifting motes). They turn to greet you and idle with breathing / arm drift. The waystation is a proper campfire with the keeper beside it. |
-| Training dummy: box | `makeDummyMesh` — straw post with a painted target, crossbar gloves and a dented helm. |
-| Stations: cylinder + polyhedron | `makeStationMesh` — stash (iron-bound vault), vendor (market stall with striped awning, jars, scales, sacks), crafting (forge with glowing coals, anvil, hammer), pet yard (garden gate with vines and lamps), score obelisk (rune-carved monolith), yard terminal. `children[1]` is still the floating emblem the engine spins. |
-| Portals: ring + beam | ring + beam kept (the engine animates `children[0]`), wrapped in a carved stone archway with rune pillars and a keystone. |
-| Shrines, altar, lever, vista, hero challenge, POI, chest, cairn | Real props: glyph altar with floating glyph stones, blood altar with skull and candles, iron lever with a turning gear, stone watch-marker with a lens, carved totem, cairn waymarker with a flag, iron-banded strongbox (lid still hinges open), dark cairn with a fallen sword. |
-| Dash decoys: capsule | Ghost afterimage of the hero (shares one material so the fade loop still works). |
+| Player: capsule + nose cone | `makeHeroMesh` — armoured climber: crested great-helm, breastplate, pauldrons, mail, greaves, tabard + hooded cloak in the player's colour. Holds the **equipped weapon archetype** (sword+shield, daggers, bow+quiver, staff, wand+tome, hammer, spear+shield); `recompute()` swaps it live. Walk cycle, breathing and cloak flare in `apAnimateHero`. |
+| Goblins: one model for every role | `makeGoblinVariantMesh` — the ten roles on the goblin sheet: Scout, Shaman, Spear Guard, Bomber, Archer, Clubber, Poisoner, Trapper, Berserker, Commander, mapped from combat role in `ENEMY_FAMILIES.goblin.map`. |
+| Bosses: icosahedron / box / cone | `makeBossMesh` — ten bespoke lords: Warden, Bombard, Summoner, Sweeper, Twin-Fang, Overlord, Void-Lord, Warlock, Reaper, Tower Lord. |
+| Pets: rarity-sized polyhedra | `makePetMesh` — sprite, drake, golem, wisp, beast, imp. Walkers stand on the floor, flyers hover; all face where they travel. |
+| Summoned spirits | `makeSpiritMesh` — ghost-flame with eyes and a mote trail. |
+| Town NPCs / waystation keeper | `makeNpcMesh` — each of the Rescued with clothes and trade props; the waystation is a real campfire. |
+| Training dummy | `makeDummyMesh` — straw post, painted target, dented helm. |
+| Stations, portals, shrines, altar, lever, vista, hero challenge, POI, chest, cairn, dash decoy | Real props (`makeStationMesh`, `apPortalDress`, `apGlyphShrine`, `apHubrisAltar`, `apLever`, `apVistaMarker`, `apHeroTotem`, `apWaymarker`, `apChest`, `apCairn`, `makeHeroGhostMesh`). |
 
-## Landscape (`buildLandscape`, called from `buildFloorMeshes`)
+The skeleton, slime, troll and ghoul/ghost families already matched their sheets; they get the realism pass.
 
-* **Ground & walls** — procedural 256² canvas textures per biome, tiled in world units: mossy flagstones,
-  cracked basalt with an emissive magma lattice, blue ice with frost bloom, black-violet marble veined
-  with un-light, cream marble with gold inlay, ash packed with bone. Walls get a brick texture in the
-  same stone. The old grid overlay is gone.
-* **Outer terrain** — a displaced, vertex-coloured low-poly plane that hugs the walkable grid (distance
-  transform over `G.grid`) and rolls away into the fog. It never overlaps a walkable cell, so collision,
-  pathing and spawns are untouched.
-* **Biome dressing** (instanced): forests + ponds (Vault), vents, lava lakes and rock (Foundry), crystal
-  spires and frozen lakes (Archive), floating obelisks over a starlit abyss (Sanctum), gilt columns,
-  gardens and braziers (Halls), bone spires, rib arches and grave mounds (Crypt). Every biome gets
-  boulders and a ring of tall silhouettes standing in the fog.
-* **Particles** — a drifting field that follows the player: spores, embers, snow, void motes, gold dust,
-  ash (soft sprite, additive).
-* **Sanctuary dressing** — lantern posts, banners, a fountain, planters, crates and rugs before the
-  stations (`buildSanctuaryDressing`).
-* Renderer now uses ACES filmic tone mapping (exposure 1.12) so bright emissives roll off instead of
-  clipping.
+## Worlds (`AP_WORLD`, built by `buildLandscape` from `buildFloorMeshes`, walls by `apDressWalls`)
 
-## Engine contract (unchanged, so the loops didn't have to change)
+Tower-of-God rule: each floor is its own world. A world definition carries a sky (fog-free gradient dome with a
+sun disc; fog colour = horizon), sunlight and hemisphere colours, a natural ground for rooms and a worn path for
+corridors, a boundary style, outer-terrain colours, water/lava/abyss, trees and weather.
 
-* `userData.body` — the root node the engine bobs, hit-flashes, telegraph-scales and tints.
-* `userData.humanoid` — face the heading instead of spinning; `userData.arms` / `userData.legs` get the
-  walk-swing.
-* `userData.anim` — optional list of self-animating parts (`spin`, `orbit`, `bob`, `flap`, `sway`,
-  `pulse`, `breathe`, `flicker`) advanced by `apAnimateParts()`; the enemy, pet, minion and scenery
-  loops call it.
-* Pets: `userData.ground` keeps walkers on the floor; `apFacePet` turns them; `apPetGlow` dims / brightens
-  every glow material when a pet goes down / gets up.
-* Stations keep `children[1]` as the spinning emblem; portals keep `children[0]` as the ring.
+| Biome | Ground / path | Boundary (on the collision line) | Beyond the walls |
+|---|---|---|---|
+| Verdant Vault | grass / dirt | mossy cliff boulders with moss caps and the odd tree | rolling meadow, deciduous forest, ponds, mountains |
+| Ember Foundry | cracked basalt with a magma lattice / cinder | hexagonal basalt columns, lava seeps | lava lakes (rippling, glowing), vents, volcanic rock |
+| Cryo Archive | snow / ice | tilted glacier blocks with rime drifts | frozen lakes, snow-capped conifers, ice peaks |
+| Void Sanctum | void-glass / same | the floor is an island: a 10-unit cliff into nothing, crystal shards on the rim | floating obelisks over a starlit abyss |
+| Gilded Halls | garden lawn / marble | marble balustrades with hedges and roses behind | gardens, gilt colonnades |
+| Bone Crypt | ash / gravel | catacomb stone with skulls and rusted spikes on top | dead trees, tombstones, bone spires, black water |
+
+Rooms also get small non-colliding life: meadow tufts, flowers, pebbles, snow drifts, ice crystals, bone
+scatter, void shards. Weather particles (spores, embers, snow, motes, dust, ash) drift around the player.
+The camera sits a touch lower (26 up, 17 back) so more of the world is in frame. The old accent-trim box walls
+and the grid overlay are gone; the collision grid, spawns and pathing are untouched.
+
+## Engine contract (unchanged)
+
+* `userData.body` — root node the engine bobs, hit-flashes, telegraph-scales and tints.
+* `userData.humanoid` — face the heading; `userData.arms` / `userData.legs` get the walk-swing.
+* `userData.anim` — optional self-animating parts (`spin`, `orbit`, `bob`, `flap`, `sway`, `pulse`,
+  `breathe`, `flicker`) advanced by `apAnimateParts()`.
+* Pets: `userData.ground`, `apFacePet`, `apPetGlow`. Stations keep `children[1]` as the spinning emblem;
+  portals keep `children[0]` as the ring.
