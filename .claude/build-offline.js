@@ -2,7 +2,7 @@
 // Three.js CDN importmap for the base64 data:-URL importmap already inlined in the
 // existing offline file. Result = latest main game code + self-contained Three.js.
 const fs = require('fs');
-const DIR = 'E:/AI Work/APPSCC';
+const DIR = process.env.TL_DIR || require('path').join(__dirname,'..');   // repo-relative by default; override with TL_DIR
 const main = fs.readFileSync(DIR + '/towerlords.html', 'utf8');
 const off  = fs.readFileSync(DIR + '/towerlords-offline.html', 'utf8');
 
