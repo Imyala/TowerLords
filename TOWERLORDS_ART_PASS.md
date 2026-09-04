@@ -90,6 +90,30 @@ slits and dorsal fins; kuo-toa great staring eyes; tengu beaks, crests, feathere
 each sheet has its own kit — slings, harpoons on chains, eye-staffs, katanas, naginata, kanabō, war fans, whips,
 banners, spiral and shell shields, straw hats, ninja shuriken and smoke, windmaster rings.
 
+## Realism layer (every creature, REALISM LAYER block)
+
+What makes a drawn figure read as real is how light sits on it, so this pass is shared by every creature the game
+builds — the ten enemy families, heroes, lords and companions:
+
+* **Grounded shading** (`crGrade`): a shading gradient is baked into the vertices of every creature — darker toward
+  the feet, on down-facing and inward-facing surfaces, with a little grime noise — so figures sit in their own
+  shadow instead of floating in flat colour.
+* **No two alike**: each creature rolls its own hue and lightness drift on skin, hide, scale, fur and feather, and
+  every organic palette is a little desaturated, so a pack is never ten copies of one colour.
+* **Surface kinds**: materials are tagged (`skin`, `hide`, `scale`, `fur`, `feather`, `bone`, `leather`, `cloth`,
+  `metal`) and get a matching detail map with stronger relief — mottled, veined skin with pores; hexagonal scales for
+  the sea-devils and kuo-toa; barbed feathers; cracked, pitted bone; creased leather; pitted iron. Skin, scales and
+  metal carry a roughness map so they catch light unevenly.
+* **Sky reflections** (`apEnvMap`): each world builds an environment map from its own sky and sun, so armour,
+  blades, wet scales and eyes reflect the world they stand in.
+* **Faces you can see**: hoods are open at the front, the goblin leather cap is gone, heads tilt up a touch, eyes
+  sit in shadowed sockets with a bloodshot rim and a large dark pupil (fish eyes are all pupil), goblins have cheeks,
+  wrinkles and a chin, orcs carry pectorals, abdominals and a spine groove under the skin (`crMuscles`).
+* **Tengu wings** are real wings: a jointed arm with coverts, secondaries and primaries as layered, tapered
+  feathers on quills, fanning from the wrist, with darker primaries.
+
+`models-preview.html?view=<family>&cam=low` shows any family from a lower angle.
+
 ## Engine contract (unchanged)
 
 * `userData.body` — root node the engine bobs, hit-flashes, telegraph-scales and tints.
