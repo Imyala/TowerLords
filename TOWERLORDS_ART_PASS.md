@@ -8,7 +8,7 @@ The code lives in one block inside `towerlords.html` (search for `ART PASS` / `W
 the `ENEMY_FAMILIES` table so it shares the family builders' scope. `towerlords-mobile.html` carries the same
 block; `towerlords-offline.html` is rebuilt from desktop by `.claude/build-offline.js` (repo-relative — set
 `TL_DIR` to point it elsewhere). `models-preview.html` is a stand-alone showcase
-(`?view=heroes|bosses|pets|npcs|goblins|stations|props`, `?view=land&biome=0..5`).
+(`?view=heroes|bosses|pets|npcs|<family>|stations|props`, `?view=land&biome=0..5`, add `&cam=low` for a lower camera).
 
 ## Look: "a bit more realistic"
 
@@ -113,6 +113,33 @@ builds — the ten enemy families, heroes, lords and companions:
   feathers on quills, fanning from the wrist, with darker primaries.
 
 `models-preview.html?view=<family>&cam=low` shows any family from a lower angle.
+
+## Realism layer (REALISM LAYER block, `crGrade` / `apEnvMap`)
+
+Every creature the game builds — heroes, all fourteen enemy families, lords, companions — passes through the same
+finishing pass after `apRealism`:
+
+* **Grounded shading** baked into the vertices: darker toward the feet and on down-facing and inward-facing surfaces,
+  with grime noise, so figures sit in their own shadow.
+* **No two alike**: each creature rolls its own hue and lightness drift on skin, hide, scales, fur and feathers.
+* **Surface kinds** are tagged on materials (`crM(c,{k:'scale'})`): skin with pores and veins, hexagonal scales,
+  barbed feathers, cracked bone, creased leather, pitted iron — each with bump relief and a roughness map.
+* **Sky reflections**: every world builds a PMREM environment from its own sky and sun, so armour, blades, wet
+  scales and eyes reflect the floor they stand on.
+* **Smooth silhouettes**: `crLathe` runs its profile through a Catmull-Rom spline and re-samples it, every rounded
+  primitive is re-issued at higher resolution (`apRoundGeo`), palms and soles are rounded, so nothing reads as
+  stacked cones. Faceted crystals and rocks are left faceted.
+
+## Creature kit III
+
+Vespertine, ursine, arachne and cephalopoid are built on the kit from their sheets (CREATURE KIT III block):
+vespertine with pale skin, red eyes, fangs, torn black and crimson, membrane wings (`crBatWing`), lanterns on chains
+and a legless drifting wraith; ursine with real bear muzzles, ears, fangs and shaggy fur under scavenged iron;
+arachne — women from the waist up on a chitin spider body with eight jointed legs and a swept abdomen
+(`crSpider`), egg sacs on the broodmother; cephalopoid with tall mantles, ringed eyes and a beard of curling
+tentacles (`crOctoHead`) under barnacled armour, and a translucent water elemental. Every role on each sheet has
+its own build; the old builders remain as `*Legacy`. The preview page lists all four
+(`?view=vespertine|ursine|arachne|cephalopoid`) and `&cam=low` gives a lower camera for checking designs.
 
 ## Engine contract (unchanged)
 
