@@ -1,2 +1,5 @@
 ._*
 .DS_Store
+# source sculpt archives are >100 MB (GitHub hard limit) — keep them local or use Git LFS
+GameAssets/3dAssets/*.zip
+GameAssets/3dAssets/_to_delete/
