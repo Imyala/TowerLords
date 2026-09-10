@@ -1160,6 +1160,11 @@
   .cdxCard.boss{border-color:color-mix(in srgb,var(--gold) 40%,transparent);background:linear-gradient(180deg,color-mix(in srgb,var(--gold) 8%,transparent),rgba(0,0,0,.3));}
   .cdxCard.locked{opacity:.45;border-style:dashed;}
   .cdxIc{font-size:26px;line-height:1;margin-bottom:4px;}
+  /* BESTIARY portraits: every slain creature is drawn from its real in-game model */
+  .cdxPic{display:block;width:96px;height:96px;margin:0 auto 4px;object-fit:contain;filter:drop-shadow(0 6px 8px rgba(0,0,0,.65));}
+  .cdxCard.boss .cdxPic{width:108px;height:108px;}
+  .cdxRace{display:flex;justify-content:space-between;align-items:baseline;font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold);margin:12px 2px 6px;opacity:.9;}
+  .cdxRace i{font-style:normal;opacity:.55;letter-spacing:.5px;text-transform:none;}
   .cdxNm{font-size:12.5px;font-weight:bold;margin-bottom:3px;}
   .cdxTag{font-size:10px;opacity:.75;line-height:1.35;min-height:26px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
   .cdxStat{font-size:9.5px;opacity:.55;margin-top:4px;letter-spacing:.3px;}
@@ -1821,7 +1826,7 @@
   <div id="codexPanel" class="panel hidden">
     <h3>📖 CODEX</h3><div class="closeX" data-close="codexPanel">✕ <span style="font-size:11px;opacity:.6">(B)</span></div>
     <div id="codexBody"></div>
-    <div class="hint">foes &amp; guardians &amp; the Tower's story · persists across runs</div>
+    <div class="hint">every race you have slain, drawn from its true likeness · guardians · the Tower's story · persists across runs</div>
   </div>
 
   <div id="settingsPanel" class="panel hidden">
@@ -3036,7 +3041,7 @@ function checkMetaAchievements(){
 }
 let META={fame:0, evolves:0, feats:[], invRows:0, stashSlots:0, petTier:0, petSlots:0, codex:{}, ascMax:0, tips:{}, victories:0, grudges:{}, daily:null, playerName:'', playerId:'', voiceSeen:{}, materials:{}, lastBonus:'', bonusStreak:0, fieldRespec:false, recallTier:0, titles:[], title:'', savedPets:null, lastRun:0, rescued:{}, chairChoice:'', trueSummit:false, ancestral:'', beasts:{}, beastOn:'', scav:null, cache:null, soulDebt:0, stashGob:false,
   insight:{}, masteries:{}, apts:0, apRewardsClaimed:0, apTitleTier:0, metaAch:{}, recipesKnown:{}};   // MASTERY §5 (biome-scoped Insight + unlocked mastery ids) · ACHIEVEMENT POINTS §6 (ladder + meta-achievements) · CRAFTING §11 (discovered recipes) — all account-wide, never reset by death or evolution
-function loadMeta(){ try{ const s=localStorage.getItem(META_KEY); if(s){ const m=JSON.parse(s); META={fame:m.fame||0, evolves:Math.min(49,m.evolves||0), feats:m.feats||[], invRows:Math.min(5,m.invRows||0), stashSlots:(m.stashSlots!=null?m.stashSlots:Math.min(25,(m.stashRows||0)*10)), petTier:m.petTier||0, petSlots:m.petSlots||0, codex:m.codex||{}, ascMax:m.ascMax||0, tips:m.tips||{}, victories:m.victories||0, grudges:m.grudges||{}, daily:m.daily||null, playerName:m.playerName||'', playerId:m.playerId||'', voiceSeen:m.voiceSeen||{}, materials:m.materials||{}, lastBonus:m.lastBonus||'', bonusStreak:m.bonusStreak||0, fieldRespec:!!m.fieldRespec, recallTier:m.recallTier||0, titles:m.titles||[], title:m.title||'', savedPets:m.savedPets||null, lastRun:m.lastRun||0, rescued:m.rescued||{}, chairChoice:m.chairChoice||'', trueSummit:!!m.trueSummit, ancestral:m.ancestral||'', beasts:m.beasts||{}, beastOn:m.beastOn||'', scav:m.scav||null, cache:m.cache||null, soulDebt:m.soulDebt||0, stashGob:!!m.stashGob,
+function loadMeta(){ try{ const s=localStorage.getItem(META_KEY); if(s){ const m=JSON.parse(s); META={fame:m.fame||0, evolves:Math.min(49,m.evolves||0), feats:m.feats||[], invRows:Math.min(5,m.invRows||0), stashSlots:(m.stashSlots!=null?m.stashSlots:Math.min(25,(m.stashRows||0)*10)), petTier:m.petTier||0, petSlots:m.petSlots||0, codex:m.codex||{}, slain:m.slain||{}, ascMax:m.ascMax||0, tips:m.tips||{}, victories:m.victories||0, grudges:m.grudges||{}, daily:m.daily||null, playerName:m.playerName||'', playerId:m.playerId||'', voiceSeen:m.voiceSeen||{}, materials:m.materials||{}, lastBonus:m.lastBonus||'', bonusStreak:m.bonusStreak||0, fieldRespec:!!m.fieldRespec, recallTier:m.recallTier||0, titles:m.titles||[], title:m.title||'', savedPets:m.savedPets||null, lastRun:m.lastRun||0, rescued:m.rescued||{}, chairChoice:m.chairChoice||'', trueSummit:!!m.trueSummit, ancestral:m.ancestral||'', beasts:m.beasts||{}, beastOn:m.beastOn||'', scav:m.scav||null, cache:m.cache||null, soulDebt:m.soulDebt||0, stashGob:!!m.stashGob,
     insight:m.insight||{}, masteries:m.masteries||{}, apts:m.apts||0, apRewardsClaimed:m.apRewardsClaimed||0, apTitleTier:m.apTitleTier||0, metaAch:m.metaAch||{}, recipesKnown:m.recipesKnown||{}}; } }catch(e){} }
 // ---------------- GLOBAL LEADERBOARD (optional backend) ----------------
 // Set LEADERBOARD_URL to a deployed copy of leaderboard-worker.js (free Cloudflare Worker —
@@ -3084,6 +3089,8 @@ function recallTime(){ return Math.max(0.8, RECALL_TIME - (META.recallTier||0)*0
 function backupPets(){ try{ const p=_G.players[0]; if(!p) return; META.savedPets={pets:(p.pets||[]).map(x=>Object.assign({},x)), idx:(p.pet&&p.pets)?p.pets.indexOf(p.pet):-1}; saveMeta(); }catch(_){} }
 
 function discover(key){ if(!META.codex) META.codex={}; if(!META.codex[key]){ META.codex[key]=true; saveMeta(); } }   // bestiary: record a first encounter
+// bestiary: count the defeat per race+role (guardians keep their own ledger in META.grudges). Saved on the first kill of a kind, then every fifth.
+function recordSlain(e){ try{ if(!e||e.boss||!e.fam||!e.variant) return; const k=e.fam+':'+e.variant; if(!META.slain) META.slain={}; const n=(META.slain[k]||0)+1; META.slain[k]=n; if(n===1||n%5===0) saveMeta(); }catch(_){} }
 // ============================================================ SESSION SAVE / RESUME — jump in and out; continue from the floor you were on
 // A full single-player snapshot (character + which floor / sanctuary). Autosaves on every floor change and on tab close, so
 // closing the game and coming back later just works. Co-op / daily / practice are never saved (they're transient / one-shot).
@@ -9650,7 +9657,7 @@ function spawnEnemy(floor,home,forceType,forceElite){
   if(mod?.eres) for(const k in e.res) e.res[k]=Math.min(0.75, e.res[k]+mod.eres);
   e.maxhp=e.hp;
   { const _fam=ENEMY_FAMILIES[runActFamilyKey(floor)];   // each ACT skinned by a family ROLLED FRESH PER RUN (seeded) — the tower is a different species every climb
-    if(_fam){ const _v=_fam.map[t.id]||_fam.basic; e.mesh=_fam.fn(e.scale*(_fam.ms||1.1)*ENEMY_VISUAL_SCALE, {variant:_v}); }   // t.id 'swarm' etc. now themed per-act; gold/loot goblins stay their own models
+    if(_fam){ const _v=_fam.map[t.id]||_fam.basic; e.fam=runActFamilyKey(floor); e.variant=_v; e.mesh=_fam.fn(e.scale*(_fam.ms||1.1)*ENEMY_VISUAL_SCALE, {variant:_v}); }   // t.id 'swarm' etc. now themed per-act; gold/loot goblins stay their own models · fam/variant feed the bestiary on death
     else e.mesh=makeEnemyMesh(t.shape,e.color,e.scale*ENEMY_VISUAL_SCALE); }
   apRealism(e.mesh);   // WORLD PASS: smooth shading, no toy self-glow — lit by the world's sun like everything else
   if(e.elite||e.champion){ const c=e.affixCol||0xffce4d; const ring=new THREE.Mesh(new THREE.TorusGeometry((e.elite?1.4:1.05)*e.scale*ENEMY_VISUAL_SCALE,.12,8,20), new THREE.MeshStandardMaterial({color:c,emissive:c,emissiveIntensity:1})); ring.rotation.x=Math.PI/2; ring.position.y=1.7*e.scale*ENEMY_VISUAL_SCALE; e.mesh.add(ring);
@@ -11921,6 +11928,7 @@ function killEnemy(e){
   if(e.bomb){ telegraphAoE(e.mesh.position.x,e.mesh.position.z,5,0.45,Math.max(8,e.dmg*2.2),0xff7a3d); floatText(e.mesh.position.x,e.mesh.position.z,'☢ BOMB','hurt',e.scale*1.5+1.2); }
   if(e.split && G.enemies.length<54){ const sw=ETYPES.find(t=>t.id==='swarm')||ETYPES[1]; for(let i=0;i<2;i++) spawnEnemy(G.floor,{x:e.mesh.position.x+rand(-2,2),z:e.mesh.position.z+rand(-2,2)},sw); }
   if(e.lastSrc==='pet') G.run.assists++; else G.run.kills++;
+  recordSlain(e);   // bestiary: a creature's likeness is earned by defeating it
   sfx.kill();
   bountyKill(e.elite);
   // XP goes straight to each contributor's bar/bank below (no chase-orb) — see gainXP in the loop
@@ -14406,20 +14414,74 @@ function renderRivals(cx,hx){
   }
   return h+'</div>';
 }
+// ============================================================ BESTIARY PORTRAITS
+// Every race and guardian is drawn from its REAL in-game model — Imyala's sculpts for the goblins and ratmen, the sheet rigs
+// for the rest — rendered once into a small offscreen canvas and cached for the session. A creature only earns its portrait
+// once it has been defeated (META.slain / META.grudges); until then the card stays a locked ❔.
+const CDX_RACE={ ratman:['Ratmen','🐀'], orc:['Orcs','🪓'], skeleton:['Skeletons','💀'], ghoul:['Ghouls & Spirits','👻'], troll:['Trolls','🪨'], slime:['Slimes','🟢'], goblin:['Goblins','👺'],
+  sahuagin:['Sahuagin','🔱'], kuotoa:['Kuo-toa','🐟'], tengu:['Tengu','🪶'], vespertine:['Vespertine','🦇'], ursine:['Ursine','🐻'], arachne:['Arachne','🕷'], cephalopoid:['Cephalopoids','🐙'] };
+const CDX_ROLE_NM={ ghoulscout:'Ghoul Scout', hungryghoul:'Hungry Ghoul', ghoulbrute:'Ghoul Brute', wailingspirit:'Wailing Spirit', cursedwraith:'Cursed Wraith', gravephantom:'Grave Phantom',
+  souldrainer:'Soul Drainer', shackledghost:'Shackled Ghost', lostsoul:'Lost Soul', dualwielder:'Dual Wielder', shieldbearer:'Shield Bearer', packleader:'Pack Leader', nightqueen:'Night Queen',
+  nightguard:'Night Guard', windmaster:'Wind Master', blademaster:'Blade Master', venommist:'Venom Mist', broodmother:'Brood Mother', tideguard:'Tide Guard' };
+function cdxRoleName(v){ return CDX_ROLE_NM[v]||(v.charAt(0).toUpperCase()+v.slice(1)); }
+function cdxRaceName(fk){ const r=CDX_RACE[fk]; return r?r[0]:(fk.charAt(0).toUpperCase()+fk.slice(1)); }
+// the distinct roles a race fields (its basic unit first, then every role the archetype map reaches)
+function cdxRoles(fk){ const f=ENEMY_FAMILIES[fk]; if(!f) return []; const out=[]; const add=v=>{ if(v&&!out.includes(v)) out.push(v); }; add(f.basic); for(const k in f.map) add(f.map[k]); return out; }
+// which archetypes wear this role — their behaviours become the card's tag line
+function cdxRoleTag(fk,v){ const f=ENEMY_FAMILIES[fk]; const ids=Object.keys(f.map).filter(k=>f.map[k]===v); const tags=[];
+  for(const id of ids){ const t=ETYPES.find(x=>x.id===id); if(!t) continue; for(const g of cdxBehaviour(t).split(' · ')) if(!tags.includes(g)) tags.push(g); }
+  return tags.length?tags.slice(0,3).join(' · '):'melee bruiser'; }
+const CDX_PIX={ cache:{}, r:null, scene:null, cam:null, size:192, pending:0, retries:0 };
+function cdxRenderer(){ const P=CDX_PIX; if(P.r===false) return null; if(P.r) return P.r;
+  try{ const cv=document.createElement('canvas'); cv.width=cv.height=P.size;
+    const r=new THREE.WebGLRenderer({canvas:cv, antialias:true, alpha:true, preserveDrawingBuffer:true, powerPreference:'low-power'});
+    r.setPixelRatio(1); r.setSize(P.size,P.size,false); r.setClearColor(0x000000,0);
+    r.toneMapping=THREE.ACESFilmicToneMapping; r.toneMappingExposure=1.12;   // the same filmic response the world is drawn with
+    const sc=new THREE.Scene(); sc.add(new THREE.HemisphereLight(0xbfd4ff,0x2a2434,1.0));
+    const key=new THREE.DirectionalLight(0xfff2dc,1.9); key.position.set(3,6,5); sc.add(key);
+    const rim=new THREE.DirectionalLight(0x56e0ff,0.9); rim.position.set(-4,3,-3); sc.add(rim);
+    P.r=r; P.scene=sc; P.cam=new THREE.PerspectiveCamera(30,1,0.05,200); return r; }
+  catch(e){ console.warn('bestiary: portraits unavailable',e); P.r=false; return null; } }
+// Render `build()` into a PNG data URL. Returns null when portraits can't be drawn, or 'pending' while a sculpt's atlas is still streaming in.
+function cdxSnapshot(key,build){ const P=CDX_PIX; if(P.cache[key]) return P.cache[key]; const r=cdxRenderer(); if(!r) return null;
+  let g=null; try{ g=build(); }catch(e){ console.warn('bestiary: model failed for '+key,e); return null; } if(!g) return null;
+  try{ apRealism(g); }catch(_){}
+  let ready=true; g.traverse(o=>{ if(!o.isMesh||!o.material) return; const ms=Array.isArray(o.material)?o.material:[o.material]; for(const m of ms){ if(m&&m.map&&!m.map.image) ready=false; } });
+  if(!ready){ P.pending++; return 'pending'; }   // a sculpted model whose texture hasn't decoded yet — try again shortly rather than draw a black figure
+  try{ P.scene.add(g); g.updateMatrixWorld(true);
+    const box=new THREE.Box3().setFromObject(g); const c=box.getCenter(new THREE.Vector3()), sz=box.getSize(new THREE.Vector3());
+    const rad=Math.max(sz.x,sz.y,sz.z,0.01)*0.5; const dist=rad/Math.tan(P.cam.fov*Math.PI/360)*1.18;
+    P.cam.position.set(c.x+dist*0.5, c.y+dist*0.32, c.z+dist*0.8); P.cam.lookAt(c);   // three-quarter view from the front (models face +Z)
+    P.cam.near=Math.max(0.01,dist*0.05); P.cam.far=dist*4; P.cam.updateProjectionMatrix();
+    r.render(P.scene,P.cam); const url=r.domElement.toDataURL('image/png'); P.scene.remove(g); P.cache[key]=url; return url; }
+  catch(e){ console.warn('bestiary: portrait failed for '+key,e); try{ P.scene.remove(g); }catch(_){} return null; } }
+function cdxPortrait(fk,v){ const f=ENEMY_FAMILIES[fk]; if(!f||typeof f.fn!=='function') return null; return cdxSnapshot(fk+':'+v, ()=>f.fn(1.0,{variant:v})); }
+function cdxBossPortrait(d){ return cdxSnapshot('boss:'+d.key, ()=>makeBossMesh(d,3)); }
+function cdxPicHtml(pic,glyph,col){ return (pic&&pic!=='pending') ? `<img class="cdxPic" src="${pic}" alt="" draggable="false">`
+  : `<div class="cdxIc" style="color:${col}">${pic==='pending'?'⏳':glyph}</div>`; }
 function renderCodex(){
-  const b=$('codexBody'); if(!b) return; const cx=META.codex||{};
+  const b=$('codexBody'); if(!b) return; const cx=META.codex||{}, sl=META.slain||{};
   const hx=c=>'#'+(c>>>0).toString(16).padStart(6,'0').slice(-6);
-  const foesSeen=ETYPES.filter(t=>cx[t.id]).length, bossSeen=ALL_BOSSES.filter(d=>cx['boss:'+d.key]).length;
+  const races=Object.keys(ENEMY_FAMILIES); let total=0, slain=0;
+  for(const fk of races) for(const v of cdxRoles(fk)){ total++; if(sl[fk+':'+v]) slain++; }
+  const bossSeen=ALL_BOSSES.filter(d=>cx['boss:'+d.key]).length, bossSlain=ALL_BOSSES.filter(d=>META.grudges&&META.grudges[d.key]&&META.grudges[d.key].d>0).length;
+  CDX_PIX.pending=0;
   let h=renderRivals(cx,hx);
-  h+=`<div class="cdxSec">⚔ FOES — ${foesSeen}/${ETYPES.length} discovered</div><div class="cdxGrid">`;
-  for(const t of ETYPES){ h+= cx[t.id]
-    ? `<div class="cdxCard"><div class="cdxIc" style="color:${hx(t.color)}">${CDX_SHAPE[t.shape]||'🔴'}</div><div class="cdxNm">${t.nm}</div><div class="cdxTag">${cdxBehaviour(t)}</div><div class="cdxStat">hp ${t.hp} · dmg ${t.dmg} · floor ${t.minF||1}+</div></div>`
-    : `<div class="cdxCard locked"><div class="cdxIc">❔</div><div class="cdxNm">???</div><div class="cdxTag">undiscovered</div></div>`; }
-  h+=`</div><div class="cdxSec">👑 GUARDIANS — ${bossSeen}/${ALL_BOSSES.length} discovered</div><div class="cdxGrid">`;
-  for(const d of ALL_BOSSES){ h+= cx['boss:'+d.key]
-    ? `<div class="cdxCard boss"><div class="cdxIc" style="color:${hx(d.color)}">${CDX_SHAPE[d.shape]||'🔴'}</div><div class="cdxNm">${bossFullName(d)}</div><div class="cdxTag">${d.moves.length} attacks · 2 phases${(META.grudges&&META.grudges[d.key]&&META.grudges[d.key].k)?' · ☠ has slain you ×'+META.grudges[d.key].k:''}</div></div>`
+  h+=`<div class="cdxSec">⚔ RACES OF THE TOWER — ${slain}/${total} slain</div>`;
+  for(const fk of races){ const roles=cdxRoles(fk); const got=roles.filter(v=>sl[fk+':'+v]).length; const RN=CDX_RACE[fk]||[cdxRaceName(fk),'❔'];
+    h+=`<div class="cdxRace"><span>${RN[1]} ${RN[0]}</span><i>${got}/${roles.length} slain</i></div><div class="cdxGrid">`;
+    for(const v of roles){ const n=sl[fk+':'+v]; h+= n
+      ? `<div class="cdxCard">${cdxPicHtml(cdxPortrait(fk,v),RN[1],'inherit')}<div class="cdxNm">${cdxRoleName(v)}</div><div class="cdxTag">${cdxRoleTag(fk,v)}</div><div class="cdxStat">${RN[0]} · slain ×${n}</div></div>`
+      : `<div class="cdxCard locked"><div class="cdxIc">❔</div><div class="cdxNm">???</div><div class="cdxTag">undefeated</div></div>`; }
+    h+='</div>'; }
+  h+=`<div class="cdxSec">👑 GUARDIANS — ${bossSlain}/${ALL_BOSSES.length} slain · ${bossSeen} met</div><div class="cdxGrid">`;
+  for(const d of ALL_BOSSES){ const gr=(META.grudges&&META.grudges[d.key])||{k:0,d:0}; h+= cx['boss:'+d.key]
+    ? `<div class="cdxCard boss">${cdxPicHtml(gr.d>0?cdxBossPortrait(d):null,CDX_SHAPE[d.shape]||'🔴',hx(d.color))}<div class="cdxNm">${bossFullName(d)}</div><div class="cdxTag">${d.moves.length} attacks · 2 phases${gr.k?' · ☠ has slain you ×'+gr.k:''}</div><div class="cdxStat">${gr.d>0?'slain ×'+gr.d:'met · not yet defeated'}</div></div>`
     : `<div class="cdxCard locked boss"><div class="cdxIc">❔</div><div class="cdxNm">??? GUARDIAN</div><div class="cdxTag">undiscovered</div></div>`; }
   h+='</div>'; h+=renderStoryCodex(); b.innerHTML=h;
+  // sculpted models stream their atlas in asynchronously — redraw shortly until every earned portrait is real
+  if(CDX_PIX.pending>0 && CDX_PIX.retries<25){ CDX_PIX.retries++; setTimeout(()=>{ const p=$('codexPanel'); if(p&&!p.classList.contains('hidden')) renderCodex(); },350); }
+  else CDX_PIX.retries=0;
 }
 // ---- THE TOWER'S STORY: re-readable record of everything learned (STORY_BIBLE §8-9) ----
 function renderStoryCodex(){
