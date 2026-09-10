@@ -1,5 +1,8 @@
 ._*
 .DS_Store
-# source sculpt archives are >100 MB (GitHub hard limit) — keep them local or use Git LFS
-GameAssets/3dAssets/*.zip
+# source sculpt archives (Meshy zips, 120 MB each) are over GitHub's 100 MB limit — keep them local or use Git LFS
+GameAssets/**/*.zip
+GameAssets/**/*.obj.zip
 GameAssets/3dAssets/_to_delete/
+GameAssets/3dAssets/_staging/
+Claude outputs/

@@ -16,13 +16,17 @@ and still animates through the engine's walk-swing contract.
 | 2 | local | `cluster.py 0.008` | Vertex-clustering pre-pass (3 M → ~300 k tris) so the mesh is small enough to move around. Writes `gob_clustered.npz`. |
 | 3 | local | `samples.py` | Samples the original 2048² texture at every original vertex + face centroid → a 4.6 M coloured point cloud (`gob_points.npz`). This is what the colours are re-baked from, so the heavy UV atlas never has to be preserved through decimation. |
 | 4 | anywhere with gcc | `qem.c` | Quadric edge-collapse decimation (Garland–Heckbert) with boundary planes and fold-over rejection. `gcc -O2 -o qem qem.c -lm && ./qem in.bin out5k.bin 5000` (input: `int32 nv, nf, float64 verts, int32 faces`). ~2 s. |
-| 5 | numpy + scipy | `bake.py out5k.bin 1024` | Smooth normals → box-projection UV charts (majority-vote smoothed, confetti merged) → skyline-packed 1024 atlas → colours splatted from the point cloud and hole-filled → region auto-rig (root / armL / armR / legL / legR, smooth-stepped weights) → quantised binary + JPEG atlas → `goblin_scout_asset.json`. |
-| 6 | — | `patch_game.py <build.html> goblin_scout_asset.json` | Drops `gob_scout_code.js` (decoder + `makeGoblinScout3D`) in front of `makeGoblinVariantMesh`, hooks the `scout` role to it, appends the `<script id="imyala-goblin-scout" type="application/json">` data block, and applies the feet-on-the-floor fix to the enemy loop. Run it on `towerlords.html`, `towerlords-mobile.html` and `models-preview.html`, then `node .claude/build-offline.js`. |
+| 5 | numpy + scipy | `bake.py <id> <id>_5k.bin <id>_points.npz <out_dir>` | Smooth normals → box-projection UV charts (majority-vote smoothed, confetti merged) → skyline-packed 1024 atlas → colours splatted from the point cloud and hole-filled → region-growing auto-rig (see below) → quantised binary + JPEG atlas → `<id>_asset.json`, plus `<id>_atlas.png`, `<id>_5k.obj/.mtl` (for Blender/Godot) and `<id>_rig.png` (the weights, for checking). Knobs: `ATLAS=768` / `JPEG_Q=80` env vars shrink the payload. |
+| 6 | — | `patch_game.py <build.html> <assets_dir>` | Drops `models3d_code.js` (decoder + `makeModel3D` registry + `makeGoblinModel3D`) in front of `makeGoblinVariantMesh`, hooks every goblin role to it, appends one `<script id="imyala-model-<id>" type="application/json">` data block per asset, and applies the feet-on-the-floor fix to the enemy loop. Re-runnable — it strips the previous patch first. Run it on `towerlords.html`, `towerlords-mobile.html` and `models-preview.html`, then `node .claude/build-offline.js`. |
 
-## Binary layout (`goblin_scout_asset.json → geo`, base64)
+Steps 1–3 are one call now: `prepass.py <model.zip> <id> <out_dir>` (≈10 s per sculpt on the Mac). Each embedded model
+costs ≈370 KB in the html (≈140 KB geometry + ≈230 KB atlas, base64).
 
-`pos:u16×3 · uv:u16×2 · idx:u16×3 · nrm:i8×3 · skinIndex:u8×4 · skinWeight:u8×4` — the 2-byte arrays
-come first so the typed-array views stay aligned. `h.min` / `h.scale` de-quantise positions into model
+## Binary layout (`<id>_asset.json → geo`, base64)
+
+`pos:u16×3 · uv:u16×2 · idx:u16×3 · nrm:i8×3 · limb:u8 · limbW:u8` — the 2-byte arrays come first so the
+typed-array views stay aligned; each vertex blends one limb bone (1 armL, 2 armR, 3 legL, 4 legR, 0 none)
+with the root. `h.min` / `h.scale` de-quantise positions into model
 units: 1 unit = scale 1, Y up, faces **+Z**, feet at y = −0.95 (so the engine's `body.position.y = .95·s`
 puts the feet on the floor), bone pivots in `h.bones`.
 
@@ -38,9 +42,21 @@ puts the feet on the floor), bone pivots in `h.bones`.
   `noDetail` stops `apRealism` layering a procedural detail map over the baked texture.
 * Any decode failure logs a warning and falls back to the primitive rig — the game never loses an enemy.
 
-## Adding the next model
+## The auto-rig (bake.py `RIG` table)
 
-Drop the sculpt's OBJ+texture in `GameAssets/3dAssets/`, run steps 1–5 (tune the rig regions in
-`bake.py` — `armW` / `legW` thresholds and the `bones` pivots are in model units, look at a top-view
-slice plot first), give the asset its own `<script id>` and builder function, and hook the role in the
-family builder the same way as `makeGoblinVariantMesh` does for `scout`.
+Hands are seeded far out to the side (`armSeedX`) and grown inward over mesh edges (cracks bridged by a
+3 cm proximity graph) until they hit the torso barrier `|x| < armInner`; below the hips only things further
+out than `armFar` count as arm, so a hanging weapon joins the arm but the thigh never does, and an ear box
+(`earX/earY/earZ`) keeps raised arms out of the ears. Feet are seeded low (`legSeedY`, `legSeedZ`) and grown
+up to `hipY`. Labels are diffused over the mesh for soft joints and each bone's pivot is the centroid of
+its boundary with the body. `rootBoxes` force regions to the body (a cape, a trap on the ground, a shield),
+`arms=False` / `legs=False` switch a swing off for models it would only bend (a two-handed bow, a planted
+spear, a floor-length robe) — the game then simply doesn't register those bones, and the body bob still
+runs. Always look at `<id>_rig.png` before shipping a model.
+
+## Adding the next race
+
+Drop the sculpt zips in `GameAssets/<Race>/`, run `prepass.py` per model, `qem`, then `bake.py` with a
+`RIG` entry per model (look at the rig plot, adjust), put the assets in `GameAssets/3dAssets/<race>/`, add a
+`make<Race>Model3D(v, s)` size table + hook in that family's builder (copy `makeGoblinModel3D`), point
+`patch_game.py` at both asset folders, and rebuild the three html files + offline.

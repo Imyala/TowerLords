@@ -1,21 +1,41 @@
 # MIT licence, (c) 2026 Imyala — Tower Lords model pipeline. Keep the credit, link back, and say what you changed.
-# Goblin scout asset pipeline (Imyala / Tower Lords)
+# Enemy model asset pipeline (Imyala / Tower Lords) — one sculpt in, one embeddable asset out.
 # decimated mesh -> box-projection UV charts -> packed atlas -> colour bake from the 4.6M-point
 # sample cloud -> region auto-rig (root / armL / armR / legL / legR) -> quantised binary + JPEG atlas.
-import numpy as np, struct, json, base64, io, sys, time
+import numpy as np, struct, json, base64, io, sys, time, os
 from scipy.spatial import cKDTree
 from scipy import ndimage
 from PIL import Image
 
-MESH = sys.argv[1] if len(sys.argv) > 1 else 'out5k.bin'
-ATLAS = int(sys.argv[2]) if len(sys.argv) > 2 else 1024
-GUT = 3
+MID = sys.argv[1]                                   # e.g. goblin-scout
+MESH = sys.argv[2]                                  # decimated mesh from qem (int32 nv,nf + float64 verts + int32 faces)
+POINTS = sys.argv[3]                                # <id>_points.npz from prepass.py (P float16/32, C uint8)
+OUT = sys.argv[4] if len(sys.argv) > 4 else '.'     # output folder
+ATLAS = int(os.environ.get('ATLAS', '1024')); GUT = 3; JPEG_Q = int(os.environ.get('JPEG_Q', '84'))
+STATS_ONLY = os.environ.get('STATS') == '1'
 t0 = time.time()
+# ---- per-model rig configuration (model units: Y up, faces +Z, roughly 1.9 tall, centred) ----
+RIG_DEFAULT = dict(arms=True, legs=True, hipY=-0.50, armInner=0.30, armSeedX=0.50, armSeedY=(-0.9, 0.30),
+                   legSeedY=-0.80, legSeedX=0.45, legSeedZ=0.30, legMaxX=0.50, armFar=0.50, earY=0.25, earX=0.55, earZ=0.22, rootBoxes=[], smooth=6)
+RIG = {
+  'goblin-scout':      dict(),
+  'goblin-shaman':     dict(legs=False, armFar=0.36),                        # robed to the floor — arms only; the staff runs down beside the robe
+  'goblin-archer':     dict(arms=False, legSeedZ=0.5),                       # two hands on one bow that crosses the body — no swing that doesn't bend it; wide stance
+  'goblin-berserker':  dict(),
+  'goblin-poisoner':   dict(),
+  'goblin-spearguard': dict(arms=False, rootBoxes=[[0.32, 0.8, -1, 0.05, -0.2, 0.6]]),   # planted spear + a knee-length shield: arms stay put, the shield stays off the leg bone
+  'goblin-trapper':    dict(arms=False, rootBoxes=[[-1, 0.05, -1, -0.5, 0.25, 1]]),   # stake planted on the ground + a bear trap at the feet — legs only
+  'goblin-clubber':    dict(armInner=0.45),                                  # wide belly: the arm barrier sits further out
+  'goblin-commander':  dict(rootBoxes=[[-1, 1, -1, -0.35, -1, -0.17]]),      # the cape hangs behind the legs — keep it off the leg bones
+  'goblin-bomber':     dict(),
+}
+cfg = dict(RIG_DEFAULT); cfg.update(RIG.get(MID, {}))
 
 b = open(MESH, 'rb').read(); nv, nf = struct.unpack('ii', b[:8])
 V = np.frombuffer(b[8:8 + nv * 24], np.float64).reshape(-1, 3).copy()
 F = np.frombuffer(b[8 + nv * 24:], np.int32).reshape(-1, 3).copy()
-print('mesh', V.shape, F.shape)
+V[:, 1] -= V[:, 1].min() + 0.95                    # feet exactly at y=-0.95 (the engine parks the body at .95*s)
+print(MID, 'mesh', V.shape, F.shape, 'height %.3f' % (V[:, 1].max() - V[:, 1].min()))
 
 # ---- smooth per-vertex normals (area weighted) ----
 e1 = V[F[:, 1]] - V[F[:, 0]]; e2 = V[F[:, 2]] - V[F[:, 0]]
@@ -134,7 +154,7 @@ density = lo * 0.995; pos, wh, rot = pack(density)
 for c in np.where(rot)[0]:                     # rotate the chart's local uv to match the packed orientation
     fs = chart == c; cornerUV[fs] = cornerUV[fs][:, :, ::-1]
 print('texel density %.1f px/unit -> %.0f px across the model height' % (density, density * 1.9))
-if len(sys.argv) > 3 and sys.argv[3] == 'stats': sys.exit(0)
+if STATS_ONLY: sys.exit(0)
 # final per-corner atlas UV (pixels, y down) and normalised (v up, matching three.js flipY)
 cornerPX = np.zeros((nf, 3, 2))
 for c in range(nchart):
@@ -143,7 +163,8 @@ for c in range(nchart):
 uvN = np.stack([cornerPX[:, :, 0] / ATLAS, 1 - cornerPX[:, :, 1] / ATLAS], -1)
 
 # ---- bake: splat the sample cloud into the atlas ----
-d = np.load('/mnt/user-data/uploads/TowerLords/GameAssets/3dAssets/_tmp_gob_points.npz'); P = d['P'].astype(np.float64); C = d['C'].astype(np.float64)
+d = np.load(POINTS); P = d['P'].astype(np.float64); C = d['C'].astype(np.float64)
+P[:, 1] -= d['P'][:, 1].astype(np.float64).min() + 0.95    # same feet shift as the mesh
 cent = V[F].mean(1); tree = cKDTree(cent)
 A = V[F[:, 0]]; B = V[F[:, 1]]; Cc = V[F[:, 2]]
 def closest_bary(p, f):
@@ -190,24 +211,67 @@ for it in range(GUT + 6):
 mean = img[has].mean(0); out[~filled] = mean
 out = 255.0 * np.power(np.clip(out, 0, 255) / 255.0, 0.9)   # lift the midtones a touch — the sculpt's texture is darker than the painted rigs it stands beside
 atlas = Image.fromarray(np.clip(out, 0, 255).astype(np.uint8))
-atlas.save('atlas_%d.png' % ATLAS)
+atlas.save(os.path.join(OUT, MID + '_atlas.png'))
 
-# ---- auto-rig: region weights in model space (unit model, y up, faces +Z) ----
-def smooth(x, a, b):   # 0 at a, 1 at b
-    t = np.clip((x - a) / (b - a), 0, 1); return t * t * (3 - 2 * t)
+# ---- auto-rig: region growing over the mesh graph (root / armL / armR / legL / legR) ----
+# Hands are seeded far out to the side and grown inward over mesh edges until they hit the torso barrier
+# (|x| < armInner), so a weapon held in the hand joins the arm and the ears never do; feet are seeded low
+# and grown up to the hip line. Hard labels are then diffused over the mesh a few times for soft joints,
+# and each bone's pivot is the centroid of its boundary with the body (the shoulder / hip line).
+from collections import deque
 x, y, z = V[:, 0], V[:, 1], V[:, 2]
-armW = smooth(np.abs(x), 0.34, 0.46) * (1 - smooth(y, -0.02, 0.10))       # outside the torso, below the shoulder line
-legW = (1 - armW) * smooth(-y, 0.45, 0.60)                                 # below the hips
-rootW = 1 - armW - legW
-side = (x >= 0).astype(int)                                                 # 0 = left (-x), 1 = right (+x)
-BONE_ROOT, BONE_ARM_L, BONE_ARM_R, BONE_LEG_L, BONE_LEG_R = 0, 1, 2, 3, 4
-skinIdx = np.zeros((nv, 4), np.uint8); skinW = np.zeros((nv, 4))
-skinIdx[:, 0] = BONE_ROOT; skinW[:, 0] = rootW
-skinIdx[:, 1] = np.where(side == 1, BONE_ARM_R, BONE_ARM_L); skinW[:, 1] = armW
-skinIdx[:, 2] = np.where(side == 1, BONE_LEG_R, BONE_LEG_L); skinW[:, 2] = legW
-skinW /= skinW.sum(1, keepdims=True)
-print('weights: arm verts %d, leg verts %d' % ((armW > .5).sum(), (legW > .5).sum()))
-bones = {'root': [0, 0, 0], 'armL': [-0.38, 0.0, 0.0], 'armR': [0.38, 0.0, 0.0], 'legL': [-0.25, -0.5, 0.0], 'legR': [0.25, -0.5, 0.0]}
+nbrs = [[] for _ in range(nv)]
+for a_, b_ in zip(edges[:, 0], edges[:, 1]): nbrs[a_].append(b_); nbrs[b_].append(a_)
+for a_, b_ in cKDTree(V).query_pairs(r=0.03):        # bridge the hairline cracks the clustering pre-pass leaves, so a foot still reaches its leg
+    nbrs[a_].append(b_); nbrs[b_].append(a_)
+forced = np.zeros(nv, bool)
+for bx in cfg['rootBoxes']: forced |= (x >= bx[0]) & (x <= bx[1]) & (y >= bx[2]) & (y <= bx[3]) & (z >= bx[4]) & (z <= bx[5])
+label = np.zeros(nv, np.int8)                       # 0 root, 1 armL, 2 armR, 3 legL, 4 legR
+def grow(lab, seed_mask, allowed):
+    q = deque()
+    for i in np.where(seed_mask & allowed & (label == 0))[0]: label[i] = lab; q.append(i)
+    while q:
+        i = q.popleft()
+        for j in nbrs[i]:
+            if label[j] == 0 and allowed[j]: label[j] = lab; q.append(j)
+armSeed = (np.abs(x) > cfg['armSeedX']) & (y > cfg['armSeedY'][0]) & (y < cfg['armSeedY'][1])
+ears = (y > cfg['earY']) & (np.abs(x) < cfg['earX']) & (np.abs(z) < cfg['earZ'])       # the big ears sit right where a raised arm would grow into
+armOK = ~forced & ~ears & ((y > cfg['hipY'] + 0.05) | (np.abs(x) > cfg['armFar']))     # below the hips only the far-out hand / weapon counts as arm, never the thigh
+if cfg['arms']:
+    grow(1, armSeed, armOK & (x < -cfg['armInner']))   # each limb grows on its own side only
+    grow(2, armSeed, armOK & (x > cfg['armInner']))
+if cfg['legs']:
+    legSeed = (y < cfg['legSeedY']) & (np.abs(x) < cfg['legSeedX']) & (np.abs(z) < cfg['legSeedZ'])
+    legOK = ~forced & (y < cfg['hipY']) & (np.abs(x) < cfg['legMaxX'])
+    grow(3, legSeed, legOK & (x < 0))
+    grow(4, legSeed, legOK & (x > 0))
+W = np.zeros((nv, 5)); W[np.arange(nv), label] = 1
+for _ in range(cfg['smooth']):                      # diffuse the one-hot labels over the mesh for soft joints
+    W2 = W.copy()
+    for i in range(nv):
+        if nbrs[i]: W2[i] = 0.5 * W[i] + 0.5 * W[nbrs[i]].mean(0)
+    W = W2
+limb = np.argmax(W[:, 1:], 1) + 1; limbW = W[np.arange(nv), limb]; limbW = limbW / np.maximum(limbW + W[:, 0], 1e-9)
+limb[limbW < 0.02] = 0; limbW[limb == 0] = 0
+counts = np.bincount(label, minlength=5)
+print('rig verts: root %d armL %d armR %d legL %d legR %d' % tuple(counts))
+def pivot(lab, fallback):
+    bnd = [(a_, b_) for a_, b_ in zip(edges[:, 0], edges[:, 1]) if (label[a_] == lab) != (label[b_] == lab)]
+    if not bnd: return fallback
+    pts = np.array([(V[a_] + V[b_]) / 2 for a_, b_ in bnd]); return pts.mean(0).round(3).tolist()
+bones = {'root': [0, 0, 0]}
+if cfg['arms']: bones['armL'] = pivot(1, [-0.38, 0, 0]); bones['armR'] = pivot(2, [0.38, 0, 0])
+if cfg['legs']: bones['legL'] = pivot(3, [-0.25, -0.5, 0]); bones['legR'] = pivot(4, [0.25, -0.5, 0])
+print('bone pivots', bones)
+try:
+    import matplotlib; matplotlib.use('Agg'); import matplotlib.pyplot as plt
+    fig, axs = plt.subplots(1, 3, figsize=(15, 5)); cols = np.array([[.55, .55, .55], [1, .3, .3], [1, .75, .2], [.3, .5, 1], [.3, .9, .9]])
+    cc = cols[limb] * limbW[:, None] + cols[0] * (1 - limbW[:, None])
+    for ax_, (px, py, pz, t) in zip(axs, [(x, y, z, 'front'), (-z, y, x, 'side'), (x, z, y, 'top')]):
+        o = np.argsort(pz); ax_.scatter(px[o], py[o], c=cc[o], s=6, linewidths=0); ax_.set_aspect('equal'); ax_.set_facecolor('#222'); ax_.set_title(MID + ' ' + t); ax_.grid(True, alpha=.3)
+        for nm in [k for k in bones if k != 'root']: b_ = bones[nm]; ax_.plot([b_[0] if t != 'side' else -b_[2]], [b_[1] if t != 'top' else b_[2]], 'w+', ms=14, mew=2)
+    plt.tight_layout(); plt.savefig(os.path.join(OUT, MID + '_rig.png'), dpi=60); plt.close()
+except Exception as e_: print('rig plot skipped', e_)
 
 # ---- wedges: split vertices per chart so each corner owns its UV ----
 wkey = F.astype(np.int64) * nchart + chart[:, None]          # (nf,3)
@@ -222,16 +286,22 @@ mn = V.min(0); mx = V.max(0); scale = (mx - mn) / 65535.0
 qpos = np.round((V[wv] - mn) / scale).astype(np.uint16)
 qnrm = np.clip(np.round(N[wv] * 127), -127, 127).astype(np.int8)
 quv = np.clip(np.round(wuv * 65535), 0, 65535).astype(np.uint16)
-qsi = skinIdx[wv]; qsw = np.clip(np.round(skinW[wv] * 255), 0, 255).astype(np.uint8)
-# fix rounding so weights still sum to 255
-diff = 255 - qsw.astype(int).sum(1); qsw[:, 0] = np.clip(qsw[:, 0].astype(int) + diff, 0, 255)
+qsi = limb[wv].astype(np.uint8); qsw = np.clip(np.round(limbW[wv] * 255), 0, 255).astype(np.uint8)   # limb bone id (0 = none) + its weight; the root takes the rest
 assert len(uk) < 65536
 header = {'nv': int(len(uk)), 'nf': int(nf), 'min': [round(v, 6) for v in mn.tolist()], 'scale': scale.tolist(), 'bones': bones,
-          'order': 'pos:u16x3 uv:u16x2 idx:u16x3 nrm:i8x3 si:u8x4 sw:u8x4 (2-byte arrays first so typed-array views stay aligned)'}
+          'order': 'pos:u16x3 uv:u16x2 idx:u16x3 nrm:i8x3 limb:u8 limbW:u8 (2-byte arrays first so typed-array views stay aligned)', 'id': MID, 'author': 'Imyala'}
 blob = b''.join([qpos.tobytes(), quv.tobytes(), idx.astype(np.uint16).tobytes(), qnrm.tobytes(), qsi.tobytes(), qsw.tobytes()])
-open('goblin_scout.bin', 'wb').write(blob); json.dump(header, open('goblin_scout.json', 'w'))
-buf = io.BytesIO(); atlas.convert('RGB').save(buf, 'JPEG', quality=86, optimize=True, subsampling=0)
-jpg = buf.getvalue(); open('atlas_%d.jpg' % ATLAS, 'wb').write(jpg)
+buf = io.BytesIO(); atlas.convert('RGB').save(buf, 'JPEG', quality=JPEG_Q, optimize=True, subsampling=0)
+jpg = buf.getvalue()
 print('geometry bytes', len(blob), 'b64', len(base64.b64encode(blob)), '| jpeg bytes', len(jpg), 'b64', len(base64.b64encode(jpg)))
-json.dump({'h': header, 'geo': base64.b64encode(blob).decode(), 'tex': 'data:image/jpeg;base64,' + base64.b64encode(jpg).decode()}, open('goblin_scout_asset.json', 'w'))
+json.dump({'h': header, 'geo': base64.b64encode(blob).decode(), 'tex': 'data:image/jpeg;base64,' + base64.b64encode(jpg).decode()}, open(os.path.join(OUT, MID + '_asset.json'), 'w'))
+# ---- OBJ/MTL copy of the low-poly model with its new UVs, for Blender / Godot ----
+with open(os.path.join(OUT, MID + '_5k.obj'), 'w') as f:
+    f.write('# %s - Tower Lords enemy model. MIT licence, (c) 2026 Imyala. Y up, faces +Z, feet at y=-0.95.\nmtllib %s_5k.mtl\no %s\n' % (MID, MID, MID))
+    for p in V[wv]: f.write('v %.5f %.5f %.5f\n' % tuple(p))
+    for t in wuv: f.write('vt %.5f %.5f\n' % tuple(t))
+    for n in N[wv]: f.write('vn %.4f %.4f %.4f\n' % tuple(n))
+    f.write('usemtl %s\ns 1\n' % MID)
+    for a_, b_, c_ in idx + 1: f.write('f %d/%d/%d %d/%d/%d %d/%d/%d\n' % (a_, a_, a_, b_, b_, b_, c_, c_, c_))
+open(os.path.join(OUT, MID + '_5k.mtl'), 'w').write('# MIT licence, (c) 2026 Imyala\nnewmtl %s\nKd 1 1 1\nKs 0 0 0\nmap_Kd %s_atlas.png\n' % (MID, MID))
 print('total', time.time() - t0)
