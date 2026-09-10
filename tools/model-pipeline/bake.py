@@ -29,7 +29,23 @@ RIG = {
   'goblin-commander':  dict(rootBoxes=[[-1, 1, -1, -0.35, -1, -0.17]]),      # the cape hangs behind the legs — keep it off the leg bones
   'goblin-bomber':     dict(),
 }
-cfg = dict(RIG_DEFAULT); cfg.update(RIG.get(MID, {}))
+# ---- race defaults (applied between RIG_DEFAULT and the per-model entry) ----
+RIG_RACE = {
+  'ratman': dict(earY=0.3, earX=0.48, earZ=0.7,                             # the muzzle and ears sit forward of the shoulders on every rat
+                 rootBoxes=[[-1, 1, -1, -0.1, -1, -0.4]]),                   # the tail trails behind at knee height — never a leg
+}
+RIG.update({
+  'ratman-scout':      dict(),
+  'ratman-skirmisher': dict(),
+  'ratman-slinger':    dict(arms=False),                                     # arms tucked against the body, nothing to swing
+  'ratman-poisoner':   dict(),
+  'ratman-shaman':     dict(),
+  'ratman-assassin':   dict(),
+  'ratman-brute':      dict(armInner=0.45),                                  # wide, armoured — arm barrier sits further out
+  'ratman-packleader': dict(rootBoxes=[[-1, 1, -1, -0.1, -1, -0.4], [0.2, 0.6, -1, 1, -0.7, -0.15]]),   # tail + the war standard planted behind
+  'ratman-warblade':   dict(armInner=0.45),
+})
+cfg = dict(RIG_DEFAULT); cfg.update(RIG_RACE.get(MID.split('-')[0], {})); cfg.update(RIG.get(MID, {}))
 
 b = open(MESH, 'rb').read(); nv, nf = struct.unpack('ii', b[:8])
 V = np.frombuffer(b[8:8 + nv * 24], np.float64).reshape(-1, 3).copy()

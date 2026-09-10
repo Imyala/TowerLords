@@ -1,0 +1,5 @@
+# MIT licence, (c) 2026 Imyala
+newmtl ratman-packleader
+Kd 1 1 1
+Ks 0 0 0
+map_Kd ratman-packleader_atlas.png

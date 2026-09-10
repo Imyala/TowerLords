@@ -1,5 +1,5 @@
 // ============================================================ SCULPTED 3D ENEMY MODELS (Imyala)
-// The goblin family is the first race to use real sculpts instead of primitive rigs. Each model is one of
+// The goblin and ratman families use real sculpts instead of primitive rigs. Each model is one of
 // L's Meshy sculpts (~3M triangles) run through Imyala's asset pipeline (tools/model-pipeline): quadric
 // decimation to 5k triangles, box-projection UV charts packed into one 1024 atlas, colours re-baked from
 // the original texture, and a five-bone region rig (root / armL / armR / legL / legR) so the engine's
@@ -45,3 +45,6 @@ function makeModel3D(id,s,opts){ const M=model3dLoad(id); if(!M) return null; op
 // The ten goblin roles → sculpts, with the size each role had as a primitive rig (clubber is the wall of muscle).
 const GOBLIN_MODEL_SIZE = { scout:1, shaman:1, archer:1, poisoner:1, trapper:1, bomber:1, berserker:1.1, spearguard:1.1, commander:1.15, clubber:1.35 };
 function makeGoblinModel3D(v,s){ if(!(v in GOBLIN_MODEL_SIZE)) return null; return makeModel3D('goblin-'+v, s, {size:GOBLIN_MODEL_SIZE[v]}); }
+// The ratman sheet → sculpts (no burrower sculpt yet — that role keeps its primitive rig); brute and warblade are the big ones.
+const RATMAN_MODEL_SIZE = { scout:.95, skirmisher:1, slinger:1, poisoner:1, shaman:1, assassin:1, packleader:1.1, brute:1.3, warblade:1.3 };
+function makeRatmanModel3D(v,s){ if(!(v in RATMAN_MODEL_SIZE)) return null; return makeModel3D('ratman-'+v, s, {size:RATMAN_MODEL_SIZE[v]}); }
