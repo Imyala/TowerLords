@@ -2,12 +2,6 @@
   "version": "0.0.1",
   "configurations": [
     {
-      "name": "neon-survivors",
-      "runtimeExecutable": "python3",
-      "runtimeArgs": ["-m", "http.server", "8123"],
-      "port": 8123
-    },
-    {
       "name": "towerlords",
       "runtimeExecutable": "py",
       "runtimeArgs": ["-3", "-m", "http.server", "8124"],
